@@ -2,10 +2,10 @@ import { Dialog } from '@base-ui-components/react/dialog';
 import React, { useState, useEffect, useMemo } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
+import { extractProficiencies } from '@/lib/attack-calculation';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import type { FeatCacheEntry, FeatureProgression, ItemWithDetails } from '@shared/schema';
 import { ITEM_TYPE_ENUM, FeaturePrerequisiteType, FeatureSourceType, CoreComponent } from '@shared/static-data';
-import { extractProficiencies } from '@/lib/attack-calculation';
 
 interface FeatSubIdSelectionModalProps {
     isOpen: boolean;

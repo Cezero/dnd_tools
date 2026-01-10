@@ -136,7 +136,6 @@ export type SpellDescriptorMap = BaseMap<CoreComponent>;
 export type SpellRangeMap = BaseMap<CoreComponent>;
 export type SpellSchoolMap = BaseMap<CoreComponent>;
 export type SpellSubschoolMap = BaseMap<CoreComponent>;
-export type SkillMap = BaseMap<SkillDetail>;
 export type CraftSkillMap = BaseMap<CoreComponent>;
 export type KnowledgeSkillMap = BaseMap<CoreComponent>;
 export type SourceBookMap = BaseMap<SourceBookData>;

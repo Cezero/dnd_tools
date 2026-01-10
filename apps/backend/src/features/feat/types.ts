@@ -1,6 +1,7 @@
 import {
     Feat,
     GetAllFeatsResponse,
+    GetAllFeatsWithFeatureInfoResponse,
     FeatIdParamRequest,
     UpdateFeatRequest,
     CreateFeatRequest,

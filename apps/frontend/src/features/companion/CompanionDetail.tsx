@@ -1,11 +1,11 @@
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
-import { EntityLink } from '@/components/entity-link';
 import { useAuthAuto } from '@/components/auth';
+import { EntityLink } from '@/components/entity-link';
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
+import { useCacheFunctions } from '@/services/cache';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
-import { COMPANION_TYPE_MAP } from '@shared/static-data';
-import { SpecialFeatureId, FeatureSourceType } from '@shared/static-data';
+import { COMPANION_TYPE_MAP , SpecialFeatureId, FeatureSourceType } from '@shared/static-data';
 
 export function CompanionDetail() {
     const { id } = useParams();
@@ -13,6 +13,7 @@ export function CompanionDetail() {
     const navigate = useNavigate();
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
+    const { getMonsterNameFromCache } = useCacheFunctions();
 
     const companionId = id ? parseInt(id, 10) : undefined;
     const isValidId = companionId !== undefined && !isNaN(companionId);
@@ -47,7 +48,7 @@ export function CompanionDetail() {
     );
 
     const companionTypeName = COMPANION_TYPE_MAP[companion.type]?.name || `Type ${companion.type}`;
-    const monsterName = companion.monster?.name || 'Unknown Monster';
+    const monsterName = companion.monsterId ? (getMonsterNameFromCache(companion.monsterId) || 'Unknown Monster') : 'Unknown Monster';
 
     return (
         <div className="pt-8">
@@ -76,7 +77,7 @@ export function CompanionDetail() {
                         <div>
                             <strong>Type:</strong> {companionTypeName}
                         </div>
-                        {companion.monster && (
+                        {companion.monsterId && (
                             <div>
                                 <strong>Monster:</strong>{' '}
                                 <EntityLink
@@ -85,7 +86,7 @@ export function CompanionDetail() {
                                     href={`/monsters/${companion.monsterId}`}
                                     className="text-blue-600 dark:text-blue-400 hover:underline"
                                 >
-                                    {companion.monster.name}
+                                    {getMonsterNameFromCache(companion.monsterId) || `Monster ${companion.monsterId}`}
                                 </EntityLink>
                             </div>
                         )}

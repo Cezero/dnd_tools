@@ -1,5 +1,3 @@
-import type { QueryClient } from '@tanstack/react-query';
-
 import type {
     Feat,
     FeatCacheResponse,
@@ -12,6 +10,8 @@ import type {
     RaceCacheResponse,
     DnDClass,
 } from '@shared/schema';
+
+import { getQueryClient } from './queryClientAccessor';
 
 /**
  * Synchronous cache access helpers for formatters
@@ -26,14 +26,14 @@ import type {
  * // In a React component:
  * const { isComplete } = usePrecacheFeatureEntities(progressions);
  * if (!isComplete) return <div>Loading...</div>;
- * const result = strategy.format(progressions, { queryClient });
+ * const result = strategy.format(progressions);
  * ```
  *
  * @example
  * ```typescript
  * // Imperative usage:
- * await DisplayStrategyBase.precacheEntities(progressions, queryClient);
- * const result = strategy.format(progressions, { queryClient });
+ * await DisplayStrategyBase.precacheEntities(progressions);
+ * const result = strategy.format(progressions);
  * ```
  */
 
@@ -45,10 +45,12 @@ import type {
  * 2. Full feats list cache: ['feats', 'full']
  * 3. Feats cache: ['feats-cache']
  */
-export function getFeatNameFromCache(queryClient: QueryClient | undefined, featId: number | null | undefined): string | null {
-    if (!queryClient || !featId) {
+export function getFeatNameFromCache(featId: number | null | undefined): string | null {
+    if (!featId) {
         return null;
     }
+
+    const queryClient = getQueryClient();
 
     try {
         // Priority 1: Check individual feat cache
@@ -84,10 +86,12 @@ export function getFeatNameFromCache(queryClient: QueryClient | undefined, featI
 /**
  * Get feature name from cache synchronously
  */
-export function getFeatureNameFromCache(queryClient: QueryClient | undefined, featureId: number | null | undefined): string | null {
-    if (!queryClient || !featureId) {
+export function getFeatureNameFromCache(featureId: number | null | undefined): string | null {
+    if (!featureId) {
         return null;
     }
+
+    const queryClient = getQueryClient();
 
     try {
         const feature = queryClient.getQueryData<Feature>(['features', 'item', featureId]);
@@ -102,10 +106,12 @@ export function getFeatureNameFromCache(queryClient: QueryClient | undefined, fe
 /**
  * Get spell name from cache synchronously
  */
-export function getSpellNameFromCache(queryClient: QueryClient | undefined, spellId: number | null | undefined): string | null {
-    if (!queryClient || !spellId) {
+export function getSpellNameFromCache(spellId: number | null | undefined): string | null {
+    if (!spellId) {
         return null;
     }
+
+    const queryClient = getQueryClient();
 
     try {
         const spellsData = queryClient.getQueryData<SpellCacheResponse>(['spells-cache']);
@@ -123,10 +129,12 @@ export function getSpellNameFromCache(queryClient: QueryClient | undefined, spel
 /**
  * Get skill name from cache synchronously
  */
-export function getSkillNameFromCache(queryClient: QueryClient | undefined, skillId: number | null | undefined): string | null {
-    if (!queryClient || !skillId) {
+export function getSkillNameFromCache(skillId: number | null | undefined): string | null {
+    if (!skillId) {
         return null;
     }
+
+    const queryClient = getQueryClient();
 
     try {
         const skillsData = queryClient.getQueryData<SkillCacheResponse>(['skills-cache']);
@@ -144,10 +152,12 @@ export function getSkillNameFromCache(queryClient: QueryClient | undefined, skil
 /**
  * Get domain name from cache synchronously
  */
-export function getDomainNameFromCache(queryClient: QueryClient | undefined, domainId: number | null | undefined): string | null {
-    if (!queryClient || !domainId) {
+export function getDomainNameFromCache(domainId: number | null | undefined): string | null {
+    if (!domainId) {
         return null;
     }
+
+    const queryClient = getQueryClient();
 
     try {
         const domainsData = queryClient.getQueryData<DomainCacheResponse>(['domains-cache']);
@@ -165,10 +175,12 @@ export function getDomainNameFromCache(queryClient: QueryClient | undefined, dom
 /**
  * Get class name from cache synchronously
  */
-export function getClassNameFromCache(queryClient: QueryClient | undefined, classId: number | null | undefined): string | null {
-    if (!queryClient || !classId) {
+export function getClassNameFromCache(classId: number | null | undefined): string | null {
+    if (!classId) {
         return null;
     }
+
+    const queryClient = getQueryClient();
 
     try {
         // Priority 1: Check individual class cache (from getClassById)
@@ -195,10 +207,12 @@ export function getClassNameFromCache(queryClient: QueryClient | undefined, clas
 /**
  * Get race name from cache synchronously
  */
-export function getRaceNameFromCache(queryClient: QueryClient | undefined, raceId: number | null | undefined): string | null {
-    if (!queryClient || !raceId) {
+export function getRaceNameFromCache(raceId: number | null | undefined): string | null {
+    if (!raceId) {
         return null;
     }
+
+    const queryClient = getQueryClient();
 
     try {
         const racesData = queryClient.getQueryData<RaceCacheResponse>(['races-cache']);

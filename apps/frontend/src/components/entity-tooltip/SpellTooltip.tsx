@@ -2,14 +2,12 @@ import { PreviewCard } from '@base-ui-components/react/preview-card';
 import React from 'react';
 
 import { SpellDisplayContent } from '@/features/spell/SpellDisplayContent';
-import { useCacheFunctions } from '@/services/cache';
-import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 import { GetClassLevelAbbr } from '@/features/spell/spellUtil';
+import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 
 import type { SpellTooltipProps } from './types';
 
 export function SpellTooltip({ spellId, children, href: _href }: SpellTooltipProps): React.JSX.Element {
-    const { getClassNameById } = useCacheFunctions();
     const [classLevelDisplay, setClassLevelDisplay] = React.useState<string>('');
     const [isOpen, setIsOpen] = React.useState(false);
 
@@ -19,16 +17,15 @@ export function SpellTooltip({ spellId, children, href: _href }: SpellTooltipPro
         { enabled: isOpen }
     );
 
-    // Handle async class level display
+    // Handle class level display
     React.useEffect(() => {
         if (spell?.levelMapping && spell.levelMapping.length > 0) {
-            GetClassLevelAbbr(spell.levelMapping, { getClassNameById })
-                .then(setClassLevelDisplay)
-                .catch(() => setClassLevelDisplay('Error loading class levels'));
+            const display = GetClassLevelAbbr(spell.levelMapping);
+            setClassLevelDisplay(display);
         } else {
             setClassLevelDisplay('');
         }
-    }, [spell?.levelMapping, getClassNameById]);
+    }, [spell?.levelMapping]);
 
     return (
         <PreviewCard.Root open={isOpen} onOpenChange={setIsOpen}>

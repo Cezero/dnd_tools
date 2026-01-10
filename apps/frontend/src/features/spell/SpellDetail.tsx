@@ -3,14 +3,12 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { DetailPage } from '@/components/common/DetailPage';
-import { useCacheFunctions } from '@/services/cache';
 import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 
 import { SpellDisplayContent } from './SpellDisplayContent';
 import { GetClassLevelAbbr } from './spellUtil';
 
 export function SpellDetail(): React.JSX.Element {
-    const { getClassNameById } = useCacheFunctions();
     const { id } = useParams();
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -24,16 +22,15 @@ export function SpellDetail(): React.JSX.Element {
         { enabled: !!id }
     );
 
-    // Handle async class level display
+    // Handle class level display
     useEffect(() => {
         if (spell?.levelMapping && spell.levelMapping.length > 0) {
-            GetClassLevelAbbr(spell.levelMapping, { getClassNameById })
-                .then(setClassLevelDisplay)
-                .catch(() => setClassLevelDisplay('Error loading class levels'));
+            const display = GetClassLevelAbbr(spell.levelMapping);
+            setClassLevelDisplay(display);
         } else {
             setClassLevelDisplay('');
         }
-    }, [spell?.levelMapping, getClassNameById]);
+    }, [spell?.levelMapping]);
 
     const handleBack = () => {
         navigate(`/spells${fromListParams ? `?${fromListParams}` : ''}`);

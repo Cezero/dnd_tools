@@ -1,8 +1,9 @@
 import React from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { JsonViewer } from './JsonViewer';
 import { DISPLAY_TYPE_LIST, DisplayType } from '@shared/static-data';
+
+import { JsonViewer } from './JsonViewer';
 import type { CharacterExplorerData } from './types';
 
 interface CharacterExplorerDetailTabsProps {

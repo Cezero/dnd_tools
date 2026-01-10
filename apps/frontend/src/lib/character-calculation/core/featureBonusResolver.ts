@@ -1,8 +1,8 @@
-import type { FeatureProgression, FeatureEntity } from '@shared/schema';
+import type { FeatureProgression, FeatureEntity , CharacterWithAllDetailsResponse } from '@shared/schema';
 import { EntityType, EntityAppliesToType } from '@shared/static-data';
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
-import { applyFeatureFormula } from '../utils/formulaApplier';
+
 import type { FeatureBonus, FormulaModification } from '../types';
+import { applyFeatureFormula } from '../utils/formulaApplier';
 
 /**
  * Resolve bonuses from resolved feature progressions

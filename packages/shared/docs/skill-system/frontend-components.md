@@ -13,6 +13,7 @@ The frontend implementation follows the shared [Frontend Component Architecture]
 - API Layer: `frontend/src/features/skill/SkillApi.ts`
 - Configuration: `frontend/src/features/skill/SkillConfig.ts`
 - Columns: `frontend/src/features/skill/SkillColumns.ts`
+- Utility Functions: `frontend/src/lib/skill-utils.ts`
 
 ## 🏗️ **Component Architecture**
 
@@ -161,6 +162,14 @@ The skill system provides the foundation for character skill management:
 **Skill Progression**: Character skill progression follows class and level rules
 **Skill Checks**: Characters make skill checks using their skill ranks and ability modifiers
 **Skill Synergies**: Skills can provide bonuses to other skills
+**Subtype Management**: Character skills with subtypes (Craft, Knowledge) use database-driven subtype lookups
+**Special Behaviors**: Special skill behaviors (no max ranks, double armor penalty) are determined via database flags
+
+**Refactored Components**: Character skill components have been refactored to use utility functions instead of hardcoded skill ID comparisons:
+- **SkillsTab**: Uses `hasSubtypes()`, `usesCustomSubtype()`, `hasNoMaxRanks()`, `getSkillSubtypes()` for dynamic subtype handling
+- **CharacterEdit**: Uses `hasNoMaxRanks()` for filtering language skills
+- **CharacterPdfService**: Uses `hasDoubleArmorPenalty()` and `getSkillSubtypes()` for PDF generation
+- **DescriptionTab**: Uses `hasNoMaxRanks()` for language display
 
 **Related Documentation**: [Character Management Frontend Components](../character-management/frontend-components.md)
 
@@ -172,10 +181,57 @@ The skill system integrates with the feature system for skill-related features:
 **Skill Synergies**: Features can provide skill synergy bonuses
 **Skill Proficiencies**: Features can grant skill proficiencies
 **Skill Specializations**: Features can provide skill specializations
+**Subtype Selection**: Feature progression detail edit uses `getSkillSubtypes()` for dynamic subtype options
+**Analog Skills**: AnalogSkillService has been refactored to use resolved feature progressions instead of hardcoded class checks
+
+**Refactored Components**: Feature system components have been updated to use database-driven subtype lookups:
+- **FeatureProgressionDetailEdit**: Uses `getSkillSubtypes()` and `hasSubtypes()` for dynamic subtype selection
+- **AnalogSkillService**: Uses resolved feature progressions to determine which classes grant analog skills
 
 **Related Documentation**: [Feature System Frontend Components](../feature-system/frontend-components.md)
 
 ## 🔧 **Utility Functions**
+
+### **Skill Utility Functions**
+
+Centralized utility functions for skill type checks and subtype lookups, replacing hardcoded skill ID comparisons.
+
+**Purpose**: Provides type-safe functions for checking skill characteristics and accessing subtype data from the skills-cache.
+
+**Key Functions**:
+
+**hasSubtypes**: Check if a skill uses predefined subtypes (Craft, Knowledge)
+- **Parameters**: Skill ID
+- **Returns**: Boolean indicating if skill has subtypes
+- **Usage**: Replaces hardcoded checks like `skillId === 6 || skillId === 19`
+
+**usesCustomSubtype**: Check if a skill uses custom subtypes (Perform, Profession)
+- **Parameters**: Skill ID
+- **Returns**: Boolean indicating if skill uses custom subtypes
+- **Usage**: Replaces hardcoded checks like `skillId === 32 || skillId === 33`
+
+**hasNoMaxRanks**: Check if a skill has no maximum rank limit (Speak Language)
+- **Parameters**: Skill ID
+- **Returns**: Boolean indicating if skill has no max ranks
+- **Usage**: Replaces hardcoded checks like `skillId === 38`
+
+**hasDoubleArmorPenalty**: Check if a skill has double armor check penalty (Swim)
+- **Parameters**: Skill ID
+- **Returns**: Boolean indicating if skill has double armor penalty
+- **Usage**: Replaces hardcoded checks like `skillId === 42`
+
+**getSkillSubtypes**: Get all subtypes for a skill from the cache
+- **Parameters**: Skill ID
+- **Returns**: Array of skill subtype cache entries
+- **Usage**: Replaces static map lookups like `CRAFT_SKILL_MAP` and `KNOWLEDGE_SKILL_MAP`
+
+**Key Features**:
+- **Database-Driven**: All data comes from the skills-cache API
+- **Type-Safe**: Full TypeScript type safety
+- **Centralized Logic**: Single source of truth for skill type checks
+- **Performance**: Uses cached data for efficient lookups
+
+**Source File**: `frontend/src/lib/skill-utils.ts`
 
 ### **Skill Columns**
 

@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'url';
+
 import { PrismaClient } from '@shared/prisma-client';
 import { SpecialFeatureId, FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
 

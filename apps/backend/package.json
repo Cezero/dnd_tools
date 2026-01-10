@@ -13,15 +13,7 @@
         "studio": "prisma studio",
         "typecheck": "tsc --noEmit",
         "lint": "eslint . --ext .ts,.tsx,.js,.jsx --config ../../eslint.config.js --no-cache",
-        "migrate-data": "node scripts/migrate-data.js",
-        "seed-weapons": "tsx scripts/seed-weapons.ts",
-        "convert-damage-types": "tsx scripts/convert-damage-types.ts",
-        "import-phb": "tsx scripts/import-phb-data.ts",
-        "migrate-feats-to-features": "tsx scripts/migrateFeatsToFeatures.ts",
-        "test": "vitest",
-        "test:run": "vitest run",
-        "test:watch": "vitest watch",
-        "test:coverage": "vitest run --coverage"
+        "seed-skill-subtypes": "tsx scripts/seed-skill-subtypes.ts"
     },
     "keywords": [],
     "author": "",

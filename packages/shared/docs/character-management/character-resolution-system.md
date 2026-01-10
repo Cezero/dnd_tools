@@ -144,6 +144,34 @@ Stores character editing session state.
 
 All endpoints are prefixed with `/api/characters/:characterId/resolution/`
 
+## 📋 **Validation Schemas**
+
+The character resolution system uses Zod schemas for request and response validation. All schemas are defined in `packages/shared/schema/src/characterResolution.ts` and exported through the main schema package.
+
+### **Response Schemas**
+
+**`SaveSessionResponseSchema`**:
+- Validates the response when saving a resolution session to the database
+- Structure: `{ character: CharacterWithAllDetailsSchema }`
+- The character field contains the updated character with all details after the session is saved
+- Source: `packages/shared/schema/src/characterResolution.ts`
+
+**`CancelSessionResponseSchema`**:
+- Validates the response when cancelling a resolution session
+- Structure: `{ success: boolean }` transformed to `void`
+- The transform pattern is used because the backend returns a success indicator but the frontend API client expects `Promise<void>`
+- Source: `packages/shared/schema/src/characterResolution.ts`
+
+**`GetAvailableFeatsResponseSchema`**:
+- Validates the response when fetching available feats for a character
+- Structure: `{ results: FeatInQueryResponse[], total: number }`
+- The results array contains feats filtered by prerequisites, proficiencies, and character-specific requirements
+- The total field indicates the total count of available feats
+- Uses `FeatInQueryResponseSchema` for type-safe feat data
+- Source: `packages/shared/schema/src/characterResolution.ts`
+
+**Related Documentation**: [Validation Schema Patterns](../application-overview/validation-schemas.md) for common validation patterns
+
 ### **POST /session**
 
 Initialize a new resolution session.
@@ -169,13 +197,17 @@ Initialize a new resolution session.
 
 ### **GET /session**
 
-Resume an existing resolution session.
+Resume an existing resolution session or create a new one if none exists.
 
-**Purpose**: Retrieves an active session for a character, returning the stored resolution result.
+**Purpose**: Retrieves an active session for a character, or automatically creates a new session if none exists. This always returns a session, eliminating the need for the frontend to make two API calls (resume + initialize) when no session exists.
 
 **Request**: No body required
 
-**Response**: `ResolvedCharacterResult | null` (null if no active session exists)
+**Response**: `ResolvedCharacterResult` (always returns a session - creates one if none exists)
+
+**Behavior**:
+- If an active session exists: returns the stored resolution result
+- If no session exists: automatically creates a new session using the same logic as `POST /session` and returns it
 
 **Source File**: `apps/backend/src/features/characterResolution/characterResolutionController.ts` (ResumeSession)
 
@@ -368,6 +400,11 @@ The frontend uses the resolution API through:
 - **PDF Service**: Uses resolved progressions from API
 - **Spell Selection Tab**: Uses `updateResolvedCharacter()` method to sync state after spell operations
 
+**Session Initialization**:
+- The `useCharacterResolution` hook calls `resumeSession` on mount
+- Since `resumeSession` always returns a session (creates one if needed), the hook no longer needs to check for null or make a second API call to `initializeSession`
+- This simplifies the frontend code and reduces API calls from two to one when no session exists
+
 **Spell Operations Integration**:
 - `SpellSelectionTab` uses `useCharacterResolution` hook's `updateResolvedCharacter` method
 - Spell operations (`addSpellKnown`/`removeSpellKnown`) no longer manually manipulate TanStack Query caches
@@ -472,7 +509,9 @@ Spell add/remove operations integrate with the resolution session system to main
 
 1. Frontend calls `GET /session` with character ID
 2. Backend looks up session by character ID and user ID
-3. Backend returns stored `ResolvedCharacterResult` or null
+3. If session exists: Backend returns stored `ResolvedCharacterResult`
+4. If no session exists: Backend automatically creates a new session using the same logic as `POST /session` and returns it
+5. Frontend always receives a `ResolvedCharacterResult` (never null)
 
 ### **Session Save Flow**
 

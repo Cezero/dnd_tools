@@ -602,12 +602,74 @@ The character management system follows the shared [Error Handling Patterns](../
 **Context Information**: Include context about what was being validated
 **Debug Information**: Additional debug information in development mode
 
+## 📋 **Character Resolution Response Schemas**
+
+The character resolution system includes response schemas for API operations that manage resolution sessions. These schemas validate the structure of responses from the resolution API endpoints.
+
+**Source File**: `packages/shared/schema/src/characterResolution.ts`
+
+### **SaveSessionResponseSchema**
+
+Validates the response when saving a resolution session to the database.
+
+**Purpose**: Ensures the response contains the updated character with all details after the session is persisted.
+
+**Structure**:
+- **`character`**: `CharacterWithAllDetailsSchema` - The updated character with all related data (ability scores, advancements, spells, items, etc.)
+
+**Usage**: Used by the `saveSession` API method to validate the response after persisting session state to the character record.
+
+**Type Export**: `SaveSessionResponse` - TypeScript type inferred from this schema
+
+**Related Schemas**:
+- `CharacterWithAllDetailsSchema` - Schema for the character data structure
+
+**Source File**: `packages/shared/schema/src/characterResolution.ts`
+
+### **CancelSessionResponseSchema**
+
+Validates the response when cancelling a resolution session.
+
+**Purpose**: Validates the success indicator from the backend and transforms it to void for the frontend API client.
+
+**Structure**:
+- **`success`**: `boolean` - Indicates whether the session was successfully cancelled
+- **Transform**: Transforms to `void` because the frontend API client expects `Promise<void>` for this operation
+
+**Usage**: Used by the `cancelSession` API method. The transform pattern is used because the backend returns `{ success: boolean }` but the frontend doesn't need this value - the absence of an error indicates success.
+
+**Type Export**: Returns `void` (no type export needed)
+
+**Source File**: `packages/shared/schema/src/characterResolution.ts`
+
+### **GetAvailableFeatsResponseSchema**
+
+Validates the response when fetching available feats for a character.
+
+**Purpose**: Ensures the response contains a properly structured list of available feats with type-safe feat data.
+
+**Structure**:
+- **`results`**: `FeatInQueryResponse[]` - Array of available feats, each validated using `FeatInQueryResponseSchema`
+- **`total`**: `number` (non-negative integer) - Total count of available feats
+
+**Usage**: Used by the `getAvailableFeats` API method to validate the response containing feats filtered by prerequisites, proficiencies, and character-specific requirements.
+
+**Type Export**: `GetAvailableFeatsResponse` - TypeScript type inferred from this schema
+
+**Related Schemas**:
+- `FeatInQueryResponseSchema` - Schema for individual feat items in the results array
+
+**Source File**: `packages/shared/schema/src/characterResolution.ts`
+
+**Related Documentation**: [Character Resolution System](./character-resolution-system.md) for complete API endpoint documentation
+
 ## 🔗 **Related Documentation**
 
 - **[Database Schema](database-schema.md)** - Character management database models and relationships
 - **[Static Data](static-data.md)** - Character management enums and types
 - **[Backend Implementation](backend-implementation.md)** - Character management backend implementation
 - **[Frontend Components](frontend-components.md)** - Character management frontend implementation
+- **[Character Resolution System](./character-resolution-system.md)** - Character resolution system API and session management
 - **[Class System Validation Schemas](../class-system/validation-schemas.md)** - Class system validation patterns
 - **[Race System Validation Schemas](../race-system/validation-schemas.md)** - Race system validation patterns
 - **[Feature System Validation Schemas](../feature-system/validation-schemas.md)** - Feature system validation patterns

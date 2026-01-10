@@ -1,4 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
+
 import { Trick } from '@shared/schema';
 
 export const TRICK_COLUMNS: ColumnDef<Trick, unknown>[] = [

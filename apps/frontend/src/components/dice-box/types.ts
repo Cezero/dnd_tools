@@ -82,7 +82,7 @@ export interface DiceBoxContextType {
     isReady: boolean;
     isRolling: boolean;
     lastResult: LocalDiceRollResult | null;
-    onRollComplete: (callback: (result: LocalDiceRollResult | LocalDiceRollResult[]) => void) => void;
+    onRollComplete: (callback: (result: LocalDiceRollResult | LocalDiceRollResult[]) => void) => () => void;
     clearResults: () => void;
     reinitialize: () => Promise<void>;
     reinitializeWithUserConfig: (userConfig: UpdateUserDiceConfigRequest) => Promise<void>;

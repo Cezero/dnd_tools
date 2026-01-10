@@ -177,7 +177,7 @@ export const useSpellColumns = (): ColumnDef<Spell, unknown>[] => {
                     const editionFilter = currentFilters.find(f => f.id === 'editionId');
                     const editionId = editionFilter?.value as EditionId || EditionId.DND_3x;
 
-                    const classes = await getClassSelectByEdition(editionId);
+                    const classes = getClassSelectByEdition(editionId);
                     return classes;
                 },
             },

@@ -1,13 +1,14 @@
 import { useMemo, useState, useEffect } from 'react';
 
 import { FeatureSystemService } from '@/components/feature-system/FeatureSystemService';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
+import { hasSubtypes, getSkillSubtypes } from '@/lib/skill-utils';
+import { getSkillSelectFull } from '@/services/cache';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
+import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import type { FeatureEntity } from '@shared/schema';
 import {
     ABILITY_LIST,
-    SKILL_LIST,
     SAVING_THROW_LIST,
     RPG_DICE_LIST,
     DAMAGE_TYPE_LIST,
@@ -15,9 +16,6 @@ import {
     LANGUAGE_LIST,
     EntityAppliesToType,
     EntityType,
-    CRAFT_SKILL_LIST,
-    KNOWLEDGE_SKILL_LIST,
-    Skill,
     ENERGY_DAMAGE_TYPE_LIST,
     SPELL_SCHOOL_LIST,
     PROFICIENCY_TYPE_LIST,
@@ -37,16 +35,12 @@ export function getAppliesToSubIdSelectOptions(appliesTo: EntityAppliesToType, a
 
     // Only show appliesToSubId for specific combinations
     if (appliesTo === EntityAppliesToType.Skill && appliesToId) {
-        if (appliesToId === Skill.Craft) {
+        if (hasSubtypes(appliesToId)) {
+            const subtypes = getSkillSubtypes(appliesToId);
+            const skillName = getSkillSelectFull().find(s => s.id === appliesToId)?.name || 'Skill';
             return [
-                { id: -1, name: 'All Craft Subtypes' },
-                ...CRAFT_SKILL_LIST
-            ];
-        }
-        if (appliesToId === Skill.Knowledge) {
-            return [
-                { id: -1, name: 'All Knowledge Subtypes' },
-                ...KNOWLEDGE_SKILL_LIST
+                { id: -1, name: `All ${skillName} Subtypes` },
+                ...subtypes.map(s => ({ id: s.id, name: s.name }))
             ];
         }
     }
@@ -125,7 +119,7 @@ export function getAppliesToSelectOptionsSync(appliesTo: EntityAppliesToType, _e
         case EntityAppliesToType.Ability:
             return ABILITY_LIST;
         case EntityAppliesToType.Skill:
-            return SKILL_LIST;
+            return getSkillSelectFull();
         case EntityAppliesToType.SavingThrow:
             return SAVING_THROW_LIST;
         case EntityAppliesToType.Proficiency:

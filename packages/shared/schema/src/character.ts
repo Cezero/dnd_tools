@@ -72,11 +72,8 @@ export const CharacterSchema = BaseCharacterSchema.extend({
 });
 
 // Schema for character with race information
+// race object removed - frontend should resolve race names from races-cache using raceId (already in base schema)
 export const CharacterWithRaceSchema = CharacterSchema.extend({
-    race: z.object({
-        id: z.number().int().positive('Race ID must be a positive integer'),
-        name: z.string().min(1, 'Race name is required'),
-    }),
     // Class/level information calculated from advancements
     characterLevel: z.number().int().min(0, 'Character level must be non-negative').default(0),
     classLevelString: z.string().default(''),

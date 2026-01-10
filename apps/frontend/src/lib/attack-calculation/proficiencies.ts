@@ -5,6 +5,7 @@ import {
     PROFICIENCY_TYPES,
     ITEM_TYPE_ENUM,
 } from '@shared/static-data';
+
 import type { ProficiencyResult } from './types';
 
 /**

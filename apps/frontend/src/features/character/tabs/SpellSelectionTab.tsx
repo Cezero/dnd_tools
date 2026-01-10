@@ -1,6 +1,6 @@
-import { ColumnDef } from '@tanstack/react-table';
-import { useQueryClient } from '@tanstack/react-query';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { useQueryClient } from '@tanstack/react-query';
+import { ColumnDef } from '@tanstack/react-table';
 import ordinal from 'ordinal';
 import React, { useMemo, useState, useCallback } from 'react';
 
@@ -8,10 +8,11 @@ import { EntityLink } from '@/components/entity-link';
 import { ScrollableCategorizedList } from '@/components/scrollable-categorized-list';
 import type { ScrollableCategorizedListProps } from '@/components/scrollable-categorized-list/types';
 import type { TabComponentProps } from '@/features/character/types';
-import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
-import { hasSpellbook, getAvailableSpellbookSpells, getMaxCastableSpellLevel, canScribeSpellAtLevel, getFreeSpellsUsed, getRemainingFreeSpells, hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
 import { useCharacterResolution } from '@/features/character/useCharacterResolution';
+import { hasSpellbook, getAvailableSpellbookSpells, getMaxCastableSpellLevel, canScribeSpellAtLevel, getFreeSpellsUsed, getRemainingFreeSpells, hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
 import type { ResolvedCharacterResult } from '@/services/api/CharacterResolutionApi';
+import { useCacheFunctions } from '@/services/cache';
+import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import type { CharacterSpellSelectionEntry, DnDClass, CharacterAdvancementWithDetailsResponse, CharacterSpellSelectionResponse, CharacterWithAllDetailsResponse, AddSpellKnownResponse, RemoveSpellKnownResponse } from '@shared/schema';
 import { SPELL_SCHOOL_MAP, SPELL_SUBSCHOOL_MAP } from '@shared/static-data';
 
@@ -29,6 +30,7 @@ export function SpellSelectionTab({
 }: TabComponentProps & { spellbookMode?: 'level-up' | 'scribing' }): React.JSX.Element {
     const resolution = useCharacterResolution(character?.id || null);
     const queryClient = useQueryClient();
+    const { getClassNameFromCache } = useCacheFunctions();
     const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
     const [cacheUpdateTrigger, setCacheUpdateTrigger] = useState(0);
 
@@ -82,7 +84,11 @@ export function SpellSelectionTab({
         }
 
         const result = Array.from(classMap.values());
-        console.log('SpellSelectionTab: Found spellcasting classes', result.map(sc => ({ id: sc.classId, name: sc.class.name, level: sc.level })));
+        console.log('SpellSelectionTab: Found spellcasting classes', result.map(sc => ({ 
+            id: sc.classId, 
+            name: sc.class?.name || getClassNameFromCache(sc.classId) || 'Unknown Class', 
+            level: sc.level 
+        })));
         return result;
     }, [character?.advancements, sharedData?.classDetailsMap]);
 
@@ -163,9 +169,7 @@ export function SpellSelectionTab({
 
         if (!cachedCurrentAdvancement) return 0;
 
-        return getFreeSpellsUsed(cachedCurrentAdvancement as {
-            spellsKnown?: Array<{ isFreeGrant?: boolean }>;
-        });
+        return getFreeSpellsUsed(cachedCurrentAdvancement);
     }, [character, selectedClassId, isSpellbookClass, queryClient, cacheUpdateTrigger]);
 
     // Calculate remaining free spells
@@ -756,11 +760,14 @@ export function SpellSelectionTab({
                     onChange={(e) => setSelectedClassId(parseInt(e.target.value, 10))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                    {spellcastingClasses.map(sc => (
-                        <option key={sc.classId} value={sc.classId}>
-                            {sc.class.name} (Level {sc.level})
-                        </option>
-                    ))}
+                    {spellcastingClasses.map(sc => {
+                        const className = sc.class?.name || getClassNameFromCache(sc.classId) || 'Unknown Class';
+                        return (
+                            <option key={sc.classId} value={sc.classId}>
+                                {className} (Level {sc.level})
+                            </option>
+                        );
+                    })}
                 </select>
             </div>
 

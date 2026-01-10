@@ -12,8 +12,8 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { SourceEditor } from '@/components/forms/SourceEditor';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { useCacheFunctions } from '@/services/cache';
-import { DeityQueryHooks } from '@/services/query/DeityQueryHooks';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
+import { DeityQueryHooks } from '@/services/query/DeityQueryHooks';
 import { CreateDeityRequest, UpdateDeityRequest, UpdateDeitySchema, CreateDeitySchema } from '@shared/schema';
 import { EDITION_LIST, ALIGNMENT_LIST, AlignmentId, EditionId, SourceType, PANTHEON_LIST, ITEM_TYPE_ENUM, CoreComponent } from '@shared/static-data';
 
@@ -190,7 +190,7 @@ export function DeityEdit() {
                 await Promise.all(
                     formData.classIds.map(async (classId) => {
                         try {
-                            const classInfo = await getClassNameById(classId);
+                            const classInfo = getClassNameById(classId);
                             names[classId] = { name: classInfo?.name || 'Unknown Class', type: 'class' };
                         } catch {
                             names[classId] = { name: 'Unknown Class', type: 'class' };
@@ -204,7 +204,7 @@ export function DeityEdit() {
                 await Promise.all(
                     formData.raceIds.map(async (raceId) => {
                         try {
-                            const raceInfo = await getRaceNameById(raceId);
+                            const raceInfo = getRaceNameById(raceId);
                             names[raceId] = { name: raceInfo?.name || 'Unknown Race', type: 'race' };
                         } catch {
                             names[raceId] = { name: 'Unknown Race', type: 'race' };
@@ -241,7 +241,7 @@ export function DeityEdit() {
                 await Promise.all(
                     formData.domainIds.map(async (domainId) => {
                         try {
-                            const domainInfo = await getDomainNameById(domainId);
+                            const domainInfo = getDomainNameById(domainId);
                             names[domainId] = domainInfo?.name || 'Unknown Domain';
                         } catch {
                             names[domainId] = 'Unknown Domain';

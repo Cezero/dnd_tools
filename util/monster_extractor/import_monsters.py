@@ -823,67 +823,19 @@ class DatabaseConnection:
     def get_skill_subtype_id(self, skill_id: int, subtype_name: str) -> Optional[int]:
         """
         Get skill subtype ID by skill ID and subtype name.
-        Handles Knowledge, Craft, Perform, and Profession skills.
-        Uses hardcoded mappings based on static data enums.
+        Queries the SkillSubtype table in the database.
         """
-        # Get skill name from database
-        skill_query = "SELECT name FROM Skill WHERE id = %s"
-        skill_result = self.execute(skill_query, (skill_id,))
-        if not skill_result:
-            return None
-        
-        skill_name = skill_result[0]['name'].lower()
         subtype_lower = subtype_name.lower().strip()
         
-        # Knowledge skill subtypes (from KnowledgeSkill enum)
-        if skill_name == 'knowledge':
-            knowledge_subtypes = {
-                'arcana': 1,
-                'architecture and engineering': 2,
-                'dungeoneering': 3,
-                'geography': 4,
-                'history': 5,
-                'local': 6,
-                'nature': 7,
-                'nobility and royalty': 8,
-                'religion': 9,
-                'the planes': 10,
-            }
-            return knowledge_subtypes.get(subtype_lower)
+        # Query SkillSubtype table for matching subtype
+        subtype_query = """
+            SELECT id FROM SkillSubtype 
+            WHERE skillId = %s AND LOWER(name) = %s
+        """
+        subtype_result = self.execute(subtype_query, (skill_id, subtype_lower))
         
-        # Craft skill subtypes (from CraftSkill enum)
-        elif skill_name == 'craft':
-            craft_subtypes = {
-                'alchemy': 1,
-                'armorsmithing': 2,
-                'basketweaving': 3,
-                'bookbinding': 4,
-                'bowmaking': 5,
-                'blacksmithing': 6,
-                'calligraphy': 7,
-                'carpentry': 8,
-                'cobbling': 9,
-                'gemcutting': 10,
-                'glassblowing': 11,
-                'leatherworking': 12,
-                'locksmithing': 13,
-                'painting': 14,
-                'poisonmaking': 15,
-                'pottery': 16,
-                'sculpting': 17,
-                'shipmaking': 18,
-                'siege engines': 19,
-                'stonemasonry': 20,
-                'trapmaking': 21,
-                'tattooing': 22,
-                'weaponsmithing': 23,
-                'weaving': 24,
-            }
-            return craft_subtypes.get(subtype_lower)
-        
-        # Perform and Profession use custom subtypes (stored in notes, not as IDs)
-        elif skill_name in ['perform', 'profession']:
-            return None
+        if subtype_result:
+            return subtype_result[0]['id']
         
         return None
     

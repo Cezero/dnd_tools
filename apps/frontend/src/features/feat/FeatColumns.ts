@@ -49,25 +49,22 @@ export const FEAT_COLUMNS: ColumnDef<FeatWithFeatureInfo, unknown>[] = [
             const description = getValue() as string | null | undefined;
             const truncated = truncateAtFirstNewline(description);
             const featId = row.original.id;
-            return (
-                <ProcessMarkdown
-                    id= {`feat-description-${featId}`
-        }
-                    markdown={ truncated }
-        />
-            );
+            return React.createElement(ProcessMarkdown, {
+                id: `feat-description-${featId}`,
+                markdown: truncated
+            });
         },
     },
-{
-    accessorKey: 'summary',
+    {
+        accessorKey: 'summary',
         header: 'Summary',
-            enableResizing: true,
-                size: 200,
-                    meta: {
-        isMarkdown: true,
+        enableResizing: true,
+        size: 200,
+        meta: {
+            isMarkdown: true,
             truncate: 200,
         },
-},
+    },
     // Note: repeatable is not available in FeatWithFeatureInfo schema
     // If needed, we would need to add it to the schema
 ]; 

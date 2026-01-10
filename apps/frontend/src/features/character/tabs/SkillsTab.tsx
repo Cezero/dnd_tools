@@ -8,17 +8,13 @@ import type { SkillRank, TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { buildFormulaParams } from '@/lib/formatters/formula-utils';
 import type { FormattedSkill } from '@/lib/formatters/types';
+import { hasSubtypes, usesCustomSubtype, hasNoMaxRanks, getSkillSubtypes, getSkillSubtypeName as getSkillSubtypeNameUtil } from '@/lib/skill-utils';
+import { useCacheFunctions } from '@/services/cache';
 import type { FeatureProgression } from '@shared/schema';
 import {
-    SKILL_LIST,
     ABILITY_MAP,
     GetAbilityModifier,
     GetAbilityModifierString,
-    CRAFT_SKILL_MAP,
-    KNOWLEDGE_SKILL_MAP,
-    SkillSubType,
-    SKILL_SUB_TYPE_COMPATIBILITY,
-    Skill,
     AbilityId,
     EntityType,
     EntityAppliesToType,
@@ -37,6 +33,7 @@ export function SkillsTab({
     handleSkillRankUpdate
 }: TabComponentProps): React.JSX.Element {
     const queryClient = useQueryClient();
+    const { getClassNameFromCache, getRaceNameFromCache, getSkillNameById, getSkillSelectFull } = useCacheFunctions();
 
     // Use shared data instead of fetching
     const classDetails = useMemo(() => ({
@@ -123,17 +120,10 @@ export function SkillsTab({
 
     // Get skill subtype name for display
     const getSkillSubtypeName = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): string => {
-        if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19) && skillSubId) {
-            if (skillId === 6) { // Skill.Craft
-                const craftSubtype = CRAFT_SKILL_MAP[skillSubId as keyof typeof CRAFT_SKILL_MAP];
-                return craftSubtype ? craftSubtype.name : '';
-            }
-            if (skillId === 19) { // Skill.Knowledge
-                const knowledgeSubtype = KNOWLEDGE_SKILL_MAP[skillSubId as keyof typeof KNOWLEDGE_SKILL_MAP];
-                return knowledgeSubtype ? knowledgeSubtype.name : '';
-            }
+        if (hasSubtypes(skillId) && skillSubId !== null && skillSubId !== undefined) {
+            return getSkillSubtypeNameUtil(skillId, skillSubId);
         }
-        if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33) && customSubtype && customSubtype !== '__placeholder__') {
+        if (usesCustomSubtype(skillId) && customSubtype && customSubtype !== '__placeholder__') {
             return customSubtype;
         }
         return '';
@@ -141,8 +131,7 @@ export function SkillsTab({
 
     // Check if a skill needs custom subtypes
     const skillNeedsCustomSubtype = useCallback((skillId: number): boolean => {
-        return SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19) ||
-            SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33);
+        return hasSubtypes(skillId) || usesCustomSubtype(skillId);
     }, []);
 
     // Get all skill entries for a skill (including subtypes)
@@ -152,18 +141,24 @@ export function SkillsTab({
 
     // Get source name from a feature progression
     const getProgressionSourceName = (progression: FeatureProgression): string => {
-        if (progression.class?.name) {
-            return progression.class.name;
+        if (progression.classId) {
+            const className = sharedData.classDetailsMap.get(progression.classId)?.name || getClassNameFromCache(progression.classId);
+            if (className) {
+                return className;
+            }
         }
-        if (progression.raceId && state.raceId === progression.raceId && raceDetails) {
-            return raceDetails.name;
+        if (progression.raceId && state.raceId === progression.raceId) {
+            const raceName = raceDetails?.name || (state.raceId ? getRaceNameFromCache(state.raceId) : undefined);
+            if (raceName) {
+                return raceName;
+            }
         }
         // Fallback to source type name
         if (progression.sourceType === FeatureSourceType.Race) {
-            return raceDetails?.name || 'Race';
+            return raceDetails?.name || (state.raceId ? getRaceNameFromCache(state.raceId) || 'Race' : 'Race');
         }
         if (progression.sourceType === FeatureSourceType.Class) {
-            return progression.class?.name || 'Class';
+            return progression.classId ? (sharedData.classDetailsMap.get(progression.classId)?.name || getClassNameFromCache(progression.classId) || 'Class') : 'Class';
         }
         return 'Unknown Source';
     };
@@ -297,8 +292,8 @@ export function SkillsTab({
 
     // Get maximum ranks allowed for a skill
     const getMaxRanks = (skillId: number, skillSubId?: number | null): number => {
-        // Speak Language has no max rank limit
-        if (skillId === Skill.SpeakLanguage) {
+        // Skills with no max rank limit (e.g., Speak Language)
+        if (hasNoMaxRanks(skillId)) {
             return Infinity;
         }
 
@@ -314,7 +309,7 @@ export function SkillsTab({
 
     // Handle skill rank change
     const handleSkillChange = (skillId: number, newRanks: number, skillSubId?: number | null, customSubtype?: string | null, entryId?: string) => {
-        const skill = SKILL_LIST.find(s => s.id === skillId);
+        const skill = getSkillNameById(skillId);
         if (!skill) return;
 
         const maxRanks = getMaxRanks(skillId, skillSubId);
@@ -448,7 +443,7 @@ export function SkillsTab({
 
     // Handle skill increment/decrement
     const handleSkillIncrement = (skillId: number, increment: boolean, skillSubId?: number | null, customSubtype?: string | null, entryId?: string) => {
-        const skill = SKILL_LIST.find(s => s.id === skillId);
+        const skill = getSkillNameById(skillId);
         if (!skill) return;
 
         const isClassSkill = isSkillClassSkill(skillId, skillSubId);
@@ -475,7 +470,7 @@ export function SkillsTab({
 
     // Get total skill bonus (ranks + ability modifier + feature bonuses) from formatted character
     const getSkillTotal = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number | null => {
-        const skill = SKILL_LIST.find(s => s.id === skillId);
+        const skill = getSkillNameById(skillId);
         if (!skill) return 0;
 
         // Check if this is an analog skill
@@ -523,7 +518,7 @@ export function SkillsTab({
         }
 
         // Fallback to manual calculation
-        const skill = SKILL_LIST.find(s => s.id === skillId);
+        const skill = getSkillNameById(skillId);
         if (!skill || skill.abilityId === 0) return '';
         const abilityScore = getAbilityScore(skill.abilityId);
         return `${ABILITY_MAP[skill.abilityId]?.abbreviation} ${GetAbilityModifierString(abilityScore)}`;
@@ -554,7 +549,7 @@ export function SkillsTab({
 
     // Get skills that can be allocated points (exclude analog skills)
     const getAllocatableSkills = () => {
-        return SKILL_LIST.filter(skill => !AnalogSkillService.isAnalogSkill(skill.id, queryClient));
+        return getSkillSelectFull().filter(skill => !AnalogSkillService.isAnalogSkill(skill.id, queryClient));
     };
 
     // Generate skill rows for rendering (handles custom subtypes)
@@ -774,7 +769,7 @@ export function SkillsTab({
             };
         }, []);
 
-        const skill = SKILL_LIST.find(s => s.id === skillId);
+        const skill = getSkillNameById(skillId);
         if (!skill) return <></>;
 
         const isAnalogSkill = AnalogSkillService.isAnalogSkill(skillId, queryClient);
@@ -787,7 +782,8 @@ export function SkillsTab({
         const miscBonus = getMiscBonus(skillId, skillSubId, customSubtype);
         const breakdownComponents = getBreakdownComponents(skillId, skillSubId, customSubtype);
 
-        // Get skill name with subtype
+        // Get skill name with subtype - always build it to ensure subtypes are displayed correctly
+        // This preserves the special display logic for placeholder and missing subtypes
         const skillName = getSkillSubtypeName(skillId, skillSubId, customSubtype);
         let displayName = skill.name;
 
@@ -806,7 +802,7 @@ export function SkillsTab({
             if (!skillNeedsCustomSubtype(skillId) || !skillNameRef.current) return;
 
             // Show text input for Perform/Profession skills (custom subtypes)
-            if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33)) {
+            if (usesCustomSubtype(skillId)) {
                 // Calculate position of the skill name element
                 const rect = skillNameRef.current.getBoundingClientRect();
                 setInputPosition({
@@ -818,7 +814,7 @@ export function SkillsTab({
                 setEditingSubtype(true);
                 // If it's a placeholder, show empty string in input, otherwise show the actual value
                 setEditValue(customSubtype === '__placeholder__' ? '' : (customSubtype || ''));
-            } else if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19)) {
+            } else if (hasSubtypes(skillId)) {
                 // Show CustomSelect for Craft/Knowledge skills
                 const rect = skillNameRef.current.getBoundingClientRect();
                 setInputPosition({
@@ -932,22 +928,13 @@ export function SkillsTab({
 
         // Get subtype options for Craft/Knowledge skills
         const getSubtypeOptions = () => {
-            if (skillId === 6) { // Craft
-                return Object.entries(CRAFT_SKILL_MAP).map(([id, craft]) => {
-                    const subtypeId = parseInt(id);
-                    const isClassSkill = isSkillClassSkill(skillId, subtypeId);
+            if (hasSubtypes(skillId)) {
+                const subtypes = getSkillSubtypes(skillId);
+                return subtypes.map(subtype => {
+                    const isClassSkill = isSkillClassSkill(skillId, subtype.id);
                     return {
-                        id: subtypeId,
-                        name: `${craft.name}${isClassSkill ? ' (c)' : ''}`
-                    };
-                });
-            } else if (skillId === 19) { // Knowledge
-                return Object.entries(KNOWLEDGE_SKILL_MAP).map(([id, knowledge]) => {
-                    const subtypeId = parseInt(id);
-                    const isClassSkill = isSkillClassSkill(skillId, subtypeId);
-                    return {
-                        id: subtypeId,
-                        name: `${knowledge.name}${isClassSkill ? ' (c)' : ''}`
+                        id: subtype.id,
+                        name: `${subtype.name}${isClassSkill ? ' (c)' : ''}`
                     };
                 });
             }

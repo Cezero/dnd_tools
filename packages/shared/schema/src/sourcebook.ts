@@ -41,10 +41,7 @@ export const SourceBookWithSpellsSchema = SourceBookSchema.extend({
 export const SourceMapSchema = z.object({
     sourceBookId: z.number().int().nonnegative('Source Book ID must be a positive integer'),
     pageNumber: z.number().int().nonnegative('Page number must be a positive integer').nullable(),
-    sourceBook: z.object({
-        id: z.number().int().positive('Source book ID must be a positive integer'),
-        abbreviation: z.string().min(1, 'Abbreviation is required'),
-    }).nullable().optional(),
+    // sourceBook object removed - frontend should resolve sourcebook names/abbreviations from sourcebooks-cache
 });
 
 export const SourceBookIdParamSchema = z.object({

@@ -3,11 +3,11 @@ import React, { useMemo, useState, useEffect } from 'react';
 
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { ItemWithDetails, FeatInQueryResponse } from '@shared/schema';
 import { ITEM_TYPE_ENUM, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
-import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
 
 import { FeatSubIdSelectionModal } from '../components/FeatSubIdSelectionModal';
 

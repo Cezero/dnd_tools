@@ -1,5 +1,6 @@
 import type { ItemWithDetails, CharacterItem } from '@shared/schema';
 import { WEAPON_TYPE_ENUM } from '@shared/static-data';
+
 import type { ItemBonus } from '../types';
 
 /**

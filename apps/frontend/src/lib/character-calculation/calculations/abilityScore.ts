@@ -1,9 +1,10 @@
 import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, EntityAppliesToType } from '@shared/static-data';
+
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
-import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 import type { CalculationResult, BreakdownMap, TypedBreakdownComponent } from '../types';
+import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 
 /**
  * Breakdown map for ability score

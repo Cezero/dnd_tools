@@ -4,7 +4,6 @@ import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
-
 import type {
     Feat,
     FeatCacheResponse,
@@ -90,7 +89,7 @@ export async function precacheFeature(
 
 /**
  * Precaches a spell if it's not already in cache.
- * Spells are typically cached via CacheQueryHooks.useSpellsCache, so we fetch the cache if needed.
+ * Spells are pre-loaded by CacheProvider on app startup, so this is typically only needed for edge cases.
  */
 export async function precacheSpell(
     queryClient: QueryClient,
@@ -125,7 +124,7 @@ export async function precacheSpell(
 
 /**
  * Precaches a domain if it's not already in cache.
- * Domains are typically cached via CacheQueryHooks.useDomainsCache, so we fetch the cache if needed.
+ * Domains are pre-loaded by CacheProvider on app startup, so this is typically only needed for edge cases.
  */
 export async function precacheDomain(
     queryClient: QueryClient,
@@ -194,7 +193,7 @@ export async function precacheClass(
 
 /**
  * Precaches a skill if it's not already in cache.
- * Skills are typically cached via CacheQueryHooks.useSkillsCache, so we fetch the cache if needed.
+ * Skills are pre-loaded by CacheProvider on app startup, so this is typically only needed for edge cases.
  */
 export async function precacheSkill(
     queryClient: QueryClient,
@@ -229,7 +228,7 @@ export async function precacheSkill(
 
 /**
  * Precaches a race if it's not already in cache.
- * Races are typically cached via CacheQueryHooks.useRacesCache, so we fetch the cache if needed.
+ * Races are pre-loaded by CacheProvider on app startup, so this is typically only needed for edge cases.
  */
 export async function precacheRace(
     queryClient: QueryClient,

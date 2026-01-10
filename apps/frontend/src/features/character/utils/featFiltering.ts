@@ -1,8 +1,9 @@
-import type { TabComponentProps } from '../types';
-import type { FeatInQueryResponse, Feat, CharacterWithAllDetailsResponse, FeaturePrerequisite, FeatureProgression } from '@shared/schema';
-import { meetsPrerequisites, getCharacterBAB } from '@/lib/characterUtils';
 import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
+import { meetsPrerequisites, getCharacterBAB } from '@/lib/characterUtils';
+import type { FeatInQueryResponse, Feat, CharacterWithAllDetailsResponse, FeaturePrerequisite, FeatureProgression } from '@shared/schema';
 import { EntityType, EntityAppliesToType } from '@shared/static-data';
+
+import type { TabComponentProps } from '../types';
 
 /**
  * Filter feats based on character qualifications and prerequisites

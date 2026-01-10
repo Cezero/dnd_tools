@@ -1,5 +1,4 @@
 import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
-
 import type { CharacterWithAllDetailsResponse, FeatureProgression, Feature } from '@shared/schema';
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 

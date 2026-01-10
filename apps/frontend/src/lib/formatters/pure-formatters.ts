@@ -115,7 +115,7 @@ export class FeatFormatter implements BaseFormatter {
         // Use cache helper to get feat name
         const featId = modifier.appliesToId;
         if (featId) {
-            const cachedName = getFeatNameFromCache(context?.queryClient, featId);
+            const cachedName = getFeatNameFromCache(featId);
             if (cachedName) {
                 return cachedName;
             }
@@ -138,7 +138,7 @@ export class DomainFormatter implements BaseFormatter {
         // Priority 2: Use cache helper
         const domainId = modifier.appliesToId;
         if (domainId) {
-            const cachedName = getDomainNameFromCache(context?.queryClient, domainId);
+            const cachedName = getDomainNameFromCache(domainId);
             if (cachedName) {
                 return cachedName;
             }
@@ -160,8 +160,8 @@ export class SpellFormatter implements BaseFormatter {
 
         // Priority 2: Use cache helper
         const spellId = modifier.appliesToId;
-        if (spellId && context?.queryClient) {
-            const cachedName = getSpellNameFromCache(context.queryClient, spellId);
+        if (spellId) {
+            const cachedName = getSpellNameFromCache(spellId);
             if (cachedName) {
                 return cachedName;
             }
@@ -314,7 +314,7 @@ export class FeatureEntityFormatter implements BaseFormatter {
     private getFeatName(choice: CalculatedEntity, context?: DisplayContext): string {
         // Use cache helper to get feat name
         if (choice.appliesToId) {
-            const cachedName = getFeatNameFromCache(context?.queryClient, choice.appliesToId);
+            const cachedName = getFeatNameFromCache(choice.appliesToId);
             if (cachedName) {
                 return cachedName;
             }
@@ -337,7 +337,7 @@ export class FeatureEntityFormatter implements BaseFormatter {
 
         // Priority 2: Use cache helper
         if (choice.appliesToId) {
-            const cachedName = getDomainNameFromCache(context?.queryClient, choice.appliesToId);
+            const cachedName = getDomainNameFromCache(choice.appliesToId);
             if (cachedName) {
                 return cachedName;
             }
@@ -360,7 +360,7 @@ export class FeatureEntityFormatter implements BaseFormatter {
 
         // Priority 2: Use cache helper
         if (choice.appliesToId) {
-            const cachedName = getFeatureNameFromCache(context?.queryClient, choice.appliesToId);
+            const cachedName = getFeatureNameFromCache(choice.appliesToId);
             if (cachedName) {
                 return cachedName;
             }
@@ -589,7 +589,7 @@ export class SpellbookSpellFormatter implements BaseFormatter {
             }
 
             // Priority 2: Use cache helper
-            const cachedName = getSpellNameFromCache(context?.queryClient, modifier.appliesToSubId);
+            const cachedName = getSpellNameFromCache(modifier.appliesToSubId);
             if (cachedName) {
                 return cachedName;
             }
@@ -750,16 +750,9 @@ export class PrerequisiteFormatter implements BaseFormatter {
 
         switch (prereqType) {
             case FeaturePrerequisiteType.SkillRanks: {
-                // Priority 1: Use cache helper
+                // Use cache helper
                 if (appliesToId) {
-                    const skillName = getSkillNameFromCache(context?.queryClient, appliesToId);
-                    if (skillName) {
-                        return `${skillName} ${minValue} ranks`;
-                    }
-                }
-                // Priority 2: Use cache if available, otherwise fallback
-                if (appliesToId && context?.queryClient) {
-                    const skillName = getSkillNameFromCache(context.queryClient, appliesToId);
+                    const skillName = getSkillNameFromCache(appliesToId);
                     if (skillName) {
                         return `${skillName} ${minValue} ranks`;
                     }
@@ -776,7 +769,7 @@ export class PrerequisiteFormatter implements BaseFormatter {
             case FeaturePrerequisiteType.ClassLevel: {
                 // If appliesToId is set and not -1, it's a class-specific level requirement
                 if (appliesToId && appliesToId !== -1) {
-                    const className = getClassNameFromCache(context?.queryClient, appliesToId);
+                    const className = getClassNameFromCache(appliesToId);
                     if (className) {
                         return `${className} Level ${minValue}+`;
                     }
@@ -789,7 +782,7 @@ export class PrerequisiteFormatter implements BaseFormatter {
             case FeaturePrerequisiteType.Feat: {
                 // Priority 1: Use cache helper
                 if (appliesToId) {
-                    const featName = getFeatNameFromCache(context?.queryClient, appliesToId);
+                    const featName = getFeatNameFromCache(appliesToId);
                     if (featName) {
                         return `Feat: ${featName}`;
                     }
@@ -800,7 +793,7 @@ export class PrerequisiteFormatter implements BaseFormatter {
             case FeaturePrerequisiteType.ClassFeature: {
                 // Priority 1: Use cache helper
                 if (appliesToId) {
-                    const featureName = getFeatureNameFromCache(context?.queryClient, appliesToId);
+                    const featureName = getFeatureNameFromCache(appliesToId);
                     if (featureName) {
                         return `Feature: ${featureName}`;
                     }

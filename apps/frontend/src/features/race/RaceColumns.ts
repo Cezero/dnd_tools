@@ -28,7 +28,7 @@ function AsyncClassName({ classId }: AsyncClassNameProps): React.JSX.Element {
     useEffect(() => {
         const loadClassName = async () => {
             try {
-                const classItem = await getClassNameById(classId);
+                const classItem = getClassNameById(classId);
                 if (classItem) {
                     setDisplay(classItem.name);
                 } else {

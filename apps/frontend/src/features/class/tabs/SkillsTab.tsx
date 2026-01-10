@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect } from 'react';
 
@@ -7,12 +6,11 @@ import { CustomNestedContextSelect, type NestedSelectOption } from '@/components
 import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
 import { NumericIdMapping } from '@/lib/numeric-id-mapping';
-import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
-import { getSkillNameFromCache } from '@/services/cache/IdMapHelpers';
+import { useCacheFunctions } from '@/services/cache';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
+import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { GetSkillResponse, FeatureProgression } from '@shared/schema';
 import {
-    SKILL_LIST,
     ABILITY_MAP,
     SpecialFeatureId,
     EntityAppliesToType,
@@ -32,7 +30,7 @@ export function SkillsTab({
     onRemoveSkill: _onRemoveSkill,
     classId = 1
 }: ClassTabProps): React.JSX.Element {
-    const queryClient = useQueryClient();
+    const { getSkillNameFromCache, getSkillSelectFull } = useCacheFunctions();
     const [skillDetails, setSkillDetails] = useState<Record<number, GetSkillResponse>>({});
     const [loadingSkills, setLoadingSkills] = useState<Set<number>>(new Set());
 
@@ -98,7 +96,7 @@ export function SkillsTab({
         const options: NestedSelectOption<SkillDetail>[] = [];
 
         // Get all skills that aren't fully added yet
-        const availableSkills = SKILL_LIST.filter(skill => {
+        const availableSkills = getSkillSelectFull().filter(skill => {
             const skillId = skill.id;
             const subtypes = getAppliesToSubIdSelectOptions(EntityAppliesToType.Skill, skillId);
 
@@ -195,8 +193,8 @@ export function SkillsTab({
                         )
                         .sort((a, b) => {
                             // Sort by skill name first, then by subtype
-                            const skillAName = getSkillNameFromCache(queryClient, a.skillId) || '';
-                            const skillBName = getSkillNameFromCache(queryClient, b.skillId) || '';
+                            const skillAName = getSkillNameFromCache(a.skillId) || '';
+                            const skillBName = getSkillNameFromCache(b.skillId) || '';
 
                             if (!skillAName || !skillBName) return 0;
 
@@ -224,7 +222,7 @@ export function SkillsTab({
                         return (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                                 {classSkillEntries.map((entry) => {
-                                    const skillName = getSkillNameFromCache(queryClient, entry.skillId);
+                                    const skillName = getSkillNameFromCache(entry.skillId);
                                     const skillDetail = skillDetails[entry.skillId];
                                     const isLoading = loadingSkills.has(entry.skillId);
 

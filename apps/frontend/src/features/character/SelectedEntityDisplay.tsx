@@ -2,14 +2,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
-import { DomainDisplay } from '@/features/domain/DomainDisplay';
-import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import { EntityLink } from '@/components/entity-link';
+import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
+import { DomainDisplay } from '@/features/domain/DomainDisplay';
+import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
-import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import type { Domain, GetSpellResponse, GetFeatureResponse, GetCompanionResponse, FeatureProgression } from '@shared/schema';
 import { FeatSchema } from '@shared/schema';
 import { EntityAppliesToType, COMPANION_TYPE_MAP, SpecialFeatureId, FeatureSourceType } from '@shared/static-data';

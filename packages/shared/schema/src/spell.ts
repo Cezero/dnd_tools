@@ -86,7 +86,6 @@ export const SpellCacheSchema = SpellSchema.omit({
     componentIds: true,
     sourceBookInfo: true,
     levelMapping: true,
-    summary: true,
     description: true,
     castingTime: true,
     range: true,
@@ -99,6 +98,7 @@ export const SpellCacheSchema = SpellSchema.omit({
     effect: true,
     target: true,
     // baseLevel is now included in cache for filtering by spell level
+    // summary is included in cache for domain spell display and other use cases
 });
 
 export const SpellCacheResponseSchema = QueryResponseSchema.extend({

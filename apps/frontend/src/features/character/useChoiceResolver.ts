@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 
-import { useCacheFunctions } from '@/services/cache';
+import { getClassNameFromCache, getDomainSelectByEdition } from '@/services/cache';
 import { FeatureProgression, FeatureEntity } from '@shared/schema';
-import { EntityType, EntityAppliesToType, CoreComponent, ENTITY_APPLIES_TO_TYPES } from '@shared/static-data';
+import { EntityType, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES } from '@shared/static-data';
 
 import type { PendingChoice, ChoiceOption } from './types';
 
@@ -10,19 +10,17 @@ import type { PendingChoice, ChoiceOption } from './types';
  * React hook for resolving character choices
  */
 export function useChoiceResolver() {
-    const { getClassNameById, getDomainSelectByEdition } = useCacheFunctions();
-
     /**
      * Identify pending choices from feature progressions
      */
-    const identifyPendingChoices = useCallback(async (progressions: FeatureProgression[], editionId?: number): Promise<PendingChoice[]> => {
+    const identifyPendingChoices = useCallback((progressions: FeatureProgression[], editionId?: number): PendingChoice[] => {
         const choices: PendingChoice[] = [];
 
         for (const progression of progressions) {
             if (progression.entities) {
                 for (const entity of progression.entities) {
                     if (entity.type === EntityType.Choice) {
-                        const choice = await createPendingChoice(entity, progression, { getClassNameById, getDomainSelectByEdition }, editionId);
+                        const choice = createPendingChoice(entity, progression, editionId);
                         if (choice) {
                             choices.push(choice);
                         }
@@ -32,7 +30,7 @@ export function useChoiceResolver() {
         }
 
         return choices;
-    }, [getClassNameById, getDomainSelectByEdition]);
+    }, []);
 
     return { identifyPendingChoices };
 }
@@ -40,12 +38,11 @@ export function useChoiceResolver() {
 /**
  * Create a pending choice from a choice entity
  */
-async function createPendingChoice(
+function createPendingChoice(
     entity: FeatureEntity,
     progression: FeatureProgression,
-    cacheService: { getClassNameById: (id: number) => Promise<CoreComponent | undefined>; getDomainSelectByEdition: (editionId: number) => Promise<CoreComponent[]> },
     editionId?: number
-): Promise<PendingChoice | null> {
+): PendingChoice | null {
     if (!entity.appliesTo) {
         return null;
     }
@@ -70,10 +67,10 @@ async function createPendingChoice(
     // Generate options based on appliesTo type
     switch (entity.appliesTo) {
         case EntityAppliesToType.Feat:
-            choice.options = generateFeatOptions(entity, cacheService);
+            choice.options = generateFeatOptions(entity);
             break;
         case EntityAppliesToType.Domain:
-            choice.options = await generateDomainOptions(entity, cacheService, editionId);
+            choice.options = generateDomainOptions(entity, editionId);
             break;
         case EntityAppliesToType.Skill:
             choice.options = generateSkillOptions(entity);
@@ -102,10 +99,7 @@ async function createPendingChoice(
 /**
  * Generate feat options for a choice
  */
-function generateFeatOptions(
-    _entity: FeatureEntity,
-    _cacheService: { getClassNameById: (id: number) => CoreComponent | undefined; getDomainSelectByEdition: (editionId: number) => CoreComponent[] }
-): ChoiceOption[] {
+function generateFeatOptions(_entity: FeatureEntity): ChoiceOption[] {
     // TODO: Implement feat options generation
     // This would need to query available feats based on prerequisites
     return [
@@ -117,16 +111,15 @@ function generateFeatOptions(
 /**
  * Generate domain options for a choice
  */
-async function generateDomainOptions(
+function generateDomainOptions(
     entity: FeatureEntity,
-    cacheService: { getClassNameById: (id: number) => CoreComponent | undefined; getDomainSelectByEdition: (editionId: number) => CoreComponent[] },
     editionId?: number
-): Promise<ChoiceOption[]> {
+): ChoiceOption[] {
     if (!editionId) {
         return [];
     }
 
-    const domains = await cacheService.getDomainSelectByEdition(editionId);
+    const domains = getDomainSelectByEdition(editionId);
     return domains.map(domain => ({
         id: domain.id.toString(),
         name: domain.name,
@@ -182,8 +175,11 @@ function generateGenericOptions(_entity: FeatureEntity): ChoiceOption[] {
  * Get source name for a progression
  */
 function getSourceName(progression: FeatureProgression): string {
-    if (progression.class?.name) {
-        return progression.class.name;
+    if (progression.classId) {
+        const className = getClassNameFromCache(progression.classId);
+        if (className) {
+            return className;
+        }
     }
     if (progression.feature?.name) {
         return progression.feature.name;

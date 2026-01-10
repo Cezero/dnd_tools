@@ -49,7 +49,6 @@ type CacheEntry = {
     error?: MarkdownCacheError;
 };
 
-import type { QueryClient } from '@tanstack/react-query';
 
 interface MarkdownComponentProps {
     markdown: string;

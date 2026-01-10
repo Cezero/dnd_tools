@@ -13,7 +13,7 @@ import {
     getRaceIdByName,
     getDomainIdByName,
     getDeityIdByName,
-} from '@/services/cache/IdMapHelpers';
+} from '@/services/cache';
 
 
 import { embedReactComponent } from './embedReactComponent';
@@ -23,37 +23,35 @@ export function createEntityLink(type: string, rawValue: string, options?: Markd
     const entityType = type.toLowerCase();
     let id: number | undefined;
 
-    // Use cache-based lookup if queryClient is available
-    if (options?.queryClient) {
-        switch (entityType) {
-            case 'monster':
-                id = getMonsterIdByName(options.queryClient, rawValue);
-                break;
-            case 'spell':
-                id = getSpellIdByName(options.queryClient, rawValue);
-                break;
-            case 'feat':
-                id = getFeatIdByName(options.queryClient, rawValue);
-                break;
-            case 'item':
-                id = getItemIdByName(options.queryClient, rawValue);
-                break;
-            case 'class':
-                id = getClassIdByName(options.queryClient, rawValue);
-                break;
-            case 'race':
-                id = getRaceIdByName(options.queryClient, rawValue);
-                break;
-            case 'domain':
-                id = getDomainIdByName(options.queryClient, rawValue);
-                break;
-            case 'deity':
-                id = getDeityIdByName(options.queryClient, rawValue);
-                break;
-            default:
-                // Unknown entity type, id remains undefined
-                break;
-        }
+    // Use cache-based lookup (functions use centralized accessor internally)
+    switch (entityType) {
+        case 'monster':
+            id = getMonsterIdByName(rawValue);
+            break;
+        case 'spell':
+            id = getSpellIdByName(rawValue);
+            break;
+        case 'feat':
+            id = getFeatIdByName(rawValue);
+            break;
+        case 'item':
+            id = getItemIdByName(rawValue);
+            break;
+        case 'class':
+            id = getClassIdByName(rawValue);
+            break;
+        case 'race':
+            id = getRaceIdByName(rawValue);
+            break;
+        case 'domain':
+            id = getDomainIdByName(rawValue);
+            break;
+        case 'deity':
+            id = getDeityIdByName(rawValue);
+            break;
+        default:
+            // Unknown entity type, id remains undefined
+            break;
     }
 
     const href = id ? `/${entityType}s/${id}` : undefined;

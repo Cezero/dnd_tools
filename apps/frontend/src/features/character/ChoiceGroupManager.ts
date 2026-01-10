@@ -1,4 +1,5 @@
 import type { CharacterFeatureChoice, FeatureProgression, FeatureEntity } from '@shared/schema';
+
 import type { PendingChoice } from './types';
 
 /**

@@ -1,16 +1,17 @@
-import { useState, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useMemo } from 'react';
 
+import type { ResolutionContext, PendingChoice } from '@/features/character/types';
+import { displayStrategyFactory } from '@/lib/formatters';
+import type { FormattedCharacterResult, DisplayResult } from '@/lib/formatters/types';
+import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
 import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
-import { displayStrategyFactory } from '@/lib/formatters';
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { CharacterWithAllDetailsResponse, FeatureProgression, DnDClass, Race, ItemWithDetails, Feat } from '@shared/schema';
 import { DisplayType } from '@shared/static-data';
-import type { FormattedCharacterResult, DisplayResult } from '@/lib/formatters/types';
-import type { ResolutionContext, PendingChoice } from '@/features/character/types';
+
 import type { CharacterExplorerData } from './types';
 
 export function useCharacterExplorerData(characterId: number | null, selectedDisplayType: DisplayType = DisplayType.CharacterSheet): CharacterExplorerData {
@@ -251,7 +252,7 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
 
         try {
             const strategy = displayStrategyFactory.createStrategy(selectedDisplayType);
-            return strategy.format(resolvedProgressions, { queryClient });
+            return strategy.format(resolvedProgressions);
         } catch (err) {
             console.error('Error formatting display result:', err);
             return null;

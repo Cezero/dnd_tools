@@ -1,5 +1,40 @@
+/**
+ * Character Service - Central service for all character management operations.
+ * 
+ * This service provides comprehensive character management capabilities including:
+ * - Character CRUD operations (create, read, update, delete)
+ * - Character advancement and level progression management
+ * - Ability score management and calculations
+ * - Spell preparation and spell known management
+ * - Character attack definition management
+ * - Character disallowed source management
+ * - Integration with character resolution system for feature resolution
+ * - Integration with spell system for spell operations
+ * 
+ * Architecture Decisions:
+ * - Service-Oriented: All character operations flow through this service, ensuring
+ *   consistency and proper transaction handling
+ * - Integration Points: Integrates with character resolution, spell, class, and race
+ *   services to provide complete character functionality
+ * - Transaction Safety: Uses Prisma transactions for multi-table operations to ensure
+ *   data consistency
+ * - Gestalt Support: Handles both single-class and gestalt (dual-class) characters
+ *   with proper level calculation and display
+ * 
+ * Usage Pattern:
+ * Controllers call service methods which handle all business logic, database operations,
+ * and cross-service integration. The service ensures data consistency and proper error
+ * handling throughout.
+ * 
+ * Source File: `apps/backend/src/features/character/characterService.ts`
+ * 
+ * @see CharacterService interface for method signatures
+ * @see characterController for HTTP request handling
+ * @see characterRoutes for API endpoint definitions
+ */
+
 import { PrismaClient } from '@shared/prisma-client';
-import {
+import type {
     CharacterIdParamRequest,
     Character,
     CreateCharacterRequest,
@@ -29,6 +64,7 @@ import {
     Spell,
     AddSpellKnownResponse,
     RemoveSpellKnownResponse,
+    FeatureProgression,
 } from '@shared/schema';
 import { EditionId, ARMOR_CATEGORY_ENUM, EntityAppliesToType, EntityType } from '@shared/static-data';
 import {
@@ -40,30 +76,65 @@ import {
     type GestaltStats
 } from '@shared/utils';
 
-import { spellService } from '../spell';
-import { ResolvedFeatureService } from '../characterResolution/resolvedFeatureService';
+import { buildCharacterEditState } from '../characterResolution/characterEditStateBuilder';
 import { CharacterResolutionService } from '../characterResolution/characterResolutionService';
 import { CharacterSessionService } from '../characterResolution/characterSessionService';
-import { raceService } from '../race/raceService';
+import { ResolvedFeatureService } from '../characterResolution/resolvedFeatureService';
+import type { ResolutionContext, UserChoices } from '../characterResolution/types';
 import { classService } from '../class/classService';
+import { raceService } from '../race/raceService';
+import { spellService } from '../spell';
 import type { CharacterService } from './types';
-import type { FeatureProgression } from '@shared/schema';
-import type { ResolutionContext, UserChoices, CharacterEditState } from '../characterResolution/types';
 
 const prisma = new PrismaClient();
 
+/**
+ * Character service implementation providing all character management operations.
+ * 
+ * This service object implements the CharacterService interface and provides
+ * all methods for character CRUD, advancement, ability scores, spells, and
+ * related operations.
+ */
 export const characterService: CharacterService = {
+    /**
+     * Retrieves all characters for a specific user with race information and class/level strings.
+     * 
+     * Architecture Decision: Calculates character level and class/level strings on the fly
+     * rather than storing them, ensuring they're always current based on advancements.
+     * 
+     * @param userId - The user ID to retrieve characters for
+     * @returns Promise resolving to GetAllCharactersResponse with total count and character array
+     * 
+     * @example
+     * ```typescript
+     * const result = await characterService.getAllCharacters(userId);
+     * // result.total = 5
+     * // result.results = [{ id: 1, name: "Gandalf", characterLevel: 10, classLevelString: "Wiz 10", ... }, ...]
+     * ```
+     */
+    /**
+     * Retrieves all characters for a specific user with race information and class/level strings.
+     * 
+     * Design Decision: Lightweight Schema Pattern
+     * - Returns only raceId, not nested race object
+     * - Frontend resolves race names from pre-populated races-cache
+     * - Class abbreviations are selected for classLevelString calculation but not included in response
+     * - Reduces payload size and ensures consistent data resolution
+     * 
+     * Architecture Decision: Calculates character level and class/level strings on the fly
+     * rather than storing them, ensuring they're always current based on advancements.
+     * 
+     * @param userId - The user ID to retrieve characters for
+     * @returns Promise resolving to GetAllCharactersResponse with total count and character array
+     * 
+     * @see [Cache-Based ID Maps](../../../../shared/docs/application-overview/cache-based-id-maps.md)
+     * @see [Lightweight Schema Pattern](../../../../shared/docs/application-overview/validation-schemas.md#lightweight-response-schemas)
+     */
     async getAllCharacters(userId: number): Promise<GetAllCharactersResponse> {
         const [characters, total] = await Promise.all([
             prisma.userCharacter.findMany({
                 where: { userId },
                 include: {
-                    race: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
                     advancements: {
                         include: {
                             class: {
@@ -123,8 +194,15 @@ export const characterService: CharacterService = {
                 classLevelString = parts.join('/');
             }
 
+            // Remove nested objects from response (class abbreviations used only for calculation)
+            const advancementsWithoutNested = advancements.map(adv => {
+                const { class: _class, secondaryClass: _secondaryClass, ...advWithoutNested } = adv;
+                return advWithoutNested;
+            });
+
             return {
                 ...character,
+                advancements: advancementsWithoutNested,
                 characterLevel,
                 classLevelString,
             };
@@ -136,6 +214,14 @@ export const characterService: CharacterService = {
         };
     },
 
+    /**
+     * Retrieves all characters for admin users with user information included.
+     * 
+     * Architecture Decision: Separate admin method includes user information for
+     * administrative oversight, while regular getAllCharacters only includes character data.
+     * 
+     * @returns Promise resolving to GetAllCharactersResponse with all characters and user info
+     */
     async getAllCharactersAdmin(): Promise<GetAllCharactersResponse> {
         const [characters, total] = await Promise.all([
             prisma.userCharacter.findMany({
@@ -222,6 +308,15 @@ export const characterService: CharacterService = {
         };
     },
 
+    /**
+     * Retrieves a character by ID with basic information including race and deity.
+     * 
+     * Architecture Decision: Returns basic character data for list views and simple
+     * operations. Use getCharacterWithAllDetails for complete character data.
+     * 
+     * @param query - CharacterIdParamRequest with character ID
+     * @returns Promise resolving to Character object or null if not found
+     */
     async getCharacterById(query: CharacterIdParamRequest): Promise<Character | null> {
         const character = await prisma.userCharacter.findUnique({
             where: { id: query.id },
@@ -244,24 +339,39 @@ export const characterService: CharacterService = {
         return character as Character;
     },
 
+    /**
+     * Retrieves a character with all related details including advancements, ability scores,
+     * spell preparations, attack definitions, and disallowed sources.
+     * 
+     * Architecture Decision: Loads all related data in a single query for complete character
+     * context. Used by character resolution system and detailed character views.
+     * 
+     * @param query - CharacterIdParamRequest with character ID
+     * @returns Promise resolving to CharacterWithAllDetailsResponse or null if not found
+     */
+    /**
+     * Retrieves a character with all related details including advancements, ability scores,
+     * spell preparations, attack definitions, and disallowed sources.
+     * 
+     * Design Decision: Lightweight Schema Pattern
+     * - Returns only raceId, deityId, classId, and secondaryClassId, not nested objects
+     * - Frontend resolves entity names from pre-populated caches (races, deities, classes)
+     * - Class abbreviations are selected for classLevelString calculation but not included in response
+     * - Reduces payload size and ensures consistent data resolution
+     * 
+     * Architecture Decision: Loads all related data in a single query for complete character
+     * context. Used by character resolution system and detailed character views.
+     * 
+     * @param query - CharacterIdParamRequest with character ID
+     * @returns Promise resolving to CharacterWithAllDetailsResponse or null if not found
+     * 
+     * @see [Cache-Based ID Maps](../../../../shared/docs/application-overview/cache-based-id-maps.md)
+     * @see [Lightweight Schema Pattern](../../../../shared/docs/application-overview/validation-schemas.md#lightweight-response-schemas)
+     */
     async getCharacterWithAllDetails(query: CharacterIdParamRequest): Promise<CharacterWithAllDetailsResponse | null> {
         const character = await prisma.userCharacter.findUnique({
             where: { id: query.id },
             include: {
-                race: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
-                deity: {
-                    select: {
-                        id: true,
-                        name: true,
-                        alignmentId: true,
-                    },
-                },
-                abilityScores: true,
                 advancements: {
                     include: {
                         class: {
@@ -283,6 +393,7 @@ export const characterService: CharacterService = {
                     },
                     orderBy: { level: 'asc' },
                 },
+                abilityScores: true,
                 preparedSpells: {
                     include: {
                         metamagics: true,
@@ -331,13 +442,29 @@ export const characterService: CharacterService = {
             classLevelString = parts.join('/');
         }
 
+        // Remove nested objects from response (class abbreviations used only for calculation)
+        const advancementsWithoutNested = advancements.map(adv => {
+            const { class: _class, secondaryClass: _secondaryClass, ...advWithoutNested } = adv;
+            return advWithoutNested;
+        });
+
         return {
             ...character,
+            advancements: advancementsWithoutNested,
             characterLevel,
             classLevelString,
         };
     },
 
+    /**
+     * Creates a new character with validation and relationship setup.
+     * 
+     * Architecture Decision: Creates character with minimal required data. Additional
+     * data (advancements, ability scores) are added through separate endpoints or saveCharacter.
+     * 
+     * @param data - CreateCharacterRequest with character creation data
+     * @returns Promise resolving to CreateResponse with created character ID
+     */
     async createCharacter(data: CreateCharacterRequest): Promise<CreateResponse> {
         const result = await prisma.userCharacter.create({
             data: {
@@ -349,6 +476,18 @@ export const characterService: CharacterService = {
         return { id: result.id.toString(), message: 'Character created successfully' };
     },
 
+    /**
+     * Unified save operation that handles both character creation and updates, including
+     * ability scores and advancement in a single transaction.
+     * 
+     * Architecture Decision: Single save endpoint handles complete character state updates
+     * in one transaction, ensuring data consistency. Supports both create (characterId null)
+     * and update (characterId provided) operations.
+     * 
+     * @param characterId - Character ID for updates, null for creation
+     * @param data - SaveCharacterRequest with complete character data including ability scores and advancement
+     * @returns Promise resolving to CreateResponse (if new) or UpdateResponse (if updated)
+     */
     async saveCharacter(characterId: number | null, data: SaveCharacterRequest): Promise<CreateResponse | UpdateResponse> {
         // Extract nested data
         const { abilityScores, advancement, equipment, attackDefinitions, characterLanguages, ...characterData } = data;
@@ -703,6 +842,16 @@ export const characterService: CharacterService = {
         });
     },
 
+    /**
+     * Deletes a character and all related data including advancements, ability scores,
+     * spell preparations, attack definitions, and disallowed sources.
+     * 
+     * Architecture Decision: Uses Prisma cascade deletes to ensure all related data
+     * is removed when a character is deleted, maintaining referential integrity.
+     * 
+     * @param query - CharacterIdParamRequest with character ID
+     * @returns Promise resolving to UpdateResponse with success message
+     */
     async deleteCharacter(query: CharacterIdParamRequest): Promise<UpdateResponse> {
         await prisma.userCharacter.delete({
             where: { id: query.id },
@@ -1671,7 +1820,7 @@ export const characterService: CharacterService = {
                     classId,
                     character as CharacterWithAllDetailsResponse
                 );
-                
+
                 // Check if 0th level spells are granted via feature
                 hasZeroLevelGrant = ResolvedFeatureService.hasZeroLevelSpellbookSpellsGrant(
                     resolvedProgressions,
@@ -2128,7 +2277,7 @@ export const characterService: CharacterService = {
         // Declare variables outside the block so they're accessible in the response section
         let characterForValidation: CharacterWithAllDetailsResponse | null = null;
         let effectiveResolvedProgressionsForValidation: FeatureProgression[] | undefined = resolvedProgressions;
-        
+
         if (isFreeGrant) {
             // Get character with all details for resolved progressions calculation
             characterForValidation = await this.getCharacterWithAllDetails({ id: characterId });
@@ -2150,7 +2299,7 @@ export const characterService: CharacterService = {
                 // Load race and class details for resolution
                 const raceDetails = characterForValidation.raceId ? await raceService.getRaceById({ id: characterForValidation.raceId }) : null;
                 const classDetails = classId ? await classService.getClassById({ id: classId }) : null;
-                
+
                 // Find secondary class if this is a gestalt advancement
                 const advancementForResolution = characterForValidation.advancements?.find(adv => adv.id === advancementId);
                 const secondaryClassDetails = advancementForResolution?.secondaryClassId
@@ -2279,10 +2428,10 @@ export const characterService: CharacterService = {
         // Check for active resolution session
         const sessionService = new CharacterSessionService();
         let resolvedCharacterResult: import('../characterResolution/characterSessionService').ResolvedCharacterResult | undefined;
-        
+
         if (updatedCharacter.userId) {
             const session = sessionService.getSession(characterId, updatedCharacter.userId);
-            
+
             if (session) {
                 // Re-resolve features with updated character state
                 const advancementForResolution = updatedCharacter.advancements?.find(adv => adv.id === advancementId);
@@ -2344,44 +2493,17 @@ export const characterService: CharacterService = {
                 );
 
                 // Rebuild CharacterEditState from updated character
-                const updatedCharacterState: CharacterEditState = {
-                    characterId: updatedCharacter.id,
-                    abilityScores: updatedCharacter.abilityScores?.map(as => ({
-                        abilityId: as.abilityId,
-                        value: as.value
-                    })) || [],
-                    skillRanks: updatedCharacter.advancements?.flatMap(adv => 
-                        adv.skillRanks?.map(sr => ({
-                            skillId: sr.skillId,
-                            skillSubId: sr.skillSubId,
-                            customSubtype: sr.customSubtype,
-                            pointsSpent: sr.pointsSpent
-                        })) || []
-                    ) || [],
-                    raceId: updatedCharacter.raceId,
-                    classId: updatedCharacter.advancements?.[0]?.classId || null,
-                    secondaryClassId: updatedCharacter.advancements?.[0]?.secondaryClassId || null,
-                    level: advancement.level,
-                    editionId: updatedCharacter.editionId,
-                    isGestalt: !!secondaryClassDetails,
-                    allowVariantClasses: updatedCharacter.allowVariantClasses || false,
-                    ignoreLevelAdjustment: updatedCharacter.ignoreLevelAdjustment || false,
-                    featureChoices: updatedCharacter.advancements?.flatMap(adv => adv.featureChoices || []) || [],
-                    selectedFeats: [], // TODO: Extract from character
-                    disallowedSources: updatedCharacter.disallowedSources?.map(ds => ({
-                        sourceType: ds.sourceType,
-                        sourceId: ds.sourceId
-                    })) || [],
-                };
-
-                // Update session with new resolved result and character state
-                await sessionService.updateSession(session.sessionKey, updatedCharacterState, resolutionResult);
+                const updatedCharacterState = buildCharacterEditState(
+                    updatedCharacter,
+                    advancement.level,
+                    !!secondaryClassDetails
+                );
 
                 // Build ResolvedCharacterResult
                 const classSkills = ResolvedFeatureService.getClassSkills(resolutionResult.resolvedProgressions);
                 const skillBonuses = ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
                 const grantedFeats = ResolvedFeatureService.getGrantedFeats(resolutionResult.resolvedProgressions);
-                
+
                 // Calculate class levels for available feats
                 const classLevels = new Map<number, number>();
                 if (updatedCharacter.advancements) {
@@ -2404,7 +2526,7 @@ export const characterService: CharacterService = {
                     resolutionResult.resolvedProgressions
                 );
 
-                resolvedCharacterResult = {
+                const resolvedCharacterResultForSession: import('../characterResolution/characterSessionService').ResolvedCharacterResult = {
                     resolvedProgressions: resolutionResult.resolvedProgressions,
                     pendingChoices: resolutionResult.pendingChoices,
                     classSkills,
@@ -2416,105 +2538,110 @@ export const characterService: CharacterService = {
                     errors: resolutionResult.errors,
                     sessionId: session.id,
                 };
+
+                // Update session with new resolved result and character state
+                await sessionService.updateSession(session.sessionKey, updatedCharacterState, resolvedCharacterResultForSession);
+
+                resolvedCharacterResult = resolvedCharacterResultForSession;
             }
         }
 
         // Build response with free spell counts if this was a free grant
-        const response: AddSpellKnownResponse = { 
+        const response: AddSpellKnownResponse = {
             message: 'Spell added successfully',
             resolvedCharacter: resolvedCharacterResult
         };
-        
+
         if (isFreeGrant && characterForValidation) {
             // Use the character and resolved progressions from validation (already fetched)
             let effectiveResolvedProgressions = effectiveResolvedProgressionsForValidation;
             const characterForResponse = characterForValidation;
-            
+
             // If we still don't have resolved progressions, fetch them now
             if (!effectiveResolvedProgressions) {
-                    // Load race and class details for resolution
-                    const raceDetails = characterForResponse.raceId ? await raceService.getRaceById({ id: characterForResponse.raceId }) : null;
-                    const classDetails = classId ? await classService.getClassById({ id: classId }) : null;
-                    
-                    // Find secondary class if this is a gestalt advancement
-                    const advancementForResolution = characterForResponse.advancements?.find(adv => adv.id === advancementId);
-                    const secondaryClassDetails = advancementForResolution?.secondaryClassId
-                        ? await classService.getClassById({ id: advancementForResolution.secondaryClassId })
-                        : null;
+                // Load race and class details for resolution
+                const raceDetails = characterForResponse.raceId ? await raceService.getRaceById({ id: characterForResponse.raceId }) : null;
+                const classDetails = classId ? await classService.getClassById({ id: classId }) : null;
 
-                    // Build initial context without user choices for first pass
-                    const initialContext: ResolutionContext = {
-                        character: characterForResponse,
-                        targetLevel: advancement.level,
-                        advancement: advancementForResolution,
-                        raceDetails,
-                        classDetails: classDetails ?? null,
-                        secondaryClassDetails: secondaryClassDetails ?? null,
-                        isGestalt: !!secondaryClassDetails,
-                        userChoices: undefined,
-                        includePendingChoices: false,
-                        resolveCascading: false,
-                        maxResolutionDepth: 10,
-                    };
+                // Find secondary class if this is a gestalt advancement
+                const advancementForResolution = characterForResponse.advancements?.find(adv => adv.id === advancementId);
+                const secondaryClassDetails = advancementForResolution?.secondaryClassId
+                    ? await classService.getClassById({ id: advancementForResolution.secondaryClassId })
+                    : null;
 
-                    // First pass: Resolve base features to get progressions
-                    const firstPassResult = await CharacterResolutionService.resolveCharacterFeatures(
-                        characterForResponse,
-                        advancement.level,
-                        initialContext
-                    );
+                // Build initial context without user choices for first pass
+                const initialContext: ResolutionContext = {
+                    character: characterForResponse,
+                    targetLevel: advancement.level,
+                    advancement: advancementForResolution,
+                    raceDetails,
+                    classDetails: classDetails ?? null,
+                    secondaryClassDetails: secondaryClassDetails ?? null,
+                    isGestalt: !!secondaryClassDetails,
+                    userChoices: undefined,
+                    includePendingChoices: false,
+                    resolveCascading: false,
+                    maxResolutionDepth: 10,
+                };
 
-                    // Extract user choices from character feature choices
-                    const userChoices: UserChoices = {};
-                    if (characterForResponse.advancements) {
-                        for (const adv of characterForResponse.advancements) {
-                            if (adv.featureChoices) {
-                                for (const choice of adv.featureChoices) {
-                                    // Find the entity in resolved progressions to get appliesTo type
-                                    for (const progression of firstPassResult.resolvedProgressions) {
-                                        if (progression.id === choice.progressionId && progression.entities) {
-                                            const entity = progression.entities.find(e => e.id === choice.featureEntityId);
-                                            if (entity && choice.appliesToId) {
-                                                const appliesToType = entity.appliesTo;
-                                                if (!userChoices[appliesToType]) {
-                                                    userChoices[appliesToType] = [];
-                                                }
-                                                if (!userChoices[appliesToType].includes(choice.appliesToId)) {
-                                                    userChoices[appliesToType].push(choice.appliesToId);
-                                                }
-                                                break;
+                // First pass: Resolve base features to get progressions
+                const firstPassResult = await CharacterResolutionService.resolveCharacterFeatures(
+                    characterForResponse,
+                    advancement.level,
+                    initialContext
+                );
+
+                // Extract user choices from character feature choices
+                const userChoices: UserChoices = {};
+                if (characterForResponse.advancements) {
+                    for (const adv of characterForResponse.advancements) {
+                        if (adv.featureChoices) {
+                            for (const choice of adv.featureChoices) {
+                                // Find the entity in resolved progressions to get appliesTo type
+                                for (const progression of firstPassResult.resolvedProgressions) {
+                                    if (progression.id === choice.progressionId && progression.entities) {
+                                        const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+                                        if (entity && choice.appliesToId) {
+                                            const appliesToType = entity.appliesTo;
+                                            if (!userChoices[appliesToType]) {
+                                                userChoices[appliesToType] = [];
                                             }
+                                            if (!userChoices[appliesToType].includes(choice.appliesToId)) {
+                                                userChoices[appliesToType].push(choice.appliesToId);
+                                            }
+                                            break;
                                         }
                                     }
                                 }
                             }
                         }
                     }
-
-                    // Second pass: Resolve with user choices included
-                    const finalContext: ResolutionContext = {
-                        character: characterForResponse,
-                        targetLevel: advancement.level,
-                        advancement: advancementForResolution,
-                        raceDetails,
-                        classDetails: classDetails ?? null,
-                        secondaryClassDetails: secondaryClassDetails ?? null,
-                        isGestalt: !!secondaryClassDetails,
-                        userChoices: Object.keys(userChoices).length > 0 ? userChoices : undefined,
-                        includePendingChoices: false,
-                        resolveCascading: true,
-                        maxResolutionDepth: 10,
-                    };
-
-                    // Resolve character features with user choices
-                    const resolutionResult = await CharacterResolutionService.resolveCharacterFeatures(
-                        characterForResponse,
-                        advancement.level,
-                        finalContext
-                    );
-
-                    effectiveResolvedProgressions = resolutionResult.resolvedProgressions;
                 }
+
+                // Second pass: Resolve with user choices included
+                const finalContext: ResolutionContext = {
+                    character: characterForResponse,
+                    targetLevel: advancement.level,
+                    advancement: advancementForResolution,
+                    raceDetails,
+                    classDetails: classDetails ?? null,
+                    secondaryClassDetails: secondaryClassDetails ?? null,
+                    isGestalt: !!secondaryClassDetails,
+                    userChoices: Object.keys(userChoices).length > 0 ? userChoices : undefined,
+                    includePendingChoices: false,
+                    resolveCascading: true,
+                    maxResolutionDepth: 10,
+                };
+
+                // Resolve character features with user choices
+                const resolutionResult = await CharacterResolutionService.resolveCharacterFeatures(
+                    characterForResponse,
+                    advancement.level,
+                    finalContext
+                );
+
+                effectiveResolvedProgressions = resolutionResult.resolvedProgressions;
+            }
 
             // Calculate available free spells for this advancement level
             const availableFreeSpells = ResolvedFeatureService.getAvailableSpellbookSpells(
@@ -2602,10 +2729,10 @@ export const characterService: CharacterService = {
         // Check for active resolution session
         const sessionService = new CharacterSessionService();
         let resolvedCharacterResult: import('../characterResolution/characterSessionService').ResolvedCharacterResult | undefined;
-        
+
         if (updatedCharacter.userId) {
             const session = sessionService.getSession(characterId, updatedCharacter.userId);
-            
+
             if (session) {
                 // Re-resolve features with updated character state
                 const classId = advancement.classId;
@@ -2668,44 +2795,17 @@ export const characterService: CharacterService = {
                 );
 
                 // Rebuild CharacterEditState from updated character
-                const updatedCharacterState: CharacterEditState = {
-                    characterId: updatedCharacter.id,
-                    abilityScores: updatedCharacter.abilityScores?.map(as => ({
-                        abilityId: as.abilityId,
-                        value: as.value
-                    })) || [],
-                    skillRanks: updatedCharacter.advancements?.flatMap(adv => 
-                        adv.skillRanks?.map(sr => ({
-                            skillId: sr.skillId,
-                            skillSubId: sr.skillSubId,
-                            customSubtype: sr.customSubtype,
-                            pointsSpent: sr.pointsSpent
-                        })) || []
-                    ) || [],
-                    raceId: updatedCharacter.raceId,
-                    classId: updatedCharacter.advancements?.[0]?.classId || null,
-                    secondaryClassId: updatedCharacter.advancements?.[0]?.secondaryClassId || null,
-                    level: advancement.level,
-                    editionId: updatedCharacter.editionId,
-                    isGestalt: !!secondaryClassDetails,
-                    allowVariantClasses: updatedCharacter.allowVariantClasses || false,
-                    ignoreLevelAdjustment: updatedCharacter.ignoreLevelAdjustment || false,
-                    featureChoices: updatedCharacter.advancements?.flatMap(adv => adv.featureChoices || []) || [],
-                    selectedFeats: [], // TODO: Extract from character
-                    disallowedSources: updatedCharacter.disallowedSources?.map(ds => ({
-                        sourceType: ds.sourceType,
-                        sourceId: ds.sourceId
-                    })) || [],
-                };
-
-                // Update session with new resolved result and character state
-                await sessionService.updateSession(session.sessionKey, updatedCharacterState, resolutionResult);
+                const updatedCharacterState = buildCharacterEditState(
+                    updatedCharacter,
+                    advancement.level,
+                    !!secondaryClassDetails
+                );
 
                 // Build ResolvedCharacterResult
                 const classSkills = ResolvedFeatureService.getClassSkills(resolutionResult.resolvedProgressions);
                 const skillBonuses = ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
                 const grantedFeats = ResolvedFeatureService.getGrantedFeats(resolutionResult.resolvedProgressions);
-                
+
                 // Calculate class levels for available feats
                 const classLevels = new Map<number, number>();
                 if (updatedCharacter.advancements) {
@@ -2728,7 +2828,7 @@ export const characterService: CharacterService = {
                     resolutionResult.resolvedProgressions
                 );
 
-                resolvedCharacterResult = {
+                const resolvedCharacterResultForSession: import('../characterResolution/characterSessionService').ResolvedCharacterResult = {
                     resolvedProgressions: resolutionResult.resolvedProgressions,
                     pendingChoices: resolutionResult.pendingChoices,
                     classSkills,
@@ -2740,15 +2840,20 @@ export const characterService: CharacterService = {
                     errors: resolutionResult.errors,
                     sessionId: session.id,
                 };
+
+                // Update session with new resolved result and character state
+                await sessionService.updateSession(session.sessionKey, updatedCharacterState, resolvedCharacterResultForSession);
+
+                resolvedCharacterResult = resolvedCharacterResultForSession;
             }
         }
 
         // Build response with free spell counts if this was a free grant
-        const response: RemoveSpellKnownResponse = { 
+        const response: RemoveSpellKnownResponse = {
             message: 'Spell removed successfully',
             resolvedCharacter: resolvedCharacterResult
         };
-        
+
         if (wasFreeGrant && resolvedCharacterResult) {
             // Use resolved progressions from the session update (already done above)
             const effectiveResolvedProgressions = resolvedCharacterResult.resolvedProgressions;

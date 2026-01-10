@@ -1,5 +1,21 @@
-import type { FeatureProgression, FeatureEntity, CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { FeatureProgression, FeatureEntity, CharacterWithAllDetailsResponse, FormulaParamsData } from '@shared/schema';
 import { EntityType, EntityAppliesToType, SpecialFeatureId, FORMULA_MAP, FormulaId, GetAbilityModifier } from '@shared/static-data';
+
+/**
+ * Parameters for formula calculation
+ * Extends FormulaParamsData with runtime calculation fields
+ */
+interface FormulaCalculationParams extends FormulaParamsData {
+    level: number;
+    startLevel: number;
+    scalingValue: number;
+    context: {
+        character: {
+            abilityScores: Record<number, number>;
+        };
+    };
+    baseValue?: number;
+}
 
 /**
  * Backend service for extracting resolved feature data
@@ -56,12 +72,13 @@ export class ResolvedFeatureService {
                         continue;
                     }
 
-                    // Check if this entity makes all Knowledge skills class skills
-                    if (entity.appliesToId === 19 && entity.appliesToSubId === -1) {
-                        // If the skill is a Knowledge skill (base or subtype), it's a class skill
-                        if (skillId === 19 || (skillSubId && skillSubId >= 1901 && skillSubId <= 1999)) {
-                            return true;
-                        }
+                    // Check if this entity makes all subtypes of a skill class skills
+                    // If appliesToSubId === -1, it means all subtypes are class skills
+                    if (entity.appliesToId === skillId && entity.appliesToSubId === -1) {
+                        // If this is the base skill or any subtype of this skill, it's a class skill
+                        // We check if skillSubId is null (base skill) or if it's a valid subtype
+                        // For now, if skillSubId is set, we assume it's a valid subtype
+                        return true;
                     }
                     // Check if this entity directly makes this skill a class skill
                     if (entity.appliesToId === skillId) {
@@ -314,15 +331,14 @@ export class ResolvedFeatureService {
                     const formulaDef = FORMULA_MAP[entity.formulaParams.formulaId];
                     if (formulaDef) {
                         const formulaStartLevel = entity.formulaParams.formulaStartLevel ?? progression.level;
-                        
+
                         // Only calculate if level is at or after the formula start level
                         if (level >= formulaStartLevel) {
-                            const params: any = {
+                            const params: FormulaCalculationParams = {
+                                ...entity.formulaParams,
                                 level,
                                 startLevel: progression.level,
                                 scalingValue: entity.value ?? 0,
-                                interval: entity.formulaParams.interval ?? 1,
-                                formulaStartLevel: entity.formulaParams.formulaStartLevel,
                                 context: {
                                     character: {
                                         abilityScores: Object.fromEntries(
@@ -334,7 +350,6 @@ export class ResolvedFeatureService {
 
                             // Add ability-specific params for ABILITY_BASED formula
                             if (entity.formulaParams.formulaId === FormulaId.ABILITY_BASED && entity.formulaParams.abilityId) {
-                                params.abilityId = entity.formulaParams.abilityId;
                                 params.baseValue = entity.value ?? 0;
                             }
 

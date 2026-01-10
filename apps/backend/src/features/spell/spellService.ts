@@ -242,6 +242,7 @@ export const spellService: SpellService = {
                 editionId: true,
                 isVisible: true,
                 baseLevel: true,
+                summary: true,
             }
         });
 

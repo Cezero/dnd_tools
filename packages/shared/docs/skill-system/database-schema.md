@@ -25,6 +25,10 @@ The core skill definition containing basic information about skills, their chara
 - **`trainedOnly`**: Boolean flag for training requirement
 - **`affectedByArmor`**: Boolean flag for armor check penalty
 - **`isAnalog`**: Boolean flag for analog skill type
+- **`hasSubtypes`**: Boolean flag indicating if skill uses predefined subtypes (e.g., Craft, Knowledge)
+- **`usesCustomSubtype`**: Boolean flag indicating if skill uses custom subtypes (e.g., Perform, Profession)
+- **`hasNoMaxRanks`**: Boolean flag indicating if skill has no maximum rank limit (e.g., Speak Language)
+- **`doubleArmorPenalty`**: Boolean flag indicating if skill has double armor check penalty (e.g., Swim)
 - **`description`**: Detailed skill description
 - **`checkDescription`**: Skill check mechanics description
 - **`actionDescription`**: Action requirements description
@@ -38,6 +42,7 @@ The core skill definition containing basic information about skills, their chara
 **Relationships**:
 - **`ability`**: Links to the key ability for the skill
 - **`retryType`**: Links to the retry type for the skill
+- **`subtypes`**: Links to skill subtypes (for skills with predefined subtypes like Craft and Knowledge)
 
 **Usage**: Core skill definitions that are referenced by characters and other systems.
 
@@ -84,6 +89,31 @@ Defines source book references for skills, providing proper attribution and page
 **Usage**: Provides proper attribution for skill content and enables quick reference lookup.
 
 **Source File**: `prisma/schema.prisma` (SkillSourceMap model)
+
+### **SkillSubtype Model**
+
+Defines predefined subtypes for skills that support subtypes (Craft and Knowledge skills).
+
+**Purpose**: Provides structured subtype data for skills that have multiple predefined variants, enabling proper skill selection and management.
+
+**Key Fields**:
+- **`id`**: Unique identifier for the skill subtype
+- **`skillId`**: Reference to the parent skill (e.g., Craft or Knowledge)
+- **`name`**: Human-readable subtype name (e.g., "alchemy", "arcana")
+- **`editionId`**: Reference to the edition this subtype belongs to
+- **`isVisible`**: Boolean flag for visibility in UI
+
+**Relationships**:
+- **`skill`**: Links to the parent skill
+
+**Usage**: Used to provide structured subtype selection for Craft and Knowledge skills, replacing hardcoded static data with database-driven lookups.
+
+**Special Cases**:
+- **Craft Skills**: 24 predefined subtypes (alchemy, armorsmithing, basketweaving, etc.)
+- **Knowledge Skills**: 10 predefined subtypes (arcana, architecture and engineering, dungeoneering, etc.)
+- **Perform/Profession**: Use custom subtypes (stored as strings in character data, not in this table)
+
+**Source File**: `prisma/schema.prisma` (SkillSubtype model)
 
 ## 🔗 **Cross-System Relationships**
 
@@ -146,6 +176,7 @@ The skill system integrates with the source book system for content attribution:
 **Skill Model**: `id` field is the primary key with auto-increment
 **CharacterSkill Model**: Composite primary key on `characterId` and `skillId`
 **SkillSourceMap Model**: Composite primary key on `skillId` and `sourceBookId`
+**SkillSubtype Model**: `id` field is the primary key with auto-increment
 
 ### **Foreign Key Constraints**
 
@@ -153,6 +184,7 @@ The skill system integrates with the source book system for content attribution:
 **Ability Integration**: Skill ability relationships maintain referential integrity
 **Character Integration**: Character skill relationships maintain proper data consistency
 **Source Attribution**: Source book relationships maintain proper attribution
+**Subtype Relationships**: SkillSubtype relationships maintain referential integrity with parent skills
 
 ### **Validation Constraints**
 
@@ -169,6 +201,7 @@ The skill system integrates with the source book system for content attribution:
 **Foreign Keys**: All foreign key fields are indexed for efficient joins
 **Lookup Fields**: Frequently queried fields like `name` and `abilityId` are indexed
 **Composite Indexes**: Composite indexes on frequently queried combinations
+**SkillSubtype Indexes**: Indexed on `skillId` for efficient subtype lookups by parent skill
 
 ### **Query Optimization**
 

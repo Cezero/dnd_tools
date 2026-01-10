@@ -1,5 +1,4 @@
-import type { FeatureProgression, Feature, FeatureProgressionCondition } from '@shared/schema';
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { FeatureProgression, Feature, FeatureProgressionCondition, CharacterWithAllDetailsResponse } from '@shared/schema';
 import { FeatureEntityConditionType } from '@shared/static-data';
 
 /**
@@ -51,33 +50,19 @@ export class FeatureDisplayFilter {
      */
     private static evaluateCondition(
         condition: FeatureProgressionCondition,
-        character: CharacterWithAllDetailsResponse
+        _character: CharacterWithAllDetailsResponse
     ): boolean {
         switch (condition.conditionType) {
-            case FeatureEntityConditionType.character_level:
-                const characterLevel = this.getCharacterLevel(character);
-                return characterLevel >= condition.conditionValue;
-
             case FeatureEntityConditionType.character_size:
-                return character.race?.sizeId === condition.conditionValue;
-
-            case FeatureEntityConditionType.character_alignment:
-                return character.alignmentId === condition.conditionValue;
-
-            case FeatureEntityConditionType.class_level:
-                // Would need to check specific class level
-                return true; // Placeholder
-
-            case FeatureEntityConditionType.has_feature:
-                // Would need to check if character has specific feature
-                return true; // Placeholder
-
-            case FeatureEntityConditionType.has_choice:
-                // Would need to check if character has made specific choice
-                return true; // Placeholder
+                // CharacterWithAllDetailsResponse.race only includes id and name, not sizeId
+                // TODO: Add sizeId to race data or fetch race details separately to evaluate this condition
+                return true; // Placeholder - default to true to avoid hiding features
 
             default:
                 // Unknown condition type - default to true to avoid hiding features
+                // Note: Other condition types (material, attack_type, target, environment, 
+                // spell_school, creature_type, source, lighting, special) are not yet
+                // implemented for display filtering
                 return true;
         }
     }

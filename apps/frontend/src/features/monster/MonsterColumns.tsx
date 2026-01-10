@@ -15,19 +15,11 @@ import {
     EditionId,
 } from '@shared/static-data';
 import { GetSourceDisplay } from '@shared/utils';
-import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 
 export const useMonsterColumns = (): ColumnDef<Monster, unknown>[] => {
     const queryClient = useQueryClient();
     
-    // Ensure sourcebooks cache is loaded
-    CacheQueryHooks.useSourcebooksCache({}, {
-        enabled: true,
-        staleTime: Infinity,
-        gcTime: Infinity,
-    });
-    
-    // Get sourcebooks from cache
+    // Get sourcebooks from cache (pre-loaded by CacheProvider)
     const getSourceBooksFromCache = () => {
         const cacheData = queryClient.getQueryData<{ results: Array<{ id: number; name: string; abbreviation: string; editionId: number | null; isVisible: boolean }> }>(['sourcebooks-cache']);
         return cacheData?.results || [];

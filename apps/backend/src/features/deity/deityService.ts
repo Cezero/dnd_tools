@@ -38,18 +38,24 @@ export const deityService: DeityService = {
         };
     },
 
+    /**
+     * Returns deity with domain and favored weapon IDs only.
+     * 
+     * Design Decision: Lightweight Schema Pattern
+     * - Returns only IDs for related entities (domains, items)
+     * - Frontend resolves entity names from pre-populated caches
+     * - Reduces payload size and ensures consistent data resolution
+     * 
+     * @see [Cache-Based ID Maps](../../../../shared/docs/application-overview/cache-based-id-maps.md)
+     * @see [Lightweight Schema Pattern](../../../../shared/docs/application-overview/validation-schemas.md#lightweight-response-schemas)
+     */
     async getDeityById(query: DeityIdParamRequest): Promise<Deity | null> {
         const deity = await prisma.deity.findUnique({
             where: { id: query.id },
             include: {
                 domains: {
-                    include: {
-                        domain: {
-                            select: {
-                                id: true,
-                                name: true,
-                            }
-                        }
+                    select: {
+                        domainId: true
                     }
                 },
                 deityClasses: {
@@ -63,23 +69,14 @@ export const deityService: DeityService = {
                     }
                 },
                 favoredWeapons: {
-                    include: {
-                        item: {
-                            select: {
-                                id: true,
-                                name: true
-                            }
-                        }
+                    select: {
+                        itemId: true
                     }
                 },
                 sourceBookInfo: {
-                    include: {
-                        sourceBook: {
-                            select: {
-                                id: true,
-                                name: true
-                            }
-                        }
+                    select: {
+                        sourceBookId: true,
+                        pageNumber: true
                     }
                 }
             }
@@ -94,14 +91,12 @@ export const deityService: DeityService = {
             ...deity,
             classIds: deity.deityClasses.map(dc => dc.classId),
             raceIds: deity.deityRaces.map(dr => dr.raceId),
-            domains: deity.domains.map(d => d.domain),
-            favoredWeapons: deity.favoredWeapons.map(fw => ({
-                id: fw.item.id,
-                name: fw.item.name
-            })),
+            domainIds: deity.domains.map(d => d.domainId),
+            favoredWeaponIds: deity.favoredWeapons.map(fw => fw.itemId),
             deityClasses: undefined, // Remove the raw relation
             deityRaces: undefined, // Remove the raw relation
-            favoredWeaponIds: undefined // Remove the raw relation
+            domains: undefined, // Remove the raw relation
+            favoredWeapons: undefined // Remove the raw relation
         };
 
         return transformedDeity as Deity;

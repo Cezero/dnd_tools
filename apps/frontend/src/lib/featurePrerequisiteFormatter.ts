@@ -1,7 +1,4 @@
-import type { QueryClient } from '@tanstack/react-query';
-
-import { getSkillNameFromCache } from '@/services/cache/IdMapHelpers';
-
+import { getSkillNameFromCache } from '@/lib/formatters/utils/cache-helpers';
 import { FeaturePrerequisite } from '@shared/schema';
 import {
     FeaturePrerequisiteType,
@@ -16,14 +13,13 @@ import {
 export const formatFeaturePrerequisite = (
     prereq: FeaturePrerequisite,
     getFeatNameById?: (id: number) => Promise<string | null>,
-    getFeatureNameById?: (id: number) => Promise<string | null>,
-    queryClient?: QueryClient
+    getFeatureNameById?: (id: number) => Promise<string | null>
 ): string => {
     switch (prereq.type) {
         case FeaturePrerequisiteType.SkillRanks: {
-            const skillName = prereq.appliesToId && queryClient
-                ? getSkillNameFromCache(queryClient, prereq.appliesToId) || 'Unknown Skill'
-                : prereq.appliesToId ? 'Unknown Skill' : 'Skill';
+            const skillName = prereq.appliesToId
+                ? getSkillNameFromCache(prereq.appliesToId) || 'Unknown Skill'
+                : 'Skill';
             return `${skillName} ${prereq.minValue} ranks`;
         }
         case FeaturePrerequisiteType.AbilityScore: {
@@ -43,22 +39,24 @@ export const formatFeaturePrerequisite = (
                 return `Feat: ${prereq.appliesToId}`; // Will be resolved by caller
             }
             return `Feat ${prereq.appliesToId || ''}`;
-        case FeaturePrerequisiteType.Feature:
-            // For Feature prerequisites, we need to resolve the feature name
+        case FeaturePrerequisiteType.ClassFeature:
+            // For ClassFeature prerequisites, we need to resolve the feature name
             if (prereq.appliesToId && getFeatureNameById) {
-                return `Feature: ${prereq.appliesToId}`; // Will be resolved by caller
+                return `Class Feature: ${prereq.appliesToId}`; // Will be resolved by caller
             }
-            return `Feature ${prereq.appliesToId || ''}`;
+            return `Class Feature ${prereq.appliesToId || ''}`;
         case FeaturePrerequisiteType.Spellcasting:
             return `Spellcasting`;
-        case FeaturePrerequisiteType.Size:
+        case FeaturePrerequisiteType.Size: {
             // Size prerequisites use appliesToId to reference SIZE_LIST
             const sizeName = prereq.appliesToId ? SIZE_LIST.find(s => s.id === prereq.appliesToId)?.name || 'Unknown Size' : 'Size';
             return `${sizeName}`;
-        case FeaturePrerequisiteType.Proficiency:
+        }
+        case FeaturePrerequisiteType.Proficiency: {
             // Proficiency prerequisites use appliesToId to reference proficiency types
             const profName = prereq.appliesToId ? PROFICIENCY_TYPE_LIST.find(p => p.id === prereq.appliesToId)?.name || 'Unknown Proficiency' : 'Proficiency';
             return `${profName}`;
+        }
         case FeaturePrerequisiteType.Other:
             return `Other Requirement: ${prereq.minValue || ''}`;
         default:
@@ -70,11 +68,11 @@ export const formatFeaturePrerequisite = (
  * Format an array of FeaturePrerequisite objects for display
  * Returns a single comma-separated string (for simple display)
  */
-export const formatPrerequisites = (prerequisites: FeaturePrerequisite[], queryClient?: QueryClient): string => {
+export const formatPrerequisites = (prerequisites: FeaturePrerequisite[]): string => {
     if (!prerequisites || prerequisites.length === 0) return 'None';
 
     return prerequisites.map((prereq, index) => {
-        const text = formatFeaturePrerequisite(prereq, undefined, undefined, queryClient);
+        const text = formatFeaturePrerequisite(prereq);
         return index === prerequisites.length - 1 ? text : text + ', ';
     }).join('');
 };
@@ -87,18 +85,17 @@ export const formatPrerequisites = (prerequisites: FeaturePrerequisite[], queryC
 export const formatFeaturePrerequisites = async (
     prerequisites: FeaturePrerequisite[],
     getFeatNameById?: (id: number) => Promise<string | null>,
-    getFeatureNameById?: (id: number) => Promise<string | null>,
-    queryClient?: QueryClient
+    getFeatureNameById?: (id: number) => Promise<string | null>
 ): Promise<string[]> => {
     const formattedTexts: string[] = [];
 
     for (const prereq of prerequisites) {
-        let text = formatFeaturePrerequisite(prereq, getFeatNameById, getFeatureNameById, queryClient);
+        let text = formatFeaturePrerequisite(prereq, getFeatNameById, getFeatureNameById);
 
         // Resolve Feat names if needed
         if (prereq.type === FeaturePrerequisiteType.Feat && prereq.appliesToId && getFeatNameById) {
             try {
-                const featName = await getFeatNameById(prereq.appliesToId);
+                const featName = getFeatNameById(prereq.appliesToId);
                 text = featName ? `Feat: ${featName}` : `Feat ${prereq.appliesToId}`;
             } catch (error) {
                 console.error('Error resolving feat name:', error);
@@ -106,14 +103,14 @@ export const formatFeaturePrerequisites = async (
             }
         }
 
-        // Resolve Feature names if needed
-        if (prereq.type === FeaturePrerequisiteType.Feature && prereq.appliesToId && getFeatureNameById) {
+        // Resolve ClassFeature names if needed
+        if (prereq.type === FeaturePrerequisiteType.ClassFeature && prereq.appliesToId && getFeatureNameById) {
             try {
                 const featureName = await getFeatureNameById(prereq.appliesToId);
-                text = featureName ? `Feature: ${featureName}` : `Feature ${prereq.appliesToId}`;
+                text = featureName ? `Class Feature: ${featureName}` : `Class Feature ${prereq.appliesToId}`;
             } catch (error) {
                 console.error('Error resolving feature name:', error);
-                text = `Feature ${prereq.appliesToId}`;
+                text = `Class Feature ${prereq.appliesToId}`;
             }
         }
 

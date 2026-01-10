@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 
 const SESSION_DB_PATH = process.env.SESSION_DATABASE_URL || 
   path.join(process.cwd(), 'data', 'sessions.db');

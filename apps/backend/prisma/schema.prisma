@@ -387,10 +387,15 @@ model Skill {
   isAnalog          Boolean              @default(false)
   isVisible         Boolean              @default(true)
   editionId         Int
+  hasSubtypes       Boolean              @default(false)  // true for Craft, Knowledge
+  usesCustomSubtype Boolean              @default(false)   // true for Perform, Profession
+  hasNoMaxRanks     Boolean              @default(false)   // true for Speak Language (no max rank limit)
+  doubleArmorPenalty Boolean             @default(false)   // true for Swim (double armor check penalty)
   sourceBookInfo    SkillSourceBookMap[]
 
   advSkills AdvancementSkill[]
   monsters  MonsterSkillMap[]
+  subtypes  SkillSubtype[]
 }
 
 model SkillSourceBookMap {
@@ -402,6 +407,19 @@ model SkillSourceBookMap {
   sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
 
   @@id([skillId, sourceBookId])
+}
+
+model SkillSubtype {
+  id        Int    @id @default(autoincrement())
+  skillId   Int    // References Skill.id
+  name      String
+  editionId Int
+  isVisible Boolean @default(true)
+
+  skill Skill @relation(fields: [skillId], references: [id])
+
+  @@unique([skillId, name, editionId])
+  @@index([skillId])
 }
 
 // =================

@@ -1,44 +1,32 @@
-import type { QueryClient } from '@tanstack/react-query';
-import { ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY, SPELL_SCHOOL_MAP, AttackBonusAppliesTo, ATTACK_BONUS_APPLIES_TO_TYPES } from '@shared/static-data';
-import { getSkillNameFromCache } from '@/services/cache/IdMapHelpers';
+import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
+import { ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, SPELL_SCHOOL_MAP, AttackBonusAppliesTo, ATTACK_BONUS_APPLIES_TO_TYPES } from '@shared/static-data';
 
 import type { CalculatedEntity } from './types';
+import { getSkillNameFromCache } from './utils/cache-helpers';
 
 // Helper function to get skill name including subtypes
-function getSkillNameWithSubtype(queryClient: QueryClient, skillId: number, skillSubId?: number | null, customSubtype?: string | null): string {
-    const skillName = getSkillNameFromCache(queryClient, skillId);
+function getSkillNameWithSubtype(skillId: number, skillSubId?: number | null, customSubtype?: string | null): string {
+    const skillName = getSkillNameFromCache(skillId);
     if (!skillName) {
         return 'Unknown Skill';
     }
 
     // Check if this skill uses skillSubId (Craft, Knowledge)
-    if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19) && skillSubId !== null && skillSubId !== undefined) {
+    if (hasSubtypes(skillId) && skillSubId !== null && skillSubId !== undefined) {
         if (skillSubId === -1) {
             // Special case: -1 means "All" subtypes
-            if (skillId === 6) { // Craft
-                return 'Craft (All)';
-            }
-            if (skillId === 19) { // Knowledge
-                return 'Knowledge (All)';
-            }
+            return `${skillName} (All)`;
         } else {
-            if (skillId === 6) { // Craft
-                const craftSubtype = CRAFT_SKILL_MAP[skillSubId];
-                if (craftSubtype) {
-                    return `Craft (${craftSubtype.name})`;
-                }
-            }
-            if (skillId === 19) { // Knowledge
-                const knowledgeSubtype = KNOWLEDGE_SKILL_MAP[skillSubId];
-                if (knowledgeSubtype) {
-                    return `Knowledge (${knowledgeSubtype.name})`;
-                }
+            const subtypes = getSkillSubtypes(skillId);
+            const subtype = subtypes.find(s => s.id === skillSubId);
+            if (subtype) {
+                return `${skillName} (${subtype.name})`;
             }
         }
     }
 
     // Check if this skill uses customSubtype (Perform, Profession)
-    if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33) && customSubtype) {
+    if (usesCustomSubtype(skillId) && customSubtype) {
         return `${skillName} (${customSubtype})`;
     }
 
@@ -46,23 +34,23 @@ function getSkillNameWithSubtype(queryClient: QueryClient, skillId: number, skil
 }
 
 // Labeler function for Class Skills (EntityType.Other + EntityAppliesToType.Skill)
-export function classSkillLabeler(value: string, modifier: CalculatedEntity, queryClient: QueryClient): string {
+export function classSkillLabeler(value: string, modifier: CalculatedEntity): string {
     if (modifier.appliesToId) {
-        const skillName = getSkillNameWithSubtype(queryClient, modifier.appliesToId, modifier.appliesToSubId);
+        const skillName = getSkillNameWithSubtype(modifier.appliesToId, modifier.appliesToSubId);
         return skillName; // Just return the skill name, no value
     }
     return value;
 }
 
 // Labeler function for Skill Modifiers (EntityType.Bonus + EntityAppliesToType.Skill)
-export function skillModifierLabeler(value: string, modifier: CalculatedEntity, queryClient: QueryClient): string {
+export function skillModifierLabeler(value: string, modifier: CalculatedEntity): string {
     if (modifier.appliesToId) {
         // Check if it's -1 (all skills)
         if (modifier.appliesToId === -1) {
             return `Any Skill: ${value}`;
         }
 
-        const skillName = getSkillNameWithSubtype(queryClient, modifier.appliesToId, modifier.appliesToSubId);
+        const skillName = getSkillNameWithSubtype(modifier.appliesToId, modifier.appliesToSubId);
         return `${skillName}: ${value}`; // Skill name with value
     }
     return value;

@@ -133,7 +133,44 @@ The formatting system is used by multiple other systems in the D&D Tools project
 - ✅ **Maintained Architecture**: All architectural principles and phase separation remain intact
 - ✅ **Enhanced User Experience**: Feature displays are now more accurate and user-friendly
 
-### **5. Future Extensibility Architecture**
+### **5. Centralized QueryClient Accessor**
+
+#### **Decision**: Implement centralized QueryClient accessor as single source of truth
+
+**Context**: The formatting system needed queryClient to resolve entity names from cache, but passing it through every function call was error-prone and required every caller to remember to pass it. This led to "Unknown Skill" and similar issues when queryClient was forgotten.
+
+**Options Considered**:
+1. **Continue Parameter Passing**: Keep passing queryClient as optional parameter through all functions
+2. **Fallback Pattern**: Use centralized accessor as fallback when queryClient not provided
+3. **Centralized Accessor Only**: Make centralized accessor the only way to access queryClient
+
+**Chosen Solution**: Centralized Accessor Only
+
+**Rationale**:
+- **Eliminates Boilerplate**: No need to pass queryClient anywhere
+- **Single Source of Truth**: QueryClient defined once in QueryProvider
+- **Impossible to Forget**: Formatters always have access via accessor
+- **Cleaner APIs**: Fewer parameters to manage
+- **Type Safety**: TypeScript ensures proper usage
+- **Consistency**: All formatters access queryClient the same way
+
+**Implementation**: The centralized accessor is implemented in:
+- **QueryProvider**: Exports queryClient instance as named export
+- **Accessor Module**: `queryClientAccessor.ts` provides `getQueryClient()` function
+- **Cache Helpers**: All cache helpers use accessor internally, removing queryClient parameter
+- **Labelers**: All labelers use cache helpers that use accessor internally
+- **Formatters**: All formatters use cache helpers that use accessor internally
+- **DisplayContext**: Removed queryClient field from interface
+
+**Benefits Achieved**:
+- ✅ **Eliminated Boilerplate**: No queryClient parameters needed anywhere
+- ✅ **Single Source of Truth**: QueryClient defined once in QueryProvider
+- ✅ **Impossible to Forget**: Formatters always have access via accessor
+- ✅ **Cleaner APIs**: Fewer parameters to manage
+- ✅ **Type Safety**: Full TypeScript support maintained
+- ✅ **Consistency**: All formatters work the same way
+
+### **6. Future Extensibility Architecture**
 
 #### **Decision**: Set up architecture to support multiple calculator implementations
 
@@ -294,7 +331,19 @@ The formatting system is used by multiple other systems in the D&D Tools project
 
 **Application**: Will continue to use groupingId-based grouping for all feature grouping operations
 
-### **5. Future Extensibility Planning**
+### **5. Centralized Accessor Benefits**
+
+**Lesson**: Centralized accessor pattern eliminates boilerplate and prevents errors
+
+**Impact**:
+- **Reduced Boilerplate**: No need to pass queryClient through function parameters
+- **Error Prevention**: Impossible to forget to pass queryClient
+- **Consistency**: All formatters access queryClient the same way
+- **Maintainability**: Single source of truth for queryClient access
+
+**Application**: Will use centralized accessor pattern for other cross-cutting concerns
+
+### **6. Future Extensibility Planning**
 
 **Lesson**: Planning for future extensibility from the start pays dividends
 
@@ -337,6 +386,8 @@ These decisions ensure that the system can evolve gracefully as new requirements
 - **[Final Implementation Summary](./final-implementation-summary.md)** - Current implementation status
 - **[Refactoring Strategy](./refactoring-strategy.md)** - Design decisions and architecture rationale
 - **[Usage Guidelines](./usage-guidelines.md)** - Development guidelines and patterns
+- **[QueryClient Accessor](./queryclient-accessor.md)** - Centralized QueryClient access pattern
+- **[Entity Precaching](./entity-precaching.md)** - Entity precaching system
 - **[Class System](../class-system/README.md)** - Class system documentation
 - **[Race System](../race-system/README.md)** - Race system documentation
 - **[Feature System Overview](../README.md)** - Main feature system documentation

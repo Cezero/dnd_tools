@@ -1,8 +1,8 @@
 import React from 'react';
 
-import type { EntityTooltipProps } from './types';
 import { MonsterTooltip } from './MonsterTooltip';
 import { SpellTooltip } from './SpellTooltip';
+import type { EntityTooltipProps } from './types';
 
 export function EntityTooltip({ entityType, entityId, children, href }: EntityTooltipProps): React.JSX.Element {
     // Route to appropriate tooltip component based on entity type

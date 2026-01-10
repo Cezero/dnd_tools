@@ -52,6 +52,10 @@ The base schema for skill validation, defining all required and optional fields 
 - **`trainedOnly`**: Optional boolean for training requirement
 - **`affectedByArmor`**: Boolean flag for armor check penalty, defaults to false
 - **`isAnalog`**: Boolean flag for analog skill type, defaults to false
+- **`hasSubtypes`**: Boolean flag indicating if skill uses predefined subtypes (Craft, Knowledge), defaults to false
+- **`usesCustomSubtype`**: Boolean flag indicating if skill uses custom subtypes (Perform, Profession), defaults to false
+- **`hasNoMaxRanks`**: Boolean flag indicating if skill has no maximum rank limit (Speak Language), defaults to false
+- **`doubleArmorPenalty`**: Boolean flag indicating if skill has double armor check penalty (Swim), defaults to false
 - **`description`**: Optional string, maximum 10000 characters for detailed descriptions
 - **`checkDescription`**: Optional string, maximum 10000 characters for check mechanics
 - **`actionDescription`**: Optional string, maximum 10000 characters for action requirements
@@ -61,6 +65,7 @@ The base schema for skill validation, defining all required and optional fields 
 - **`synergyNotes`**: Optional string, maximum 10000 characters for synergy bonuses
 - **`untrainedNotes`**: Optional string, maximum 10000 characters for untrained use
 - **`restrictionNotes`**: Optional string, maximum 10000 characters for restrictions
+- **`subtypes`**: Optional array of skill subtypes (for skills with predefined subtypes)
 
 **Usage**: Primary validation for skill data in API requests and responses.
 
@@ -78,6 +83,38 @@ Schema for skill ID parameter validation in URL paths.
 **Usage**: Validates skill ID parameters in API routes.
 
 **Source File**: `packages/shared/schema/src/skill.ts` (SkillIdParamSchema definition)
+
+### **SkillSubtypeSchema**
+
+Schema for skill subtype validation, defining subtypes for skills with predefined subtypes (Craft, Knowledge).
+
+**Purpose**: Validates skill subtype data including parent skill reference and subtype name.
+
+**Key Validations**:
+- **`id`**: Required positive integer for unique identification
+- **`skillId`**: Required positive integer for parent skill reference
+- **`name`**: Required string, 1-100 characters, trimmed for display
+- **`editionId`**: Required positive integer for edition reference
+- **`isVisible`**: Boolean flag for visibility in UI, defaults to true
+
+**Usage**: Validates skill subtype data in API requests and responses.
+
+**Source File**: `packages/shared/schema/src/skill.ts` (SkillSubtypeSchema definition)
+
+### **SkillSubtypeCacheSchema**
+
+Schema for skill subtype cache entries, omitting fields not needed in the frontend cache.
+
+**Purpose**: Validates lightweight skill subtype data for frontend caching.
+
+**Key Validations**:
+- **`id`**: Required positive integer for unique identification
+- **`name`**: Required string, 1-100 characters, trimmed for display
+- **Omitted Fields**: `skillId`, `editionId`, `isVisible` are omitted from cache entries
+
+**Usage**: Validates skill subtype data in skills-cache API responses.
+
+**Source File**: `packages/shared/schema/src/skill.ts` (SkillSubtypeCacheSchema definition)
 
 ## 🔧 **Request and Response Schemas**
 
@@ -138,6 +175,37 @@ Schema for skill response data, omitting the ID field.
 
 **Source File**: `packages/shared/schema/src/skill.ts` (GetSkillResponseSchema definition)
 
+### **SkillCacheSchema**
+
+Schema for skill cache entries, providing lightweight skill data for frontend use.
+
+**Purpose**: Validates skill cache data including subtypes and special behavior flags, optimized for frontend caching.
+
+**Key Validations**:
+- **Base Skill Fields**: Includes core skill fields (id, name, abilityId, trainedOnly, editionId, isVisible, isAnalog)
+- **Special Behavior Flags**: Includes `hasSubtypes`, `usesCustomSubtype`, `hasNoMaxRanks`, `doubleArmorPenalty` flags
+- **Subtypes Array**: Optional array of `SkillSubtypeCacheEntry` objects
+- **Omitted Fields**: Omits detailed description fields and source book info for performance
+
+**Usage**: Validates skill cache data in skills-cache API responses.
+
+**Source File**: `packages/shared/schema/src/skill.ts` (SkillCacheSchema definition)
+
+### **SkillCacheResponseSchema**
+
+Schema for the skills-cache API response.
+
+**Purpose**: Validates paginated skill cache list responses.
+
+**Key Validations**:
+- **`total`**: Required integer for total count
+- **`results`**: Required array of skill cache schemas
+- **Pagination Fields**: Includes standard pagination metadata
+
+**Usage**: Validates responses for skills-cache endpoint.
+
+**Source File**: `packages/shared/schema/src/skill.ts` (SkillCacheResponseSchema definition)
+
 ## 🔗 **Integration Schemas**
 
 ### **Ability System Integration**
@@ -171,6 +239,10 @@ The validation schemas automatically generate TypeScript types for type safety:
 
 **SkillIdParamRequest**: Type for skill ID parameter requests
 **Skill**: Type for complete skill data
+**SkillSubtype**: Type for skill subtype data
+**SkillSubtypeCacheEntry**: Type for skill subtype cache entries
+**SkillCacheEntry**: Type for skill cache entries
+**SkillCacheResponse**: Type for skill cache API responses
 **GetAllSkillsResponse**: Type for skill list responses
 **GetSkillResponse**: Type for skill response data
 **CreateSkillRequest**: Type for skill creation requests
@@ -215,12 +287,17 @@ The validation schemas automatically generate TypeScript types for type safety:
 **Trained Only Validation**: Boolean flag for training requirements
 **Affected By Armor Validation**: Boolean flag for armor check penalties
 **Is Analog Validation**: Boolean flag for analog skill types
+**Has Subtypes Validation**: Boolean flag for skills with predefined subtypes (Craft, Knowledge)
+**Uses Custom Subtype Validation**: Boolean flag for skills with custom subtypes (Perform, Profession)
+**Has No Max Ranks Validation**: Boolean flag for skills with no maximum rank limit (Speak Language)
+**Double Armor Penalty Validation**: Boolean flag for skills with double armor check penalty (Swim)
 
 **Validation Benefits**:
 - **Data Consistency**: Ensures boolean flags are properly set
 - **Game Mechanics**: Enforces proper skill mechanics and rules
 - **Error Prevention**: Prevents invalid boolean values from entering the system
 - **Type Safety**: Ensures proper boolean types throughout the system
+- **Dynamic Behavior**: Enables database-driven special behavior identification
 
 ### **Reference Validation**
 

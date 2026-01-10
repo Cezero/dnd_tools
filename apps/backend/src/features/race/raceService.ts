@@ -154,6 +154,7 @@ export const raceService: RaceService = {
                 name: true,
                 editionId: true,
                 isVisible: true,
+                sizeId: true,
             }
         });
 

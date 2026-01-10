@@ -57,7 +57,6 @@ export const CreateRaceSchema = BaseRaceSchema.omit({
 
 export const RaceCacheSchema = RaceSummarySchema.omit({
     description: true,
-    sizeId: true,
     favoredClassId: true,
     levelAdjustment: true,
     speed: true,

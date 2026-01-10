@@ -1,5 +1,3 @@
-import type { QueryClient } from '@tanstack/react-query';
-
 import type {
     FeatureEntity,
     FeatureEntityCondition,
@@ -133,7 +131,6 @@ export interface BaseFormatterContext {
 export interface DisplayContext extends BaseFormatterContext {
     currentLevel?: number;
     showBreakdown?: boolean;
-    featsMap?: Map<number, Feat>;
     displayBonusType?: boolean; // Whether to display bonus type (e.g., "(racial)"). Defaults to true.
     choices?: Map<string, CharacterFeatureChoice>; // keyed by choiceGroupId
     companions?: CharacterCompanion[];
@@ -148,7 +145,6 @@ export interface DisplayContext extends BaseFormatterContext {
     skillRanks?: Array<{ skillId: number; skillSubId: number | null; customSubtype: string | null; pointsSpent: number }>; // Session skill ranks (overrides character.advancements[].skills)
     classSkills?: Array<{ skillId: number; skillSubId: number | null }>; // Class skills from backend resolution API
     skillBonuses?: Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }>; // Skill bonuses from backend resolution API
-    queryClient?: QueryClient; // TanStack Query client for synchronous cache access
 }
 
 // Calculation context for formatter calculations

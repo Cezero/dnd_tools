@@ -1,8 +1,10 @@
 import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
-import type { CharacterEditState, ResolutionResult } from './types';
+
 import type { CharacterWithAllDetailsResponse } from '@shared/schema';
+
 import { getSessionDatabase } from './sessionDatabase';
+import type { CharacterEditState, ResolutionResult } from './types';
 
 /**
  * Extended resolution result with derived data for frontend
@@ -14,6 +16,21 @@ export interface ResolvedCharacterResult extends ResolutionResult {
     availableFeats: number;
     availableFighterBonusFeats: number;
     sessionId: string;
+}
+
+/**
+ * Database row structure for character_edit_sessions table
+ */
+interface CharacterSessionRow {
+    id: string;
+    character_id: number;
+    user_id: number;
+    session_key: string;
+    character_state: string;
+    resolved_result: string;
+    created_at: number;
+    updated_at: number;
+    expires_at: number;
 }
 
 /**
@@ -45,11 +62,11 @@ interface CharacterSession {
  * - WAL mode for concurrent access
  */
 export class CharacterSessionService {
-    private db: Database;
-    private cleanupInterval: NodeJS.Timeout | null = null;
+    private db: InstanceType<typeof Database>;
+    private cleanupInterval: ReturnType<typeof setInterval> | null = null;
     private readonly SESSION_TTL_MS = (parseInt(process.env.SESSION_EXPIRATION_MINUTES || '30') * 60 * 1000);
 
-    constructor(db?: Database) {
+    constructor(db?: InstanceType<typeof Database>) {
         this.db = db || getSessionDatabase();
         // Run cleanup every 5 minutes
         this.cleanupInterval = setInterval(() => {
@@ -67,7 +84,7 @@ export class CharacterSessionService {
         const row = this.db.prepare(`
             SELECT * FROM character_edit_sessions 
             WHERE session_key = ? AND expires_at > ?
-        `).get(sessionKey, Date.now()) as any;
+        `).get(sessionKey, Date.now()) as CharacterSessionRow | undefined;
 
         if (!row) return null;
 
@@ -93,7 +110,7 @@ export class CharacterSessionService {
         const row = this.db.prepare(`
             SELECT * FROM character_edit_sessions 
             WHERE id = ? AND expires_at > ?
-        `).get(sessionId, Date.now()) as any;
+        `).get(sessionId, Date.now()) as CharacterSessionRow | undefined;
 
         if (!row) return null;
 

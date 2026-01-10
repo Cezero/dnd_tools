@@ -81,6 +81,12 @@ export const skillService: SkillService = {
         return { message: 'Skill deleted successfully' };
     },
 
+    /**
+     * Get skill cache data for frontend use
+     * Returns lightweight skill data including subtypes and special flags
+     * This cache is used by the frontend to avoid repeated database queries
+     * @returns Skill cache response with skills and their subtypes
+     */
     async getSkillCache(): Promise<SkillCacheResponse> {
         const skills = await prisma.skill.findMany({
             orderBy: { name: 'asc' },
@@ -92,6 +98,19 @@ export const skillService: SkillService = {
                 editionId: true,
                 isVisible: true,
                 isAnalog: true,
+                hasSubtypes: true,
+                usesCustomSubtype: true,
+                hasNoMaxRanks: true,
+                doubleArmorPenalty: true,
+                subtypes: {
+                    select: {
+                        id: true,
+                        name: true,
+                        editionId: true,
+                        isVisible: true,
+                    },
+                    orderBy: { name: 'asc' },
+                },
             }
         });
 

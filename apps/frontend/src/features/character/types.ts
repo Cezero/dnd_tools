@@ -1,8 +1,8 @@
 import React from 'react';
 
+import type { FormattedCharacterResult } from '@/lib/formatters';
 import type { FeatureProgression, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterFeatureChoice, CharacterDisallowedSource, Feat, FeatInQueryResponse } from '@shared/schema';
 import { EntityAppliesToType, PROFICIENCY_TYPE_ENUM, ResolutionStepType, CoreComponent } from '@shared/static-data';
-import type { FormattedCharacterResult } from '@/lib/formatters';
 
 // ============================================================================
 // Tab Configuration Types

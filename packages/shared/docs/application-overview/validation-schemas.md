@@ -85,6 +85,67 @@ const BaseEntitySchema = z.object({
 });
 ```
 
+### **Lightweight Response Schemas**
+
+The system follows a lightweight schema pattern for API responses to reduce payload size and ensure consistent data resolution:
+
+**Design Decision**: Return only IDs for related entities, not nested objects with names/summaries.
+
+**Rationale**:
+- **Reduced Payload Size**: Endpoint responses are significantly smaller by excluding nested entity data
+- **Consistent Data Resolution**: All entity lookups use the same cache-based mechanism
+- **Better Performance**: Smaller payloads reduce network transfer time and memory usage
+- **Single Source of Truth**: Entity caches provide consistent data across the application
+- **Maintainability**: Changes to entity data only require cache updates, not endpoint response changes
+
+**Pattern**:
+
+**Before (Nested Data)**:
+```typescript
+{
+  id: 1,
+  name: "Domain Name",
+  domainSpells: [
+    {
+      spellId: 5,
+      spellLevel: 1,
+      spell: {
+        id: 5,
+        name: "Spell Name",
+        summary: "Spell summary text"
+      }
+    }
+  ]
+}
+```
+
+**After (Lightweight with IDs)**:
+```typescript
+{
+  id: 1,
+  name: "Domain Name",
+  domainSpells: [
+    {
+      spellId: 5,
+      spellLevel: 1
+    }
+  ]
+}
+```
+
+**Frontend Resolution**:
+```typescript
+const spellName = getSpellNameFromCache(queryClient, domainSpell.spellId);
+const spellSummary = getSpellSummaryFromCache(queryClient, domainSpell.spellId);
+```
+
+**When to Use IDs vs Nested Objects**:
+
+- **Use IDs**: For related entities that have pre-populated caches (classes, races, spells, domains, deities, items, monsters, sourcebooks)
+- **Use Nested Objects**: Only when the related entity data is not available in caches or is specific to the relationship context
+
+**Related Documentation**: [Cache-Based ID Maps](cache-based-id-maps.md) for cache lookup implementation
+
 ### **Schema Variation Pattern**
 
 The system uses consistent schema variations for different operations:

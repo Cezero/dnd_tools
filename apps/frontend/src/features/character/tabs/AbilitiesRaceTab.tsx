@@ -484,7 +484,7 @@ export function AbilitiesRaceTab({
             if (state.editionId) {
                 setIsLoadingRaces(true);
                 try {
-                    const racesData = await getRaceSelectByEdition(state.editionId);
+                    const racesData = getRaceSelectByEdition(state.editionId);
                     setRaces(racesData || []);
                 } catch (error) {
                     console.error('Failed to fetch races:', error);

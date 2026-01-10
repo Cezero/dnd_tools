@@ -2,9 +2,9 @@ import type { CharacterWithAllDetailsResponse, FeatureProgression, DnDClass, Fea
 import { AbilityId, GetAbilityModifier, ABILITY_MAP, ProgressionType, EntityAppliesToType } from '@shared/static-data';
 import { getSaveProgression } from '@shared/utils';
 
+import { getAbilityScore } from './abilityScore';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
-import { getAbilityScore } from './abilityScore';
 import type { CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
 import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 

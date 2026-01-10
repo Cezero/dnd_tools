@@ -1,9 +1,9 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 
-import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import {
     ValidatedForm,
     ValidatedInput,

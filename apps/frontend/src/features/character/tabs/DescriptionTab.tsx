@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
 import { useDiceBox } from '@/components/dice-box';
 import type { LocalDiceRollResult } from '@/components/dice-box/types';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
-import { useCacheFunctions } from '@/services/cache';
 import { LanguageService } from '@/lib/LanguageService';
+import { hasNoMaxRanks } from '@/lib/skill-utils';
+import { useCacheFunctions } from '@/services/cache';
 import {
     ALIGNMENT_LIST,
     LANGUAGE_MAP,
     GetAbilityModifier,
     AbilityId,
-    Skill,
     EntityAppliesToType
 } from '@shared/static-data';
 
@@ -254,8 +254,8 @@ export function DescriptionTab({
         setIsRollingAge(true);
         isAgeRollPendingRef.current = true;
         try {
-            const raceData = await getRaceNameById(state.raceId);
-            const classData = await getClassNameById(state.classId);
+            const raceData = getRaceNameById(state.raceId);
+            const classData = getClassNameById(state.classId);
 
             if (raceData?.name && classData?.name) {
                 const notation = getAgeDiceNotation(raceData.name, classData.name);
@@ -284,7 +284,7 @@ export function DescriptionTab({
 
         setIsRollingHeightWeight(true);
         try {
-            const raceData = await getRaceNameById(state.raceId);
+            const raceData = getRaceNameById(state.raceId);
 
             if (raceData?.name) {
                 const config = getHeightWeightConfig(raceData.name, state.gender);
@@ -350,9 +350,9 @@ export function DescriptionTab({
         const intModifier = GetAbilityModifier(intValue);
         const maxBonusLanguages = Math.max(0, intModifier);
 
-        // Get skill-based languages from skill ranks
+        // Get skill-based languages from skill ranks (skills with no max rank limit, e.g., Speak Language)
         const skillBasedLanguages = state.skillRanks
-            .filter(skill => skill.skillId === Skill.SpeakLanguage)
+            .filter(skill => hasNoMaxRanks(skill.skillId))
             .map(skill => {
                 // Try skillSubId first, then customSubtype
                 if (skill.skillSubId !== null && skill.skillSubId !== undefined) {

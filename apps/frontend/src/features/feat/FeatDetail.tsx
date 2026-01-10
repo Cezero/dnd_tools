@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
@@ -22,7 +21,6 @@ export function FeatDetail() {
     const navigate = useNavigate();
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
-    const queryClient = useQueryClient();
 
     // Fetch feat metadata
     const { data: feat, isLoading: featLoading, error: _error } = FeatQueryHooks.useGetFeatById({
@@ -55,7 +53,7 @@ export function FeatDetail() {
             try {
                 // Use display strategy to format the progression (includes prerequisite formatting in Phase 6)
                 const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                const displayResult = strategy.format(featProgression, { queryClient });
+                const displayResult = strategy.format(featProgression);
 
                 // Get formatted prerequisites from the display result
                 setPrereqDisplayTexts(displayResult.formattedPrerequisites || []);
@@ -66,7 +64,7 @@ export function FeatDetail() {
         };
 
         formatPrerequisites();
-    }, [featProgression, feature?.prerequisites, queryClient, entitiesPrecached]);
+    }, [featProgression, feature?.prerequisites, entitiesPrecached]);
 
     const handleBack = () => {
         navigate(`/feats${fromListParams ? `?${fromListParams}` : ''}`);

@@ -13,10 +13,41 @@ import type { TrickService } from './types';
 
 const prisma = new PrismaClient();
 
+/**
+ * Trick Service
+ * 
+ * Provides trick management for animal companions. Tricks are abilities that can be taught
+ * to animal companions. Supports edition-based filtering, visibility management, and source
+ * book attribution through transaction-based source book mapping.
+ * 
+ * Key Features:
+ * - Trick CRUD operations with source book management
+ * - Edition-based filtering for multi-edition support
+ * - Visibility flag for content management
+ * - Transaction-based source book mapping with delete/recreate pattern
+ * 
+ * Integration Points:
+ * - Companion System: Character companions have tricks
+ * - Source Book System: Tricks have source attribution
+ * 
+ * @see TrickService interface for method signatures
+ * @see trickController for request handling
+ * @see trickRoutes for API endpoints
+ */
 export const trickService: TrickService = {
+    /**
+     * Retrieves all tricks with optional edition filtering and visibility filtering.
+     * 
+     * Supports optional editionId parameter for filtering tricks by edition. Always filters
+     * by isVisible flag to hide unpublished tricks. Orders results by name for consistent
+     * presentation.
+     * 
+     * @param editionId - Optional edition ID to filter by
+     * @returns Promise resolving to GetAllTricksResponse with total count and results array
+     */
     async getAllTricks(editionId?: number): Promise<GetAllTricksResponse> {
         const where = editionId ? { editionId, isVisible: true } : { isVisible: true };
-        
+
         const [tricks, total] = await Promise.all([
             prisma.trick.findMany({
                 where,
@@ -85,6 +116,17 @@ export const trickService: TrickService = {
         return { id: result.id.toString(), message: 'Trick created successfully' };
     },
 
+    /**
+     * Updates an existing trick with source book mapping management.
+     * 
+     * Uses delete/recreate pattern for source book mappings to ensure data consistency.
+     * Only updates source book mappings if sourceBookInfo array is explicitly provided
+     * (undefined means no change).
+     * 
+     * @param data - UpdateTrickRequest with updated data and optional sourceBookInfo array
+     * @param query - TrickIdParamRequest with trick ID
+     * @returns Promise resolving to UpdateResponse with success message
+     */
     async updateTrick(data: UpdateTrickRequest, query: TrickIdParamRequest): Promise<UpdateResponse> {
         const { sourceBookInfo, ...trickData } = data;
 

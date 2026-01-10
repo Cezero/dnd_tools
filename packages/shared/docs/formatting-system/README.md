@@ -378,6 +378,8 @@ graph TD
 - **[Final Implementation Summary](./final-implementation-summary.md)** - Complete implementation overview
 - **[Refactoring Strategy](./refactoring-strategy.md)** - Architecture design decisions and patterns
 - **[Architecture Decisions](./architecture-decisions.md)** - Key architectural decisions and future extensibility
+- **[QueryClient Accessor](./queryclient-accessor.md)** - Centralized QueryClient access pattern
+- **[Entity Precaching](./entity-precaching.md)** - Entity precaching system for name resolution
 
 ### **Key Files**
 - `frontend/src/lib/formatters/display-strategies.ts` - Display strategy implementations (Layer 6), updated for groupingId

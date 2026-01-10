@@ -3,18 +3,19 @@ import jsPDF from 'jspdf';
 import ordinal from 'ordinal';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
+import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { displayStrategyFactory } from '@/lib/formatters';
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
+import { hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes, getSkillSubtypeName } from '@/lib/skill-utils';
+import { getRaceNameFromCache, getClassNameFromCache, getSkillNameById } from '@/services/cache';
 import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
-import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, Feat, CharacterItem, Spell } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SPELL_COMPONENT_MAP, SPELL_SCHOOL_MAP, SPELL_SUBSCHOOL_MAP } from '@shared/static-data';
-import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
+import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, CharacterItem, Spell } from '@shared/schema';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType, SPELL_COMPONENT_MAP, SPELL_SCHOOL_MAP, SPELL_SUBSCHOOL_MAP } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 /**
@@ -35,12 +36,12 @@ export async function generateCharacterPdf(
     }
     // Use provided race data or fetch from cache if available
     let fullRace: Race | null = raceData || null;
-    if (!fullRace && character.race?.id) {
+    if (!fullRace && character.raceId) {
         if (queryClient) {
             try {
                 fullRace = await queryClient.fetchQuery({
-                    queryKey: RaceQueryHooks.getRaceByIdQueryKey(character.race.id),
-                    queryFn: () => RaceQueryHooks.getRaceById(character.race.id),
+                    queryKey: RaceQueryHooks.getRaceByIdQueryKey(character.raceId),
+                    queryFn: () => RaceQueryHooks.getRaceById(character.raceId),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
@@ -88,9 +89,6 @@ export async function generateCharacterPdf(
         }
     }
 
-    // Fetch all feats to build featsMap using cache
-    // Feats are now accessed via cache lookups in formatters, no need to build a map
-
     // Format character using unified formatter
     const characterSheetStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
     let formattedCharacter: FormattedCharacterResult | null = null;
@@ -115,13 +113,6 @@ export async function generateCharacterPdf(
     }
 
     try {
-        const characterContextWithQueryClient = {
-            character: characterContext,
-            featsMap,
-            classSkills: classSkills?.length > 0 ? classSkills : undefined,
-            skillBonuses: skillBonuses?.length > 0 ? skillBonuses : undefined,
-            queryClient,
-        };
         formattedCharacter = characterSheetStrategy.formatCharacter(
             character,
             resolvedProgressions,
@@ -130,7 +121,6 @@ export async function generateCharacterPdf(
             classDetailsMap,
             {
                 character: characterContext,
-                featsMap,
                 classSkills: classSkills && classSkills.length > 0 ? classSkills : undefined,
                 skillBonuses: skillBonuses && skillBonuses.length > 0 ? skillBonuses : undefined,
                 queryClient
@@ -497,7 +487,8 @@ export async function generateCharacterPdf(
     xPos += fieldWidths.line2.class + fieldSpacing;
 
     // Race
-    drawField(xPos, line2Y, fieldWidths.line2.race, character.race?.name || '', 'RACE');
+    const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || '' : '';
+    drawField(xPos, line2Y, fieldWidths.line2.race, raceName, 'RACE');
     xPos += fieldWidths.line2.race + fieldSpacing;
 
     // Size (from full race object, if available)
@@ -1228,7 +1219,7 @@ export async function generateCharacterPdf(
                 // Format this entity using the display strategy
                 const displayResult = characterSheetStrategy.format([progression], {
                     character: characterContext,
-                    featsMap
+                    queryClient
                 });
 
                 // Find the formatted entity in the result
@@ -1724,7 +1715,7 @@ export async function generateCharacterPdf(
                 // Format this entity using the display strategy
                 const displayResult = characterSheetStrategy.format([progression], {
                     character: characterContext,
-                    featsMap
+                    queryClient
                 });
 
                 // Find the formatted entity in the result
@@ -1736,21 +1727,17 @@ export async function generateCharacterPdf(
                 if (formattedEntity && formattedEntity.formattedValue) {
                     // Remove skill name prefix if present (format is "Skill Name: value")
                     let modifierText = formattedEntity.formattedValue;
-                    const skillData = SKILL_LIST.find(s => s.id === entity.appliesToId);
+                    const skillData = getSkillNameById(entity.appliesToId);
                     if (skillData) {
                         // Check for skill name with subtype
                         let skillNameWithSubtype = skillData.name;
                         const entitySubId = entity.appliesToSubId;
                         if (entitySubId !== null && entitySubId !== undefined && entitySubId !== -1) {
-                            if (entity.appliesToId === 6) { // Craft
-                                const craftSubtype = CRAFT_SKILL_MAP[entitySubId as keyof typeof CRAFT_SKILL_MAP];
-                                if (craftSubtype) {
-                                    skillNameWithSubtype = `${skillData.name} (${craftSubtype.name})`;
-                                }
-                            } else if (entity.appliesToId === 19) { // Knowledge
-                                const knowledgeSubtype = KNOWLEDGE_SKILL_MAP[entitySubId as keyof typeof KNOWLEDGE_SKILL_MAP];
-                                if (knowledgeSubtype) {
-                                    skillNameWithSubtype = `${skillData.name} (${knowledgeSubtype.name})`;
+                            if (hasSubtypes(entity.appliesToId)) {
+                                const subtypes = getSkillSubtypes(entity.appliesToId);
+                                const subtype = subtypes.find(s => s.id === entitySubId);
+                                if (subtype) {
+                                    skillNameWithSubtype = `${skillData.name} (${subtype.name})`;
                                 }
                             }
                         }
@@ -1799,13 +1786,24 @@ export async function generateCharacterPdf(
         skillX += classSkillWidth + 2;
 
         // SKILL NAME (plain text) - add superscript '1' if can be used untrained
-        const skillData = SKILL_LIST.find(s => s.id === skill.skillId);
+        const skillData = getSkillNameById(skill.skillId);
         const canBeUsedUntrained = skillData && !skillData.trainedOnly;
+
+        // Build skill name with subtype - always build it to ensure subtypes are displayed correctly
+        let skillNameToDisplay = skillData?.name || skill.skillName;
+        if (hasSubtypes(skill.skillId) && skill.skillSubId !== null && skill.skillSubId !== undefined) {
+            const subtypeName = getSkillSubtypeName(skill.skillId, skill.skillSubId);
+            if (subtypeName) {
+                skillNameToDisplay = `${skillData?.name || skill.skillName} (${subtypeName})`;
+            }
+        } else if (usesCustomSubtype(skill.skillId) && skill.customSubtype && skill.customSubtype !== '__placeholder__') {
+            skillNameToDisplay = `${skillData?.name || skill.skillName} (${skill.customSubtype})`;
+        }
 
         doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'normal');
-        const skillNameTextWidth = doc.getTextWidth(skill.skillName);
-        doc.text(skill.skillName, skillX, skillY);
+        const skillNameTextWidth = doc.getTextWidth(skillNameToDisplay);
+        doc.text(skillNameToDisplay, skillX, skillY);
 
         // Add superscript '1' if skill can be used untrained
         if (canBeUsedUntrained) {
@@ -1823,7 +1821,7 @@ export async function generateCharacterPdf(
         // Check if skill is affected by armor check penalty from database
         const skillFromDb = skillsMap.get(skill.skillId);
         const hasArmorCheckPenalty = skillFromDb?.affectedByArmor ?? false;
-        const isSwim = skillData && skill.skillId === Skill.Swim; // Swim has double penalty
+        const isSwim = skillData && hasDoubleArmorPenalty(skill.skillId); // Skills with double armor penalty (e.g., Swim)
 
         doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'normal');
@@ -2574,7 +2572,7 @@ export async function generateCharacterPdf(
             }
         }
         if (raceFeatureMap.size > 0) {
-            const raceName = character.race?.name || 'Race';
+            const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || 'Race' : 'Race';
             doc.text(`-- ${raceName.toUpperCase()} --`, page2RightColX + 2, abilitiesY);
             abilitiesY += 8;
             doc.setFontSize(6);
@@ -2779,10 +2777,10 @@ export async function generateCharacterPdf(
             if (!progression.entities) continue;
             for (const entity of progression.entities) {
                 if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
-                    // Check if this is NOT a choice and NOT a proficiency
+                    // Check if this is NOT a choice
                     // If it's not in featSourceMap, it's auto-granted (not selected by player)
-                    if (!(entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.Proficiency) &&
-                        entity.type !== EntityType.Choice &&
+                    // Note: We don't need to check for proficiency here since appliesTo is already Feat
+                    if (entity.type !== EntityType.Choice &&
                         !featSourceMap.has(entity.appliesToId)) {
                         // Check if this feat is in formattedCharacter.feats (meaning it was granted)
                         const isInFormattedFeats = formattedCharacter.feats?.some(f => f.featId === entity.appliesToId);
@@ -2838,11 +2836,12 @@ export async function generateCharacterPdf(
                 let featureName = autoGranted.sourceFeature;
                 if (progression?.sourceType === FeatureSourceType.Race) {
                     // Prefix with race name
-                    const raceName = character.race?.name || 'Race';
+                    const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || 'Race' : 'Race';
                     featureName = `${raceName} ${featureName}`;
-                } else if (progression?.sourceType === FeatureSourceType.Class && progression.class?.name) {
+                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classId) {
                     // Prefix with class name
-                    featureName = `${progression.class.name} Granted`;
+                    const className = getClassNameFromCache(progression.classId) || 'Class';
+                    featureName = `${className} Granted`;
                 }
 
                 const header = `${featureName}:`;
@@ -2858,11 +2857,12 @@ export async function generateCharacterPdf(
                 let featureName = characterFeat.sourceFeature.featureName;
                 if (progression?.sourceType === FeatureSourceType.Race) {
                     // Prefix with race name
-                    const raceName = character.race?.name || 'Race';
+                    const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || 'Race' : 'Race';
                     featureName = `${raceName} ${featureName}`;
-                } else if (progression?.sourceType === FeatureSourceType.Class && progression.class?.name) {
+                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classId) {
                     // Prefix with class name
-                    featureName = `${progression.class.name} ${featureName}`;
+                    const className = getClassNameFromCache(progression.classId) || 'Class';
+                    featureName = `${className} ${featureName}`;
                 }
 
                 const header = `${featureName}:`;
@@ -2919,9 +2919,8 @@ export async function generateCharacterPdf(
                 doc.setFont('ArchivoNarrow', 'normal');
 
                 for (const { feat, characterFeat, showLevelIndicator } of category.feats) {
-                    // Look up actual feat name from featsMap
-                    const featData = featsMap.get(feat.featId);
-                    const actualFeatName = featData?.name || feat.featName;
+                    // Use feat name from formatted result (feat.featName is already available)
+                    const actualFeatName = feat.featName;
 
                     // Get featSubId and resolve to item name
                     const featSubId = featSubIdMap.get(feat.featId);
@@ -3101,7 +3100,7 @@ export async function generateCharacterPdf(
             character,
             EntityAppliesToType.Uses,
             undefined,
-            featsMap,
+            undefined, // featsMap is optional - function will use progression.feature?.name as fallback
             resolvedProgressions
         );
         const turnAttemptBonus = turnAttemptBenefits.reduce((sum, b) => sum + b.amount, 0);
@@ -3396,7 +3395,7 @@ async function generateSpellSheet(
                 // Unlike prepared casters (Cleric, Druid) which display all spells per level
                 // However, 0th level spells may be granted via feature system (EntityType.Other + SpellbookSpell)
                 // Check if 0th level spells are granted via feature
-                const hasZeroLevelGrant = resolvedProgressions 
+                const hasZeroLevelGrant = resolvedProgressions
                     ? hasZeroLevelSpellbookSpellsGrant(resolvedProgressions, classId)
                     : false;
 

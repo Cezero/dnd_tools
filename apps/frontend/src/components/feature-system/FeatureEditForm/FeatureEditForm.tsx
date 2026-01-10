@@ -15,12 +15,13 @@ import {
     useFormContext
 } from '@/components/forms';
 import { displayStrategyFactory } from '@/lib/formatters';
+import { useCacheFunctions } from '@/services/cache';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { CreateFeatureRequest, CreateFeatureSchema, UpdateFeatureRequest, UpdateFeatureSchema, GetFeatureResponse, FeatureProgression, FeaturePrerequisite, Feature } from '@shared/schema';
-import { DisplayType, FEATURE_PRE_REQ_LIST, FeaturePrerequisiteType, SKILL_LIST, FeatureSourceType, ABILITY_LIST } from '@shared/static-data';
+import { DisplayType, FEATURE_PRE_REQ_LIST, FeaturePrerequisiteType, FeatureSourceType, ABILITY_LIST } from '@shared/static-data';
 
 import { FeatureEditFormProps } from './types';
 
@@ -50,7 +51,7 @@ export function FeatureEditForm({
     const hasInitializedRef = useRef(false);
     const previousFeatureIdRef = useRef<number | 'new' | string | undefined>(featureId);
     const initialProgressionsRef = useRef(initialProgressions);
-    
+
     // Update ref when initialProgressions changes, but only use it on first initialization
     useEffect(() => {
         initialProgressionsRef.current = initialProgressions;
@@ -157,7 +158,7 @@ export function FeatureEditForm({
         };
 
         fetchFeature();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
     }, [featureId, mode, isOpen]);
 
     const addPrerequisite = () => {
@@ -787,6 +788,8 @@ function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
     const prerequisites = formData.prerequisites as FeaturePrerequisite[] || [];
     const prerequisite = prerequisites[index] || { type: undefined };
 
+    const { getSkillSelectFull } = useCacheFunctions();
+
     const { data: featsResponse } = FeatQueryHooks.useGetFeats({});
     const featOptions = featsResponse?.results || [];
 
@@ -815,7 +818,7 @@ function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
                             field={`prerequisites.${index}.appliesToId`}
                             label="Skill"
                             required
-                            options={SKILL_LIST}
+                            options={getSkillSelectFull()}
                             placeholder="Select skill"
                             componentExtraClassName="flex items-center gap-2"
                             nested

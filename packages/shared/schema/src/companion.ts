@@ -23,20 +23,14 @@ export const CharacterCompanionSchema = z.object({
 });
 
 // Companion with relations schema
+// monster object removed - frontend should resolve monster names from monsters-cache using monsterId
 export const CompanionWithRelationsSchema = CompanionSchema.extend({
-    monster: z.object({
-        id: z.number().int().positive(),
-        name: z.string(),
-    }).optional(),
     features: z.array(FeatureProgressionSchema).optional(),
 });
 
 // Character Companion with relations schema
+// monster object removed - frontend should resolve monster names from monsters-cache using monsterId
 export const CharacterCompanionWithRelationsSchema = CharacterCompanionSchema.extend({
-    monster: z.object({
-        id: z.number().int().positive(),
-        name: z.string(),
-    }).optional(),
     companion: z.object({
         id: z.number().int().positive(),
         type: z.number().int().positive(),

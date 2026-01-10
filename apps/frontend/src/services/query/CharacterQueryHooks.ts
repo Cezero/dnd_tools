@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+
 import {
     CharacterIdParamSchema,
     CreateCharacterSchema,
@@ -140,8 +142,8 @@ export const CharacterQueryHooks = {
     useRemoveSpellKnown: removeSpellKnownConfig.useMutation,
 
     getCharacterSpellSelection: (characterId: number, classId: number) => getCharacterSpellSelectionConfig.fetch({ pathParams: { id: characterId, classId: classId.toString() } }),
-    addSpellKnown: (data: unknown, queryClient?: any) => addSpellKnownConfig.mutate({ requestData: data }, queryClient),
-    removeSpellKnown: (data: unknown, queryClient?: any) => removeSpellKnownConfig.mutate({ requestData: data }, queryClient),
+    addSpellKnown: (data: unknown, queryClient?: QueryClient) => addSpellKnownConfig.mutate({ requestData: data }, queryClient),
+    removeSpellKnown: (data: unknown, queryClient?: QueryClient) => removeSpellKnownConfig.mutate({ requestData: data }, queryClient),
 
     getCharacterSpellSelectionQueryFn: getCharacterSpellSelectionConfig.queryFn,
     getCharacterSpellSelectionQueryKey: (characterId: number, classId: number) => getCharacterSpellSelectionConfig.queryKeyBuilder({ pathParams: { id: characterId, classId: classId.toString() } }),

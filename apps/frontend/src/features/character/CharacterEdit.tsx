@@ -15,19 +15,20 @@ import { CharacterApi } from '@/features/character/CharacterApi';
 import { CharacterEditStateUpdateType, type EquipmentItem, type SkillRank, type TabConfig, type TabComponentProps } from '@/features/character/types';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
+import { hasNoMaxRanks } from '@/lib/skill-utils';
+import { CharacterResolutionApi, type CharacterUpdate } from '@/services/api/CharacterResolutionApi';
+import { useCacheFunctions } from '@/services/cache';
 import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatInQueryResponse, Feat, ItemWithDetails, FeatureProgression } from '@shared/schema';
-import { EditionId, Skill, DisplayType } from '@shared/static-data';
+import { EditionId, DisplayType } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
 import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab, SpellSelectionTab } from './tabs';
 import { useCharacterResolution } from './useCharacterResolution';
-import { CharacterResolutionApi, type CharacterUpdate } from '@/services/api/CharacterResolutionApi';
-import { useCacheFunctions } from '@/services/cache';
 
 export function CharacterEdit(): React.JSX.Element {
     const { user, isLoading: isAuthLoading } = useAuthAuto();
@@ -58,6 +59,8 @@ export function CharacterEdit(): React.JSX.Element {
     // Shared data for all tabs - feats, classes, race
     const [allFeats, setAllFeats] = useState<FeatInQueryResponse[]>([]);
     const [isLoadingFeats, setIsLoadingFeats] = useState(false);
+    const [featsMap, setFeatsMap] = useState<Map<number, Feat>>(new Map());
+    const [isLoadingFullFeats, setIsLoadingFullFeats] = useState(false);
 
     // Initialize from user preferences
     useEffect(() => {
@@ -360,7 +363,44 @@ export function CharacterEdit(): React.JSX.Element {
 
     // Fetch all full feats (with benefits and prereqs) on component mount
     // Use TanStack Query to leverage caching
-
+    useEffect(() => {
+        let isMounted = true;
+        const fetchFullFeats = async () => {
+            try {
+                setIsLoadingFullFeats(true);
+                // Use queryClient.fetchQuery to leverage TanStack Query cache
+                const featResponse = await queryClient.fetchQuery({
+                    queryKey: FeatQueryHooks.getFeatsQueryKey(),
+                    queryFn: FeatQueryHooks.getFeatsQueryFn,
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
+                // getFeats returns GetAllFeatsWithFeatureInfoResponse which has results: Feat[]
+                if (isMounted && featResponse?.results) {
+                    const map = new Map<number, Feat>();
+                    for (const feat of featResponse.results) {
+                        map.set(feat.id, feat);
+                    }
+                    setFeatsMap(map);
+                } else if (isMounted) {
+                    setFeatsMap(new Map());
+                }
+            } catch (error) {
+                console.error('Failed to fetch full feats:', error);
+                if (isMounted) {
+                    setFeatsMap(new Map());
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoadingFullFeats(false);
+                }
+            }
+        };
+        fetchFullFeats();
+        return () => {
+            isMounted = false;
+        };
+    }, [queryClient]);
 
     // Helper function to extract choices from character advancements
 
@@ -669,9 +709,9 @@ export function CharacterEdit(): React.JSX.Element {
             // Add selected bonus languages
             allLanguages.push(...state.selectedBonusLanguages);
 
-            // Add skill-based languages from skill ranks
+            // Add skill-based languages from skill ranks (skills with no max rank limit, e.g., Speak Language)
             const skillBasedLanguages = state.skillRanks
-                .filter(skill => skill.skillId === Skill.SpeakLanguage)
+                .filter(skill => hasNoMaxRanks(skill.skillId))
                 .map(skill => {
                     if (skill.skillSubId !== null && skill.skillSubId !== undefined) {
                         return skill.skillSubId;
@@ -1114,9 +1154,9 @@ export function CharacterEdit(): React.JSX.Element {
         // Use empty array if progressions aren't resolved yet - will update when they resolve
         const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.progressions || []);
 
-        // Get skill-based languages from skill ranks
+        // Get skill-based languages from skill ranks (skills with no max rank limit, e.g., Speak Language)
         const skillBasedLanguages = state.skillRanks
-            .filter(skill => skill.skillId === Skill.SpeakLanguage)
+            .filter(skill => hasNoMaxRanks(skill.skillId))
             .map(skill => {
                 if (skill.skillSubId !== null && skill.skillSubId !== undefined) {
                     return skill.skillSubId;
@@ -1249,6 +1289,8 @@ export function CharacterEdit(): React.JSX.Element {
         sharedData: {
             allFeats,
             isLoadingFeats,
+            featsMap,
+            isLoadingFullFeats,
             primaryClass: primaryClassData,
             secondaryClass: secondaryClassData,
             race: raceData,

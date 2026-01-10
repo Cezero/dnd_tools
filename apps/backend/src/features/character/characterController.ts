@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 
 import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
+import { PrismaClient } from '@shared/prisma-client';
 import {
     CharacterIdParamRequest,
     AdvancementIdParamRequest,
@@ -39,7 +40,6 @@ import {
     CharacterSpellSelectionParamRequest,
 } from '@shared/schema';
 
-import { PrismaClient } from '@shared/prisma-client';
 import { characterService } from './characterService';
 
 const prisma = new PrismaClient();

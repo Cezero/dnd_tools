@@ -1,10 +1,11 @@
 import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, EntityAppliesToType } from '@shared/static-data';
+
+import { getAbilityScore } from './abilityScore';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
-import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
-import { getAbilityScore } from './abilityScore';
 import type { CalculationResult } from '../types';
+import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 
 /**
  * Breakdown map for initiative

@@ -1,6 +1,5 @@
-import type { FeatureEntity, FormulaParamsData } from '@shared/schema';
+import type { FeatureEntity, FormulaParamsData , CharacterWithAllDetailsResponse } from '@shared/schema';
 import { FORMULA_MAP } from '@shared/static-data';
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
 
 /**
  * Apply a feature formula to get the calculated value

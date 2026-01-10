@@ -1,84 +1,80 @@
 # Skill System Static Data
 
-*Complete documentation for the skill system static data, including enums, types, and reference data structures.*
+*Complete documentation for the skill system static data, including types and reference data structures.*
 
 ## 📋 **Overview**
 
-The skill system static data provides enums, types, and utility functions that define the behavior and capabilities of the skill system. This includes skill definitions, retry types, and various utility functions for skill calculations and management.
+The skill system static data provides types and utility functions that define the behavior and capabilities of the skill system. This includes skill retry types and various utility functions for skill calculations and management.
 
 The static data layer serves as the foundation for type safety, validation, and consistent behavior across the skill system. It defines the vocabulary and rules that govern how skills interact with characters and other game systems.
 
+**Note**: Skill definitions and identification are now fully database-driven. The `Skill` enum has been removed, and all skill lookups are performed through the database and skills-cache API.
+
+**Migration to Database-Driven Approach**: The skill system has been fully migrated from static data maps to a database-driven approach. Skill subtypes (Craft and Knowledge) are now stored in the database via the `SkillSubtype` model, and special skill behaviors (subtypes, custom subtypes, no max ranks, double armor penalty) are now indicated via database flags rather than hardcoded comparisons. All skill identification and lookups are performed through the database and skills-cache API.
+
 **Source File**: `packages/shared/static-data/src/SkillData.ts`
 
-## 🏗️ **Core Enums and Types**
+## 🏗️ **Core Types and Data Structures**
 
 ### **Skill Definitions**
 
-Defines all available skills with their key abilities, training requirements, and characteristics.
+Skills are now fully database-driven. This section describes the skill categories and their characteristics as stored in the database.
 
-**Purpose**: Identifies all available skills in the game system, including their key abilities, training requirements, and special characteristics.
+**Purpose**: Documents the available skills in the game system, including their key abilities, training requirements, and special characteristics. All skill data is accessed through the database and skills-cache API.
 
 **Skill Categories**:
 
 **Physical Skills**: Skills based on physical abilities
-- **`Climb` (4)**: Strength-based climbing skill
-- **`Jump` (18)**: Strength-based jumping skill
-- **`Swim` (42)**: Strength-based swimming skill
-- **`Balance` (2)**: Dexterity-based balance skill
-- **`Escape Artist` (11)**: Dexterity-based escape skill
-- **`Hide` (16)**: Dexterity-based hiding skill
-- **`Move Silently` (30)**: Dexterity-based stealth skill
-- **`Open Lock` (31)**: Dexterity-based lockpicking skill
-- **`Ride` (34)**: Dexterity-based riding skill
-- **`Sleight of Hand` (37)**: Dexterity-based sleight of hand skill
-- **`Tumble` (43)**: Dexterity-based tumbling skill
-- **`Use Rope` (45)**: Dexterity-based rope use skill
+- **`Climb`**: Strength-based climbing skill
+- **`Jump`**: Strength-based jumping skill
+- **`Swim`**: Strength-based swimming skill (has double armor check penalty, indicated by `doubleArmorPenalty` database flag)
+- **`Balance`**: Dexterity-based balance skill
+- **`Escape Artist`**: Dexterity-based escape skill
+- **`Hide`**: Dexterity-based hiding skill
+- **`Move Silently`**: Dexterity-based stealth skill
+- **`Open Lock`**: Dexterity-based lockpicking skill
+- **`Ride`**: Dexterity-based riding skill
+- **`Sleight of Hand`**: Dexterity-based sleight of hand skill
+- **`Tumble`**: Dexterity-based tumbling skill
+- **`Use Rope`**: Dexterity-based rope use skill
 
 **Mental Skills**: Skills based on mental abilities
-- **`Appraise` (1)**: Intelligence-based appraisal skill
-- **`Craft` (6)**: Intelligence-based crafting skill
-- **`Decipher Script` (7)**: Intelligence-based script deciphering skill
-- **`Disable Device` (9)**: Intelligence-based device disabling skill
-- **`Forgery` (12)**: Intelligence-based forgery skill
-- **`Search` (35)**: Intelligence-based search skill
-- **`Spellcraft` (39)**: Intelligence-based spellcraft skill
-- **`Concentration` (5)**: Constitution-based concentration skill
-- **`Heal` (15)**: Wisdom-based healing skill
-- **`Listen` (29)**: Wisdom-based listening skill
-- **`Profession` (33)**: Wisdom-based profession skill
-- **`Sense Motive` (36)**: Wisdom-based sense motive skill
-- **`Spot` (40)**: Wisdom-based spot skill
-- **`Survival` (41)**: Wisdom-based survival skill
+- **`Appraise`**: Intelligence-based appraisal skill
+- **`Craft`**: Intelligence-based crafting skill (has predefined subtypes, indicated by `hasSubtypes` database flag)
+- **`Decipher Script`**: Intelligence-based script deciphering skill
+- **`Disable Device`**: Intelligence-based device disabling skill
+- **`Forgery`**: Intelligence-based forgery skill
+- **`Search`**: Intelligence-based search skill
+- **`Spellcraft`**: Intelligence-based spellcraft skill
+- **`Concentration`**: Constitution-based concentration skill
+- **`Heal`**: Wisdom-based healing skill
+- **`Listen`**: Wisdom-based listening skill
+- **`Profession`**: Wisdom-based profession skill (uses custom subtypes, indicated by `usesCustomSubtype` database flag)
+- **`Sense Motive`**: Wisdom-based sense motive skill
+- **`Spot`**: Wisdom-based spot skill
+- **`Survival`**: Wisdom-based survival skill
 
 **Social Skills**: Skills based on social abilities
-- **`Bluff` (3)**: Charisma-based bluffing skill
-- **`Diplomacy` (8)**: Charisma-based diplomacy skill
-- **`Disguise` (10)**: Charisma-based disguise skill
-- **`Gather Information` (13)**: Charisma-based information gathering skill
-- **`Handle Animal` (14)**: Charisma-based animal handling skill
-- **`Intimidate` (17)**: Charisma-based intimidation skill
-- **`Perform` (32)**: Charisma-based performance skill
-- **`Use Magic Device` (44)**: Charisma-based magic device use skill
+- **`Bluff`**: Charisma-based bluffing skill
+- **`Diplomacy`**: Charisma-based diplomacy skill
+- **`Disguise`**: Charisma-based disguise skill
+- **`Gather Information`**: Charisma-based information gathering skill
+- **`Handle Animal`**: Charisma-based animal handling skill
+- **`Intimidate`**: Charisma-based intimidation skill
+- **`Perform`**: Charisma-based performance skill (uses custom subtypes, indicated by `usesCustomSubtype` database flag)
+- **`Use Magic Device`**: Charisma-based magic device use skill
 
 **Knowledge Skills**: Intelligence-based knowledge skills
-- **`Knowledge (arcana)` (19)**: Knowledge of magic and arcane lore
-- **`Knowledge (architecture and engineering)` (20)**: Knowledge of architecture and engineering
-- **`Knowledge (dungeoneering)` (21)**: Knowledge of dungeons and underground environments
-- **`Knowledge (geography)` (22)**: Knowledge of geography and lands
-- **`Knowledge (history)` (23)**: Knowledge of history and past events
-- **`Knowledge (local)` (24)**: Knowledge of local areas and customs
-- **`Knowledge (nature)` (25)**: Knowledge of nature and natural environments
-- **`Knowledge (nobility and royalty)` (26)**: Knowledge of nobility and royal customs
-- **`Knowledge (religion)` (27)**: Knowledge of religion and divine lore
-- **`Knowledge (the planes)` (28)**: Knowledge of other planes of existence
+- **`Knowledge`**: Intelligence-based knowledge skill (has predefined subtypes, indicated by `hasSubtypes` database flag)
+  - Knowledge subtypes include: Arcana, Architecture and Engineering, Dungeoneering, Geography, History, Local, Nature, Nobility and Royalty, Religion, The Planes
 
 **Special Skills**: Unique skills with special characteristics
-- **`Speak Language` (38)**: Special skill for learning languages
-- **`Wild Empathy` (46)**: Special analog skill for wild empathy
+- **`Speak Language`**: Special skill for learning languages (has no maximum rank limit, indicated by `hasNoMaxRanks` database flag)
+- **`Wild Empathy`**: Special analog skill for wild empathy (indicated by `isAnalog` database flag)
 
-**Usage**: Used throughout the application for skill references, calculations, and display.
+**Usage**: Skills are identified by their database IDs and accessed through the skills-cache API. All skill lookups, subtype identification, and special behavior checks use database flags (`hasSubtypes`, `usesCustomSubtype`, `hasNoMaxRanks`, `doubleArmorPenalty`) accessed via the skills-cache and frontend utility functions.
 
-**Source File**: `packages/shared/static-data/src/SkillData.ts` (SKILL_MAP definition)
+**Source File**: `packages/shared/static-data/src/SkillData.ts` (SKILL_RETRY_TYPE_MAP definition)
 
 ### **Skill Retry Types**
 
@@ -97,44 +93,27 @@ Defines the retry types for skills, affecting how skills can be retried after fa
 
 ## 🔧 **Skill Data Structures**
 
-### **SkillMap**
+### **Database-Driven Skill Data**
 
-The primary data structure containing all skill definitions with their characteristics.
+Skill data is now primarily accessed through the database and cached via the skills-cache API endpoint.
 
-**Purpose**: Provides a comprehensive map of all available skills with their defining characteristics.
+**Purpose**: Provides dynamic, database-driven skill data including subtypes and special behavior flags.
 
-**Structure**:
-- **Skill ID**: Unique identifier for each skill
-- **Name**: Human-readable skill name
-- **Ability ID**: Reference to the key ability for the skill
-- **Trained Only**: Boolean flag for training requirement
-- **Is Analog**: Boolean flag for analog skill type
+**Key Data Sources**:
 
-**Usage**: Primary reference for skill data throughout the application.
+**Skills-Cache API**: Lightweight skill data endpoint
+- **Purpose**: Provides skill data optimized for frontend use
+- **Includes**: Skill flags (`hasSubtypes`, `usesCustomSubtype`, `hasNoMaxRanks`, `doubleArmorPenalty`) and subtype arrays
+- **Usage**: Used by frontend utility functions in `frontend/src/lib/skill-utils.ts`
 
-**Source File**: `packages/shared/static-data/src/SkillData.ts` (SKILL_MAP definition)
+**Frontend Utility Functions**: Helper functions for skill type checks
+- **Purpose**: Provides type-safe functions for checking skill characteristics
+- **Functions**: `hasSubtypes()`, `usesCustomSubtype()`, `hasNoMaxRanks()`, `hasDoubleArmorPenalty()`, `getSkillSubtypes()`
+- **Usage**: Replaces hardcoded skill ID comparisons throughout the frontend
 
-### **Skill Lists**
-
-Utility lists derived from the skill map for different use cases.
-
-**Purpose**: Provides filtered and formatted skill lists for different application needs.
-
-**Key Lists**:
-
-**SKILL_LIST**: Complete list of all skills
-- **Purpose**: Provides complete list of all available skills
-- **Usage**: Used for skill selection and display
-
-**FULL_SKILL_SELECT_LIST**: Complete skill list for selection components
-- **Purpose**: Provides skill list formatted for selection components
-- **Usage**: Used in skill selection dropdowns and lists
-
-**SKILL_SELECT_LIST**: Standard skill list (excluding analog skills)
-- **Purpose**: Provides skill list excluding analog skills
-- **Usage**: Used in standard skill selection interfaces
-
-**Source File**: `packages/shared/static-data/src/SkillData.ts` (Skill list definitions)
+**Source Files**: 
+- Backend: `apps/backend/src/features/skill/skillService.ts` (getSkillCache method)
+- Frontend: `apps/frontend/src/lib/skill-utils.ts` (utility functions)
 
 ## 🎯 **Skill Calculations**
 
@@ -145,14 +124,14 @@ The skill ability integration system for determining skill key abilities.
 **Purpose**: Calculate and validate skill key abilities for skill checks and calculations.
 
 **Calculation Pattern**:
-- **Skill Lookup**: Look up skill by ID in skill map
+- **Skill Lookup**: Look up skill by ID from skills-cache
 - **Ability Reference**: Extract key ability ID from skill definition
 - **Ability Validation**: Validate ability ID against ability system
 - **Ability Calculation**: Use ability modifier in skill calculations
 
-**Example**: Skill ID 4 (Climb) has ability ID 1 (Strength), so climb checks use Strength modifier
+**Example**: Climb skill has ability ID 1 (Strength), so climb checks use Strength modifier
 
-**Source File**: `packages/shared/static-data/src/SkillData.ts` (Skill ability integration)
+**Source File**: Skills are accessed via the skills-cache API (`apps/backend/src/features/skill/skillService.ts`)
 
 ### **Skill Training Requirements**
 
@@ -161,14 +140,14 @@ The skill training requirement system for determining skill access.
 **Purpose**: Calculate and validate skill training requirements for character skill access.
 
 **Calculation Pattern**:
-- **Skill Lookup**: Look up skill by ID in skill map
+- **Skill Lookup**: Look up skill by ID from skills-cache
 - **Training Check**: Check trained only flag from skill definition
 - **Access Validation**: Validate character access based on training requirement
 - **Rank Calculation**: Calculate skill ranks based on training requirement
 
-**Example**: Skill ID 7 (Decipher Script) has trained only true, so untrained characters cannot use it
+**Example**: Decipher Script skill has trained only true, so untrained characters cannot use it
 
-**Source File**: `packages/shared/static-data/src/SkillData.ts` (Skill training requirements)
+**Source File**: Skills are accessed via the skills-cache API (`apps/backend/src/features/skill/skillService.ts`)
 
 ## 🔗 **Integration with Other Systems**
 
@@ -215,21 +194,21 @@ The skill system integrates with the feature system for skill-related features:
 
 ### **Data Access Patterns**
 
-The skill system static data is optimized for efficient access:
+The skill system uses a database-driven approach with frontend caching:
 
-**Map-based Access**: Direct access to skill data by ID
-**Cached Lookups**: Frequently accessed data is cached for performance
-**Lazy Loading**: Data is loaded only when needed
-**Memory Management**: Efficient memory usage for large datasets
+**Database Storage**: Skill subtypes and flags are stored in the database
+**Frontend Caching**: Skills-cache API provides lightweight, cached skill data
+**React Query**: Frontend uses React Query for efficient cache management
+**Utility Functions**: Centralized utility functions minimize redundant lookups
 
-### **Calculation Optimization**
+### **Migration Benefits**
 
-Skill calculations are optimized for performance:
+The migration from static data to database-driven approach provides:
 
-**Pre-calculated Values**: Common calculations are pre-computed
-**Formula Caching**: Formula results are cached to avoid recalculation
-**Efficient Algorithms**: Optimized algorithms for skill calculations
-**Batch Processing**: Multiple calculations are processed in batches
+**Dynamic Updates**: Skill subtypes can be updated without code changes
+**Consistency**: Single source of truth in the database
+**Extensibility**: Easy to add new subtypes or special behaviors
+**Maintainability**: Reduced hardcoded logic and improved code clarity
 
 ## 🔗 **Related Documentation**
 

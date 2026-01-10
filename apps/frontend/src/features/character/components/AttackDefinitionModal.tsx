@@ -1,8 +1,8 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+
 import type { AttackDefinition } from '@/features/character/types';
-import type { CharacterItem as CharacterItemSchema, ItemWithDetails } from '@shared/schema';
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { CharacterItem as CharacterItemSchema, ItemWithDetails , CharacterWithAllDetailsResponse } from '@shared/schema';
 import { ARMOR_CATEGORY_ENUM } from '@shared/static-data';
 
 interface AttackDefinitionModalProps {

@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import { z } from 'zod';
 
 import {
     ValidatedNoInput,
@@ -19,7 +20,6 @@ import {
     CreateResponse,
     RaceCacheResponse,
 } from '@shared/schema';
-import { z } from 'zod';
 
 import { raceService } from './raceService';
 /**

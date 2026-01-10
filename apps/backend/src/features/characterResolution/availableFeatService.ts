@@ -1,22 +1,25 @@
-import type { 
-    Feat, 
-    FeatInQueryResponse, 
-    FeatureProgression, 
+import type {
+    Feat,
+    FeatInQueryResponse,
+    FeatureProgression,
     CharacterWithAllDetailsResponse,
     FeaturePrerequisite,
     DnDClass,
     Race
 } from '@shared/schema';
-import { 
-    EntityType, 
-    EntityAppliesToType, 
-    FeatureSourceType,
-    FeaturePrerequisiteType,
-    GetAbilityModifier,
-    AbilityId
+import {
+    EntityType,
+    EntityAppliesToType,
+    FeaturePrerequisiteType
 } from '@shared/static-data';
-import { featService } from '../feat/featService';
 import { getBABProgression } from '@shared/utils';
+
+import { classService } from '../class/classService';
+import { featService } from '../feat/featService';
+
+type FeatWithProgressions = Feat & {
+    featureProgressions: FeatureProgression[];
+};
 
 /**
  * Service for filtering available feats based on character qualifications
@@ -39,11 +42,11 @@ export class AvailableFeatService {
         // We need to fetch featureProgressions for each feat to check prerequisites
         const allFeatsResponse = await featService.getAllFeatsFull();
         const allFeatIds = allFeatsResponse.results.map(f => f.id);
-        
+
         // Fetch featureProgressions for all feats
         const { featureSystemService } = await import('../featureSystem/featureSystemService');
         const allProgressions = await featureSystemService.getFeatureProgressionsByFeatIds(allFeatIds);
-        
+
         // Create a map of feat ID to progressions
         const progressionsByFeatId = new Map<number, typeof allProgressions>();
         for (const progression of allProgressions) {
@@ -54,9 +57,9 @@ export class AvailableFeatService {
                 progressionsByFeatId.get(progression.featId)!.push(progression);
             }
         }
-        
+
         // Create full feat map with featureProgressions
-        const fullFeatMap = new Map<number, Feat>();
+        const fullFeatMap = new Map<number, FeatWithProgressions>();
         for (const feat of allFeatsResponse.results) {
             fullFeatMap.set(feat.id, {
                 ...feat,
@@ -203,7 +206,7 @@ export class AvailableFeatService {
             }
 
             // Feat has prerequisites - check them
-            const meetsPrereqs = this.meetsPrerequisites(
+            const meetsPrereqs = await this.meetsPrerequisites(
                 character,
                 classDetails,
                 raceDetails,
@@ -222,13 +225,13 @@ export class AvailableFeatService {
     /**
      * Check if character meets feat prerequisites
      */
-    private static meetsPrerequisites(
+    private static async meetsPrerequisites(
         character: CharacterWithAllDetailsResponse,
         classDetails: DnDClass | null,
         raceDetails: Race | null,
         prerequisites: FeaturePrerequisite[],
         resolvedProgressions: FeatureProgression[]
-    ): boolean {
+    ): Promise<boolean> {
         if (!prerequisites || prerequisites.length === 0) {
             return true;
         }
@@ -237,132 +240,199 @@ export class AvailableFeatService {
             return false;
         }
 
-        return prerequisites.every(prereq => {
+        for (const prereq of prerequisites) {
+            let meetsPrereq = false;
             switch (prereq.type) {
                 case FeaturePrerequisiteType.AbilityScore: {
-                    if (!prereq.appliesToId || !prereq.minValue) return true;
+                    if (!prereq.appliesToId || !prereq.minValue) {
+                        meetsPrereq = true;
+                        break;
+                    }
                     const abilityScore = character.abilityScores?.find(as => as.abilityId === prereq.appliesToId);
-                    if (!abilityScore) return false;
-                    return abilityScore.value >= prereq.minValue;
+                    if (!abilityScore) {
+                        meetsPrereq = false;
+                        break;
+                    }
+                    meetsPrereq = abilityScore.value >= prereq.minValue;
+                    break;
                 }
 
                 case FeaturePrerequisiteType.BaseAttackBonus: {
-                    if (!prereq.minValue) return true;
-                    const bab = this.getCharacterBAB(character, classDetails);
-                    return bab >= prereq.minValue;
+                    if (!prereq.minValue) {
+                        meetsPrereq = true;
+                        break;
+                    }
+                    const bab = await this.getCharacterBAB(character);
+                    meetsPrereq = bab >= prereq.minValue;
+                    break;
                 }
 
                 case FeaturePrerequisiteType.Feat: {
-                    if (!prereq.appliesToId) return true;
+                    if (!prereq.appliesToId) {
+                        meetsPrereq = true;
+                        break;
+                    }
                     // Check if character has this feat in their advancements
                     if (character.advancements) {
                         for (const advancement of character.advancements) {
                             if (advancement.feats) {
                                 for (const featSelection of advancement.feats) {
                                     if (featSelection.featId === prereq.appliesToId) {
-                                        return true;
+                                        meetsPrereq = true;
+                                        break;
                                     }
                                 }
                             }
+                            if (meetsPrereq) break;
                         }
                     }
                     // Also check granted feats from resolved progressions
-                    for (const progression of resolvedProgressions) {
-                        if (progression.entities) {
-                            for (const entity of progression.entities) {
-                                if (
-                                    entity.type === EntityType.Other &&
-                                    entity.appliesTo === EntityAppliesToType.Feat &&
-                                    entity.appliesToId === prereq.appliesToId
-                                ) {
-                                    return true;
+                    if (!meetsPrereq) {
+                        for (const progression of resolvedProgressions) {
+                            if (progression.entities) {
+                                for (const entity of progression.entities) {
+                                    if (
+                                        entity.type === EntityType.Other &&
+                                        entity.appliesTo === EntityAppliesToType.Feat &&
+                                        entity.appliesToId === prereq.appliesToId
+                                    ) {
+                                        meetsPrereq = true;
+                                        break;
+                                    }
                                 }
                             }
+                            if (meetsPrereq) break;
                         }
                     }
-                    return false;
+                    break;
                 }
 
                 case FeaturePrerequisiteType.SkillRanks: {
-                    if (!prereq.appliesToId || !prereq.minValue) return true;
+                    if (!prereq.appliesToId || !prereq.minValue) {
+                        meetsPrereq = true;
+                        break;
+                    }
                     // Check if character has enough skill ranks
                     if (character.advancements) {
+                        let totalRanks = 0;
                         for (const advancement of character.advancements) {
-                            if (advancement.skillRanks) {
-                                for (const skillRank of advancement.skillRanks) {
-                                    if (skillRank.skillId === prereq.appliesToId) {
-                                        const totalRanks = advancement.skillRanks
-                                            .filter(sr => sr.skillId === prereq.appliesToId)
-                                            .reduce((sum, sr) => sum + (sr.pointsSpent || 0), 0);
-                                        return totalRanks >= prereq.minValue;
+                            if (advancement.skills) {
+                                for (const skill of advancement.skills) {
+                                    if (skill.skillId === prereq.appliesToId) {
+                                        totalRanks += skill.pointsSpent || 0;
                                     }
                                 }
                             }
                         }
+                        meetsPrereq = totalRanks >= prereq.minValue;
+                    } else {
+                        meetsPrereq = false;
                     }
-                    return false;
+                    break;
                 }
 
                 case FeaturePrerequisiteType.CharacterLevel: {
-                    if (!prereq.minValue) return true;
-                    return (character.level || character.advancements?.length || 0) >= prereq.minValue;
+                    if (!prereq.minValue) {
+                        meetsPrereq = true;
+                        break;
+                    }
+                    meetsPrereq = (character.characterLevel || character.advancements?.length || 0) >= prereq.minValue;
+                    break;
                 }
 
                 case FeaturePrerequisiteType.ClassLevel: {
-                    if (!prereq.minValue) return true;
+                    if (!prereq.minValue) {
+                        meetsPrereq = true;
+                        break;
+                    }
                     if (prereq.appliesToId === -1 || prereq.appliesToId === null) {
                         // Total character level
-                        return (character.level || character.advancements?.length || 0) >= prereq.minValue;
+                        meetsPrereq = (character.characterLevel || character.advancements?.length || 0) >= prereq.minValue;
                     } else {
                         // Class-specific level
                         const classLevel = character.advancements
                             ?.filter(adv => adv.classId === prereq.appliesToId)
                             .length || 0;
-                        return classLevel >= prereq.minValue;
+                        meetsPrereq = classLevel >= prereq.minValue;
                     }
+                    break;
                 }
 
                 case FeaturePrerequisiteType.Proficiency: {
                     // This is a post-selection check, so we don't filter based on this
-                    return true;
+                    meetsPrereq = true;
+                    break;
                 }
 
                 case FeaturePrerequisiteType.Size: {
-                    if (!prereq.appliesToId || !raceDetails?.sizeId) return true;
+                    if (!prereq.appliesToId || !raceDetails?.sizeId) {
+                        meetsPrereq = true;
+                        break;
+                    }
                     const characterSizeId = raceDetails.sizeId;
                     const requiredSizeId = prereq.appliesToId;
-                    
+
                     // minValue: 0 = exact, 1 = or larger, 2 = or smaller
                     if (prereq.minValue === 0) {
-                        return characterSizeId === requiredSizeId;
+                        meetsPrereq = characterSizeId === requiredSizeId;
                     } else if (prereq.minValue === 1) {
                         // or larger: character size must be >= required size (higher IDs = larger)
-                        return characterSizeId >= requiredSizeId;
+                        meetsPrereq = characterSizeId >= requiredSizeId;
                     } else if (prereq.minValue === 2) {
                         // or smaller: character size must be <= required size (lower IDs = smaller)
-                        return characterSizeId <= requiredSizeId;
+                        meetsPrereq = characterSizeId <= requiredSizeId;
+                    } else {
+                        meetsPrereq = true;
                     }
-                    return true;
+                    break;
                 }
 
                 default:
-                    return true;
+                    meetsPrereq = true;
+                    break;
             }
-        });
+
+            if (!meetsPrereq) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
      * Get character's base attack bonus
+     * For multiclass characters, calculates BAB for each class separately and returns the highest
      */
-    private static getCharacterBAB(
-        character: CharacterWithAllDetailsResponse,
-        classDetails: DnDClass | null
-    ): number {
-        if (!classDetails) {
+    private static async getCharacterBAB(
+        character: CharacterWithAllDetailsResponse
+    ): Promise<number> {
+        if (!character.advancements || character.advancements.length === 0) {
             return 0;
         }
 
-        const level = character.level || character.advancements?.length || 1;
-        return getBABProgression(classDetails.babProgression, level);
+        // Group advancements by classId to count levels per class
+        const classLevels = new Map<number, number>();
+        for (const advancement of character.advancements) {
+            const currentLevel = classLevels.get(advancement.classId) || 0;
+            classLevels.set(advancement.classId, currentLevel + 1);
+        }
+
+        // Calculate BAB for each class and find the highest
+        let maxBAB = 0;
+        for (const [classId, level] of classLevels) {
+            const classDetails = await classService.getClassById({ id: classId });
+            if (!classDetails) {
+                continue;
+            }
+
+            const babString = getBABProgression(level, classDetails.babProgression);
+            // Extract the first BAB value from the string (e.g., "+1" -> 1, "+0" -> 0)
+            const match = babString.match(/\+(\d+)/);
+            const bab = match ? parseInt(match[1], 10) : 0;
+            maxBAB = Math.max(maxBAB, bab);
+        }
+
+        return maxBAB;
     }
 }

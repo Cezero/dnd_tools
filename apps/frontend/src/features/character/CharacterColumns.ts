@@ -1,6 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
+import { getRaceNameFromCache } from '@/services/cache';
 import { CharacterWithRaceResponse } from '@shared/schema';
 import { ALIGNMENT_MAP, ALIGNMENT_LIST, FilterType } from '@shared/static-data';
 
@@ -21,7 +22,10 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
     },
     {
         id: 'race',
-        accessorFn: (row) => row.race?.name || '',
+        accessorFn: (row) => {
+            if (!row.raceId) return '';
+            return getRaceNameFromCache(row.raceId) || '';
+        },
         header: 'Race',
         enableSorting: true,
         enableColumnFilter: true,
@@ -29,8 +33,8 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
         size: 120,
         filterFn: createContainsFilter<CharacterWithRaceResponse>(),
         cell: info => {
-            const race = info.getValue() as string;
-            return race || '-';
+            const raceName = info.getValue() as string;
+            return raceName || '-';
         },
         meta: {
             filterType: FilterType.TEXT_INPUT,

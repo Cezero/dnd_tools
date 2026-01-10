@@ -7,15 +7,8 @@ export const DeityIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
 
-export const FavoredWeaponSchema = z.object({
-    id: z.number().int().positive('Weapon ID must be a positive integer'),
-    name: z.string().min(1, 'Weapon name is required').max(200, 'Weapon name must be less than 200 characters'),
-});
-
-const LocalDomainSummarySchema = z.object({
-    id: z.number().int().positive(),
-    name: z.string().min(1).max(200),
-});
+// FavoredWeaponSchema and LocalDomainSummarySchema removed - use domainIds and favoredWeaponIds instead
+// Frontend should resolve entity names from domains-cache and items-cache
 
 export const BaseDeitySchema = z.object({
     name: z.string()
@@ -33,8 +26,8 @@ export const BaseDeitySchema = z.object({
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
     classIds: z.array(z.number().int().positive()).nullable(),
     raceIds: z.array(z.number().int().positive()).nullable(),
-    domains: z.array(LocalDomainSummarySchema).nullable(),
-    favoredWeapons: z.array(FavoredWeaponSchema).nullable(),
+    domainIds: z.array(z.number().int().positive()).nullable(),
+    favoredWeaponIds: z.array(z.number().int().positive()).nullable(),
 });
 
 export const DeitySchema = BaseDeitySchema.extend({
@@ -45,8 +38,8 @@ export const DeitySummarySchema = DeitySchema.omit({
     description: true,
     classIds: true,
     raceIds: true,
-    domains: true,
-    favoredWeapons: true,
+    domainIds: true,
+    favoredWeaponIds: true,
 });
 
 export const DeityCacheSchema = DeitySummarySchema.omit({
@@ -69,18 +62,11 @@ export const GetAllDeitiesResponseSchema = QueryResponseSchema.extend({
     results: z.array(DeityInQueryResponseSchema),
 });
 
-export const CreateDeitySchema = BaseDeitySchema.omit({
-    domains: true,
-    favoredWeapons: true,
-}).extend({
-    domainIds: z.array(z.number().int().positive()).nullable(),
-    favoredWeaponIds: z.array(z.number().int().positive()).nullable(),
-});
+export const CreateDeitySchema = BaseDeitySchema;
 
 export const UpdateDeitySchema = CreateDeitySchema.partial();
 
 export type DeityIdParamRequest = z.infer<typeof DeityIdParamSchema>;
-export type FavoredWeapon = z.infer<typeof FavoredWeaponSchema>;
 export type DeityInQueryResponse = z.infer<typeof DeityInQueryResponseSchema>;
 export type CreateDeityRequest = z.infer<typeof CreateDeitySchema>;
 export type UpdateDeityRequest = z.infer<typeof UpdateDeitySchema>;

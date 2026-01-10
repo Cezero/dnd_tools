@@ -22,6 +22,8 @@ The AuthService provides user registration, login, and JWT token management func
 export interface AuthService {
     registerUser: (data: RegisterUserRequest) => Promise<AuthServiceResult>;
     loginUser: (data: LoginUserRequest) => Promise<AuthServiceResult>;
+    getUserFromToken: (token: string) => Promise<AuthServiceResult>;
+    refreshToken: (token: string) => Promise<AuthServiceResult>;
 }
 ```
 
@@ -122,6 +124,89 @@ async loginUser(data: LoginUserRequest): Promise<AuthServiceResult> {
 - **JWT Generation**: Creates secure tokens for authenticated sessions
 - **Security**: Generic error messages prevent credential enumeration
 
+#### **getUserFromToken**
+**Purpose**: Validates JWT tokens and retrieves current user data from the database.
+
+**Architecture Decision**: Fetches user from database on each token validation to ensure the user data (including preferred_edition_id) is current, even if user profile changes after token issuance.
+
+**Implementation**:
+```typescript
+async getUserFromToken(token: string): Promise<AuthServiceResult> {
+    try {
+        const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
+        
+        // Fetch user from DB to ensure current preferred_edition_id and other up-to-date info
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.id },
+            include: {
+                diceConfigOverrides: true
+            }
+        });
+        
+        if (!user) {
+            return { success: false, error: 'User not found', token: null, user: null };
+        }
+        
+        return {
+            success: true,
+            error: null,
+            token: null,
+            user: user
+        };
+    } catch (err) {
+        console.error('Token verification error:', err);
+        return { success: false, error: 'Invalid or expired token', token: null, user: null };
+    }
+}
+```
+
+**Key Features**:
+- **Token Validation**: Verifies JWT token signature and expiration
+- **Database Lookup**: Fetches current user data to ensure freshness
+- **Configuration Data**: Includes dice configuration overrides in response
+- **Error Handling**: Returns clear error messages for invalid or expired tokens
+
+#### **refreshToken**
+**Purpose**: Generates a new JWT token with refreshed expiration and updated user data.
+
+**Architecture Decision**: Refreshing tokens allows clients to extend sessions without requiring re-authentication, while ensuring tokens contain current user data (like preferred_edition_id).
+
+**Implementation**:
+```typescript
+async refreshToken(token: string): Promise<AuthServiceResult> {
+    try {
+        const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
+        
+        // Fetch user from DB to get current preferred_edition_id for new token
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.id },
+            include: {
+                diceConfigBaseRef: true,
+                diceConfigOverrides: true
+            }
+        });
+        
+        if (!user) {
+            return { success: false, error: 'User not found for token refresh', token: null, user: null };
+        }
+        
+        const userForJwt = transformUserForJwt(user);
+        const newToken = jwt.sign(userForJwt, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+        
+        return { success: true, error: null, token: newToken, user: user };
+    } catch (err) {
+        console.error('Token refresh error:', err);
+        return { success: false, error: 'Invalid or expired token', token: null, user: null };
+    }
+}
+```
+
+**Key Features**:
+- **Token Refresh**: Generates new token with extended expiration
+- **Data Freshness**: Includes current user data in new token
+- **Configuration Integration**: Includes dice configuration references
+- **Error Handling**: Handles invalid tokens and missing users gracefully
+
 ### **AuthController**
 **Source File**: `backend/src/features/auth/authController.ts`
 
@@ -159,24 +244,70 @@ export const registerUser = async (req: Request, res: Response) => {
 
 **Implementation**:
 ```typescript
-export const loginUser = async (req: Request, res: Response) => {
-    try {
-        const result = await authService.loginUser(req.body);
-        
-        if (result.success) {
-            res.status(200).json({
-                message: 'Login successful',
-                token: result.token,
-                user: result.user
-            });
-        } else {
-            res.status(401).json({ error: result.error });
-        }
-    } catch (error) {
-        console.error('Login controller error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+export async function LoginUser(req: ValidatedBodyT<LoginUserRequest>, res: Response) {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        res.status(400).json({ error: 'Missing credentials' });
+        return;
     }
-};
+
+    const result = await authService.loginUser({ username, password });
+
+    if (!result.success) {
+        res.status(401).json(result);
+        return;
+    }
+
+    res.json(result);
+}
+```
+
+#### **GetUserFromToken**
+**Purpose**: Handles token validation and user retrieval requests.
+
+**Implementation**:
+```typescript
+export async function GetUserFromToken(req: ValidatedHeadersT<AuthHeaderRequest, AuthServiceResult>, res: Response) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.status(401).json({ error: 'No token provided' });
+        return;
+    }
+
+    const token = authHeader.split(' ')[1];
+    const result = await authService.getUserFromToken(token);
+
+    if (!result.success) {
+        res.status(403).json(result);
+        return;
+    }
+
+    res.json(result);
+}
+```
+
+#### **RefreshToken**
+**Purpose**: Handles token refresh requests.
+
+**Implementation**:
+```typescript
+export async function RefreshToken(req: ValidatedHeadersT<AuthHeaderRequest, AuthServiceResult>, res: Response) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.status(401).json({ error: 'No token provided' });
+        return;
+    }
+
+    const token = authHeader.split(' ')[1];
+    const result = await authService.refreshToken(token);
+
+    if (!result.success) {
+        res.status(403).json(result);
+        return;
+    }
+
+    res.json(result);
+}
 ```
 
 ### **AuthRoutes**
@@ -186,21 +317,26 @@ Defines authentication API endpoints with proper validation.
 
 **Route Definitions**:
 ```typescript
-import { buildValidatedRouter } from '@/lib/buildValidatedRouter';
-import { RegisterUserSchema, LoginUserSchema } from '@shared/schema';
+import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
+import { RegisterUserSchema, LoginUserSchema, AuthHeaderSchema } from '@shared/schema';
 
-const router = buildValidatedRouter();
+import { RegisterUser, LoginUser, GetUserFromToken, RefreshToken } from './authController.js';
 
-router.post('/register', {
-    body: RegisterUserSchema
-}, registerUser);
+const { router: AuthRouter, post, get } = buildValidatedRouter();
 
-router.post('/login', {
-    body: LoginUserSchema
-}, loginUser);
+post('/register', { body: RegisterUserSchema }, RegisterUser);
+post('/login', { body: LoginUserSchema }, LoginUser);
+get('/me', { headers: AuthHeaderSchema }, GetUserFromToken);
+post('/refresh-token', { headers: AuthHeaderSchema }, RefreshToken);
 
-export default router;
+export { AuthRouter };
 ```
+
+**API Endpoints**:
+- **`POST /api/auth/register`**: User registration (public)
+- **`POST /api/auth/login`**: User login (public)
+- **`GET /api/auth/me`**: Get current user from token (authenticated)
+- **`POST /api/auth/refresh-token`**: Refresh JWT token (authenticated)
 
 ## 👤 **User Profile System**
 
@@ -474,8 +610,10 @@ function transformUserForJwt(user: AuthUser): Omit<JwtPayload, 'iat' | 'exp'> {
 ## 📊 **API Endpoints**
 
 ### **Authentication Endpoints**
-- **`POST /api/auth/register`**: User registration
-- **`POST /api/auth/login`**: User login
+- **`POST /api/auth/register`**: User registration (public)
+- **`POST /api/auth/login`**: User login (public)
+- **`GET /api/auth/me`**: Get current user from token (authenticated)
+- **`POST /api/auth/refresh-token`**: Refresh JWT token (authenticated)
 
 ### **Profile Management Endpoints**
 - **`GET /api/user/profile`**: Get user profile (authenticated)

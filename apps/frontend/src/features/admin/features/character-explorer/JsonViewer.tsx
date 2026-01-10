@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
 import JsonView from '@uiw/react-json-view';
+import React, { useEffect, useState } from 'react';
 
 interface JsonViewerProps {
     data: unknown;

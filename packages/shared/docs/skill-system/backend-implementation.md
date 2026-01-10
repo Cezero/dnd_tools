@@ -10,6 +10,7 @@ The backend implementation follows the shared [Backend Implementation Patterns](
 
 **Source Files**: 
 - Service: `src/features/skill/skillService.ts`
+- Subtype Service: `src/features/skill/skillSubtypeService.ts`
 - Controller: `src/features/skill/skillController.ts`
 - Routes: `src/features/skill/skillRoutes.ts`
 - Types: `src/features/skill/types.ts`
@@ -81,7 +82,38 @@ The central service for all skill management operations, providing comprehensive
 - **Business Logic**: Deletes skill (cascades to relationships)
 - **Returns**: Success message
 
+**getSkillCache**: Retrieves lightweight skill data for frontend caching
+- **Parameters**: None
+- **Business Logic**: Loads skill data including subtypes and special behavior flags, optimized for frontend use
+- **Returns**: Skill cache response with subtypes and flags
+- **Includes**: `hasSubtypes`, `usesCustomSubtype`, `hasNoMaxRanks`, `doubleArmorPenalty` flags and subtype arrays
+
 **Source File**: `src/features/skill/skillService.ts`
+
+### **SkillSubtypeService**
+
+Service for managing skill subtypes (Craft and Knowledge subtypes).
+
+**Purpose**: Provides access to skill subtype data stored in the database, replacing hardcoded static data maps.
+
+**Key Responsibilities**:
+- **Subtype Retrieval**: Get subtypes for specific skills
+- **Subtype Lookup**: Find specific subtypes by ID
+- **Database Access**: Direct database queries for subtype data
+
+**Core Methods**:
+
+**getSkillSubtypes**: Retrieves all subtypes for a specific skill
+- **Parameters**: Skill ID
+- **Business Logic**: Loads all subtypes for the given skill, ordered by name
+- **Returns**: Array of skill subtypes
+
+**getSkillSubtypeById**: Retrieves a specific skill subtype
+- **Parameters**: Skill ID and subtype ID
+- **Business Logic**: Loads specific subtype with validation
+- **Returns**: Skill subtype or null if not found
+
+**Source File**: `src/features/skill/skillSubtypeService.ts`
 
 ## 🎯 **Controller Layer**
 
@@ -144,6 +176,7 @@ The skill system routes follow the shared [RESTful API Structure](../application
 **Core Skill Routes**:
 - `GET /api/skills` - Retrieve all skills
 - `GET /api/skills/:id` - Retrieve specific skill by ID
+- `GET /api/skills-cache` - Retrieve lightweight skill cache data (includes subtypes and flags)
 - `POST /api/skills` - Create new skill (admin required)
 - `PUT /api/skills/:id` - Update existing skill (admin required)
 - `DELETE /api/skills/:id` - Delete skill (admin required)
@@ -246,9 +279,10 @@ The skill system follows the shared [Error Handling Patterns](../application-ove
 The skill system implements performance optimizations following the shared [Performance Optimization](../application-overview/performance-optimization.md) patterns:
 
 **Efficient Queries**: Optimized Prisma queries with proper ordering and filtering
-**Caching**: Appropriate caching for frequently accessed skill data
+**Caching**: Skills-cache endpoint provides lightweight, optimized data for frontend caching
 **Pagination**: Proper pagination for large skill collections
-**Relationship Loading**: Efficient loading of skill relationships
+**Relationship Loading**: Efficient loading of skill relationships including subtypes
+**Selective Fields**: Skills-cache uses selective field loading to minimize data transfer
 
 ## 🔗 **Related Documentation**
 

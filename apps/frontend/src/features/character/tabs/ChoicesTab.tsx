@@ -7,11 +7,11 @@ import { FeatSubIdSelectionModal } from '@/features/character/components/FeatSub
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { useCacheFunctions } from '@/services/cache';
-import { getClassNameFromCache, getFeatNameFromCache, getRaceNameFromCache } from '@/services/cache/IdMapHelpers';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import type { FeatCacheEntry, FeatInQueryResponse, GetAllCompanionsResponse } from '@shared/schema';
 import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter, CompanionType, FeatureSourceType } from '@shared/static-data';
+
 import { filterAvailableFeats } from '../utils/featFiltering';
 
 export function ChoicesTab({
@@ -25,7 +25,7 @@ export function ChoicesTab({
     character
 }: TabComponentProps): React.JSX.Element {
     const queryClient = useQueryClient();
-    const { getDomainSelectByEdition, getClassNameById } = useCacheFunctions();
+    const { getDomainSelectByEdition, getClassNameById, getClassNameFromCache, getFeatNameFromCache, getRaceNameFromCache } = useCacheFunctions();
 
     // State for domain options
     const [domainOptions, setDomainOptions] = useState<{ id: number; name: string; abbreviation?: string }[]>([]);
@@ -269,8 +269,8 @@ export function ChoicesTab({
                     // Otherwise, use the pending choice from backend
                     if (selected) {
                         // Build proper choice name based on type (matching backend logic)
-                        const className = progression.classId ? getClassNameFromCache(queryClient, progression.classId) : undefined;
-                        const raceName = progression.raceId ? getRaceNameFromCache(queryClient, progression.raceId) : undefined;
+                        const className = progression.classId ? getClassNameFromCache(progression.classId) : undefined;
+                        const raceName = progression.raceId ? getRaceNameFromCache(progression.raceId) : undefined;
                         const source = className || raceName || progression.feature?.name || 'Unknown';
                         let choiceName = '';
                         if (entity.appliesTo === EntityAppliesToType.Domain) {
@@ -325,7 +325,7 @@ export function ChoicesTab({
                             // For feats, we'll use the filtered feats from the existing logic
                             // This will be handled separately in the rendering logic
                             const featName = selected.appliesToId
-                                ? getFeatNameFromCache(queryClient, selected.appliesToId) || sharedData.allFeats.find(f => f.id === selected.appliesToId)?.name
+                                ? getFeatNameFromCache(selected.appliesToId) || sharedData.allFeats.find(f => f.id === selected.appliesToId)?.name
                                 : undefined;
                             options.push({
                                 id: `feat-${selected.appliesToId}`,
@@ -387,7 +387,7 @@ export function ChoicesTab({
             if (state.editionId) {
                 setIsLoadingDomains(true);
                 try {
-                    const domains = await getDomainSelectByEdition(state.editionId);
+                    const domains = getDomainSelectByEdition(state.editionId);
                     setDomainOptions(domains || []);
                 } catch (error) {
                     console.error('Failed to fetch domain options:', error);

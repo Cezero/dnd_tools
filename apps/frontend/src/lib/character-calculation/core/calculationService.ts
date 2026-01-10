@@ -5,14 +5,14 @@ import type {
     Feat,
 } from '@shared/schema';
 
-import type { CombatCalculationContext } from '../types';
-import type { CombatValuesResult } from '../calculations/combatValues';
 import { getAbilityScore, getAbilityModifierWithBonuses } from '../calculations/abilityScore';
 import { getAC, getTouchAC, getFlatFootedAC } from '../calculations/armorClass';
+import type { CombatValuesResult } from '../calculations/combatValues';
 import { getCombatValues } from '../calculations/combatValues';
 import { getInitiative } from '../calculations/initiative';
-import { getSpeed } from '../calculations/speed';
 import { getSavingThrow } from '../calculations/savingThrows';
+import { getSpeed } from '../calculations/speed';
+import type { CombatCalculationContext } from '../types';
 
 /**
  * Main character calculation service

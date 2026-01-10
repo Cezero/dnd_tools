@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
     CompanionIdParamSchema,
     UpdateCompanionSchema,
@@ -13,7 +15,6 @@ import {
     GetAllCharacterCompanionsResponseSchema,
 } from '@shared/schema';
 
-import { z } from 'zod';
 import { createQueryHooks } from './QueryHooksFactory';
 
 // Create query hook configurations

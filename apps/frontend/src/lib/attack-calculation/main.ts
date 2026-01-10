@@ -1,10 +1,10 @@
-import type { AttackCalculationInput, AttackCalculationResult } from './types';
 import {
     calculateUnarmedStrike,
     calculateMainHandAttack,
     calculateRangedAttack,
     calculateDualWield,
 } from './calculations';
+import type { AttackCalculationInput, AttackCalculationResult } from './types';
 
 const ATTACK_DEFINITION_TYPE_ENUM = {
     UNARMED_STRIKE: 1,

@@ -98,8 +98,7 @@ export interface CharacterEditState {
     featureChoices: CharacterFeatureChoice[];
     selectedFeats: number[];
     disallowedSources: Array<{
-        sourceType: number;
-        sourceId: number;
+        sourceBookId: number;
     }>;
 }
 
@@ -116,8 +115,8 @@ export type CharacterUpdate =
     | { type: 'MAKE_CHOICE'; payload: { progressionId: number; featureEntityId: number; appliesToId: number; appliesToSubId: number | null } }
     | { type: 'SET_FEAT'; payload: { featId: number; featSubId: number | null } }
     | { type: 'REMOVE_FEAT'; payload: { featId: number } }
-    | { type: 'SET_DISALLOWED_SOURCE'; payload: { sourceType: number; sourceId: number } }
-    | { type: 'REMOVE_DISALLOWED_SOURCE'; payload: { sourceType: number; sourceId: number } };
+    | { type: 'SET_DISALLOWED_SOURCE'; payload: { sourceBookId: number } }
+    | { type: 'REMOVE_DISALLOWED_SOURCE'; payload: { sourceBookId: number } };
 
 
 

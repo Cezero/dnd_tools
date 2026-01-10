@@ -11,7 +11,6 @@ import {
     FormulaId
 } from '@shared/static-data';
 
-import { formatFeaturePrerequisite } from '@/lib/featurePrerequisiteFormatter';
 
 import { formatterRegistry } from './formatter-registry';
 import {
@@ -204,18 +203,13 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     /**
      * Format prerequisites for display
      * This is called as part of the orchestration phase (Phase 6)
-     * Uses the formatter registry to format prerequisites consistently with other entities
+     * Uses the formatter registry (PrerequisiteFormatter) to format prerequisites consistently with other entities.
+     * Converts FeaturePrerequisite objects to CalculatedEntity format for formatting.
      */
     protected formatPrerequisites(
         prerequisites: FeaturePrerequisite[],
         context?: DisplayContext
     ): string[] {
-        // Use formatPrerequisites from featurePrerequisiteFormatter with queryClient
-        if (context?.queryClient) {
-            return prerequisites.map(prereq => {
-                return formatFeaturePrerequisite(prereq, undefined, undefined, context.queryClient);
-            });
-        }
         if (!prerequisites || prerequisites.length === 0) {
             return [];
         }
@@ -324,7 +318,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
      * @example
      * ```typescript
      * await DisplayStrategyBase.precacheEntities(progressions, queryClient);
-     * const result = strategy.format(progressions, { queryClient });
+     * const result = strategy.format(progressions);
      * ```
      */
     static async precacheEntities(

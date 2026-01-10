@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ValidatedInput, SourceEditor } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { useCacheFunctions } from '@/services/cache';
-import { CoreComponent } from '@shared/schema';
-import { EDITION_LIST, SIZE_LIST, SourceType } from '@shared/static-data';
+import { EDITION_LIST, SIZE_LIST, SourceType, EditionId, CoreComponent } from '@shared/static-data';
 
 import type { RaceTabProps } from './types';
 

@@ -1,6 +1,10 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
+import { FeatureProgressionDetailEdit } from '@/components/feature-system/FeatureProgressionDetailEdit';
+import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -8,14 +12,10 @@ import {
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { MonsterSearchInput } from '@/components/forms/MonsterSearchInput';
-import { FeatureProgressionDetailEdit } from '@/components/feature-system/FeatureProgressionDetailEdit';
-import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
-import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
+import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import { CreateCompanionRequest, UpdateCompanionRequest, UpdateCompanionSchema, CreateCompanionSchema, CompanionWithRelations, FeatureProgression } from '@shared/schema';
 import { COMPANION_TYPE_LIST, CompanionType, SpecialFeatureId, FeatureSourceType, MonsterTypeId } from '@shared/static-data';
-import { useQueryClient } from '@tanstack/react-query';
 
 type CompanionFormData = CreateCompanionRequest | UpdateCompanionRequest;
 

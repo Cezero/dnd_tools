@@ -1,7 +1,6 @@
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
-import type { FeatureProgression } from '@shared/schema';
 import { getGrantedFeats } from '@/features/character/featureProgressionUtils';
 import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
+import type { CharacterWithAllDetailsResponse , FeatureProgression } from '@shared/schema';
 
 /**
  * Check if character has a specific feat

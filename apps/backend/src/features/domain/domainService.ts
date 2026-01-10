@@ -41,18 +41,27 @@ export const domainService: DomainService = {
     },
 
 
+    /**
+     * Returns domain with spell and deity IDs only.
+     * 
+     * Design Decision: Lightweight Schema Pattern
+     * - Returns only IDs for related entities (spells, deities)
+     * - Frontend resolves entity names/summaries from pre-populated caches
+     * - Reduces payload size and ensures consistent data resolution
+     * 
+     * @see [Cache-Based ID Maps](../../../../shared/docs/application-overview/cache-based-id-maps.md)
+     * @see [Lightweight Schema Pattern](../../../../shared/docs/application-overview/validation-schemas.md#lightweight-response-schemas)
+     */
     async getDomainById(query: DomainIdParamRequest): Promise<Domain | null> {
         const domain = await prisma.domain.findUnique({
             where: { id: query.id },
             include: {
                 domainSpells: {
-                    include: {
-                        spell: {
-                            select: {
-                                name: true,
-                                summary: true
-                            }
-                        }
+                    select: {
+                        id: true,
+                        domainId: true,
+                        spellId: true,
+                        spellLevel: true
                     }
                 },
                 sourceBookInfo: {
@@ -63,12 +72,7 @@ export const domainService: DomainService = {
                 },
                 deityDomains: {
                     select: {
-                        deity: {
-                            select: {
-                                id: true,
-                                name: true,
-                            }
-                        }
+                        deityId: true
                     }
                 }
             }
@@ -78,22 +82,17 @@ export const domainService: DomainService = {
             return null;
         }
 
-        const deities = domain.deityDomains.map(deityDomain => deityDomain.deity);
-
-        // Transform domain spells to include spell name and summary
-        const domainSpells = domain.domainSpells.map(domainSpell => ({
-            ...domainSpell,
-            spellName: domainSpell.spell.name,
-            spellSummary: domainSpell.spell.summary
-        }));
+        // Transform to match schema - return only IDs
+        const deityIds = domain.deityDomains.map(deityDomain => deityDomain.deityId);
 
         // Get feature progressions for this domain
         const features = await featureSystemService.getFeatureProgressionsByDomainId(query.id);
 
         return {
             ...domain,
-            domainSpells: domainSpells,
-            deityDomains: deities,
+            domainSpells: domain.domainSpells,
+            deityIds: deityIds,
+            deityDomains: undefined, // Remove the raw relation
             features: features,
         } as Domain;
     },

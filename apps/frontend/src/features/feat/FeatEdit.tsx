@@ -2,6 +2,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
+import { FeatureProgressionDetailEdit } from '@/components/feature-system/FeatureProgressionDetailEdit';
+import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -9,9 +12,6 @@ import {
     SourceEditor
 } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
-import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
-import { FeatureProgressionDetailEdit } from '@/components/feature-system/FeatureProgressionDetailEdit';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { CreateFeatRequest, UpdateFeatRequest, UpdateFeatSchema, BaseFeatSchema, Feat, FeatureProgression } from '@shared/schema';
 import { FEAT_TYPE_LIST, EDITION_LIST, SourceType, EditionId, FeatureSourceType } from '@shared/static-data';

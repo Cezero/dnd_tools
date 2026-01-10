@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+
 import { CharacterResolutionApi, type ResolvedCharacterResult, type CharacterUpdate } from '@/services/api/CharacterResolutionApi';
 
 /**
@@ -14,7 +15,11 @@ export function useCharacterResolution(characterId: number | null) {
     const [reinitializeTrigger, setReinitializeTrigger] = useState(0);
 
     /**
-     * Initialize or resume session on mount or when reinitializeTrigger changes
+     * Initialize or resume session on mount or when reinitializeTrigger changes.
+     * 
+     * The `resumeSession` API call always returns a session - if no active session exists,
+     * the backend automatically creates a new one. This simplifies the frontend code by
+     * eliminating the need for a second API call to initialize a session.
      */
     useEffect(() => {
         if (!characterId) {
@@ -36,18 +41,11 @@ export function useCharacterResolution(characterId: number | null) {
             setError(null);
 
             try {
-                // Try to resume existing session first
-                const resumed = await CharacterResolutionApi.resumeSession(characterId);
-                
-                if (resumed) {
-                    setSessionId(resumed.sessionId);
-                    setResolvedCharacter(resumed);
-                } else {
-                    // No existing session, initialize new one
-                    const initialized = await CharacterResolutionApi.initializeSession(characterId);
-                    setSessionId(initialized.sessionId);
-                    setResolvedCharacter(initialized);
-                }
+                // Resume existing session or create new one if none exists
+                // The backend handles both cases, so we always get a session back
+                const result = await CharacterResolutionApi.resumeSession(characterId);
+                setSessionId(result.sessionId);
+                setResolvedCharacter(result);
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Failed to initialize resolution session';
                 setError(errorMessage);

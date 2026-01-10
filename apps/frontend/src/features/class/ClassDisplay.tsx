@@ -1,14 +1,14 @@
+import { useQueryClient } from '@tanstack/react-query';
 import pluralize from 'pluralize';
 import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 
-import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { EntityLink } from '@/components/entity-link';
+import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { getSpellNameFromCache } from '@/services/cache/IdMapHelpers';
+import { useCacheFunctions } from '@/services/cache';
 import { DnDClass, ClassVariant } from '@shared/schema';
 import {
     DisplayType,
@@ -42,6 +42,7 @@ export function ClassDisplay({
     fromListParams: _fromListParams = ''
 }: ClassDisplayProps): React.JSX.Element {
     const queryClient = useQueryClient();
+    const { getSpellNameFromCache } = useCacheFunctions();
 
     // Precache all entities referenced in feature progressions
     usePrecacheFeatureEntities(cls?.features);
@@ -112,7 +113,7 @@ export function ClassDisplay({
                         if (classSkillProgressions.length > 0) {
                             // Use display strategy to format class skills
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.format(classSkillProgressions, { queryClient }, true);
+                            const result = strategy.format(classSkillProgressions, undefined, true);
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Skills</h3>
@@ -137,7 +138,7 @@ export function ClassDisplay({
                         if (proficiencyProgressions.length > 0) {
                             // Use display strategy to format proficiencies
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.format(proficiencyProgressions, { queryClient }, false);
+                            const result = strategy.format(proficiencyProgressions, undefined, false);
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
@@ -182,7 +183,7 @@ export function ClassDisplay({
                                                     .map(([level, spellIds], levelIndex) => {
                                                         const levelText = level === '1' ? '1st' : level === '2' ? '2nd' : level === '3' ? '3rd' : `${level}th`;
                                                         const spellNames = (spellIds as number[]).map(id => {
-                                                            const spellName = getSpellNameFromCache(queryClient, id) || `Unknown Spell (${id})`;
+                                                            const spellName = getSpellNameFromCache(id) || `Unknown Spell (${id})`;
                                                             return (
                                                                 <EntityLink key={id} entityType="spell" entityId={id} href={`/spells/${id}`}>
                                                                     {spellName}
@@ -211,7 +212,7 @@ export function ClassDisplay({
                                         <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
                                             <span className="text-sm">
                                                 {removedSpellIds.map((id, index) => {
-                                                    const spellName = getSpellNameFromCache(queryClient, id) || `Unknown Spell (${id})`;
+                                                    const spellName = getSpellNameFromCache(id) || `Unknown Spell (${id})`;
                                                     return (
                                                         <React.Fragment key={id}>
                                                             <EntityLink entityType="spell" entityId={id} href={`/spells/${id}`}>
@@ -246,7 +247,7 @@ export function ClassDisplay({
                         if (actualFeatures.length > 0) {
                             // Use display strategy to format features
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.format(actualFeatures, { queryClient });
+                            const result = strategy.format(actualFeatures);
 
                             return (
                                 <div className="mt-4">

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-import { useCharacterExplorerData } from './useCharacterExplorerData';
-import { CharacterExplorerDetailTabs } from './CharacterExplorerDetailTabs';
 import { DisplayType } from '@shared/static-data';
+
+import { CharacterExplorerDetailTabs } from './CharacterExplorerDetailTabs';
+import { useCharacterExplorerData } from './useCharacterExplorerData';
 
 export function CharacterExplorerDetail(): React.JSX.Element {
     const { id } = useParams<{ id: string }>();

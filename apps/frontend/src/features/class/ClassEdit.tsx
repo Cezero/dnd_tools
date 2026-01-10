@@ -5,9 +5,9 @@ import {
     SparklesIcon,
     BeakerIcon
 } from '@heroicons/react/24/outline';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 
 
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
@@ -16,6 +16,8 @@ import {
     ValidatedForm,
     useValidatedForm,
 } from '@/components/forms';
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
+import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import {
     CreateClassSchema,
     UpdateClassSchema,
@@ -43,8 +45,6 @@ import {
     generateFeatureProgressionOverrides
 } from '@shared/utils';
 
-import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 
 import { ClassApi } from './ClassApi';
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';

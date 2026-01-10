@@ -12,8 +12,8 @@ import {
 } from '@shared/static-data';
 
 import { calculatorRegistry } from '../calculator-registry';
-import { buildFormulaParams } from '../formula-utils';
 import { FormulaCalculatorImpl } from '../calculators';
+import { buildFormulaParams } from '../formula-utils';
 import type {
     DisplayContext,
     ProgressionValue,

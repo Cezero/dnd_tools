@@ -6,7 +6,8 @@ import {
 
 const { router: SourceBookRouter, get } = buildValidatedRouter();
 
-// Read routes
+// Source Book Cache Route (public)
+// GET /api/sourcebooks/cache - Get source book cache with content flags (used by frontend CacheProvider)
 get('/cache', {}, GetSourceBookCache);
 
 export { SourceBookRouter };

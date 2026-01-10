@@ -1,10 +1,14 @@
+import { PrismaClient } from '@shared/prisma-client';
 import type { FeatureProgression, FeatureEntity, FeatInQueryResponse } from '@shared/schema';
 import { EntityType, EntityAppliesToType, FeatureFeatChoiceFilter, FeatureSourceType, CompanionType, SpecialFeatureId } from '@shared/static-data';
-import { featureSystemService } from '../featureSystem/featureSystemService';
+
+import type { PendingChoice } from './types';
+import { companionService } from '../companion/companionService';
 import { domainService } from '../domain/domainService';
 import { featService } from '../feat/featService';
-import { companionService } from '../companion/companionService';
-import type { PendingChoice } from './types';
+import { featureSystemService } from '../featureSystem/featureSystemService';
+
+const prisma = new PrismaClient();
 
 /**
  * Choice option for pending choices
@@ -548,8 +552,17 @@ export class ChoiceResolver {
                         const companions = companionsResponse.results.filter(
                             companion => companion.type === typeFilter
                         );
+                        
+                        // Fetch monster names for all companions in batch
+                        const monsterIds = companions.map(c => c.monsterId);
+                        const monsters = await prisma.monster.findMany({
+                            where: { id: { in: monsterIds } },
+                            select: { id: true, name: true }
+                        });
+                        const monsterMap = new Map(monsters.map(m => [m.id, m.name]));
+                        
                         companions.forEach(companion => {
-                            const monsterName = companion.monster?.name || `Companion ${companion.id}`;
+                            const monsterName = monsterMap.get(companion.monsterId) || `Monster ${companion.monsterId}`;
                             const companionTypeName = companion.type === CompanionType.Familiar
                                 ? 'Familiar'
                                 : 'Animal Companion';

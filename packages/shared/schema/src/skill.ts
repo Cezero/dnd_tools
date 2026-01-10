@@ -24,7 +24,18 @@ export const SkillSchema = z.object({
     restrictionNotes: z.string().max(10000, 'Restriction notes must be less than 10000 characters').nullish(),
     isVisible: z.boolean().default(true),
     editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    hasSubtypes: z.boolean().default(false),
+    usesCustomSubtype: z.boolean().default(false),
+    hasNoMaxRanks: z.boolean().default(false),
+    doubleArmorPenalty: z.boolean().default(false),
     sourceBookInfo: z.array(SourceMapSchema).optional(),
+});
+
+export const SkillSubtypeCacheSchema = z.object({
+    id: z.number().int().positive('Skill Subtype ID must be a positive integer'),
+    name: z.string().min(1, 'Skill subtype name is required'),
+    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    isVisible: z.boolean().default(true),
 });
 
 export const SkillCacheSchema = SkillSchema.omit({
@@ -39,6 +50,12 @@ export const SkillCacheSchema = SkillSchema.omit({
     actionDescription: true,
     retryDescription: true,
     sourceBookInfo: true,
+}).extend({
+    hasSubtypes: z.boolean().default(false),
+    usesCustomSubtype: z.boolean().default(false),
+    hasNoMaxRanks: z.boolean().default(false),
+    doubleArmorPenalty: z.boolean().default(false),
+    subtypes: z.array(SkillSubtypeCacheSchema).optional(),
 });
 
 export const SkillCacheResponseSchema = QueryResponseSchema.extend({
@@ -62,6 +79,7 @@ export type GetSkillResponse = z.infer<typeof GetSkillResponseSchema>;
 export type CreateSkillRequest = z.infer<typeof CreateSkillSchema>;
 export type UpdateSkillRequest = z.infer<typeof UpdateSkillSchema>;
 
+export type SkillSubtypeCacheEntry = z.infer<typeof SkillSubtypeCacheSchema>;
 export type SkillCacheEntry = z.infer<typeof SkillCacheSchema>;
 export type SkillCacheResponse = z.infer<typeof SkillCacheResponseSchema>;
 

@@ -1,7 +1,7 @@
 import { RouteConfig } from '@/types';
 
-import { CharacterExplorerList } from './CharacterExplorerList';
 import { CharacterExplorerDetail } from './CharacterExplorerDetail';
+import { CharacterExplorerList } from './CharacterExplorerList';
 
 export const routes: RouteConfig[] = [
     {

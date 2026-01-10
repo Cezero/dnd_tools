@@ -21,7 +21,7 @@ export function AsyncClassDisplay({ mappings, baseLevel }: AsyncClassDisplayProp
         const loadClassDisplay = async () => {
             try {
                 const formattedClasses = await Promise.all(mappings.map(async cls => {
-                    const classItem = await getClassNameById(cls.classId);
+                    const classItem = getClassNameById(cls.classId);
                     if (classItem) {
                         if (cls.level !== baseLevel) {
                             return `${classItem.abbreviation} ${cls.level}`;

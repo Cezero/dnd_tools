@@ -1,4 +1,3 @@
-import type { QueryClient } from '@tanstack/react-query';
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler, groupedBonusLanguageLabeler, groupedAutomaticLanguageLabeler, groupedSkillPointsLabeler, animalCompanionLabeler, attackBonusLabeler } from './label-formatters';
@@ -6,7 +5,7 @@ import { generateKey } from './registry-utils';
 import type { CalculatedEntity } from './types';
 
 export interface Labeler {
-    (value: string, entity: CalculatedEntity, queryClient?: QueryClient): string;
+    (value: string, entity: CalculatedEntity): string;
 }
 
 // Unified labeler registry interface
@@ -74,11 +73,11 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerLabeler(EntityType.Other, labeler, appliesToType);
     }
 
-    applyLabel(value: string, modifier: CalculatedEntity, showLabel: boolean = true, queryClient?: QueryClient): string {
+    applyLabel(value: string, modifier: CalculatedEntity, showLabel: boolean = true): string {
         if (!showLabel) return value;
 
         const labeler = this.getLabeler(modifier.type, modifier.appliesTo);
-        return labeler ? labeler(value, modifier, queryClient) : value;
+        return labeler ? labeler(value, modifier) : value;
     }
 
     applyGroupedLabel(formattedItems: string, appliesTo: EntityAppliesToType, showLabel: boolean = true): string {

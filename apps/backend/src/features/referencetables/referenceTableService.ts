@@ -13,6 +13,28 @@ import { ReferenceTableService } from './types';
 
 const prisma = new PrismaClient();
 
+/**
+ * Reference Table Service
+ * 
+ * Provides reference table management for dynamic reference tables containing structured
+ * game data (encounter tables, treasure tables, etc.). Supports complex nested structures
+ * (Table → Columns → Rows → Cells) with index-based ordering and transaction-based management.
+ * 
+ * Key Features:
+ * - Complex nested structure management (Table → Columns → Rows → Cells)
+ * - Index-based ordering for columns and rows
+ * - Slug-based identification for URL-friendly references
+ * - Transaction-based nested data creation and updates
+ * - Delete/recreate pattern for updates to ensure data consistency
+ * 
+ * Integration Points:
+ * - Frontend Markdown Rendering: Tables embedded in markdown via {table: slug} syntax
+ * - Table preloading and caching in frontend
+ * 
+ * @see ReferenceTableService interface for method signatures
+ * @see referenceTableController for request handling
+ * @see referenceTableRoutes for API endpoints
+ */
 export const referenceTableService: ReferenceTableService = {
     async getAllReferenceTables(): Promise<GetAllReferenceTablesResponse> {
         const [tables] = await Promise.all([
@@ -102,6 +124,24 @@ export const referenceTableService: ReferenceTableService = {
         });
     },
     // 
+    /**
+     * Updates a reference table using delete/recreate pattern for all nested data.
+     * 
+     * Uses delete/recreate pattern to ensure data consistency. Deletes all nested data
+     * (cells, rows, columns) before recreating, ensuring clean state. This pattern
+     * simplifies update logic compared to individual add/remove operations and guarantees
+     * data consistency across all table components.
+     * 
+     * Update Process:
+     * 1. Updates table main fields (name, description)
+     * 2. Deletes all existing nested data (cells, rows, columns)
+     * 3. Recreates columns if provided
+     * 4. Recreates rows and cells if provided (creates each row individually, then cells)
+     * 
+     * @param slug - ReferenceTableSlugParamRequest with table slug
+     * @param data - ReferenceTableUpdate with updated table data
+     * @returns Promise resolving to UpdateResponse with success message
+     */
     async updateReferenceTable(slug: ReferenceTableSlugParamRequest, data: ReferenceTableUpdate): Promise<UpdateResponse> {
         return prisma.$transaction(async (tx) => {
             const tableSlug = slug.slug;

@@ -1,5 +1,4 @@
-import type { CharacterWithAllDetailsResponse, DnDClass } from '@shared/schema';
-import type { FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, DnDClass , FeatureProgression } from '@shared/schema';
 import {
     WEAPON_TYPE_ENUM,
     SizeId,
@@ -7,6 +6,7 @@ import {
     AbilityId,
 } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
+
 import { extractProficiencies } from './proficiencies';
 
 /**

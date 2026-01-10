@@ -20,6 +20,96 @@ The backend follows a standard layered architecture with clear separation of con
 - **Pattern**: Uses validated router with Zod schemas
 - **Integration**: Connects to controller layer
 
+### **Validated Router Pattern**
+
+The backend uses a custom validated router builder that provides type-safe route registration with automatic Zod validation:
+
+**Validated Router Builder** (`buildValidatedRouter`):
+- **Purpose**: Create type-safe Express routers with integrated Zod validation
+- **Architecture Decision**: Type safety from route definition through handler execution eliminates runtime type errors and provides IntelliSense support
+- **Validation**: Automatically validates params, query, body, and headers against Zod schemas before handlers execute
+- **Type Inference**: TypeScript types are inferred from Zod schemas, ensuring type safety throughout the request lifecycle
+- **Middleware Support**: Supports Express middleware before validation, allowing authentication and other concerns
+
+**Usage Pattern**:
+```typescript
+const { router, get, post } = buildValidatedRouter();
+
+get('/users/:id', requireAuth, 
+  { params: UserIdParamSchema },
+  GetUserById
+);
+```
+
+**Benefits**:
+- **Type Safety**: Request data is typed at compile time based on Zod schemas
+- **Automatic Validation**: Validation happens in middleware, eliminating manual checks in handlers
+- **Error Handling**: Validation errors are automatically passed to error middleware
+- **Developer Experience**: IntelliSense and type checking catch errors before runtime
+
+**Source File**: `apps/backend/src/lib/buildValidatedRouter.ts`
+
+### **Middleware Patterns**
+
+The backend uses middleware for cross-cutting concerns:
+
+**Error Handling Middleware** (`errorMiddleware`):
+- **Purpose**: Centralized error handling for all application errors
+- **Architecture Decision**: Single error handler ensures consistent error responses and proper error classification
+- **Error Classification**: Classifies errors by type (BaseError, PrismaError, ZodError) for appropriate status codes
+- **Security**: Generic error messages for unexpected errors prevent information leakage
+- **Logging**: All errors are logged server-side for debugging
+
+**Authentication Middleware** (`authMiddleware`):
+- **Purpose**: Protect routes with authentication and authorization requirements
+- **Architecture Decision**: Factory function with options provides flexibility while maintaining consistency
+- **Token-Based**: Uses JWT tokens from Authorization header (Bearer token)
+- **User Injection**: Authenticated user attached to `req.user` for use in handlers
+- **Authorization**: Supports admin-only access checks
+
+**Selective Authentication** (`requireAuthExcept`):
+- **Purpose**: Apply authentication globally with public path exceptions
+- **Architecture Decision**: Whitelist approach simplifies route configuration for apps where most routes are protected
+- **Public Paths**: Specific paths (health checks, auth endpoints) are marked as public
+
+**Source Files**: 
+- `apps/backend/src/middleware/errorMiddleware.ts`
+- `apps/backend/src/middleware/authMiddleware.ts`
+- `apps/backend/src/middleware/requireAuthExcept.ts`
+
+### **Configuration Management**
+
+The backend uses centralized configuration with environment variable validation:
+
+**Configuration Module** (`config`):
+- **Purpose**: Type-safe access to application configuration with runtime validation
+- **Architecture Decision**: Zod validation at startup ensures all required variables are present and valid, preventing runtime errors
+- **Fail-Fast**: Invalid configuration causes immediate process exit with clear error messages
+- **Type Safety**: Configuration object is typed and exported, enabling IntelliSense and compile-time checking
+- **Environment Handling**: Supports development, production, and test environments
+
+**Source File**: `apps/backend/src/config/index.ts`
+
+### **Utility Functions**
+
+The backend provides utility functions for common transformations:
+
+**Formula Parameter Transformers** (`formulaParamTransformers`):
+- **Purpose**: Transform formula parameters between database format (comma-separated strings) and application format (arrays)
+- **Architecture Decision**: Separate transformer functions ensure clean separation between database and application concerns
+- **Dice Notation Support**: Handles both numeric values and dice notation strings (e.g., "1d6")
+- **Type Safety**: Maintains type safety while converting between formats
+
+**Source File**: `apps/backend/src/utils/formulaParamTransformers.ts`
+
+**Authentication Utilities** (`auth`):
+- **Purpose**: JWT token management and password hashing utilities
+- **Architecture Decision**: JWT tokens provide stateless authentication, allowing scalability without session storage
+- **Password Security**: bcrypt with cost factor 10 provides strong security with reasonable performance
+- **Token Payload**: Includes user ID, username, admin status, and preferred edition for authorization
+
+**Source File**: `apps/backend/src/lib/auth.ts`
+
 **Controller Layer** (`*Controller.ts`):
 - **Purpose**: Handle HTTP requests and responses
 - **Responsibilities**: Request processing, response formatting, error handling

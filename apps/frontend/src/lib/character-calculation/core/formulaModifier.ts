@@ -1,5 +1,6 @@
-import type { FormulaModification } from '../types';
 import { AbilityId } from '@shared/static-data';
+
+import type { FormulaModification } from '../types';
 
 /**
  * Apply formula modifications to ability score selection

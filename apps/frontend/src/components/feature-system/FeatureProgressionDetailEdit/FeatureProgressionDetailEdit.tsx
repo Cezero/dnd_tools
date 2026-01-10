@@ -1,7 +1,7 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import { ScrollArea } from '@base-ui-components/react/scroll-area';
-import React, { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import React, { useState, useCallback } from 'react';
 
 import { ValidatedInput, ValidatedForm, ValidatedCustomSelect } from '@/components/forms';
 import { displayStrategyFactory } from '@/lib/formatters';
@@ -218,7 +218,7 @@ export function FeatureProgressionDetailEdit({
                                 } as FeatureProgression;
 
                                 const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                                const displayResult = strategy.format(progressionForFormatting, { queryClient });
+                                const displayResult = strategy.format(progressionForFormatting);
                                 const formattedPrereqs = displayResult.formattedPrerequisites || [];
 
                                 return (

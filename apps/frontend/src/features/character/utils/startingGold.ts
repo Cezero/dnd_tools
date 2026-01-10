@@ -113,7 +113,7 @@ export function useStartingGold() {
         }
 
         // Get class name
-        const classData = await getClassNameById(classId);
+        const classData = getClassNameById(classId);
         if (!classData?.name) {
             throw new Error(`Class with ID ${classId} not found`);
         }

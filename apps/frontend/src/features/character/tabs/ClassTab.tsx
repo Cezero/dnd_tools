@@ -37,7 +37,7 @@ export function ClassTab({
             const editionId = state.editionId || EditionId.DND_3x;
             setIsLoadingClasses(true);
             try {
-                const classesData = await getClassSelectByEdition(editionId, false, state.allowVariantClasses);
+                const classesData = getClassSelectByEdition(editionId, false, state.allowVariantClasses);
                 setAllClasses(classesData || []);
             } catch (error) {
                 console.error('Failed to fetch classes:', error);

@@ -17,7 +17,46 @@ import { featureSystemService } from '../featureSystem/featureSystemService';
 
 const prisma = new PrismaClient();
 
+/**
+ * Companion Service
+ * 
+ * Provides comprehensive companion management capabilities including:
+ * - Companion definition CRUD operations (admin-managed templates)
+ * - Character companion management (user-managed instances)
+ * - Feature system integration for companion benefits
+ * - Trick association management for character companions
+ * - Automatic HP calculation from monster data
+ * 
+ * The service supports dual CRUD operations:
+ * - Companion definitions: Admin-managed companion templates (familiar types, animal companion types)
+ * - Character companions: User-managed companion instances linked to specific characters
+ * 
+ * Integration Points:
+ * - Feature System: Companion benefits managed through feature progressions
+ * - Monster System: Companions link to monsters for statblock data
+ * - Trick System: Character companions can learn tricks
+ * - Character System: Character ownership validation in controller layer
+ * 
+ * @see CompanionService interface for method signatures
+ * @see companionController for request handling
+ * @see companionRoutes for API endpoints
+ */
 export const companionService: CompanionService = {
+    /**
+     * Retrieves all companion definitions.
+     * 
+     * Design Decision: Lightweight Schema Pattern
+     * - Returns only monsterId, not nested monster object
+     * - Frontend resolves monster names from pre-populated monsters-cache
+     * - Reduces payload size and ensures consistent data resolution
+     * 
+     * Orders results by companion type and monster ID for consistent presentation.
+     * 
+     * @returns Promise resolving to GetAllCompanionsResponse with total count and results array
+     * 
+     * @see [Cache-Based ID Maps](../../../../shared/docs/application-overview/cache-based-id-maps.md)
+     * @see [Lightweight Schema Pattern](../../../../shared/docs/application-overview/validation-schemas.md#lightweight-response-schemas)
+     */
     async getAllCompanions(): Promise<GetAllCompanionsResponse> {
         const [companions, total] = await Promise.all([
             prisma.companion.findMany({
@@ -25,14 +64,6 @@ export const companionService: CompanionService = {
                     { type: 'asc' },
                     { monsterId: 'asc' },
                 ],
-                include: {
-                    monster: {
-                        select: {
-                            id: true,
-                            name: true,
-                        }
-                    }
-                }
             }),
             prisma.companion.count(),
         ]);
@@ -43,17 +74,29 @@ export const companionService: CompanionService = {
         };
     },
 
+    /**
+     * Retrieves a specific companion definition by ID with complete details including feature progressions.
+     * 
+     * Design Decision: Lightweight Schema Pattern
+     * - Returns only monsterId, not nested monster object
+     * - Frontend resolves monster names from pre-populated monsters-cache
+     * - Reduces payload size and ensures consistent data resolution
+     * 
+     * Integrates with feature system service to retrieve companion benefit feature progressions,
+     * ensuring companion benefits are properly loaded. Combines companion data with feature
+     * progressions for complete response.
+     * 
+     * @param query - CompanionIdParamRequest with companion ID
+     * @returns Promise resolving to GetCompanionResponse with complete companion data including
+     *          feature progressions, or null if not found
+     * 
+     * @see featureSystemService.getFeatureProgressionsByCompanionId for feature retrieval
+     * @see [Cache-Based ID Maps](../../../../shared/docs/application-overview/cache-based-id-maps.md)
+     * @see [Lightweight Schema Pattern](../../../../shared/docs/application-overview/validation-schemas.md#lightweight-response-schemas)
+     */
     async getCompanionById(query: CompanionIdParamRequest): Promise<GetCompanionResponse | null> {
         const companion = await prisma.companion.findUnique({
             where: { id: query.id },
-            include: {
-                monster: {
-                    select: {
-                        id: true,
-                        name: true,
-                    }
-                }
-            }
         });
 
         if (!companion) {
@@ -95,17 +138,25 @@ export const companionService: CompanionService = {
         return { message: 'Companion deleted successfully' };
     },
 
+    /**
+     * Retrieves all character companions for a specific character.
+     * 
+     * Design Decision: Lightweight Schema Pattern
+     * - Returns only monsterId, not nested monster object
+     * - Frontend resolves monster names from pre-populated monsters-cache
+     * - Reduces payload size and ensures consistent data resolution
+     * 
+     * @param characterId - The character ID to retrieve companions for
+     * @returns Promise resolving to GetAllCharacterCompanionsResponse with total count and results array
+     * 
+     * @see [Cache-Based ID Maps](../../../../shared/docs/application-overview/cache-based-id-maps.md)
+     * @see [Lightweight Schema Pattern](../../../../shared/docs/application-overview/validation-schemas.md#lightweight-response-schemas)
+     */
     async getCharacterCompanions(characterId: number): Promise<GetAllCharacterCompanionsResponse> {
         const [companions, total] = await Promise.all([
             prisma.characterCompanion.findMany({
                 where: { characterId },
                 include: {
-                    monster: {
-                        select: {
-                            id: true,
-                            name: true,
-                        }
-                    },
                     companion: {
                         select: {
                             id: true,
@@ -127,10 +178,31 @@ export const companionService: CompanionService = {
 
         return {
             total,
-            results: companions,
+            results: companions.map(companion => ({
+                ...companion,
+                companion: companion.companion ?? undefined,
+            })),
         };
     },
 
+    /**
+     * Creates a new character companion with trick associations and automatic HP calculation.
+     * 
+     * Uses transaction to ensure atomic creation of companion and trick associations.
+     * Automatically calculates hit points from monster averageHP if not provided.
+     * 
+     * Business Logic:
+     * - Extracts tricks array from request data
+     * - Calculates hit points: uses provided value, or queries monster for averageHP, or null if monster not found
+     * - Creates character companion in transaction
+     * - Creates trick associations if tricks array provided
+     * 
+     * @param data - CreateCharacterCompanionRequest with character companion data and optional tricks array
+     * @returns Promise resolving to CreateResponse with created character companion ID
+     * 
+     * @see Monster system for averageHP lookup
+     * @see Trick system for trick associations
+     */
     async createCharacterCompanion(data: CreateCharacterCompanionRequest): Promise<CreateResponse> {
         const { tricks, ...companionData } = data;
 
@@ -173,6 +245,25 @@ export const companionService: CompanionService = {
         return { id: result.id.toString(), message: 'Character companion created successfully' };
     },
 
+    /**
+     * Updates an existing character companion with trick management.
+     * 
+     * Uses delete/recreate pattern for trick associations to ensure data consistency.
+     * Only updates tricks if tricks array is explicitly provided (undefined means no change).
+     * 
+     * Business Logic:
+     * - Extracts tricks array from request data
+     * - Updates character companion in transaction
+     * - If tricks array provided (not undefined):
+     *   - Deletes all existing trick associations
+     *   - Creates new trick associations if array is non-empty
+     * 
+     * @param data - UpdateCharacterCompanionRequest with updated data and optional tricks array
+     * @param query - Object with character companion ID
+     * @returns Promise resolving to UpdateResponse with success message
+     * 
+     * @see Trick system for trick association management
+     */
     async updateCharacterCompanion(data: UpdateCharacterCompanionRequest, query: { id: number }): Promise<UpdateResponse> {
         const { tricks, ...companionData } = data;
 

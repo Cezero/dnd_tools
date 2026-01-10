@@ -1,9 +1,9 @@
 import type { CharacterItem } from '@shared/schema';
 import { AbilityId, SIZE_MAP } from '@shared/static-data';
 
-import type { AttackCalculationInput, AttackCalculationResult } from './types';
 import { hasFeat } from './feats';
 import { getMonkUnarmedDamage } from './monk-damage';
+import type { AttackCalculationInput, AttackCalculationResult } from './types';
 import {
     getCharacterBAB,
     getAbilityModifier,

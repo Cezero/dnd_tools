@@ -12,14 +12,11 @@ export const DomainSpellSchema = z.object({
     domainId: z.number().int().positive('Domain ID must be a positive integer'),
     spellId: z.number().int().positive('Spell ID must be a positive integer'),
     spellLevel: z.number().int().min(1, 'Spell level must be at least 1').max(9, 'Spell level must be at most 9'),
-    spellName: z.string().min(1, 'Spell name is required').max(200, 'Spell name must be less than 200 characters').trim(),
-    spellSummary: z.string().max(1000, 'Spell summary must be less than 1000 characters').nullable(),
+    // spellName and spellSummary removed - frontend should resolve from spells-cache
 });
 
-const LocalDeitySummarySchema = z.object({
-    id: z.number().int().positive(),
-    name: z.string().min(1).max(200),
-});
+// LocalDeitySummarySchema removed - use deityIds array instead
+// Frontend should resolve deity names from deities-cache
 
 export const BaseDomainSchema = z.object({
     name: z.string()
@@ -29,7 +26,7 @@ export const BaseDomainSchema = z.object({
     editionId: z.number().int().positive('Edition ID must be a positive integer'),
     isVisible: z.boolean().default(true),
     domainSpells: z.array(DomainSpellSchema).nullable(),
-    deityDomains: z.array(LocalDeitySummarySchema).nullable(),
+    deityIds: z.array(z.number().int().positive()).nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
     features: z.array(FeatureProgressionSchema).nullable(),
 });
@@ -40,7 +37,7 @@ export const DomainSchema = BaseDomainSchema.extend({
 
 export const DomainSummarySchema = DomainSchema.omit({
     domainSpells: true,
-    deityDomains: true,
+    deityIds: true,
     features: true,
 });
 
@@ -65,10 +62,11 @@ export const CreateDomainSpellSchema = z.object({
 
 export const CreateDomainSchema = BaseDomainSchema.omit({
     domainSpells: true,
-    deityDomains: true,
+    deityIds: true,
     features: true,
 }).extend({
     domainSpells: z.array(CreateDomainSpellSchema).nullable(),
+    deityIds: z.array(z.number().int().positive()).nullable(),
     features: z.array(CreateFeatureProgressionSchema).nullable(),
 });
 

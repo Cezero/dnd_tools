@@ -1,18 +1,13 @@
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EntityLink } from '@/components/entity-link';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { CollapsibleSection } from '@/components/widgets/CollapsibleSection';
-import { useCacheFunctions } from '@/services/cache/CacheFunctions';
-import { getSkillNameFromCache } from '@/services/cache/IdMapHelpers';
+import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
+import { getSkillNameFromCache, useCacheFunctions } from '@/services/cache';
 import {
     EDITION_MAP,
-    CRAFT_SKILL_MAP,
-    KNOWLEDGE_SKILL_MAP,
-    SkillSubType,
-    SKILL_SUB_TYPE_COMPATIBILITY,
     SIZE_MAP,
     MONSTER_TYPE_LIST,
     MONSTER_SUBTYPE_LIST,
@@ -24,39 +19,27 @@ import { GetSourceDisplay } from '@shared/utils';
 import type { MonsterDisplayContentProps } from './types';
 
 // Helper function to get skill name including subtypes
-function getSkillNameWithSubtype(queryClient: ReturnType<typeof useQueryClient>, skillId: number, skillSubId?: number | null, notes?: string | null): string {
-    const skillName = getSkillNameFromCache(queryClient, skillId);
+function getSkillNameWithSubtype(skillId: number, skillSubId?: number | null, notes?: string | null): string {
+    const skillName = getSkillNameFromCache(skillId);
     if (!skillName) {
         return 'Unknown Skill';
     }
 
     // Check if this skill uses skillSubId (Craft, Knowledge)
-    if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19) && skillSubId !== null && skillSubId !== undefined) {
+    if (hasSubtypes(skillId) && skillSubId !== null && skillSubId !== undefined) {
         if (skillSubId === -1) {
-            if (skillId === 6) { // Craft
-                return 'Craft (All)';
-            }
-            if (skillId === 19) { // Knowledge
-                return 'Knowledge (All)';
-            }
+            return `${skillName} (All)`;
         } else {
-            if (skillId === 6) { // Craft
-                const craftSubtype = CRAFT_SKILL_MAP[skillSubId];
-                if (craftSubtype) {
-                    return `Craft (${craftSubtype.name})`;
-                }
-            }
-            if (skillId === 19) { // Knowledge
-                const knowledgeSubtype = KNOWLEDGE_SKILL_MAP[skillSubId];
-                if (knowledgeSubtype) {
-                    return `Knowledge (${knowledgeSubtype.name})`;
-                }
+            const subtypes = getSkillSubtypes(skillId);
+            const subtype = subtypes.find(s => s.id === skillSubId);
+            if (subtype) {
+                return `${skillName} (${subtype.name})`;
             }
         }
     }
 
     // Check if this skill uses customSubtype (Perform, Profession) - stored in notes
-    if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33) && notes) {
+    if (usesCustomSubtype(skillId) && notes) {
         return `${skillName} (${notes})`;
     }
 
@@ -64,7 +47,6 @@ function getSkillNameWithSubtype(queryClient: ReturnType<typeof useQueryClient>,
 }
 
 export function MonsterDisplayContent({ monster, showHeader = false }: MonsterDisplayContentProps): React.JSX.Element | null {
-    const queryClient = useQueryClient();
     const { getFeatNameById, getSpellNameById } = useCacheFunctions();
     const [spellNames, setSpellNames] = useState<Record<number, string>>({});
     const spellsRef = useRef<string>('');
@@ -86,7 +68,7 @@ export function MonsterDisplayContent({ monster, showHeader = false }: MonsterDi
             for (const spell of monster.spells || []) {
                 if (!names[spell.spellId]) {
                     try {
-                        const spellData = await getSpellNameById(spell.spellId);
+                        const spellData = getSpellNameById(spell.spellId);
                         names[spell.spellId] = spellData?.name || `Unknown Spell (${spell.spellId})`;
                     } catch {
                         names[spell.spellId] = `Unknown Spell (${spell.spellId})`;
@@ -136,7 +118,7 @@ export function MonsterDisplayContent({ monster, showHeader = false }: MonsterDi
         if (!monster?.skills || monster.skills.length === 0) return null;
 
         return monster.skills.map((skill, index) => {
-            const skillName = getSkillNameWithSubtype(queryClient, skill.skillId, skill.skillSubId, skill.notes);
+            const skillName = getSkillNameWithSubtype(skill.skillId, skill.skillSubId, skill.notes);
             const ranksDisplay = skill.ranks !== null && skill.ranks !== undefined
                 ? ` ${skill.ranks >= 0 ? '+' : ''}${skill.ranks}`
                 : '';
@@ -177,7 +159,7 @@ export function MonsterDisplayContent({ monster, showHeader = false }: MonsterDi
         const resolveFeats = async () => {
             const featElements = await Promise.all(
                 monster.feats.map(async (feat, index) => {
-                    const featData = await getFeatNameById(feat.featId);
+                    const featData = getFeatNameById(feat.featId);
                     const featName = featData?.name || `Feat ${feat.featId}`;
                     const displayName = feat.notes ? `${featName} (${feat.notes})` : featName;
 

@@ -4,9 +4,9 @@ import {
     AcademicCapIcon,
     SparklesIcon
 } from '@heroicons/react/24/outline';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
@@ -14,9 +14,9 @@ import {
     ValidatedForm,
     useValidatedForm
 } from '@/components/forms';
+import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, CreateRaceRequest, UpdateRaceRequest } from '@shared/schema';
 import { EntityAppliesToType, SpecialFeatureId, EntityType, FeatureSourceType } from '@shared/static-data';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 
 import { RaceApi } from './RaceApi';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';

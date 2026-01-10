@@ -5,8 +5,10 @@ import { SaveType } from '@/lib/character-calculation/calculations/savingThrows'
 import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
 import type { BreakdownMap } from '@/lib/character-calculation/types';
 import { canUseTwoHanded, isTwoHandedWeapon } from '@/lib/character-calculation/utils/weaponHelpers';
+import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
+import { getSkillNameById, getSkillSelectFull } from '@/services/cache';
 import type { FeatureProgression, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
-import { EntityAppliesToType, EntityType, AbilityId, SKILL_LIST, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY, SpecialFeatureId, BreakdownComponentType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
+import { EntityAppliesToType, EntityType, AbilityId, SpecialFeatureId, BreakdownComponentType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
 
 import { conditionLabelerRegistry } from './condition-labeler-registry';
@@ -14,7 +16,6 @@ import { conditionValueFormatterRegistry } from './condition-value-formatter-reg
 import { DisplayStrategyBase } from './displayStrategyBase';
 import { weaponNameLabeler, type WeaponNameLabelerContext } from './label-formatters';
 import { WeightFormatter, CriticalFormatter, AttackBonusFormatter, DistanceFormatter, SizeCategoryFormatter, DamageTypeFormatter, DamageStringFormatter } from './pure-formatters';
-import { getFeatNameFromCache } from './utils/cache-helpers';
 import type {
     DisplayContext,
     DisplayResult,
@@ -38,6 +39,7 @@ import type {
     CalculationBreakdown,
     BreakdownComponent,
 } from './types';
+import { getFeatNameFromCache } from './utils/cache-helpers';
 
 export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     protected formatProgressions(
@@ -171,7 +173,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         }
         // Use cache helper for feat name
         if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
-            const featName = getFeatNameFromCache(context?.queryClient, entity.appliesToId);
+            const featName = getFeatNameFromCache(entity.appliesToId);
             if (featName) {
                 return featName;
             }
@@ -657,7 +659,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             miscBonus: number;
         }>();
 
-        const allocatableSkills = SKILL_LIST.filter(skill =>
+        const allocatableSkills = getSkillSelectFull().filter(skill =>
             skill.abilityId !== 0 && !skill.isAnalog
         );
 
@@ -775,7 +777,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         // Convert to formatted skills
         for (const entry of skillEntryMap.values()) {
-            const skillData = SKILL_LIST.find(s => s.id === entry.skillId);
+            const skillData = getSkillNameById(entry.skillId);
             if (!skillData) continue;
 
             const abilityScore = abilityScores.find(a => a.abilityId === skillData.abilityId);
@@ -803,17 +805,14 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
             // Format skill name
             let skillName = skillData.name;
-            if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(entry.skillId as 6 | 19) && entry.skillSubId) {
-                if (entry.skillId === 6) {
-                    const craftSubtype = CRAFT_SKILL_MAP[entry.skillSubId as keyof typeof CRAFT_SKILL_MAP];
-                    if (craftSubtype) skillName = `${skillData.name} (${craftSubtype.name})`;
-                }
-                if (entry.skillId === 19) {
-                    const knowledgeSubtype = KNOWLEDGE_SKILL_MAP[entry.skillSubId as keyof typeof KNOWLEDGE_SKILL_MAP];
-                    if (knowledgeSubtype) skillName = `${skillData.name} (${knowledgeSubtype.name})`;
+            if (hasSubtypes(entry.skillId) && entry.skillSubId) {
+                const subtypes = getSkillSubtypes(entry.skillId);
+                const subtype = subtypes.find(s => s.id === entry.skillSubId);
+                if (subtype) {
+                    skillName = `${skillData.name} (${subtype.name})`;
                 }
             }
-            if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(entry.skillId as 32 | 33) && entry.customSubtype && entry.customSubtype !== '__placeholder__') {
+            if (usesCustomSubtype(entry.skillId) && entry.customSubtype && entry.customSubtype !== '__placeholder__') {
                 skillName = `${skillData.name} (${entry.customSubtype})`;
             }
 
@@ -845,8 +844,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         // Add skills with 0 ranks that don't have entries
         for (const skillData of allocatableSkills) {
-            const needsSubtype = SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillData.id as 6 | 19) ||
-                SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillData.id as 32 | 33);
+            const needsSubtype = hasSubtypes(skillData.id) || usesCustomSubtype(skillData.id);
 
             if (!needsSubtype) {
                 const hasEntry = skills.some(s => s.skillId === skillData.id && s.skillSubId === null && s.customSubtype === null);
@@ -1035,7 +1033,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             if (!progression.entities) continue;
             for (const entity of progression.entities) {
                 if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
-                    const featName = getFeatNameFromCache(_context?.queryClient, entity.appliesToId);
+                    const featName = getFeatNameFromCache(entity.appliesToId);
                     if (featName) {
                         featNameMap.set(entity.appliesToId, featName);
                     }
@@ -1100,7 +1098,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     processedFeatIds.add(entity.appliesToId);
 
                     // Use cache helper for feat name
-                    const featName = getFeatNameFromCache(_context?.queryClient, entity.appliesToId) || `Feat ${entity.appliesToId}`;
+                    const featName = getFeatNameFromCache(entity.appliesToId) || `Feat ${entity.appliesToId}`;
                     const entityValue = entity.value ?? 0;
                     const formattedValue = entityValue >= 0 ? `+${entityValue}` : `${entityValue}`;
 
@@ -1368,8 +1366,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
 
             case EntityAppliesToType.Skill: {
-                // Use SKILL_LIST to get skill name
-                const skill = SKILL_LIST.find(s => s.id === choice.appliesToId);
+                // Use cache to get skill name
+                const skill = getSkillNameById(choice.appliesToId);
                 if (skill) {
                     return skill.name;
                 }

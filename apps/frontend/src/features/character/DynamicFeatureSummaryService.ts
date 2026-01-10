@@ -1,3 +1,7 @@
+import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
+import { FeatureTemplateResolver } from '@/lib/formatters/FeatureTemplateResolver';
+import type { DisplayContext } from '@/lib/formatters/types';
+import { getRaceSizeIdFromCache } from '@/services/cache';
 import type {
     FeatureProgression,
     Feature,
@@ -8,10 +12,9 @@ import type {
     Deity,
     Domain,
 } from '@shared/schema';
-import { FeatureTemplateResolver } from '@/lib/formatters/FeatureTemplateResolver';
-import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
+
 import { ClericEnergyChoiceResolver } from './ClericEnergyChoiceResolver';
-import type { DisplayContext } from '@/lib/formatters/types';
+
 
 /**
  * Service for generating dynamic feature summaries using templates
@@ -48,7 +51,7 @@ export class DynamicFeatureSummaryService {
                 abilityScores: this.getAbilityScoresMap(character),
                 classLevels: this.getClassLevelsMap(character),
                 raceId: character.raceId,
-                sizeId: character.race?.sizeId,
+                sizeId: character.raceId ? getRaceSizeIdFromCache(character.raceId) : undefined,
             },
             currentLevel: this.getCharacterLevel(character),
             choices: choicesMap,

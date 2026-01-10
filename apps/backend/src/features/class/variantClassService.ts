@@ -10,8 +10,7 @@ import {
     FeatureProgression,
 } from '@shared/schema';
 import { ProgressionType } from '@shared/static-data';
-import { calculateVariantId } from '@shared/utils';
-import { applyFeatureProgressionOverrides } from '@shared/utils';
+import { calculateVariantId , applyFeatureProgressionOverrides } from '@shared/utils';
 
 import { classService } from './classService.js';
 import { featureSystemService } from '../featureSystem/featureSystemService.js';

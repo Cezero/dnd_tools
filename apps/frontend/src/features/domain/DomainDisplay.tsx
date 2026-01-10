@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
+import { useCacheFunctions } from '@/services/cache';
 import { Domain } from '@shared/schema';
 import { EDITION_MAP, DisplayType } from '@shared/static-data';
 import { GetSourceDisplay } from '@shared/utils';
@@ -27,6 +28,7 @@ export function DomainDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: DomainDisplayProps): React.JSX.Element {
+    const { getSpellNameFromCache, getSpellSummaryFromCache, getDeityNameFromCache } = useCacheFunctions();
     // Precache all entities referenced in feature progressions
     usePrecacheFeatureEntities(domain?.features);
 
@@ -105,26 +107,30 @@ export function DomainDisplay({
                             <div>
                                 <h3 className="text-lg font-semibold">Domain Spells</h3>
                                 <div className="space-y-1">
-                                    {domain.domainSpells.map((domainSpell, index) => (
-                                        <div key={index}>
-                                            <strong>{domainSpell.spellLevel}</strong> <Link
-                                                to={`/spells/${domainSpell.spellId}`}
-                                                className="entity-link"
-                                            >
-                                                {domainSpell.spellName}
-                                            </Link>: {domainSpell.spellSummary || 'No description available.'}
-                                        </div>
-                                    ))}
+                                    {domain.domainSpells.map((domainSpell, index) => {
+                                        const spellName = getSpellNameFromCache(domainSpell.spellId) || `Spell ${domainSpell.spellId}`;
+                                        const spellSummary = getSpellSummaryFromCache(domainSpell.spellId);
+                                        return (
+                                            <div key={index}>
+                                                <strong>{domainSpell.spellLevel}</strong> <Link
+                                                    to={`/spells/${domainSpell.spellId}`}
+                                                    className="entity-link"
+                                                >
+                                                    {spellName}
+                                                </Link>: {spellSummary || 'No description available.'}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
-                        {domain.deityDomains && domain.deityDomains.length > 0 && (
+                        {domain.deityIds && domain.deityIds.length > 0 && (
                             <div>
                                 <div className="flex items-center gap-2">
                                     <strong className="text-lg font-semibold">Deities:</strong>
-                                    {domain.deityDomains.map((deityDomain, index) => (
+                                    {domain.deityIds.map((deityId, index) => (
                                         <div key={index}>
-                                            {deityDomain.name || 'Unknown Deity'}
+                                            {getDeityNameFromCache(deityId) || `Deity ${deityId}`}
                                         </div>
                                     ))}
                                 </div>

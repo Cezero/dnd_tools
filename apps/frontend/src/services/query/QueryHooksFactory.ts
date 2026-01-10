@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import type { ZodType } from 'zod';
 
 import { typedApi } from '@/services/Api';
@@ -169,17 +170,17 @@ export function createQueryHooks<
      * Imperative fetch method that uses TanStack Query cache if queryClient is provided.
      * 
      * @param params - Optional parameters for the query
-     * @param options - Optional cache options (staleTime, cacheTime)
+     * @param options - Optional cache options (staleTime, gcTime)
      * @param queryClient - Optional TanStack Query client for cache management
      * @returns Promise resolving to the API response (from cache if available, otherwise from API)
      * 
      * @remarks
      * - If queryClient is provided, uses TanStack Query's fetchQuery which checks cache first
      * - If queryClient is not provided, directly calls the API (no caching)
-     * - Default staleTime: 5 minutes, default cacheTime: 10 minutes
+     * - Default staleTime: 5 minutes, default gcTime: 10 minutes
      * - Useful for imperative data fetching in event handlers or async functions
      */
-    const fetch = async (params?: unknown, options?: { staleTime?: number; cacheTime?: number }, queryClient?: any) => {
+    const fetch = async (params?: unknown, options?: { staleTime?: number; gcTime?: number }, queryClient?: QueryClient) => {
         if (!queryClient) {
             // If no queryClient provided, just call the API directly
             return queryFn(params);
@@ -188,7 +189,7 @@ export function createQueryHooks<
             queryKey: queryKeyBuilder(params),
             queryFn: () => queryFn(params),
             staleTime: options?.staleTime || 5 * 60 * 1000,
-            cacheTime: options?.cacheTime || 10 * 60 * 1000,
+            gcTime: options?.gcTime || 10 * 60 * 1000,
         });
     };
 
@@ -204,7 +205,7 @@ export function createQueryHooks<
      * - Also invalidates individual item queries if pathParams.id exists
      * - Useful for imperative mutations in event handlers or async functions
      */
-    const mutate = async (data: { requestData?: unknown; pathParams?: unknown }, queryClient?: any) => {
+    const mutate = async (data: { requestData?: unknown; pathParams?: unknown }, queryClient?: QueryClient) => {
         const result = await apiFunction(data.requestData as never, data.pathParams as never);
 
         // Auto-invalidate related queries using the query key builder if queryClient is provided

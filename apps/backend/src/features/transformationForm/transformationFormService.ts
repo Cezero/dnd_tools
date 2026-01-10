@@ -15,6 +15,27 @@ import type { TransformationFormService } from './types';
 
 const prisma = new PrismaClient();
 
+/**
+ * Transformation Form Service
+ * 
+ * Provides transformation form eligibility management for linking features (polymorph, wild shape)
+ * to eligible monster forms. Supports level-based eligibility filtering and efficient queries
+ * for retrieving available forms for specific features.
+ * 
+ * Key Features:
+ * - Feature-to-monster linking for transformation abilities
+ * - Level-based eligibility (minLevel) for form access
+ * - Efficient queries ordered by minimum level
+ * 
+ * Integration Points:
+ * - Feature System: Features reference transformation forms
+ * - Monster System: Transformation forms reference monsters
+ * - Character Resolution: Used to determine available forms for polymorph/wild shape features
+ * 
+ * @see TransformationFormService interface for method signatures
+ * @see transformationFormController for request handling
+ * @see transformationFormRoutes for API endpoints
+ */
 export const transformationFormService: TransformationFormService = {
     async getAllTransformationForms(): Promise<GetAllTransformationFormsResponse> {
         const [forms, total] = await Promise.all([
@@ -74,6 +95,17 @@ export const transformationFormService: TransformationFormService = {
         return form;
     },
 
+    /**
+     * Retrieves all transformation form eligibilities for a specific feature, ordered by minimum level.
+     * 
+     * Orders results by minLevel (ascending) to support level-based form selection in character
+     * resolution and frontend UI. Used by character resolution system and frontend to determine
+     * available monster forms for polymorph and wild shape features based on character level.
+     * 
+     * @param query - FeatureIdForTransformationFormsParamRequest with feature ID
+     * @returns Promise resolving to GetTransformationFormsByFeatureResponse with array of
+     *          eligible forms ordered by minLevel
+     */
     async getTransformationFormsByFeature(query: FeatureIdForTransformationFormsParamRequest): Promise<GetTransformationFormsByFeatureResponse> {
         const forms = await prisma.transformationFormEligibility.findMany({
             where: { featureId: query.featureId },

@@ -1,11 +1,12 @@
 import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, SIZE_MAP, ARMOR_CATEGORY_ENUM, EntityAppliesToType } from '@shared/static-data';
+
+import { getAbilityScore } from './abilityScore';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses, resolveFeatureFormulaModifications } from '../core/featureBonusResolver';
-import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 import { getAdditionalAbilityModifiers } from '../core/formulaModifier';
-import { getAbilityScore } from './abilityScore';
 import type { CalculationResult } from '../types';
+import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 
 /**
  * Breakdown map for AC

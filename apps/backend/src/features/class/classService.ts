@@ -1,3 +1,32 @@
+/**
+ * Class Service - Central service for all class management operations.
+ * 
+ * This service provides comprehensive class management capabilities including:
+ * - Class CRUD operations (create, read, update, delete)
+ * - Class feature progression management through feature system integration
+ * - Spellcasting integration for classes with spellcasting abilities
+ * - Variant class relationship management
+ * - Formula parameter handling for class features
+ * 
+ * Architecture Decisions:
+ * - Feature System Integration: All class features are managed through the feature
+ *   system service, ensuring consistency with other feature sources (races, domains)
+ * - Spellcasting Support: Integrates with spell system for class spell lists and
+ *   spell progression management
+ * - Variant Classes: Supports variant classes that modify base class features
+ * - Formula Parameters: Handles complex feature formulas with conditional scaling
+ * 
+ * Usage Pattern:
+ * Controllers call service methods which delegate feature operations to the feature
+ * system service, ensuring all features use the same underlying system.
+ * 
+ * Source File: `apps/backend/src/features/class/classService.ts`
+ * 
+ * @see ClassService interface for method signatures
+ * @see classController for HTTP request handling
+ * @see classRoutes for API endpoint definitions
+ */
+
 import { PrismaClient } from '@shared/prisma-client';
 import {
     GetAllClassesResponse,

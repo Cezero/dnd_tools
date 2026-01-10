@@ -2,13 +2,13 @@ import { Dialog } from '@base-ui-components/react/dialog';
 import { ColumnDef } from '@tanstack/react-table';
 import React, { useMemo } from 'react';
 
-import { ScrollableCategorizedList } from '@/components/scrollable-categorized-list';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
+import { ScrollableCategorizedList } from '@/components/scrollable-categorized-list';
+import { formatCostAsCurrency } from '@/features/item/utils';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { ItemWithDetails } from '@shared/schema';
 import { CurrencyId, CURRENCY, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, FilterType } from '@shared/static-data';
 
-import { formatCostAsCurrency } from '@/features/item/utils';
 import type { Money } from '../types';
 import { CharacterEditStateUpdateType } from '../types';
 

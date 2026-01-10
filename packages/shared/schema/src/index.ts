@@ -2,6 +2,7 @@
 export * from './common.js';
 export * from './auth.js';
 export * from './character.js';
+export * from './characterResolution.js';
 export * from './class.js';
 export * from './companion.js';
 export * from './diceBox.js';

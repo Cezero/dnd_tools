@@ -1,7 +1,7 @@
 import { Response } from 'express';
 
-import { PrismaClient } from '@shared/prisma-client';
 import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
+import { PrismaClient } from '@shared/prisma-client';
 import {
     CompanionIdParamRequest,
     CreateCompanionRequest,
@@ -72,7 +72,21 @@ export async function GetCharacterCompanions(req: ValidatedParamsT<{ characterId
 }
 
 /**
- * Creates a new character companion.
+ * Creates a new character companion with ownership validation.
+ * 
+ * Verifies that the authenticated user owns the character before allowing companion creation.
+ * This ensures users can only create companions for their own characters.
+ * 
+ * Authentication: Requires authentication (user must be logged in)
+ * Ownership Validation:
+ * 1. Verifies user is authenticated (returns 401 if not)
+ * 2. Queries character to verify ownership
+ * 3. Returns 404 if character not found
+ * 4. Returns 403 if character does not belong to user
+ * 5. Proceeds with creation if ownership verified
+ * 
+ * @param req - Request with CreateCharacterCompanionRequest body
+ * @param res - Response object
  */
 export async function CreateCharacterCompanion(req: ValidatedBodyT<CreateCharacterCompanionRequest, GetAllCharacterCompanionsResponse>, res: Response) {
     const userId = req.user?.id;
@@ -102,7 +116,23 @@ export async function CreateCharacterCompanion(req: ValidatedBodyT<CreateCharact
 }
 
 /**
- * Updates an existing character companion.
+ * Updates an existing character companion with ownership validation.
+ * 
+ * Verifies that the authenticated user owns the character companion before allowing update.
+ * Queries character companion with character relationship to verify ownership through
+ * the character relationship.
+ * 
+ * Authentication: Requires authentication (user must be logged in)
+ * Ownership Validation:
+ * 1. Verifies user is authenticated (returns 401 if not)
+ * 2. Queries character companion with character relationship
+ * 3. Verifies character ownership through relationship
+ * 4. Returns 404 if companion not found
+ * 5. Returns 403 if character does not belong to user
+ * 6. Proceeds with update if ownership verified
+ * 
+ * @param req - Request with character companion ID in params and UpdateCharacterCompanionRequest in body
+ * @param res - Response object
  */
 export async function UpdateCharacterCompanion(req: ValidatedParamsBodyT<{ id: number }, UpdateCharacterCompanionRequest, GetAllCharacterCompanionsResponse>, res: Response) {
     const userId = req.user?.id;

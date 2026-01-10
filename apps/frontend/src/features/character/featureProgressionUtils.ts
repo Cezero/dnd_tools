@@ -25,31 +25,26 @@ export function isClassSkill(
         if (progression.featureId !== SpecialFeatureId.ClassSkill) {
             continue;
         }
-        
+
         if (progression.entities) {
             for (const entity of progression.entities) {
                 // Check if this entity applies to skills
                 if (entity.appliesTo !== EntityAppliesToType.Skill || !entity.appliesToId) {
                     continue;
                 }
-                
-                // Check if this entity makes all Knowledge skills class skills
-                if (entity.appliesToId === 19 && entity.appliesToSubId === -1) {
-                    // If the skill is a Knowledge skill (base or subtype), it's a class skill
-                    if (skillId === 19 || (skillSubId && skillSubId >= 1901 && skillSubId <= 1999)) {
+
+                // Check if this entity applies to the skill we're checking
+                if (entity.appliesToId === skillId) {
+                    // If appliesToSubId === -1, all subtypes are class skills
+                    if (entity.appliesToSubId === -1) {
                         return true;
                     }
-                }
-                // Check if this entity directly makes this skill a class skill
-                if (entity.appliesToId === skillId) {
-                    if (entity.appliesToSubId === -1) {
-                        // All subtypes are class skills
+                    // If appliesToSubId matches skillSubId, specific subtype is a class skill
+                    if (entity.appliesToSubId === skillSubId) {
                         return true;
-                    } else if (entity.appliesToSubId === skillSubId) {
-                        // Specific subtype is a class skill
-                        return true;
-                    } else if (!entity.appliesToSubId && !skillSubId) {
-                        // Regular skill is a class skill
+                    }
+                    // If both are null/undefined, regular skill is a class skill
+                    if (!entity.appliesToSubId && !skillSubId) {
                         return true;
                     }
                 }

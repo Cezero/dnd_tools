@@ -13,7 +13,7 @@ interface DeityDisplayProps {
 }
 
 export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
-    const { getClassNameById, getRaceNameById } = useCacheFunctions();
+    const { getClassNameById, getRaceNameById, getItemNameFromCache, getDomainNameFromCache } = useCacheFunctions();
     const [worshiperNames, setWorshiperNames] = useState<string>('');
     const [imageExists, setImageExists] = useState<boolean>(false);
     const [imageError, setImageError] = useState<boolean>(false);
@@ -26,6 +26,7 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
         // Replace hyphens with underscores
         imageName = imageName.replace(/-/g, '_');
         // Remove other punctuation (periods, commas, etc.)
+        // eslint-disable-next-line no-useless-escape
         imageName = imageName.replace(/[.,;:!?'"()\[\]{}]/g, '');
         return `/assets/artwork/deities/${imageName}.jpeg`;
     };
@@ -39,17 +40,17 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
 
         const imagePath = getImagePath(deity.name);
         const img = new Image();
-        
+
         img.onload = () => {
             setImageExists(true);
             setImageError(false);
         };
-        
+
         img.onerror = () => {
             setImageExists(false);
             setImageError(true);
         };
-        
+
         img.src = imagePath;
     }, [deity?.name]);
 
@@ -70,7 +71,7 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
                 if (hasClasses) {
                     const classNames = await Promise.all(
                         deity.classIds.map(async (classId) => {
-                            const classInfo = await getClassNameById(classId);
+                            const classInfo = getClassNameById(classId);
                             return classInfo?.name || `Class ${classId}`;
                         })
                     );
@@ -81,7 +82,7 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
                 if (hasRaces) {
                     const raceNames = await Promise.all(
                         deity.raceIds.map(async (raceId) => {
-                            const raceInfo = await getRaceNameById(raceId);
+                            const raceInfo = getRaceNameById(raceId);
                             return raceInfo?.name || `Race ${raceId}`;
                         })
                     );
@@ -139,16 +140,17 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
 
                     <div className="flex items-center gap-2">
                         <div className="w-40"><strong>Associated Domains:</strong></div>
-                        {deity.domains && deity.domains.length > 0 ? (
+                        {deity.domainIds && deity.domainIds.length > 0 ? (
                             <div>
-                                {deity.domains.reduce((acc, domain, index) => {
+                                {deity.domainIds.reduce((acc, domainId, index) => {
+                                    const domainName = getDomainNameFromCache(domainId) || `Domain ${domainId}`;
                                     const link = (
                                         <Link
-                                            key={domain.id}
-                                            to={`/domains/${domain.id}`}
+                                            key={domainId}
+                                            to={`/domains/${domainId}`}
                                             className="text-blue-600 dark:text-blue-400 hover:underline"
                                         >
-                                            {domain.name}
+                                            {domainName}
                                         </Link>
                                     );
                                     return index === 0 ? [link] : [...acc, ', ', link];
@@ -168,9 +170,9 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-40"><strong>Favored Weapons:</strong></div>
-                        {deity.favoredWeapons && deity.favoredWeapons.length > 0 ? (
+                        {deity.favoredWeaponIds && deity.favoredWeaponIds.length > 0 ? (
                             <div>
-                                {deity.favoredWeapons.map((weapon) => weapon.name).join(', ')}
+                                {deity.favoredWeaponIds.map((itemId) => getItemNameFromCache(itemId) || `Item ${itemId}`).join(', ')}
                             </div>
                         ) : (
                             <div className="text-gray-600 dark:text-gray-400">No favored weapons specified.</div>
@@ -180,8 +182,8 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
 
                 {imageExists && (
                     <div className="flex-shrink-0">
-                        <img 
-                            src={imagePath} 
+                        <img
+                            src={imagePath}
                             alt={deity.name}
                             className="max-w-[240px] max-h-[192px] object-contain rounded"
                             onError={() => {

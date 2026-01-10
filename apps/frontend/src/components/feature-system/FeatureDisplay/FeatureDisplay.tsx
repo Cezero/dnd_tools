@@ -98,7 +98,7 @@ export function FeatureDisplay({
                             } as FeatureProgression;
 
                         const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                        const displayResult = strategy.format(progressionForFormatting, { queryClient });
+                        const displayResult = strategy.format(progressionForFormatting);
                         const formattedPrereqs = displayResult.formattedPrerequisites || [];
 
                         return (
@@ -138,7 +138,7 @@ export function FeatureDisplay({
                             >
                                 {(() => {
                                     const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-                                    const result = strategy.format(progression, { queryClient });
+                                    const result = strategy.format(progression);
                                     return result.formattedValue || 'No preview';
                                 })()}
                             </button>

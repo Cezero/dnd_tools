@@ -105,7 +105,7 @@ export class GroupingPhase {
 
                     if (isCumulativeGroup) {
                         // For cumulative groups, apply label to the grouped result
-                        formattedValue = labelerRegistry.applyLabel(formattedValue, firstEntity, true, context?.queryClient);
+                        formattedValue = labelerRegistry.applyLabel(formattedValue, firstEntity, true);
                     }
                     // For non-cumulative groups, the individual items are already labeled
 
@@ -209,7 +209,7 @@ export class GroupingPhase {
             if (formattedValues) {
                 // Step 2b: Apply labeler to the formatted values with entity context
                 const labeler = conditionLabelerRegistry.getLabeler(conditionType, entity.appliesTo);
-                const labeledCondition = labeler ? labeler(formattedValues, entity, context?.queryClient) : formattedValues;
+                const labeledCondition = labeler ? labeler(formattedValues, entity) : formattedValues;
                 formattedConditions.push(labeledCondition);
             }
         }
