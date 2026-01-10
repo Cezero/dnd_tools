@@ -38,9 +38,9 @@ export async function precacheFeat(
         return;
     }
 
-    const legacyFeatsData = queryClient.getQueryData<FeatCacheResponse>(['feats-cache', { queryType: 'all' }]);
-    const isInLegacyCache = legacyFeatsData?.results?.some(f => f.id === featId);
-    if (isInLegacyCache) {
+    const featsCacheData = queryClient.getQueryData<FeatCacheResponse>(['feats-cache']);
+    const isInFeatsCache = featsCacheData?.results?.some(f => f.id === featId);
+    if (isInFeatsCache) {
         return;
     }
 

@@ -73,22 +73,30 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
 
                 // Use backend resolution API to get resolved features
                 const resolvedResult = await CharacterResolutionApi.initializeSession(character.id);
-                
+
                 setResolvedProgressions(resolvedResult.resolvedProgressions);
                 setPendingChoices(resolvedResult.pendingChoices);
-                setClassSkills(resolvedResult.classSkills);
-                setSkillBonuses(resolvedResult.skillBonuses);
+                setClassSkills(resolvedResult.classSkills.map(skill => ({
+                    skillId: skill.skillId,
+                    skillSubId: skill.skillSubId ?? null
+                })));
+                setSkillBonuses(resolvedResult.skillBonuses.map(bonus => ({
+                    skillId: bonus.skillId,
+                    skillSubId: bonus.skillSubId ?? null,
+                    bonus: bonus.bonus,
+                    source: bonus.source
+                })));
 
                 // Create resolution context for display purposes
                 const maxLevel = Math.max(...character.advancements.map(a => a.level));
                 const advancement = character.advancements.find(a => a.level === maxLevel);
-                
+
                 if (advancement) {
                     const context: ResolutionContext = {
                         character,
                         targetLevel: maxLevel,
                         advancement,
-                        raceDetails: character.race ? { ...character.race, id: character.raceId } as Race : undefined,
+                        raceDetails: undefined, // Not needed for display - character.race is minimal object
                         classDetails: undefined, // Not needed for display
                         secondaryClassDetails: undefined, // Not needed for display
                         isGestalt: !!advancement.secondaryClassId,
@@ -113,14 +121,13 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
 
     // Load items and feats for formatting
     const [items, setItems] = useState<ItemWithDetails[]>([]);
-    const [featsMap, setFeatsMap] = useState<Map<number, Feat>>(new Map());
+    // Feats are now accessed via cache lookups in formatters, no need for featsMap
     const [classDetailsMap, setClassDetailsMap] = useState<Map<number, DnDClass>>(new Map());
 
     useEffect(() => {
         const loadDependencies = async () => {
             if (!character) {
                 setItems([]);
-                setFeatsMap(new Map());
                 setClassDetailsMap(new Map());
                 return;
             }
@@ -135,22 +142,7 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
                 });
                 setItems(itemsData?.results || []);
 
-                // Load feats - use getAllFeatsFull to get all feats with full data in one query
-                const fullFeatResponse = await FeatQueryHooks.getAllFeatsFull(
-                    undefined,
-                    {
-                        staleTime: 5 * 60 * 1000,
-                        gcTime: 10 * 60 * 1000,
-                    },
-                    queryClient
-                );
-                const feats = new Map<number, Feat>();
-                if (fullFeatResponse?.results) {
-                    for (const feat of fullFeatResponse.results) {
-                        feats.set(feat.id, feat);
-                    }
-                }
-                setFeatsMap(feats);
+                // Feats are now accessed via cache lookups in formatters, no need to build a map
 
                 // Load class details map (needed for formatting)
                 const classMap = new Map<number, DnDClass>();
@@ -194,10 +186,7 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
         return items.map(i => i.id).sort((a, b) => a - b).join(',');
     }, [items]);
 
-    const featsKey = useMemo(() => {
-        if (featsMap.size === 0) return '';
-        return Array.from(featsMap.keys()).sort((a, b) => a - b).join(',');
-    }, [featsMap]);
+    // Feats are now accessed via cache lookups, no need for featsKey
 
     const classesKey = useMemo(() => {
         if (classDetailsMap.size === 0) return '';
@@ -206,7 +195,7 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
 
     // Format character based on selected display type
     const formattedCharacterResult = useMemo<FormattedCharacterResult | null>(() => {
-        if (!character || !resolvedProgressions.length || classDetailsMap.size === 0 || items.length === 0 || featsMap.size === 0) {
+        if (!character || !resolvedProgressions.length || classDetailsMap.size === 0 || items.length === 0) {
             return null;
         }
 
@@ -240,20 +229,19 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
                 items,
                 character.characterItems || [],
                 classDetailsMap,
-                { 
-                    character: characterContext, 
-                    featsMap,
+                {
+                    character: characterContext,
+                    queryClient,
                     classSkills: classSkills.length > 0 ? classSkills : undefined,
-                    skillBonuses: skillBonuses.length > 0 ? skillBonuses : undefined,
-                    queryClient
+                    skillBonuses: skillBonuses.length > 0 ? skillBonuses : undefined
                 },
-                character.race ? { ...character.race, id: character.raceId } as Race : null
+                null // raceDetails not needed for display - character.race is minimal object
             );
         } catch (err) {
             console.error('Error formatting character:', err);
             return null;
         }
-    }, [character?.id, progressionsKey, itemsKey, featsKey, classesKey, selectedDisplayType, classSkills, skillBonuses]);
+    }, [character?.id, progressionsKey, itemsKey, classesKey, selectedDisplayType, classSkills, skillBonuses, queryClient]);
 
     // Format display result for Edit/Detail types
     const formattedDisplayResult = useMemo<DisplayResult | null>(() => {

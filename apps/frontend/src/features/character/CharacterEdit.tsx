@@ -58,8 +58,6 @@ export function CharacterEdit(): React.JSX.Element {
     // Shared data for all tabs - feats, classes, race
     const [allFeats, setAllFeats] = useState<FeatInQueryResponse[]>([]);
     const [isLoadingFeats, setIsLoadingFeats] = useState(false);
-    const [featsMap, setFeatsMap] = useState<Map<number, Feat>>(new Map());
-    const [isLoadingFullFeats, setIsLoadingFullFeats] = useState(false);
 
     // Initialize from user preferences
     useEffect(() => {
@@ -362,70 +360,9 @@ export function CharacterEdit(): React.JSX.Element {
 
     // Fetch all full feats (with benefits and prereqs) on component mount
     // Use TanStack Query to leverage caching
-    useEffect(() => {
-        let isMounted = true;
-        const fetchAllFullFeats = async () => {
-            try {
-                setIsLoadingFullFeats(true);
-                // Use TanStack Query fetch method which handles caching automatically
-                const fullFeatResponse = await FeatQueryHooks.getAllFeatsFull(
-                    undefined,
-                    {
-                        staleTime: 5 * 60 * 1000, // 5 minutes
-                        cacheTime: 10 * 60 * 1000, // 10 minutes
-                    },
-                    queryClient
-                );
-                // getAllFeatsFull returns FeatQueryResponse which has results: Feat[]
-                if (isMounted && fullFeatResponse?.results) {
-                    // Build a Map for fast lookup by feat ID
-                    const map = new Map<number, Feat>();
-                    for (const feat of fullFeatResponse.results) {
-                        map.set(feat.id, feat);
-                    }
-                    console.log('[CharacterEdit] FeatsMap populated:', { size: map.size, hasFeat306: map.has(306) });
-                    setFeatsMap(map);
-                } else if (isMounted) {
-                    setFeatsMap(new Map());
-                }
-            } catch (error) {
-                console.error('Failed to fetch full feats:', error);
-                if (isMounted) {
-                    setFeatsMap(new Map());
-                }
-            } finally {
-                if (isMounted) {
-                    setIsLoadingFullFeats(false);
-                }
-            }
-        };
-        fetchAllFullFeats();
-        return () => {
-            isMounted = false;
-        };
-    }, [queryClient]);
 
 
     // Helper function to extract choices from character advancements
-    const getCharacterFeatureChoices = useCallback((): Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> | undefined => {
-        if (!characterData?.advancements) return undefined;
-
-        // Collect all feature choices from all advancements
-        const choices: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> = [];
-        for (const advancement of characterData.advancements) {
-            if (advancement.featureChoices) {
-                for (const choice of advancement.featureChoices) {
-                    choices.push({
-                        progressionId: choice.progressionId,
-                        featureEntityId: choice.featureEntityId,
-                        appliesToId: choice.appliesToId,
-                        appliesToSubId: choice.appliesToSubId,
-                    });
-                }
-            }
-        }
-        return choices.length > 0 ? choices : undefined;
-    }, [characterData]);
 
     // Fetch race details when raceId changes
     useEffect(() => {
@@ -439,11 +376,10 @@ export function CharacterEdit(): React.JSX.Element {
 
             try {
                 setIsLoadingRaceData(true);
-                const choices = getCharacterFeatureChoices();
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const raceData = await queryClient.fetchQuery({
-                    queryKey: [...RaceQueryHooks.getRaceByIdQueryKey(state.raceId), choices ? JSON.stringify(choices) : 'no-choices'],
-                    queryFn: () => RaceQueryHooks.getRaceById(state.raceId, choices),
+                    queryKey: RaceQueryHooks.getRaceByIdQueryKey(state.raceId),
+                    queryFn: () => RaceQueryHooks.getRaceById(state.raceId),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
@@ -460,7 +396,7 @@ export function CharacterEdit(): React.JSX.Element {
             }
         };
         fetchRaceDetails();
-    }, [state.raceId, queryClient, getCharacterFeatureChoices]);
+    }, [state.raceId, queryClient]);
 
     // Fetch class details when classId changes
     useEffect(() => {
@@ -474,11 +410,10 @@ export function CharacterEdit(): React.JSX.Element {
 
             try {
                 setIsLoadingPrimaryClass(true);
-                const choices = getCharacterFeatureChoices();
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const classData = await queryClient.fetchQuery({
-                    queryKey: [...ClassQueryHooks.getClassByIdQueryKey(state.classId), choices ? JSON.stringify(choices) : 'no-choices'],
-                    queryFn: () => ClassQueryHooks.getClassById(state.classId, choices),
+                    queryKey: ClassQueryHooks.getClassByIdQueryKey(state.classId),
+                    queryFn: () => ClassQueryHooks.getClassById(state.classId),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
@@ -495,7 +430,7 @@ export function CharacterEdit(): React.JSX.Element {
             }
         };
         fetchClassDetails();
-    }, [state.classId, queryClient, getCharacterFeatureChoices]);
+    }, [state.classId, queryClient]);
 
     // Fetch secondary class details when secondaryClassId changes
     useEffect(() => {
@@ -509,11 +444,10 @@ export function CharacterEdit(): React.JSX.Element {
 
             try {
                 setIsLoadingSecondaryClassData(true);
-                const choices = getCharacterFeatureChoices();
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const classData = await queryClient.fetchQuery({
-                    queryKey: [...ClassQueryHooks.getClassByIdQueryKey(state.secondaryClassId), choices ? JSON.stringify(choices) : 'no-choices'],
-                    queryFn: () => ClassQueryHooks.getClassById(state.secondaryClassId, choices),
+                    queryKey: ClassQueryHooks.getClassByIdQueryKey(state.secondaryClassId),
+                    queryFn: () => ClassQueryHooks.getClassById(state.secondaryClassId),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
@@ -530,7 +464,7 @@ export function CharacterEdit(): React.JSX.Element {
             }
         };
         fetchSecondaryClassDetails();
-    }, [state.secondaryClassId, queryClient, getCharacterFeatureChoices]);
+    }, [state.secondaryClassId, queryClient]);
 
     // Feature resolution is handled by useCharacterResolution hook with backend API
 
@@ -995,28 +929,12 @@ export function CharacterEdit(): React.JSX.Element {
                 }
             }
 
-            // Extract choices from character advancements
-            const choices: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> = [];
-            for (const advancement of character.advancements) {
-                if (advancement.featureChoices) {
-                    for (const choice of advancement.featureChoices) {
-                        choices.push({
-                            progressionId: choice.progressionId,
-                            featureEntityId: choice.featureEntityId,
-                            appliesToId: choice.appliesToId,
-                            appliesToSubId: choice.appliesToSubId,
-                        });
-                    }
-                }
-            }
-            const featureChoices = choices.length > 0 ? choices : undefined;
-
             // Fetch class details using TanStack Query cache
             for (const classId of classIds) {
                 try {
                     const classData = await queryClient.fetchQuery({
-                        queryKey: [...ClassQueryHooks.getClassByIdQueryKey(classId), featureChoices ? JSON.stringify(featureChoices) : 'no-choices'],
-                        queryFn: () => ClassQueryHooks.getClassById(classId, featureChoices),
+                        queryKey: ClassQueryHooks.getClassByIdQueryKey(classId),
+                        queryFn: () => ClassQueryHooks.getClassById(classId),
                         staleTime: 5 * 60 * 1000, // 5 minutes
                         gcTime: 10 * 60 * 1000, // 10 minutes
                     });
@@ -1094,30 +1012,12 @@ export function CharacterEdit(): React.JSX.Element {
                 }
             }
 
-            // Extract choices from character advancements
-            const choices: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> = [];
-            if (characterData?.advancements) {
-                for (const advancement of characterData.advancements) {
-                    if (advancement.featureChoices) {
-                        for (const choice of advancement.featureChoices) {
-                            choices.push({
-                                progressionId: choice.progressionId,
-                                featureEntityId: choice.featureEntityId,
-                                appliesToId: choice.appliesToId,
-                                appliesToSubId: choice.appliesToSubId,
-                            });
-                        }
-                    }
-                }
-            }
-            const featureChoices = choices.length > 0 ? choices : undefined;
-
             const map = new Map<number, DnDClass>();
             const fetchPromises = Array.from(classIds).map(async (classId) => {
                 try {
                     const classData = await queryClient.fetchQuery({
-                        queryKey: [...ClassQueryHooks.getClassByIdQueryKey(classId), featureChoices ? JSON.stringify(featureChoices) : 'no-choices'],
-                        queryFn: () => ClassQueryHooks.getClassById(classId, featureChoices),
+                        queryKey: ClassQueryHooks.getClassByIdQueryKey(classId),
+                        queryFn: () => ClassQueryHooks.getClassById(classId),
                         staleTime: 5 * 60 * 1000, // 5 minutes
                         gcTime: 10 * 60 * 1000, // 10 minutes
                     });
@@ -1148,7 +1048,7 @@ export function CharacterEdit(): React.JSX.Element {
     }, [state.skillRanks]);
 
     const formattedCharacter = useMemo(() => {
-        if (!characterData || !resolvedData.progressions || classDetailsMap.size === 0 || items.length === 0 || featsMap.size === 0) {
+        if (!characterData || !resolvedData.progressions || classDetailsMap.size === 0 || items.length === 0) {
             return null;
         }
 
@@ -1181,7 +1081,7 @@ export function CharacterEdit(): React.JSX.Element {
                 classDetailsMap,
                 {
                     character: characterContext,
-                    featsMap,
+                    queryClient,
                     skillRanks: state.skillRanks,
                     classSkills: resolvedData.classSkills.map(skill => ({ skillId: skill.skillId, skillSubId: skill.skillSubId ?? null })),
                     skillBonuses: resolvedData.skillBonuses.map(bonus => ({ skillId: bonus.skillId, skillSubId: bonus.skillSubId ?? null, bonus: bonus.bonus, source: bonus.source }))
@@ -1192,7 +1092,7 @@ export function CharacterEdit(): React.JSX.Element {
             console.error('Error formatting character:', error);
             return null;
         }
-    }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, featsMap, skillRanksKey]);
+    }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, queryClient, skillRanksKey]);
 
     // Separate bonus languages from characterLanguages when characterData is available
     useEffect(() => {
@@ -1349,8 +1249,6 @@ export function CharacterEdit(): React.JSX.Element {
         sharedData: {
             allFeats,
             isLoadingFeats,
-            featsMap,
-            isLoadingFullFeats,
             primaryClass: primaryClassData,
             secondaryClass: secondaryClassData,
             race: raceData,

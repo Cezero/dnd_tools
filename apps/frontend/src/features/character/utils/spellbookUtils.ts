@@ -1,4 +1,4 @@
-import type { FeatureProgression, CharacterWithAllDetailsResponse, CharacterAdvancement } from '@shared/schema';
+import type { FeatureProgression, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 import { EntityType, EntityAppliesToType, FormulaId, GetAbilityModifier, FORMULA_MAP } from '@shared/static-data';
 
 /**
@@ -94,6 +94,9 @@ export function hasZeroLevelSpellbookSpellsGrant(
  * - Filters by classId if progression is class-specific
  * - Only processes entities with `EntityType.Choice` and `EntityAppliesToType.SpellbookSpell`
  * 
+ * TODO this shouldn't be duplicating formula, check if the information is available from the backend
+ * or by using the formatting system (which resolves formulas)
+ * 
  * @param resolvedProgressions - All resolved feature progressions for the character
  * @param characterLevel - The character level to calculate available spells for
  * @param classId - The class to calculate spells for (filters class-specific progressions)
@@ -138,10 +141,10 @@ export function getAvailableSpellbookSpells(
                 const formulaDef = FORMULA_MAP[entity.formulaParams.formulaId];
                 if (formulaDef) {
                     const formulaStartLevel = entity.formulaParams.formulaStartLevel ?? progression.level;
-                    
+
                     // Only calculate if level is at or after the formula start level
                     if (characterLevel >= formulaStartLevel) {
-                        const params: any = {
+                        const params: Record<string, unknown> = {
                             level: characterLevel,
                             startLevel: progression.level,
                             scalingValue: entity.value ?? 0,
@@ -190,7 +193,7 @@ export function getAvailableSpellbookSpells(
  * Count spells in spellbook by spell level for a given class
  */
 export function getSpellbookSpellsByLevel(
-    advancements: CharacterAdvancement[],
+    advancements: CharacterAdvancementWithDetailsResponse[],
     classId: number
 ): Map<number, number> {
     const spellsByLevel = new Map<number, number>();
@@ -221,7 +224,7 @@ export function getMaxCastableSpellLevel(
 ): number {
     // Find the progression entry for this class level or the highest one below it
     let maxSpellLevel = 0;
-    
+
     for (const progression of spellcastingProgression) {
         if (progression.classLevel <= classLevel && progression.slots) {
             for (const slot of progression.slots) {
@@ -245,7 +248,7 @@ export function getMaxCastableSpellLevel(
  * @param advancement - The advancement to count free grants for (must include spellsKnown array)
  * @returns The number of free grant spells (isFreeGrant: true) for this advancement
  */
-export function getFreeSpellsUsed(advancement: CharacterAdvancement & {
+export function getFreeSpellsUsed(advancement: CharacterAdvancementWithDetailsResponse & {
     spellsKnown?: Array<{ isFreeGrant?: boolean }>;
 }): number {
     if (!advancement.spellsKnown) {
@@ -265,7 +268,7 @@ export function getFreeSpellsUsed(advancement: CharacterAdvancement & {
  * @returns The number of remaining free spells (never negative, minimum 0)
  */
 export function getRemainingFreeSpells(
-    advancement: CharacterAdvancement & {
+    advancement: CharacterAdvancementWithDetailsResponse & {
         spellsKnown?: Array<{ isFreeGrant?: boolean }>;
     },
     availableFreeSpells: number
@@ -300,7 +303,7 @@ export function getMaxCastableSpellLevelAtLevel(
  * @returns True if the spell level is castable at the advancement level, false otherwise
  */
 export function canScribeSpellAtLevel(
-    advancement: CharacterAdvancement,
+    advancement: CharacterAdvancementWithDetailsResponse,
     spellLevel: number,
     spellcastingProgression: Array<{
         classLevel: number;

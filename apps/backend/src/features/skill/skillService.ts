@@ -87,6 +87,8 @@ export const skillService: SkillService = {
             select: {
                 id: true,
                 name: true,
+                abilityId: true,
+                trainedOnly: true,
                 editionId: true,
                 isVisible: true,
                 isAnalog: true,

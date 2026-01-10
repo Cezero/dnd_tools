@@ -25,7 +25,7 @@ export function LoginPage({ redirectTo: _redirectTo = '/' }: LoginPageProps = {}
             else setError('Invalid credentials');
         } catch (error) {
             if (error instanceof z.ZodError) {
-                setError(error.errors[0]?.message || 'Validation failed');
+                setError(error.issues[0]?.message || 'Validation failed');
             } else {
                 setError('Login failed');
             }

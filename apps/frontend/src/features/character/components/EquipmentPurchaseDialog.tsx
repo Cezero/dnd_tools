@@ -207,7 +207,7 @@ export function EquipmentPurchaseDialog({
     // Create data fetcher
     const dataFetcher = useMemo(() => {
         return async () => {
-            const result = await ItemQueryHooks.itemQuery({});
+            const result = await ItemQueryHooks.getItems();
             return result;
         };
     }, []);

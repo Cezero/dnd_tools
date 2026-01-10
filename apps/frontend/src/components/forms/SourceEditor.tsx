@@ -1,13 +1,15 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 
 import type { SourceMap } from '@shared/schema';
 import {
-    SOURCE_BOOK_MAP,
     SourceType,
     EditionId
 } from '@shared/static-data';
 import { GetSourceBookTypeList } from '@shared/utils';
+import { getSourceBookFromCache } from '@/services/cache/IdMapHelpers';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 
 import { CustomSelect } from './index';
 
@@ -20,12 +22,20 @@ export interface SourceEditorProps {
 }
 
 export function SourceEditor({ sources, onSourcesChange, sourceType, editionId, className = '' }: SourceEditorProps) {
+    const queryClient = useQueryClient();
     const [selectedBookId, setSelectedBookId] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<string>('');
 
+    // Ensure sourcebooks cache is loaded
+    CacheQueryHooks.useSourcebooksCache({}, {
+        enabled: true,
+        staleTime: Infinity,
+        gcTime: Infinity,
+    });
+
     // Filter out already selected books
     const availableBooks = GetSourceBookTypeList(sourceType, editionId).filter(book =>
-        !sources.some(source => source.sourceBookId === book.value)
+        !sources.some(source => source.sourceBookId === book.id)
     );
 
     const handleAddSource = () => {
@@ -69,15 +79,15 @@ export function SourceEditor({ sources, onSourcesChange, sourceType, editionId, 
             {sources.length > 0 && (
                 <div className="space-y-2">
                     {sources.map((source) => {
-                        const book = SOURCE_BOOK_MAP[source.sourceBookId];
+                        const sourceBook = getSourceBookFromCache(queryClient, source.sourceBookId);
                         return (
                             <div key={source.sourceBookId} className="flex items-center gap-3 p-3 border rounded-lg dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
                                 <div className="flex-1">
                                     <div className="font-medium text-gray-900 dark:text-gray-100">
-                                        {book?.name || 'Unknown Book'}
+                                        {sourceBook?.name || 'Unknown Book'}
                                     </div>
                                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                                        {book?.abbreviation || 'N/A'}
+                                        {sourceBook?.abbreviation || 'N/A'}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">

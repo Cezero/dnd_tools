@@ -58,6 +58,7 @@ export class ClassSkillService {
                     slug: 'class-skill',
                     name: 'Class Skill',
                     description: 'Class skill feature',
+                    displayInCharacterSheet: true,
                 },
                 entities: [],
             };

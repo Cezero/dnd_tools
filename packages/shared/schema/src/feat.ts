@@ -71,6 +71,7 @@ export const GetAllFeatsWithFeatureInfoResponseSchema = QueryResponseSchema.exte
 });
 
 export const FeatCacheSchema = FeatSchema.omit({
+    featureProgressions: true,
     repeatable: true,
     sourceBookInfo: true,
 });

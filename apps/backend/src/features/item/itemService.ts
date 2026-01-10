@@ -7,7 +7,7 @@ import {
     GetAllItemsResponse,
     CreateResponse,
     UpdateResponse,
-    ItemQueryRequest
+    ItemCacheResponse,
 } from '@shared/schema';
 
 import type { ItemService } from './types';
@@ -23,47 +23,6 @@ export const itemService: ItemService = {
                     weapon: true
                 },
                 orderBy: { name: 'asc' }
-            }),
-            prisma.item.count()
-        ]);
-        return {
-            total: items.length,
-            results: items,
-        };
-    },
-    async itemQuery(query: ItemQueryRequest): Promise<GetAllItemsResponse> {
-        let whereClause: Prisma.ItemWhereInput = {};
-        if (query.queryType === 'byType') {
-            whereClause = {
-                typeId: query.typeId
-            }
-        } else if (query.queryType === 'byCategory') {
-            whereClause = {
-                typeId: query.typeId,
-                OR: [
-                    {
-                        armor: {
-                            category: query.category
-                        }
-                    },
-                    {
-                        weapon: {
-                            category: query.category
-                        }
-                    }
-                ]
-            }
-        } else if (query.queryType === 'byName') {
-            whereClause = {
-                name: {
-                    contains: query.name,
-                }
-            }
-        }
-        const [items] = await Promise.all([
-            prisma.item.findMany({
-                where: whereClause,
-                include: { armor: true, weapon: true },
             }),
             prisma.item.count()
         ]);
@@ -108,5 +67,60 @@ export const itemService: ItemService = {
     async deleteItem(params: ItemIdParamRequest): Promise<UpdateResponse> {
         await prisma.item.delete({ where: { id: params.id } });
         return { message: 'Item deleted successfully' };
+    },
+    /**
+     * Get item cache data for lightweight operations (dropdowns, filtering, etc.)
+     * 
+     * Returns minimal item data optimized for performance, including only essential fields
+     * needed for common UI operations. The cache includes weaponCategory and armorCategory
+     * to enable client-side filtering by proficiency type.
+     * 
+     * **Data Structure**:
+     * - Includes: id, name, typeId, weaponCategory, armorCategory
+     * - Excludes: description, cost, weight, quantity, sizeId (heavy fields)
+     * 
+     * **Transformation**:
+     * - Flattens weapon.category and armor.category from nested objects to top-level fields
+     * - Sets weaponCategory/armorCategory to null if item doesn't have weapon/armor
+     * 
+     * **Usage**: Used by `/items/cache` endpoint for client-side filtering operations.
+     * All filtering is performed client-side using this cache data, eliminating the need
+     * for server-side query endpoints.
+     * 
+     * @returns Promise resolving to ItemCacheResponse with lightweight item data
+     * 
+     * @see ItemCacheSchema for complete schema definition
+     * @see [Query Hooks and Caching Architecture](../../../../packages/shared/docs/application-overview/query-hooks-and-caching.md)
+     */
+    async getItemCache(): Promise<ItemCacheResponse> {
+        const items = await prisma.item.findMany({
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                typeId: true,
+                weapon: {
+                    select: {
+                        category: true,
+                    },
+                },
+                armor: {
+                    select: {
+                        category: true,
+                    },
+                },
+            }
+        });
+        
+        return {
+            total: items.length,
+            results: items.map(item => ({
+                id: item.id,
+                name: item.name,
+                typeId: item.typeId,
+                weaponCategory: item.weapon?.category ?? null,
+                armorCategory: item.armor?.category ?? null,
+            })),
+        };
     },
 }; 

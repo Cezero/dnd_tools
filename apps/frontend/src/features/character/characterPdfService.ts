@@ -38,27 +38,9 @@ export async function generateCharacterPdf(
     if (!fullRace && character.race?.id) {
         if (queryClient) {
             try {
-                // Extract choices from character advancements
-                const choices: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> = [];
-                if (character.advancements) {
-                    for (const advancement of character.advancements) {
-                        if (advancement.featureChoices) {
-                            for (const choice of advancement.featureChoices) {
-                                choices.push({
-                                    progressionId: choice.progressionId,
-                                    featureEntityId: choice.featureEntityId,
-                                    appliesToId: choice.appliesToId,
-                                    appliesToSubId: choice.appliesToSubId,
-                                });
-                            }
-                        }
-                    }
-                }
-                const featureChoices = choices.length > 0 ? choices : undefined;
-
                 fullRace = await queryClient.fetchQuery({
-                    queryKey: [...RaceQueryHooks.getRaceByIdQueryKey(character.race.id), featureChoices ? JSON.stringify(featureChoices) : 'no-choices'],
-                    queryFn: () => RaceQueryHooks.getRaceById(character.race.id, featureChoices),
+                    queryKey: RaceQueryHooks.getRaceByIdQueryKey(character.race.id),
+                    queryFn: () => RaceQueryHooks.getRaceById(character.race.id),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
@@ -107,22 +89,7 @@ export async function generateCharacterPdf(
     }
 
     // Fetch all feats to build featsMap using cache
-    let featsMap: Map<number, Feat> = new Map();
-    if (queryClient) {
-        try {
-            const featsResponse = await queryClient.fetchQuery({
-                queryKey: FeatQueryHooks.getAllFeatsFullQueryKey(),
-                queryFn: () => FeatQueryHooks.getAllFeatsFullQueryFn({}),
-                staleTime: 5 * 60 * 1000, // 5 minutes
-                gcTime: 10 * 60 * 1000, // 10 minutes
-            });
-            if (featsResponse?.results) {
-                featsMap = new Map(featsResponse.results.map(feat => [feat.id, feat]));
-            }
-        } catch (error) {
-            console.warn('Failed to fetch feats for formatting from cache:', error);
-        }
-    }
+    // Feats are now accessed via cache lookups in formatters, no need to build a map
 
     // Format character using unified formatter
     const characterSheetStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);

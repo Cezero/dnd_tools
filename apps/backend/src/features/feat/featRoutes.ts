@@ -25,7 +25,7 @@ const { router: FeatRouter, get, post, put, delete: deleteRoute } = buildValidat
 get('/', {}, GetAllFeats);
 get('/full', {}, GetAllFeatsFull);
 get('/with-feature-info', {}, GetAllFeatsWithFeatureInfo);
-get('/cache', { query: FeatQuerySchema }, GetFeatCache);
+get('/cache', {}, GetFeatCache);
 get('/query', { query: FeatQuerySchema }, GetFeatQuery);
 get('/list', { query: FeatQuerySchema }, GetFeatList);
 get('/:id', { params: FeatIdParamSchema }, GetFeatById);

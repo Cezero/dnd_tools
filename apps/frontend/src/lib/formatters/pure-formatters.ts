@@ -1,5 +1,5 @@
-import pluralize from 'pluralize';
 import ordinal from 'ordinal';
+import pluralize from 'pluralize';
 
 import { formatSignedValue } from '@/lib/formatterUtils';
 import {
@@ -14,14 +14,13 @@ import {
     PROFICIENCY_TYPES,
     CREATURE_TYPES,
     SIZE_MAP,
-    SPELL_ID_LIST,
     FeaturePrerequisiteType,
-    SKILL_MAP,
     ABILITY_MAP,
     SIZE_LIST,
     PROFICIENCY_TYPE_LIST,
 } from '@shared/static-data';
 
+import type { BaseFormatter, CalculatedEntity, DisplayContext } from './types';
 import {
     getFeatNameFromCache,
     getFeatureNameFromCache,
@@ -30,7 +29,7 @@ import {
     getSkillNameFromCache,
     getClassNameFromCache,
 } from './utils/cache-helpers';
-import type { BaseFormatter, CalculatedEntity, DisplayContext } from './types';
+
 
 export class DamageFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, _context?: DisplayContext): string {
@@ -161,22 +160,14 @@ export class SpellFormatter implements BaseFormatter {
 
         // Priority 2: Use cache helper
         const spellId = modifier.appliesToId;
-        if (spellId) {
-            const cachedName = getSpellNameFromCache(context?.queryClient, spellId);
+        if (spellId && context?.queryClient) {
+            const cachedName = getSpellNameFromCache(context.queryClient, spellId);
             if (cachedName) {
                 return cachedName;
             }
         }
 
-        // Priority 3: Look up spell name from static data using appliesToId
-        if (spellId) {
-            const spell = SPELL_ID_LIST.find((s) => s.id === spellId);
-            if (spell) {
-                return spell.name;
-            }
-        }
-
-        // Priority 4: Fallback if spell not found
+        // Priority 3: Fallback if spell not found
         return `${spellId || value} (spell name not found)`;
     }
 }
@@ -571,7 +562,7 @@ export class SpellSaveDCFormatter implements BaseFormatter {
 export class SpellbookSpellFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const spellLevel = modifier.appliesToId;
-        
+
         // Helper to format spell level with ordinal (0th, 1st, 2nd, etc.)
         const formatSpellLevel = (level: number | null | undefined): string => {
             if (level === null || level === undefined) {
@@ -741,18 +732,18 @@ export class PrerequisiteFormatter implements BaseFormatter {
         // Prerequisites are passed as CalculatedEntity with FeaturePrerequisiteType stored in filterType
         // This formatter is called from formatPrerequisites which converts FeaturePrerequisite to CalculatedEntity format
         // The prerequisite type is stored in filterType, appliesToId, and minValue in value
-        
+
         // Get prerequisite type from filterType (where we stored FeaturePrerequisiteType)
         // Ensure it's a number (FeaturePrerequisiteType is a number enum: 0-10)
-        const filterTypeValue = prereq.filterType !== null && prereq.filterType !== undefined 
+        const filterTypeValue = prereq.filterType !== null && prereq.filterType !== undefined
             ? (typeof prereq.filterType === 'number' ? prereq.filterType : Number(prereq.filterType))
             : null;
-        
+
         if (filterTypeValue === null || isNaN(filterTypeValue)) {
             console.warn('PrerequisiteFormatter: filterType is null/undefined/NaN for prerequisite:', prereq);
             return `Prerequisite ${prereq.id || ''}`;
         }
-        
+
         const prereqType = filterTypeValue as FeaturePrerequisiteType;
         const appliesToId = prereq.appliesToId;
         const minValue = typeof prereq.value === 'number' ? prereq.value : (prereq.value ? Number(prereq.value) : 0);
@@ -766,10 +757,12 @@ export class PrerequisiteFormatter implements BaseFormatter {
                         return `${skillName} ${minValue} ranks`;
                     }
                 }
-                // Priority 2: Use static data
-                if (appliesToId && SKILL_MAP[appliesToId]) {
-                    const skillName = SKILL_MAP[appliesToId].name;
-                    return `${skillName} ${minValue} ranks`;
+                // Priority 2: Use cache if available, otherwise fallback
+                if (appliesToId && context?.queryClient) {
+                    const skillName = getSkillNameFromCache(context.queryClient, appliesToId);
+                    if (skillName) {
+                        return `${skillName} ${minValue} ranks`;
+                    }
                 }
                 // Fallback if skill not found
                 return appliesToId ? `Skill ${appliesToId} ${minValue} ranks` : `Skill ${minValue} ranks`;
@@ -804,7 +797,7 @@ export class PrerequisiteFormatter implements BaseFormatter {
                 // Priority 2: Fallback to ID
                 return `Feat ${appliesToId || ''}`;
             }
-            case FeaturePrerequisiteType.Feature: {
+            case FeaturePrerequisiteType.ClassFeature: {
                 // Priority 1: Use cache helper
                 if (appliesToId) {
                     const featureName = getFeatureNameFromCache(context?.queryClient, appliesToId);

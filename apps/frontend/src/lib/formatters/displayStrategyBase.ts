@@ -11,6 +11,8 @@ import {
     FormulaId
 } from '@shared/static-data';
 
+import { formatFeaturePrerequisite } from '@/lib/featurePrerequisiteFormatter';
+
 import { formatterRegistry } from './formatter-registry';
 import {
     ValueGenerationPhase,
@@ -109,7 +111,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         const formattedItems = this.formattingPhase.formatItems(calculatedValues, progression.level, showLabels, context);
 
         // Phase 3: Within-Level Grouping
-        const withinLevelGrouped = this.groupingPhase.groupWithinLevel(formattedItems, progression);
+        const withinLevelGrouped = this.groupingPhase.groupWithinLevel(formattedItems, progression, context);
 
         // Phase 4: Within-Progression Grouping
         const withinProgressionGrouped = this.progressionGroupingPhase.groupWithinProgression(withinLevelGrouped);
@@ -208,6 +210,12 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         prerequisites: FeaturePrerequisite[],
         context?: DisplayContext
     ): string[] {
+        // Use formatPrerequisites from featurePrerequisiteFormatter with queryClient
+        if (context?.queryClient) {
+            return prerequisites.map(prereq => {
+                return formatFeaturePrerequisite(prereq, undefined, undefined, context.queryClient);
+            });
+        }
         if (!prerequisites || prerequisites.length === 0) {
             return [];
         }

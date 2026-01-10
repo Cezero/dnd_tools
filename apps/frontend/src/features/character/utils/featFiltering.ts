@@ -1,5 +1,5 @@
 import type { TabComponentProps } from '../types';
-import type { FeatInQueryResponse, Feat, CharacterWithAllDetailsResponse, FeaturePrerequisite } from '@shared/schema';
+import type { FeatInQueryResponse, Feat, CharacterWithAllDetailsResponse, FeaturePrerequisite, FeatureProgression } from '@shared/schema';
 import { meetsPrerequisites, getCharacterBAB } from '@/lib/characterUtils';
 import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
 import { EntityType, EntityAppliesToType } from '@shared/static-data';
@@ -10,6 +10,9 @@ import { EntityType, EntityAppliesToType } from '@shared/static-data';
  * 
  * Note: Requires featsMap from CharacterEdit's cached full feats (via sharedData.featsMap).
  * Throws an error if featsMap is not available.
+ * 
+ * TODO shouldn't this just use "feats", "list" from the query cache? I believe those contain full feat data with featureProgressions.
+ * 
  */
 export async function filterAvailableFeats(
     allFeats: FeatInQueryResponse[],
@@ -111,11 +114,14 @@ export async function filterAvailableFeats(
             continue;
         }
 
+        // Type assertion: featsMap should contain FeatSchema (with featureProgressions), not BaseFeatSchema
+        const fullFeatWithProgressions = fullFeat as Feat & { featureProgressions?: FeatureProgression[] };
+
         // Check if this feat provides a proficiency that the character already has as "all"
         // If so, filter it out (e.g., Cleric already has "all heavy armor", so filter out Heavy Armor Proficiency feat)
-        if (fullFeat.featureProgressions) {
+        if (fullFeatWithProgressions.featureProgressions) {
             let shouldFilterFeat = false;
-            for (const progression of fullFeat.featureProgressions) {
+            for (const progression of fullFeatWithProgressions.featureProgressions) {
                 if (progression.entities) {
                     for (const entity of progression.entities) {
                         // Check if this entity provides a proficiency
@@ -142,8 +148,8 @@ export async function filterAvailableFeats(
         // Get prerequisites from featureProgressions (new Feature system)
         // Each FeatureProgression has a feature, and each feature has prerequisites
         const featurePrerequisites: FeaturePrerequisite[] = [];
-        if (fullFeat.featureProgressions) {
-            for (const progression of fullFeat.featureProgressions) {
+        if (fullFeatWithProgressions.featureProgressions) {
+            for (const progression of fullFeatWithProgressions.featureProgressions) {
                 if (progression.feature?.prerequisites) {
                     featurePrerequisites.push(...progression.feature.prerequisites);
                 }
@@ -235,7 +241,7 @@ export async function filterAvailableFeats(
         try {
             // Check prerequisites using feature prerequisites from Feature system
             const meetsPrereqs = meetsPrerequisites(
-                fullFeat,
+                fullFeatWithProgressions,
                 characterForPrereqs,
                 classDetails.primary,
                 raceDetails,

@@ -78,8 +78,8 @@ export async function DeleteFeat(req: ValidatedParamsT<FeatIdParamRequest>, res:
 /**
  * Fetches all feats for cache (lightweight data).
  */
-export async function GetFeatCache(req: ValidatedQueryT<FeatQueryRequest, FeatCacheResponse>, res: Response) {
-    const feats = await featService.getFeatCache(req.query);
+export async function GetFeatCache(req: ValidatedNoInput<FeatCacheResponse>, res: Response) {
+    const feats = await featService.getFeatCache({ queryType: 'all' });
     res.json(feats);
 }
 

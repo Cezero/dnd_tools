@@ -1,5 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { QueryFunctionContext, QueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 
 import {
     FeatIdParamSchema,
@@ -11,27 +10,33 @@ import {
     GetAllFeatsResponseSchema,
     FeatQuerySchema,
     FeatQueryResponseSchema,
-    GetFeatListResponseSchema,
     FeatSchema,
     GetAllFeatsWithFeatureInfoResponseSchema,
     type Feat,
-    type FeatQueryResponse,
     type GetAllFeatsWithFeatureInfoResponse,
 } from '@shared/schema';
 
 import { createQueryHooks } from './QueryHooksFactory';
 
-// Create query hook configurations
-// Use the endpoint that includes feature description and summary for list views
+/**
+ * Feat Query Hooks
+ * 
+ * Provides query hooks and imperative methods for feat-related API endpoints.
+ * Includes list queries with composite data (feats with feature info) and individual feat queries.
+ */
+
+// List query configuration - returns feats with feature descriptions and summaries
+// Query key: ['feats', 'list'] (no parameters - simplified to avoid duplicate cache entries)
 const featsConfig = createQueryHooks({
     path: '/feats/with-feature-info',
     method: 'GET',
     responseSchema: GetAllFeatsWithFeatureInfoResponseSchema,
     queryKey: 'feats',
-    queryKeyBuilder: (params) => ['feats', 'list', params as string | number | object],
+    queryKeyBuilder: () => ['feats', 'list'], // No parameters - endpoint doesn't accept query params
 });
 
-// Create base config for featById
+// Individual feat query configuration - returns single feat by ID
+// Query key: ['feats', 'item', id] - includes ID in key for unique cache entries
 const featByIdBaseConfig = createQueryHooks({
     path: '/feats/:id',
     method: 'GET',
@@ -44,106 +49,7 @@ const featByIdBaseConfig = createQueryHooks({
     },
 });
 
-// Create a custom queryFn that checks the 'feats', 'full' cache first
-// This works for both TanStack Query context and direct calls
-const createFeatByIdQueryFn = (originalQueryFn: (params?: unknown) => Promise<Feat | null>) => {
-    return async (contextOrParams: QueryFunctionContext | { pathParams?: { id?: number } } | undefined): Promise<Feat | null> => {
-        // Check if this is a QueryFunctionContext from TanStack Query
-        if (contextOrParams && 'queryKey' in contextOrParams) {
-            const context = contextOrParams as QueryFunctionContext;
-            const queryKey = context.queryKey as (string | number)[];
-            const featId = queryKey[2] as number | undefined;
-
-            // Check if 'feats', 'full' exists in cache
-            if (context.client && featId !== undefined) {
-                const fullFeatsData = context.client.getQueryData<FeatQueryResponse>(['feats', 'full']);
-                if (fullFeatsData?.results) {
-                    const feat = fullFeatsData.results.find(f => f.id === featId);
-                    if (feat) {
-                        return feat;
-                    }
-                }
-            }
-
-            // Fall back to API call - ensure params are in correct format
-            const typedParams = { pathParams: { id: featId } };
-            return originalQueryFn(typedParams);
-        } else {
-            // This is a direct call (not from TanStack Query context)
-            // For direct calls, pass params as-is
-            return originalQueryFn(contextOrParams);
-        }
-    };
-};
-
-// Override the queryFn to use our cache-checking version
-const featByIdQueryFn = createFeatByIdQueryFn(featByIdBaseConfig.queryFn);
-
-// Create a custom useQuery hook that uses the cache-checking queryFn
-const useGetFeatByIdWithCache = (params?: unknown, options?: unknown) => {
-    const typedParams = params as { pathParams?: { id?: number } } | undefined;
-    const featId = typedParams?.pathParams?.id;
-    const queryClient = useQueryClient();
-
-    return useQuery({
-        queryKey: featByIdBaseConfig.queryKeyBuilder(params),
-        queryFn: async () => {
-            // Check cache first using the queryClient
-            if (featId !== undefined && queryClient) {
-                const fullFeatsData = queryClient.getQueryData<FeatQueryResponse>(['feats', 'full']);
-                if (fullFeatsData?.results) {
-                    const feat = fullFeatsData.results.find(f => f.id === featId);
-                    if (feat) {
-                        return feat;
-                    }
-                }
-            }
-
-            // Fall back to API call - pass params directly
-            return featByIdQueryFn(params);
-        },
-        ...(options as Record<string, unknown>),
-    });
-};
-
-// Override the fetch method to also check cache
-const featByIdFetch = async (params?: unknown, options?: { staleTime?: number; gcTime?: number }, queryClient?: QueryClient) => {
-    if (!queryClient) {
-        // If no queryClient provided, just call the API directly
-        return featByIdQueryFn(params);
-    }
-
-    const typedParams = params as { pathParams?: { id?: number } } | undefined;
-    const featId = typedParams?.pathParams?.id;
-
-    // Check cache first
-    if (featId !== undefined) {
-        const fullFeatsData = queryClient.getQueryData<FeatQueryResponse>(['feats', 'full']);
-        if (fullFeatsData?.results) {
-            const feat = fullFeatsData.results.find(f => f.id === featId);
-            if (feat) {
-                // Still cache it under the individual key for consistency
-                queryClient.setQueryData(['feats', 'item', featId], feat);
-                return feat;
-            }
-        }
-    }
-
-    // Fall back to normal fetch - use the base config's queryFn directly
-    return queryClient.fetchQuery({
-        queryKey: featByIdBaseConfig.queryKeyBuilder(params),
-        queryFn: () => featByIdBaseConfig.queryFn(params),
-        staleTime: options?.staleTime || 5 * 60 * 1000,
-        gcTime: options?.gcTime || 10 * 60 * 1000,
-    });
-};
-
-const featByIdConfig = {
-    ...featByIdBaseConfig,
-    queryFn: featByIdQueryFn,
-    useQuery: useGetFeatByIdWithCache,
-    fetch: featByIdFetch,
-};
+const featByIdConfig = featByIdBaseConfig;
 
 const createFeatConfig = createQueryHooks({
     path: '/feats',
@@ -170,42 +76,36 @@ const deleteFeatConfig = createQueryHooks({
     queryKey: 'feats',
 });
 
+// Feat query configuration - parameterized query endpoint
+// Query key: ['feats', 'query'] (no parameters in key - backend ignores query params anyway)
+// Note: This endpoint accepts query parameters but the backend service ignores them,
+// so the query key doesn't include parameters to avoid duplicate cache entries
 const featQueryConfig = createQueryHooks({
     path: '/feats/query',
     method: 'GET',
     requestSchema: FeatQuerySchema,
     responseSchema: FeatQueryResponseSchema,
     queryKey: 'feats',
-    queryKeyBuilder: (params) => ['feats', 'query', params as string | number | object],
+    queryKeyBuilder: () => ['feats', 'query'], // No parameters - backend ignores them
 });
 
-const featListConfig = createQueryHooks({
-    path: '/feats/list',
-    method: 'GET',
-    requestSchema: FeatQuerySchema,
-    responseSchema: GetFeatListResponseSchema,
-    queryKey: 'feats',
-    queryKeyBuilder: (params) => ['feats', 'list', params as string | number | object],
-});
-
-const getAllFeatsFullConfig = createQueryHooks({
-    path: '/feats/full',
-    method: 'GET',
-    responseSchema: FeatQueryResponseSchema,
-    queryKey: 'feats',
-    queryKeyBuilder: () => ['feats', 'full'],
-});
-
+/**
+ * Feat Query Hooks Export
+ * 
+ * Provides React hooks and imperative methods for feat-related operations.
+ * 
+ * **React Hooks**: Use in React components (useGetFeats, useGetFeatById, etc.)
+ * **Imperative Methods**: Use in event handlers or async functions (getFeats, getFeatById, etc.)
+ * **Query Functions**: Advanced usage for custom query logic (getFeatsQueryFn, etc.)
+ */
 export const FeatQueryHooks = {
-    // Keep existing hooks for backward compatibility during transition
+    // React hooks for use in components
     useGetFeats: featsConfig.useQuery,
     useGetFeatById: featByIdConfig.useQuery,
     useCreateFeat: createFeatConfig.useMutation,
     useUpdateFeat: updateFeatConfig.useMutation,
     useDeleteFeat: deleteFeatConfig.useMutation,
     useFeatQuery: featQueryConfig.useQuery,
-    useGetFeatList: featListConfig.useQuery,
-    useGetAllFeatsFull: getAllFeatsFullConfig.useQuery,
 
     // Add imperative methods
     getFeats: (params?: unknown) => featsConfig.fetch(params),
@@ -218,20 +118,13 @@ export const FeatQueryHooks = {
     deleteFeat: (featId: number) => deleteFeatConfig.mutate({
         pathParams: { id: featId }
     }),
-    featQuery: (data: unknown) => featQueryConfig.fetch({ requestData: data }),
-    getFeatList: (data: unknown) => featListConfig.fetch({ requestData: data }),
-    getAllFeatsFull: (params?: unknown, options?: { staleTime?: number; gcTime?: number }, queryClient?: QueryClient) =>
-        getAllFeatsFullConfig.fetch(params, options, queryClient),
+    featQuery: () => featQueryConfig.fetch(),
 
     // Expose query functions for advanced usage
     getFeatsQueryFn: featsConfig.queryFn,
     getFeatByIdQueryFn: featByIdConfig.queryFn,
     featQueryQueryFn: featQueryConfig.queryFn,
-    getFeatListQueryFn: featListConfig.queryFn,
-    getAllFeatsFullQueryFn: getAllFeatsFullConfig.queryFn,
-    getFeatsQueryKey: (params?: unknown) => featsConfig.queryKeyBuilder(params),
+    getFeatsQueryKey: (params?: unknown) => featsConfig.queryKeyBuilder(),
     getFeatByIdQueryKey: (featId: number) => featByIdConfig.queryKeyBuilder({ pathParams: { id: featId } }),
-    featQueryQueryKey: (params?: unknown) => featQueryConfig.queryKeyBuilder(params),
-    getFeatListQueryKey: (params?: unknown) => featListConfig.queryKeyBuilder(params),
-    getAllFeatsFullQueryKey: () => getAllFeatsFullConfig.queryKeyBuilder(),
+    featQueryQueryKey: () => featQueryConfig.queryKeyBuilder(),
 };

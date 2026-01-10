@@ -43,7 +43,7 @@ import type {
  * Cache key priorities:
  * 1. Individual feat cache: ['feats', 'item', featId]
  * 2. Full feats list cache: ['feats', 'full']
- * 3. Legacy cache format: ['feats-cache', { queryType: 'all' }]
+ * 3. Feats cache: ['feats-cache']
  */
 export function getFeatNameFromCache(queryClient: QueryClient | undefined, featId: number | null | undefined): string | null {
     if (!queryClient || !featId) {
@@ -66,10 +66,10 @@ export function getFeatNameFromCache(queryClient: QueryClient | undefined, featI
             }
         }
 
-        // Priority 3: Check legacy cache format (for backward compatibility)
-        const legacyFeatsData = queryClient.getQueryData<FeatCacheResponse>(['feats-cache', { queryType: 'all' }]);
-        if (legacyFeatsData?.results) {
-            const feat = legacyFeatsData.results.find(f => f.id === featId);
+        // Priority 3: Check feats cache
+        const featsCacheData = queryClient.getQueryData<FeatCacheResponse>(['feats-cache']);
+        if (featsCacheData?.results) {
+            const feat = featsCacheData.results.find(f => f.id === featId);
             if (feat?.name) {
                 return feat.name;
             }

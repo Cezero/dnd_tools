@@ -33,10 +33,13 @@ export function SpellTooltip({ spellId, children, href: _href }: SpellTooltipPro
     return (
         <PreviewCard.Root open={isOpen} onOpenChange={setIsOpen}>
             <PreviewCard.Trigger
-                asChild
-            >
-                {children}
-            </PreviewCard.Trigger>
+                render={(props) => {
+                    if (React.isValidElement(children)) {
+                        return React.cloneElement(children, props);
+                    }
+                    return <span {...props}>{children}</span>;
+                }}
+            />
             <PreviewCard.Portal>
                 <PreviewCard.Positioner sideOffset={8}>
                     <PreviewCard.Popup className="max-w-md p-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg">

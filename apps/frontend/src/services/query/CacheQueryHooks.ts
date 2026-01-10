@@ -1,3 +1,24 @@
+/**
+ * Cache Query Hooks
+ * 
+ * Provides lightweight cache endpoints for dropdowns, select components, and client-side filtering.
+ * Cache endpoints return minimal data structures optimized for performance, containing only essential
+ * fields needed for common UI operations.
+ * 
+ * **When to Use Cache Endpoints**:
+ * - Populating dropdown/select components
+ * - Client-side filtering operations
+ * - When only basic entity information is needed
+ * - Performance-critical scenarios where payload size matters
+ * 
+ * **When to Use List Queries Instead**:
+ * - Displaying full entity details
+ * - When relationships or composite data are needed
+ * - Detail views and edit forms
+ * 
+ * @see [Query Hooks and Caching Architecture](../../../../packages/shared/docs/application-overview/query-hooks-and-caching.md)
+ */
+
 import {
     ClassCacheResponseSchema,
     RaceCacheResponseSchema,
@@ -7,12 +28,19 @@ import {
     DeityCacheResponseSchema,
     DomainCacheResponseSchema,
     MonsterCacheResponseSchema,
-    FeatQuerySchema,
+    ItemCacheResponseSchema,
+    SourceBookCacheResponseSchema,
 } from '@shared/schema';
 
 import { createQueryHooks } from './QueryHooksFactory';
 
-// Create query hook configurations
+// Cache endpoint configurations - all use simplified query keys without parameters
+// Query key pattern: ['entity-cache']
+
+/**
+ * Classes cache endpoint - lightweight class data for dropdowns and filtering
+ * Contains: id, name, and other essential fields (see ClassCacheSchema)
+ */
 const classesCacheConfig = createQueryHooks({
     path: '/classes/cache',
     method: 'GET',
@@ -21,6 +49,10 @@ const classesCacheConfig = createQueryHooks({
     queryKeyBuilder: () => ['classes-cache'],
 });
 
+/**
+ * Races cache endpoint - lightweight race data for dropdowns and filtering
+ * Contains: id, name, and other essential fields (see RaceCacheSchema)
+ */
 const racesCacheConfig = createQueryHooks({
     path: '/races/cache',
     method: 'GET',
@@ -29,6 +61,10 @@ const racesCacheConfig = createQueryHooks({
     queryKeyBuilder: () => ['races-cache'],
 });
 
+/**
+ * Spells cache endpoint - lightweight spell data for dropdowns and filtering
+ * Contains: id, name, and other essential fields (see SpellCacheSchema)
+ */
 const spellsCacheConfig = createQueryHooks({
     path: '/spells/cache',
     method: 'GET',
@@ -37,6 +73,10 @@ const spellsCacheConfig = createQueryHooks({
     queryKeyBuilder: () => ['spells-cache'],
 });
 
+/**
+ * Skills cache endpoint - lightweight skill data for dropdowns and filtering
+ * Contains: id, name, and other essential fields (see SkillCacheSchema)
+ */
 const skillsCacheConfig = createQueryHooks({
     path: '/skills/cache',
     method: 'GET',
@@ -45,15 +85,22 @@ const skillsCacheConfig = createQueryHooks({
     queryKeyBuilder: () => ['skills-cache'],
 });
 
+/**
+ * Feats cache endpoint - lightweight feat data for dropdowns and filtering
+ * Contains: id, name, and other essential fields (see FeatCacheSchema)
+ */
 const featsCacheConfig = createQueryHooks({
     path: '/feats/cache',
-    requestSchema: FeatQuerySchema,
     method: 'GET',
     responseSchema: FeatCacheResponseSchema,
     queryKey: 'feats-cache',
-    queryKeyBuilder: (params) => ['feats-cache', params as string | number | object],
+    queryKeyBuilder: () => ['feats-cache'],
 });
 
+/**
+ * Deities cache endpoint - lightweight deity data for dropdowns and filtering
+ * Contains: id, name, and other essential fields (see DeityCacheSchema)
+ */
 const deitiesCacheConfig = createQueryHooks({
     path: '/deities/cache',
     method: 'GET',
@@ -62,6 +109,10 @@ const deitiesCacheConfig = createQueryHooks({
     queryKeyBuilder: () => ['deities-cache'],
 });
 
+/**
+ * Domains cache endpoint - lightweight domain data for dropdowns and filtering
+ * Contains: id, name, and other essential fields (see DomainCacheSchema)
+ */
 const domainsCacheConfig = createQueryHooks({
     path: '/domains/cache',
     method: 'GET',
@@ -70,6 +121,10 @@ const domainsCacheConfig = createQueryHooks({
     queryKeyBuilder: () => ['domains-cache'],
 });
 
+/**
+ * Monsters cache endpoint - lightweight monster data for dropdowns and filtering
+ * Contains: id, name, and other essential fields (see MonsterCacheSchema)
+ */
 const monstersCacheConfig = createQueryHooks({
     path: '/monsters/cache',
     method: 'GET',
@@ -78,8 +133,45 @@ const monstersCacheConfig = createQueryHooks({
     queryKeyBuilder: () => ['monsters-cache'],
 });
 
+/**
+ * Items cache endpoint - lightweight item data for dropdowns and client-side filtering
+ * Contains: id, name, typeId, weaponCategory, armorCategory, and other essential fields
+ * 
+ * **Extended Fields**: Includes weaponCategory and armorCategory to enable client-side filtering
+ * by proficiency type. This eliminates the need for server-side query endpoints.
+ * 
+ * @see ItemCacheSchema for complete field list
+ */
+const itemsCacheConfig = createQueryHooks({
+    path: '/items/cache',
+    method: 'GET',
+    responseSchema: ItemCacheResponseSchema,
+    queryKey: 'items-cache',
+    queryKeyBuilder: () => ['items-cache'],
+});
+
+/**
+ * Sourcebooks cache endpoint - lightweight sourcebook data for dropdowns and filtering
+ * Contains: id, name, and other essential fields (see SourceBookCacheSchema)
+ */
+const sourcebooksCacheConfig = createQueryHooks({
+    path: '/sourcebooks/cache',
+    method: 'GET',
+    responseSchema: SourceBookCacheResponseSchema,
+    queryKey: 'sourcebooks-cache',
+    queryKeyBuilder: () => ['sourcebooks-cache'],
+});
+
+/**
+ * Cache Query Hooks Export
+ * 
+ * Provides both React hooks (useXxxCache) and imperative methods (getXxxCache) for all cache endpoints.
+ * 
+ * **React Hooks**: Use in React components for reactive data fetching
+ * **Imperative Methods**: Use in event handlers, utilities, or async functions outside React components
+ */
 export const CacheQueryHooks = {
-    // Keep existing hooks for backward compatibility during transition
+    // React hooks for use in components
     useClassesCache: classesCacheConfig.useQuery,
     useRacesCache: racesCacheConfig.useQuery,
     useSpellsCache: spellsCacheConfig.useQuery,
@@ -88,24 +180,30 @@ export const CacheQueryHooks = {
     useDeitiesCache: deitiesCacheConfig.useQuery,
     useDomainsCache: domainsCacheConfig.useQuery,
     useMonstersCache: monstersCacheConfig.useQuery,
+    useItemsCache: itemsCacheConfig.useQuery,
+    useSourcebooksCache: sourcebooksCacheConfig.useQuery,
 
     // Add imperative methods
     getClassesCache: (params?: unknown) => classesCacheConfig.fetch(params),
     getRacesCache: (params?: unknown) => racesCacheConfig.fetch(params),
     getSpellsCache: (params?: unknown) => spellsCacheConfig.fetch(params),
     getSkillsCache: (params?: unknown) => skillsCacheConfig.fetch(params),
-    getFeatsCache: (data: unknown) => featsCacheConfig.fetch({ requestData: data }),
+    getFeatsCache: (params?: unknown) => featsCacheConfig.fetch(params),
     getDeitiesCache: (params?: unknown) => deitiesCacheConfig.fetch(params),
     getDomainsCache: (params?: unknown) => domainsCacheConfig.fetch(params),
     getMonstersCache: (params?: unknown) => monstersCacheConfig.fetch(params),
+    getItemsCache: (params?: unknown) => itemsCacheConfig.fetch(params),
+    getSourcebooksCache: (params?: unknown) => sourcebooksCacheConfig.fetch(params),
 
     // Expose query functions for advanced usage
     getClassesCacheQueryFn: classesCacheConfig.queryFn,
     getRacesCacheQueryFn: racesCacheConfig.queryFn,
     getSpellsCacheQueryFn: spellsCacheConfig.queryFn,
     getSkillsCacheQueryFn: skillsCacheConfig.queryFn,
-    getFeatsCacheQueryFn: featsCacheConfig.queryFn,
+    getFeatsCacheQueryFn: () => featsCacheConfig.queryFn(),
     getDeitiesCacheQueryFn: deitiesCacheConfig.queryFn,
     getDomainsCacheQueryFn: domainsCacheConfig.queryFn,
     getMonstersCacheQueryFn: monstersCacheConfig.queryFn,
+    getItemsCacheQueryFn: itemsCacheConfig.queryFn,
+    getSourcebooksCacheQueryFn: sourcebooksCacheConfig.queryFn,
 };

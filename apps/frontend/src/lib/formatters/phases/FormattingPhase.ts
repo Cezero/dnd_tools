@@ -37,7 +37,7 @@ export class FormattingPhase {
             const shouldSkipLabeling = isCumulativeModifier || (usesGroupedLabel && isGrouped);
 
             if (!shouldSkipLabeling) {
-                formattedValue = labelerRegistry.applyLabel(formattedValue, entity, showLabels);
+                formattedValue = labelerRegistry.applyLabel(formattedValue, entity, showLabels, context?.queryClient);
             }
 
             return {

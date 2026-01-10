@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import type { ItemWithDetails, FeatInQueryResponse } from '@shared/schema';
 import { ITEM_TYPE_ENUM, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
@@ -55,14 +56,24 @@ export function FeatsTab({
                     setItems(allItemsResponse.results);
                     console.log(`Loaded ${allItemsResponse.results.length} items for feat display`);
                 } else {
-                    // Fallback to just weapons if getAllItems doesn't work
-                    const weaponsResponse = await ItemQueryHooks.itemQueryQueryFn({
-                        queryType: 'byType',
-                        typeId: ITEM_TYPE_ENUM.Weapon.toString()
-                    });
-                    if (weaponsResponse?.results) {
-                        setItems(weaponsResponse.results);
-                        console.log(`Loaded ${weaponsResponse.results.length} weapons for feat display`);
+                    // Fallback to filter weapons from cache
+                    try {
+                        const cacheData = await CacheQueryHooks.getItemsCache();
+                        if (cacheData?.results) {
+                            const weapons = cacheData.results.filter(item => 
+                                item.typeId === ITEM_TYPE_ENUM.Weapon
+                            );
+                            setItems(weapons.map(w => ({
+                                id: w.id,
+                                name: w.name,
+                                typeId: w.typeId,
+                                weapon: w.weaponCategory ? { category: w.weaponCategory } : null,
+                                armor: null,
+                            })));
+                            console.log(`Loaded ${weapons.length} weapons from cache for feat display`);
+                        }
+                    } catch (cacheError) {
+                        console.error('Failed to load weapons from cache:', cacheError);
                     }
                 }
             } catch (error) {

@@ -5,7 +5,6 @@ import {
     ValidatedParamsT,
     ValidatedBodyT,
     ValidatedParamsBodyT,
-    ValidatedQueryT,
 } from '@/util/validated-types';
 import {
     ItemIdParamRequest,
@@ -15,18 +14,13 @@ import {
     UpdateItemRequest,
     UpdateResponse,
     CreateResponse,
-    ItemQueryRequest,
+    ItemCacheResponse,
 } from '@shared/schema';
 
 import { itemService } from './itemService';
 
 export async function GetAllItems(req: ValidatedNoInput<GetAllItemsResponse>, res: Response, _next: NextFunction) {
     const items = await itemService.getAllItems();
-    res.json(items);
-}
-
-export async function GetItemQuery(req: ValidatedQueryT<ItemQueryRequest, GetAllItemsResponse>, res: Response, _next: NextFunction) {
-    const items = await itemService.itemQuery(req.query);
     res.json(items);
 }
 
@@ -52,4 +46,9 @@ export async function UpdateItem(req: ValidatedParamsBodyT<ItemIdParamRequest, U
 export async function DeleteItem(req: ValidatedParamsT<ItemIdParamRequest, UpdateResponse>, res: Response, _next: NextFunction) {
     const result = await itemService.deleteItem(req.params);
     res.json(result);
+}
+
+export async function GetItemCache(req: ValidatedNoInput<ItemCacheResponse>, res: Response, _next: NextFunction) {
+    const items = await itemService.getItemCache();
+    res.json(items);
 } 

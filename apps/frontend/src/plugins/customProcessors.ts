@@ -4,24 +4,67 @@ import { h } from 'hastscript';
 import { extractDiceType } from '@/lib/DiceUtils';
 import { getPreRenderedTable } from '@/lib/TableResolution';
 import { MarkdownComponentProps, MarkdownProcessingOptions } from '@/plugins/types';
-import { SPELL_NAME_MAP } from '@shared/static-data';
+import {
+    getMonsterIdByName,
+    getSpellIdByName,
+    getFeatIdByName,
+    getItemIdByName,
+    getClassIdByName,
+    getRaceIdByName,
+    getDomainIdByName,
+    getDeityIdByName,
+} from '@/services/cache/IdMapHelpers';
+
 
 import { embedReactComponent } from './embedReactComponent';
 
-
-const entityTypes = {
-    spell: SPELL_NAME_MAP,
-};
-
 // Individual directive processing functions
-export function createEntityLink(type: string, rawValue: string): ElementContent {
-    const entityType = type.toLowerCase() as keyof typeof entityTypes;
-    const id = entityTypes[entityType]?.[rawValue];
+export function createEntityLink(type: string, rawValue: string, options?: MarkdownProcessingOptions): ElementContent {
+    const entityType = type.toLowerCase();
+    let id: number | undefined;
+
+    // Use cache-based lookup if queryClient is available
+    if (options?.queryClient) {
+        switch (entityType) {
+            case 'monster':
+                id = getMonsterIdByName(options.queryClient, rawValue);
+                break;
+            case 'spell':
+                id = getSpellIdByName(options.queryClient, rawValue);
+                break;
+            case 'feat':
+                id = getFeatIdByName(options.queryClient, rawValue);
+                break;
+            case 'item':
+                id = getItemIdByName(options.queryClient, rawValue);
+                break;
+            case 'class':
+                id = getClassIdByName(options.queryClient, rawValue);
+                break;
+            case 'race':
+                id = getRaceIdByName(options.queryClient, rawValue);
+                break;
+            case 'domain':
+                id = getDomainIdByName(options.queryClient, rawValue);
+                break;
+            case 'deity':
+                id = getDeityIdByName(options.queryClient, rawValue);
+                break;
+            default:
+                // Unknown entity type, id remains undefined
+                break;
+        }
+    }
+
     const href = id ? `/${entityType}s/${id}` : undefined;
-    const props: Record<string, unknown> = {
-        href,
+    const props: Record<string, string> = {
         className: 'entity-link',
     };
+
+    // Add href if available
+    if (href) {
+        props.href = href;
+    }
 
     // Add data attributes for entity tooltip support
     if (id && href) {
@@ -75,7 +118,14 @@ export function createTable(rawValue: string, props: MarkdownComponentProps, opt
 
 // Directive processor map
 export const directiveProcessors: Record<string, (rawValue: string, props: MarkdownComponentProps, options: MarkdownProcessingOptions) => ElementContent> = {
-    spell: (rawValue, _props, _options) => createEntityLink('spell', rawValue),
+    spell: (rawValue, _props, options) => createEntityLink('spell', rawValue, options),
+    monster: (rawValue, _props, options) => createEntityLink('monster', rawValue, options),
+    feat: (rawValue, _props, options) => createEntityLink('feat', rawValue, options),
+    item: (rawValue, _props, options) => createEntityLink('item', rawValue, options),
+    class: (rawValue, _props, options) => createEntityLink('class', rawValue, options),
+    race: (rawValue, _props, options) => createEntityLink('race', rawValue, options),
+    domain: (rawValue, _props, options) => createEntityLink('domain', rawValue, options),
+    deity: (rawValue, _props, options) => createEntityLink('deity', rawValue, options),
     dice: (rawValue, _props, _options) => createDiceButton(rawValue),
     var: (rawValue, props, _options) => createVariable(rawValue, props),
     table: (rawValue, props, options) => createTable(rawValue, props, options),

@@ -123,7 +123,7 @@ export default function ClassEdit() {
     const [spellsKnownProgression, setSpellsKnownProgression] = useState<SpellcastingProgressionWithSlots[]>([]);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
-    const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string; displayInCharacterSheet: boolean } | undefined>(undefined);
 
     // Ref to track if we've already processed the newFeature
     const processedNewFeatureRef = useRef<boolean>(false);
@@ -259,6 +259,7 @@ export default function ClassEdit() {
                             slug: 'class-proficiency',
                             name: 'Class Proficiency',
                             description: 'Class proficiency feature',
+                            displayInCharacterSheet: true,
                         },
                         entities: []
                     });
@@ -365,6 +366,7 @@ export default function ClassEdit() {
                     name: preSelectedFeatureRef.current?.name || `Feature ${progression.featureId}`,
                     description: preSelectedFeatureRef.current?.description || '',
                     slug: preSelectedFeatureRef.current?.slug || `feature-${progression.featureId}`,
+                    displayInCharacterSheet: true,
                 }
             };
 
@@ -392,6 +394,7 @@ export default function ClassEdit() {
                     name: feature.name,
                     description: feature.description,
                     slug: feature.slug,
+                    displayInCharacterSheet: sourceProgression?.feature?.displayInCharacterSheet ?? true,
                     prerequisites: sourceProgression?.feature?.prerequisites || []
                 },
                 entities: entitiesToCopy.map(entity => ({
@@ -412,6 +415,7 @@ export default function ClassEdit() {
                     name: feature.name,
                     description: feature.description,
                     slug: feature.slug,
+                    displayInCharacterSheet: true,
                 },
                 entities: [],
             });
@@ -606,6 +610,7 @@ export default function ClassEdit() {
                     name: newFeature.name,
                     description: newFeature.description,
                     slug: newFeature.slug,
+                    displayInCharacterSheet: true,
                 },
                 entities: [],
             });
@@ -657,7 +662,7 @@ export default function ClassEdit() {
                             return {
                                 ...progressionData,
                                 entities: progression.entities?.map(entity => {
-                                    const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                                    const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
                                     // Ensure formulaParams is properly structured for backend
                                     if (entityData.formulaParams && entityData.formulaParams.formulaId) {
                                         // Keep the formulaParams data but remove any temporary IDs
@@ -688,7 +693,7 @@ export default function ClassEdit() {
                     await VariantClassApi.createVariant(variantData as CreateClassVariantRequest);
                     setMessage('Variant class created successfully!');
                     // Invalidate class caches
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: ['classes'],
                         exact: false
                     });
@@ -698,10 +703,10 @@ export default function ClassEdit() {
                     await VariantClassApi.updateVariant(variantData as UpdateClassVariantRequest, { id: numericId });
                     setMessage('Variant class updated successfully!');
                     // Invalidate class caches
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: ClassQueryHooks.getClassByIdQueryKey(numericId)
                     });
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: ['classes'],
                         exact: false
                     });
@@ -717,7 +722,7 @@ export default function ClassEdit() {
                             ...progressionData,
                             // Remove temporary IDs from related entities
                             entities: prog.entities?.map(entity => {
-                                const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                                const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
                                 // Ensure formulaParams is properly structured for backend
                                 if (entityData.formulaParams && entityData.formulaParams.formulaId) {
                                     // Keep the formulaParams data but remove any temporary IDs
@@ -764,7 +769,7 @@ export default function ClassEdit() {
                     const newClass = await ClassApi.createClass(classData as CreateClassRequest);
                     setMessage('Class created successfully!');
                     // Invalidate class caches
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: ['classes'],
                         exact: false
                     });
@@ -774,10 +779,10 @@ export default function ClassEdit() {
                     await ClassApi.updateClass(classData as UpdateClassRequest, { id: numericId });
                     setMessage('Class updated successfully!');
                     // Invalidate class caches
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: ClassQueryHooks.getClassByIdQueryKey(numericId)
                     });
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: ['classes'],
                         exact: false
                     });

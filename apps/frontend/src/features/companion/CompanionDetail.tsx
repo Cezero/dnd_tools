@@ -1,5 +1,6 @@
-import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
+import { EntityLink } from '@/components/entity-link';
 import { useAuthAuto } from '@/components/auth';
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
@@ -78,12 +79,14 @@ export function CompanionDetail() {
                         {companion.monster && (
                             <div>
                                 <strong>Monster:</strong>{' '}
-                                <Link
-                                    to={`/monsters/${companion.monsterId}`}
+                                <EntityLink
+                                    entityType="monster"
+                                    entityId={companion.monsterId}
+                                    href={`/monsters/${companion.monsterId}`}
                                     className="text-blue-600 dark:text-blue-400 hover:underline"
                                 >
                                     {companion.monster.name}
-                                </Link>
+                                </EntityLink>
                             </div>
                         )}
                         {companion.minLevel && (

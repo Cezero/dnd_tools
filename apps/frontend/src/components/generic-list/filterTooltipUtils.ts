@@ -28,10 +28,11 @@ export const formatFilterTooltip = (
         case FilterType.SINGLE_SELECT: {
             // For single select, find the label for the selected value
             const singleSelectOptions = getOptions();
-            if (singleSelectOptions) {
+            if (singleSelectOptions && !(singleSelectOptions instanceof Promise)) {
                 const option = singleSelectOptions.find(opt => opt.id === filter.value);
                 return option ? option.name : String(filter.value);
             }
+            // If options is a Promise, we can't resolve it synchronously, so return the raw value
             return String(filter.value);
         }
 
@@ -42,7 +43,7 @@ export const formatFilterTooltip = (
                 const delimiter = logicType === 'and' ? ' & ' : ' | ';
 
                 const multiSelectOptions = getOptions();
-                if (multiSelectOptions) {
+                if (multiSelectOptions && !(multiSelectOptions instanceof Promise)) {
                     // Map values to labels
                     const labels = filter.value.values.map((value: string | number) => {
                         const option = multiSelectOptions.find(opt => opt.id === value);
@@ -50,7 +51,7 @@ export const formatFilterTooltip = (
                     });
                     return labels.join(delimiter);
                 } else {
-                    // Just use the raw values
+                    // If options is a Promise or not available, just use the raw values
                     return filter.value.values.map(String).join(delimiter);
                 }
             }

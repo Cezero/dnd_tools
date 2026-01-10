@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 
+import { EntityLink } from '@/components/entity-link';
 import { createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
 import { CompanionWithRelations } from '@shared/schema';
 import { FilterType, COMPANION_TYPE_LIST, COMPANION_TYPE_MAP } from '@shared/static-data';
@@ -15,7 +16,21 @@ export const COMPANION_COLUMNS: ColumnDef<CompanionWithRelations, unknown>[] = [
         size: 250,
         filterFn: createContainsFilter<CompanionWithRelations>(),
         cell: ({ row }) => {
-            return row.original.monster?.name || '';
+            const companion = row.original;
+            const monsterName = companion.monster?.name || '';
+            const monsterId = companion.monsterId;
+            if (!monsterId || !monsterName) {
+                return monsterName;
+            }
+            return (
+                <EntityLink
+                    entityType="monster"
+                    entityId={monsterId}
+                    href={`/companions/${companion.id}`}
+                >
+                    {monsterName}
+                </EntityLink>
+            );
         },
         meta: {
             required: true,

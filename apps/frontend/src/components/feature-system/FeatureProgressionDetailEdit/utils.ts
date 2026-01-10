@@ -61,8 +61,7 @@ export function getAppliesToSubIdSelectOptions(appliesTo: EntityAppliesToType, a
  */
 export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType | null, entityType?: EntityType | null) {
     // Use the appropriate query hook based on the appliesTo type
-    // For GET requests with requestSchema, pass query params directly (not wrapped in requestData)
-    const featQuery = FeatQueryHooks.useGetFeatList({ queryType: 'all' });
+    const featQuery = FeatQueryHooks.useGetFeats();
 
     const domainQuery = DomainQueryHooks.useGetDomains({});
 
@@ -82,9 +81,9 @@ export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType | null,
 
         switch (appliesTo) {
             case EntityAppliesToType.Feat:
-                // GetFeatListResponse is an array directly
-                if (featQuery.data && Array.isArray(featQuery.data) && featQuery.data.length > 0) {
-                    return featQuery.data;
+                // GetAllFeatsWithFeatureInfoResponse has a results array
+                if (featQuery.data?.results && featQuery.data.results.length > 0) {
+                    return featQuery.data.results;
                 }
                 // Return empty array while loading, placeholder only if not loading
                 if (featQuery.isLoading || featQuery.isPending) {
@@ -246,7 +245,6 @@ export function useProficiencySubIdOptions(
     }, [
         entity?.type,
         entity?.appliesTo,
-        entity?.feat?.id,
         entity?.appliesToSubId,
         entity?.item?.id,
         appliesToId

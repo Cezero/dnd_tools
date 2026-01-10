@@ -1,8 +1,10 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { Root } from 'hast';
 
 interface MarkdownProcessingOptions {
     extraRehypePlugins?: unknown[];
     enableTables?: boolean;
+    queryClient?: QueryClient;
 }
 
 // Define specific error types for markdown processing
@@ -47,11 +49,14 @@ type CacheEntry = {
     error?: MarkdownCacheError;
 };
 
+import type { QueryClient } from '@tanstack/react-query';
+
 interface MarkdownComponentProps {
     markdown: string;
     id: string;
     userVars?: Record<string, unknown>;
     tableClass?: string;
+    queryClient?: QueryClient;
 }
 
 export type { 

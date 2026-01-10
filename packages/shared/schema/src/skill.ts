@@ -28,8 +28,6 @@ export const SkillSchema = z.object({
 });
 
 export const SkillCacheSchema = SkillSchema.omit({
-    abilityId: true,
-    trainedOnly: true,
     affectedByArmor: true,
     retryTypeId: true,
     specialNotes: true,

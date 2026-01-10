@@ -29,7 +29,7 @@ export async function compileMarkdownToHast(props: MarkdownComponentProps): Prom
         .use(remarkRehype, { allowDangerousHtml: true })
         .use(rehypeRaw)
         .use(rehypeFormat)
-        .use(RehypeCustomMarkdown, props, { enableTables: true })
+        .use(RehypeCustomMarkdown, props, { enableTables: true, queryClient: props.queryClient })
         .use(RehypeLinkPreviews);
 
     const file = processor.parse(markdownContent);

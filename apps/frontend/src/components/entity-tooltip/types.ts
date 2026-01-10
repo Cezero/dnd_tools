@@ -1,3 +1,5 @@
+import type React from 'react';
+
 export type EntityType = 'spell' | 'monster' | 'item' | 'feat' | 'class' | 'race' | 'domain';
 
 export interface EntityTooltipProps {
@@ -9,6 +11,12 @@ export interface EntityTooltipProps {
 
 export interface SpellTooltipProps {
     spellId: number;
+    children: React.ReactNode;
+    href?: string;
+}
+
+export interface MonsterTooltipProps {
+    monsterId: number;
     children: React.ReactNode;
     href?: string;
 }

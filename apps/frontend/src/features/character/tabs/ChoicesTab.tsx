@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
@@ -7,9 +7,10 @@ import { FeatSubIdSelectionModal } from '@/features/character/components/FeatSub
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { useCacheFunctions } from '@/services/cache';
-import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
+import { getClassNameFromCache, getFeatNameFromCache, getRaceNameFromCache } from '@/services/cache/IdMapHelpers';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
-import type { Feat, FeatInQueryResponse } from '@shared/schema';
+import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
+import type { FeatCacheEntry, FeatInQueryResponse, GetAllCompanionsResponse } from '@shared/schema';
 import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter, CompanionType, FeatureSourceType } from '@shared/static-data';
 import { filterAvailableFeats } from '../utils/featFiltering';
 
@@ -32,7 +33,7 @@ export function ChoicesTab({
 
     // State for feat sub-id selection modal
     const [featSubIdModalOpen, setFeatSubIdModalOpen] = useState(false);
-    const [selectedFeatForSubId, setSelectedFeatForSubId] = useState<Feat | null>(null);
+    const [selectedFeatForSubId, setSelectedFeatForSubId] = useState<FeatInQueryResponse | null>(null);
     const [pendingFeatChoiceId, setPendingFeatChoiceId] = useState<string | null>(null);
 
     // State for feat search/filtering (for feat choices) - keyed by choiceId
@@ -178,7 +179,7 @@ export function ChoicesTab({
     const { data: allCompanionsData } = CompanionQueryHooks.useGetCompanions(undefined, {
         staleTime: 5 * 60 * 1000, // 5 minutes
         gcTime: 10 * 60 * 1000, // 10 minutes
-    } as any);
+    } as UseQueryOptions<GetAllCompanionsResponse>);
 
     // Memoize companions filtered by type for quick lookup
     const companionsByType = useMemo(() => {
@@ -268,7 +269,9 @@ export function ChoicesTab({
                     // Otherwise, use the pending choice from backend
                     if (selected) {
                         // Build proper choice name based on type (matching backend logic)
-                        const source = progression.class?.name || progression.race?.name || progression.feature?.name || 'Unknown';
+                        const className = progression.classId ? getClassNameFromCache(queryClient, progression.classId) : undefined;
+                        const raceName = progression.raceId ? getRaceNameFromCache(queryClient, progression.raceId) : undefined;
+                        const source = className || raceName || progression.feature?.name || 'Unknown';
                         let choiceName = '';
                         if (entity.appliesTo === EntityAppliesToType.Domain) {
                             choiceName = `${source}: Select a Domain`;
@@ -299,7 +302,7 @@ export function ChoicesTab({
                                 ? CompanionType.Familiar
                                 : CompanionType.AnimalCompanion;
                             const availableCompanions = companionsByType.get(companionType) || [];
-                            
+
                             availableCompanions.forEach(companion => {
                                 options.push({
                                     id: `companion-${companion.id}`,
@@ -321,9 +324,12 @@ export function ChoicesTab({
                         } else if (entity.appliesTo === EntityAppliesToType.Feat) {
                             // For feats, we'll use the filtered feats from the existing logic
                             // This will be handled separately in the rendering logic
+                            const featName = selected.appliesToId
+                                ? getFeatNameFromCache(queryClient, selected.appliesToId) || sharedData.allFeats.find(f => f.id === selected.appliesToId)?.name
+                                : undefined;
                             options.push({
                                 id: `feat-${selected.appliesToId}`,
-                                name: entity.feat?.name || sharedData.allFeats.find(f => f.id === selected.appliesToId)?.name || 'Selected Feat',
+                                name: featName || 'Selected Feat',
                                 description: '',
                                 value: selected.appliesToId,
                             });
@@ -409,7 +415,25 @@ export function ChoicesTab({
     // Handle choice selection with imperative API
     const handleSelectionChange = useCallback(async (choiceId: string, selectedValues: number[], subId?: number | null) => {
         if (selectedValues.length > 0) {
-            const choice = resolvedData.pendingChoices.find(c => c.id === choiceId);
+            // First try to find in pending choices
+            let choice = resolvedData.pendingChoices.find(c => c.id === choiceId);
+
+            // If not found, look up from progressions (for already-selected choices)
+            if (!choice) {
+                const [progressionId, featureEntityId] = choiceId.split('-').map(Number);
+                if (!isNaN(progressionId) && !isNaN(featureEntityId)) {
+                    const progression = resolvedData.progressions.find(p => p.id === progressionId);
+                    const entity = progression?.entities?.find(e => e.id === featureEntityId);
+                    if (entity && entity.type === EntityType.Choice) {
+                        // Create a synthetic choice object with the necessary fields
+                        choice = {
+                            id: choiceId,
+                            type: entity.appliesTo as EntityAppliesToType,
+                        } as typeof resolvedData.pendingChoices[0];
+                    }
+                }
+            }
+
             if (choice) {
                 const selectedId = selectedValues[0];
 
@@ -507,7 +531,7 @@ export function ChoicesTab({
                 }
             });
         }
-    }, [resolvedData.pendingChoices, handleChoiceSelection, updateState, state.featureChoices, state.characterId]);
+    }, [resolvedData.pendingChoices, resolvedData.progressions, handleChoiceSelection, updateState, state.featureChoices, state.characterId, sharedData.allFeats, queryClient, _triggerFeatureResolution]);
 
     // Handle weapon selection from modal
     const handleWeaponSelection = useCallback(async (weaponId: number) => {
@@ -636,11 +660,6 @@ export function ChoicesTab({
                                                             </>
                                                         );
                                                     })()}
-                                                    {selectedFeat.prerequisites && (
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                            <span className="font-medium">Prerequisites:</span> {selectedFeat.prerequisites}
-                                                        </p>
-                                                    )}
                                                 </div>
                                                 <button
                                                     onClick={() => {
@@ -830,7 +849,7 @@ export function ChoicesTab({
                     setPendingFeatChoiceId(null);
                 }}
                 onConfirm={handleWeaponSelection}
-                feat={selectedFeatForSubId}
+                feat={selectedFeatForSubId as FeatCacheEntry | null}
                 resolvedProgressions={resolvedData.progressions}
             />
         </div>

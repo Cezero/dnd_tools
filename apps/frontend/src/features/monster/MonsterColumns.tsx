@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
@@ -12,11 +13,25 @@ import {
     FilterType,
     SourceType,
     EditionId,
-    SOURCE_BOOK_MAP,
 } from '@shared/static-data';
 import { GetSourceDisplay } from '@shared/utils';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 
 export const useMonsterColumns = (): ColumnDef<Monster, unknown>[] => {
+    const queryClient = useQueryClient();
+    
+    // Ensure sourcebooks cache is loaded
+    CacheQueryHooks.useSourcebooksCache({}, {
+        enabled: true,
+        staleTime: Infinity,
+        gcTime: Infinity,
+    });
+    
+    // Get sourcebooks from cache
+    const getSourceBooksFromCache = () => {
+        const cacheData = queryClient.getQueryData<{ results: Array<{ id: number; name: string; abbreviation: string; editionId: number | null; isVisible: boolean }> }>(['sourcebooks-cache']);
+        return cacheData?.results || [];
+    };
     return [
         {
             accessorKey: 'name',
@@ -176,13 +191,16 @@ export const useMonsterColumns = (): ColumnDef<Monster, unknown>[] => {
                 options: (currentFilters: Array<{ id: string; value: unknown }>) => {
                     const editionFilter = currentFilters.find(f => f.id === 'editionId');
                     const editionId = editionFilter?.value as EditionId;
+                    const sourceBooks = getSourceBooksFromCache();
                     // Return all source books for the edition since monsters can come from any source
                     if (editionId) {
-                        return Object.values(SOURCE_BOOK_MAP).filter(book => 
-                            book.editionId === editionId && book.isVisible !== false
-                        );
+                        return sourceBooks
+                            .filter(book => book.editionId === editionId && book.isVisible !== false)
+                            .map(book => ({ id: String(book.id), name: book.name, abbreviation: book.abbreviation }));
                     }
-                    return Object.values(SOURCE_BOOK_MAP).filter(book => book.isVisible !== false);
+                    return sourceBooks
+                        .filter(book => book.isVisible !== false)
+                        .map(book => ({ id: String(book.id), name: book.name, abbreviation: book.abbreviation }));
                 },
             },
         },

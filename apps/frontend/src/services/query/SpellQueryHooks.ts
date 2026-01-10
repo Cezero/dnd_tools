@@ -13,15 +13,29 @@ import {
     type Spell,
 } from '@shared/schema';
 
+/**
+ * Spell Query Hooks
+ * 
+ * Provides query hooks and imperative methods for spell-related API endpoints.
+ * Includes optimized cache-checking for individual spell queries.
+ * 
+ * **Key Features**:
+ * - List queries use simplified query keys: ['spells', 'list'] (no parameters)
+ * - Individual spell queries check list cache first before API calls (performance optimization)
+ * - Response transformation: GetSpellResponse omits id field, so cached spells are transformed
+ */
+
 import { createQueryHooks } from './QueryHooksFactory';
 
-// Create query hook configurations
+// List query configuration - returns all spells with full details
+// Query key: ['spells', 'list'] (no parameters - simplified to avoid duplicate cache entries)
+// This cache is checked first by getSpellById to avoid unnecessary API calls
 const spellsConfig = createQueryHooks({
     path: '/spells',
     method: 'GET',
     responseSchema: GetAllSpellsResponseSchema,
     queryKey: 'spells',
-    queryKeyBuilder: (params) => ['spells', 'list', params as string | number | object],
+    queryKeyBuilder: () => ['spells', 'list'], // No parameters - endpoint doesn't accept query params
 });
 
 // Create base config for spellById
@@ -37,8 +51,22 @@ const spellByIdBaseConfig = createQueryHooks({
     },
 });
 
-// Create a custom queryFn that checks the 'spells', 'list' cache first
-// This works for both TanStack Query context and direct calls
+/**
+ * Creates a custom queryFn that checks the list cache first before making API calls.
+ * 
+ * **Cache Optimization Pattern**:
+ * 1. Check if ['spells', 'list'] cache exists
+ * 2. Search cache for the requested spell by ID
+ * 3. Transform spell (remove id field) to match GetSpellResponse schema
+ * 4. Return cached spell if found (avoids API call)
+ * 5. Fall back to API call if spell not in cache
+ * 
+ * **Note**: GetSpellResponse omits the id field, so cached spells (which include id)
+ * must be transformed before returning to match the expected response schema.
+ * 
+ * @param originalQueryFn - The original query function that makes the API call
+ * @returns Enhanced query function that checks cache first
+ */
 const createSpellByIdQueryFn = (originalQueryFn: (params?: unknown) => Promise<GetSpellResponse | null>) => {
     return async (contextOrParams: QueryFunctionContext | { pathParams?: { id?: number } } | undefined): Promise<GetSpellResponse | null> => {
         // Check if this is a QueryFunctionContext from TanStack Query
@@ -47,9 +75,9 @@ const createSpellByIdQueryFn = (originalQueryFn: (params?: unknown) => Promise<G
             const queryKey = context.queryKey as (string | number)[];
             const spellId = queryKey[2] as number | undefined;
 
-            // Check if 'spells', 'list' exists in cache (with undefined params for getAll)
+            // Check if 'spells', 'list' exists in cache
             if (context.client && spellId !== undefined) {
-                const allSpellsData = context.client.getQueryData<GetAllSpellsResponse>(['spells', 'list', undefined]);
+                const allSpellsData = context.client.getQueryData<GetAllSpellsResponse>(['spells', 'list']);
                 if (allSpellsData?.results) {
                     // GetAllSpellsResponse has Spell[] which includes id, GetSpellResponse omits id
                     // So we find by id and return the spell (which matches GetSpellResponse when id is omitted)
@@ -76,7 +104,14 @@ const createSpellByIdQueryFn = (originalQueryFn: (params?: unknown) => Promise<G
 // Override the queryFn to use our cache-checking version
 const spellByIdQueryFn = createSpellByIdQueryFn(spellByIdBaseConfig.queryFn);
 
-// Create a custom useQuery hook that uses the cache-checking queryFn
+/**
+ * Custom useQuery hook that checks list cache before making API calls.
+ * 
+ * This hook wraps the standard useQuery to add cache-checking optimization.
+ * It first checks if the spell exists in the ['spells', 'list'] cache, transforms
+ * it to match GetSpellResponse schema (removes id field), and only makes an API
+ * call if the spell is not found in cache.
+ */
 const useGetSpellByIdWithCache = (params?: unknown, options?: unknown) => {
     const typedParams = params as { pathParams?: { id?: number } } | undefined;
     const spellId = typedParams?.pathParams?.id;
@@ -87,7 +122,7 @@ const useGetSpellByIdWithCache = (params?: unknown, options?: unknown) => {
         queryFn: async () => {
             // Check cache first using the queryClient
             if (spellId !== undefined && queryClient) {
-                const allSpellsData = queryClient.getQueryData<GetAllSpellsResponse>(['spells', 'list', undefined]);
+                const allSpellsData = queryClient.getQueryData<GetAllSpellsResponse>(['spells', 'list']);
                 if (allSpellsData?.results) {
                     const spell = allSpellsData.results.find(s => s.id === spellId) as Spell | undefined;
                     if (spell) {
@@ -105,7 +140,18 @@ const useGetSpellByIdWithCache = (params?: unknown, options?: unknown) => {
     });
 };
 
-// Override the fetch method to also check cache
+/**
+ * Imperative fetch method that checks list cache before making API calls.
+ * 
+ * **Cache-Checking Logic**:
+ * 1. If queryClient provided, check ['spells', 'list'] cache first
+ * 2. If spell found in cache, transform it (remove id field) to match GetSpellResponse schema
+ * 3. Cache transformed spell under ['spells', 'item', id] for consistency
+ * 4. If not in cache or no queryClient, fall back to normal fetchQuery
+ * 
+ * This ensures that individual spell queries leverage the list cache when available,
+ * reducing API calls and improving performance.
+ */
 const spellByIdFetch = async (params?: unknown, options?: { staleTime?: number }, queryClient?: QueryClient) => {
     if (!queryClient) {
         // If no queryClient provided, just call the API directly
@@ -117,7 +163,7 @@ const spellByIdFetch = async (params?: unknown, options?: { staleTime?: number }
 
     // Check cache first
     if (spellId !== undefined) {
-        const allSpellsData = queryClient.getQueryData<GetAllSpellsResponse>(['spells', 'list', undefined]);
+        const allSpellsData = queryClient.getQueryData<GetAllSpellsResponse>(['spells', 'list']);
         if (allSpellsData?.results) {
             const spell = allSpellsData.results.find(s => s.id === spellId) as Spell | undefined;
             if (spell) {
@@ -199,7 +245,7 @@ export const SpellQueryHooks = {
     getAllSpellsQueryFn: spellsConfig.queryFn,
     getSpellByIdQueryFn: spellByIdConfig.queryFn,
     getSpellsForClassQueryFn: spellsForClassConfig.queryFn,
-    getAllSpellsQueryKey: (params?: unknown) => spellsConfig.queryKeyBuilder(params),
+    getAllSpellsQueryKey: (params?: unknown) => spellsConfig.queryKeyBuilder(),
     getSpellByIdQueryKey: (spellId: number) => spellByIdConfig.queryKeyBuilder({ pathParams: { id: spellId } }),
     getSpellsForClassQueryKey: (classId: number) => spellsForClassConfig.queryKeyBuilder({ pathParams: { classId } }),
 };

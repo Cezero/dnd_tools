@@ -11,7 +11,8 @@ import { labelerRegistry } from '../labeler-registry';
 import type {
     FormattedItemWithLevel,
     GroupedLevelItem,
-    CalculatedEntity
+    CalculatedEntity,
+    DisplayContext
 } from '../types';
 
 /**
@@ -24,7 +25,8 @@ export class GroupingPhase {
      */
     groupWithinLevel(
         formattedItems: FormattedItemWithLevel[],
-        progression: FeatureProgression
+        progression: FeatureProgression,
+        context?: DisplayContext
     ): GroupedLevelItem[] {
         if (formattedItems.length === 0) {
             return [];
@@ -103,7 +105,7 @@ export class GroupingPhase {
 
                     if (isCumulativeGroup) {
                         // For cumulative groups, apply label to the grouped result
-                        formattedValue = labelerRegistry.applyLabel(formattedValue, firstEntity, true);
+                        formattedValue = labelerRegistry.applyLabel(formattedValue, firstEntity, true, context?.queryClient);
                     }
                     // For non-cumulative groups, the individual items are already labeled
 
@@ -120,7 +122,8 @@ export class GroupingPhase {
                             formattedValue = this.formatConditions(
                                 firstEntity.conditions,
                                 formattedValue,
-                                firstEntity
+                                firstEntity,
+                                context
                             );
                         }
                     }
@@ -172,7 +175,8 @@ export class GroupingPhase {
     private formatConditions(
         conditions: FeatureEntityCondition[],
         formattedValue: string,
-        entity: CalculatedEntity
+        entity: CalculatedEntity,
+        context?: DisplayContext
     ): string {
         if (conditions.length === 0) {
             return formattedValue;
@@ -205,7 +209,7 @@ export class GroupingPhase {
             if (formattedValues) {
                 // Step 2b: Apply labeler to the formatted values with entity context
                 const labeler = conditionLabelerRegistry.getLabeler(conditionType, entity.appliesTo);
-                const labeledCondition = labeler ? labeler(formattedValues, entity) : formattedValues;
+                const labeledCondition = labeler ? labeler(formattedValues, entity, context?.queryClient) : formattedValues;
                 formattedConditions.push(labeledCondition);
             }
         }

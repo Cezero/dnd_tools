@@ -258,7 +258,7 @@ export const featService: FeatService = {
         return { message: 'Feat deleted successfully' };
     },
 
-    async getFeatCache(query: FeatQueryRequest): Promise<FeatCacheResponse> {
+    async getFeatCache(_query?: FeatQueryRequest): Promise<FeatCacheResponse> {
         // All feats are returned - proficiency feats are identified via FeatureProgressions, not query filtering
         const feats = await prisma.feat.findMany({
             orderBy: { name: 'asc' },

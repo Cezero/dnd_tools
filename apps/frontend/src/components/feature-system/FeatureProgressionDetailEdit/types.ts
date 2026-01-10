@@ -58,9 +58,12 @@ export interface EntitySectionRendererProps {
 
 // Section selector props
 export interface SectionSelectorProps {
-    hasEntities: boolean;
-    entityCount: number;
-    onEntityToggle: (checked: boolean) => void;
+    hasModifiers: boolean;
+    hasChoices: boolean;
+    modifierCount: number;
+    choiceCount: number;
+    onModifierToggle: (checked: boolean) => void;
+    onChoiceToggle: (checked: boolean) => void;
 }
 
 // Grouping controls props

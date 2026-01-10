@@ -22,9 +22,11 @@ const companionsConfig = createQueryHooks({
     method: 'GET',
     responseSchema: GetAllCompanionsResponseSchema,
     queryKey: 'companions',
-    queryKeyBuilder: (params) => ['companions', 'list', params as string | number | object],
+    queryKeyBuilder: () => ['companions', 'list'],
 });
 
+// Individual companion query configuration - returns single companion by ID
+// Query key: ['companions', 'item', id] - includes ID in key for unique cache entries
 const companionByIdConfig = createQueryHooks({
     path: '/companions/:id',
     method: 'GET',
@@ -62,7 +64,13 @@ const deleteCompanionConfig = createQueryHooks({
     queryKey: 'companions',
 });
 
+/**
+ * Companion Query Hooks Export
+ * 
+ * Provides React hooks and imperative methods for companion-related operations.
+ */
 export const CompanionQueryHooks = {
+    // React hooks for use in components
     useGetCompanions: companionsConfig.useQuery,
     useGetCompanionById: companionByIdConfig.useQuery,
     useCreateCompanion: createCompanionConfig.useMutation,
@@ -84,11 +92,13 @@ export const CompanionQueryHooks = {
     // Expose query functions for advanced usage
     getCompanionsQueryFn: companionsConfig.queryFn,
     getCompanionByIdQueryFn: companionByIdConfig.queryFn,
-    getCompanionsQueryKey: (params?: unknown) => companionsConfig.queryKeyBuilder(params),
+    getCompanionsQueryKey: (params?: unknown) => companionsConfig.queryKeyBuilder(),
     getCompanionByIdQueryKey: (companionId: number) => companionByIdConfig.queryKeyBuilder({ pathParams: { id: companionId } }),
 };
 
-// Character Companion query hooks
+// Character-specific companion query configuration
+// Query key: ['character-companions', 'list', characterId] - includes characterId for per-character caching
+// Note: This query uses a parameter in the key because it's character-specific data
 const getCharacterCompanionsConfig = createQueryHooks({
     path: '/companions/character/:characterId',
     method: 'GET',

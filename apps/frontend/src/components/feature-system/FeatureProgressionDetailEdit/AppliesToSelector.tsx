@@ -25,34 +25,28 @@ export function AppliesToSelector({
 }: AppliesToSelectorProps) {
     const { formData, setFormData } = useFormContext();
     const appliesToIdOptions = useAppliesToSelectOptions(appliesTo, entityType);
-    
+
     // Get current entity to check if we need to add current value to options
     const currentEntity = formData?.entities?.[index] as FeatureEntity | undefined;
     const currentAppliesToId = currentEntity?.appliesToId;
-    
+
     // Ensure current value is in options (for when data is still loading or value isn't in fetched list)
     const finalOptions = React.useMemo(() => {
         if (!currentAppliesToId || appliesToIdOptions.length === 0) {
             return appliesToIdOptions;
         }
-        
+
         // Check if current value is already in options
         const hasCurrentValue = appliesToIdOptions.some(opt => opt.id === currentAppliesToId);
         if (hasCurrentValue) {
             return appliesToIdOptions;
         }
-        
-        // If current value not in options, try to get it from entity data
-        if (appliesTo === EntityAppliesToType.Feat && currentEntity?.feat) {
-            return [
-                ...appliesToIdOptions,
-                { id: currentEntity.feat.id, name: currentEntity.feat.name }
-            ];
-        }
-        
+
+        // If current value not in options, we can't reliably add it without cache access
+        // The options should be populated from the cache via useAppliesToSelectOptions
         return appliesToIdOptions;
     }, [appliesToIdOptions, currentAppliesToId, appliesTo, currentEntity]);
-    
+
     // Check if we should show the appliesToId field
     // Show it if appliesTo is set and either we have options or we're loading (for async types)
     // Also show for SpellbookSpell with EntityType.Other (uses CustomSelect for level)
@@ -162,17 +156,6 @@ export function AppliesToSelector({
                                                             id: value,
                                                             name: selectedDomain.name
                                                         };
-                                                    }
-                                                }
-                                                
-                                                // If this is a feat selection, populate the feat object
-                                                if (appliesTo === EntityAppliesToType.Feat && value) {
-                                                    const selectedFeat = finalOptions.find(option => option.id === value);
-                                                    if (selectedFeat) {
-                                                        updatedEntity.feat = {
-                                                            id: value,
-                                                            name: selectedFeat.name
-                                                        } as typeof updatedEntity.feat;
                                                     }
                                                 }
 

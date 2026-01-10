@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect } from 'react';
 
@@ -7,9 +8,10 @@ import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
 import { NumericIdMapping } from '@/lib/numeric-id-mapping';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
+import { getSkillNameFromCache } from '@/services/cache/IdMapHelpers';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import type { GetSkillResponse, FeatureProgression } from '@shared/schema';
 import {
-    SKILL_MAP,
     SKILL_LIST,
     ABILITY_MAP,
     SpecialFeatureId,
@@ -30,6 +32,7 @@ export function SkillsTab({
     onRemoveSkill: _onRemoveSkill,
     classId = 1
 }: ClassTabProps): React.JSX.Element {
+    const queryClient = useQueryClient();
     const [skillDetails, setSkillDetails] = useState<Record<number, GetSkillResponse>>({});
     const [loadingSkills, setLoadingSkills] = useState<Set<number>>(new Set());
 
@@ -192,12 +195,12 @@ export function SkillsTab({
                         )
                         .sort((a, b) => {
                             // Sort by skill name first, then by subtype
-                            const skillA = SKILL_MAP[a.skillId];
-                            const skillB = SKILL_MAP[b.skillId];
+                            const skillAName = getSkillNameFromCache(queryClient, a.skillId) || '';
+                            const skillBName = getSkillNameFromCache(queryClient, b.skillId) || '';
 
-                            if (!skillA || !skillB) return 0;
+                            if (!skillAName || !skillBName) return 0;
 
-                            const nameCompare = skillA.name.localeCompare(skillB.name);
+                            const nameCompare = skillAName.localeCompare(skillBName);
                             if (nameCompare !== 0) return nameCompare;
 
                             // If same skill, sort by subtype
@@ -221,32 +224,32 @@ export function SkillsTab({
                         return (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                                 {classSkillEntries.map((entry) => {
-                                    const skill = SKILL_MAP[entry.skillId];
+                                    const skillName = getSkillNameFromCache(queryClient, entry.skillId);
                                     const skillDetail = skillDetails[entry.skillId];
                                     const isLoading = loadingSkills.has(entry.skillId);
 
-                                    if (!skill) return null;
+                                    if (!skillName) return null;
 
                                     // Format the header with subtype information
-                                    const abilityAbbr = ABILITY_MAP[skill.abilityId]?.abbreviation || 'Unknown';
-                                    let skillName = skill.name;
+                                    const abilityAbbr = skillDetail?.abilityId ? ABILITY_MAP[skillDetail.abilityId]?.abbreviation || 'Unknown' : 'Unknown';
+                                    let formattedSkillName = skillName;
 
                                     if (entry.subtypeId !== null) {
                                         if (entry.subtypeId === -1) {
-                                            skillName += ' (All)';
+                                            formattedSkillName += ' (All)';
                                         } else {
                                             // Get subtype name using the utility function
                                             const subtypeOptions = getAppliesToSubIdSelectOptions(EntityAppliesToType.Skill, entry.skillId);
                                             const subtype = subtypeOptions.find(opt => opt.id === entry.subtypeId);
                                             if (subtype) {
-                                                skillName += ` (${subtype.name})`;
+                                                formattedSkillName += ` (${subtype.name})`;
                                             }
                                         }
                                     }
 
-                                    const headerText = skill.trainedOnly
-                                        ? `${skillName} (${abilityAbbr}; Trained only)`
-                                        : `${skillName} (${abilityAbbr})`;
+                                    const headerText = skillDetail?.trainedOnly
+                                        ? `${formattedSkillName} (${abilityAbbr}; Trained only)`
+                                        : `${formattedSkillName} (${abilityAbbr})`;
 
                                     return (
                                         <div key={`${entry.skillId}-${entry.subtypeId || 'base'}`} className="border border-gray-200 rounded-lg p-3 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">

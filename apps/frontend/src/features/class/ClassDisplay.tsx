@@ -1,13 +1,14 @@
 import pluralize from 'pluralize';
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { EntityLink } from '@/components/entity-link';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
+import { getSpellNameFromCache } from '@/services/cache/IdMapHelpers';
 import { DnDClass, ClassVariant } from '@shared/schema';
 import {
     DisplayType,
@@ -16,7 +17,6 @@ import {
     ABILITY_MAP,
     SpecialFeatureId,
     CASTING_TYPE_MAP,
-    SPELL_ID_LIST,
 } from '@shared/static-data';
 import { GetSourceDisplay } from '@shared/utils';
 
@@ -182,12 +182,11 @@ export function ClassDisplay({
                                                     .map(([level, spellIds], levelIndex) => {
                                                         const levelText = level === '1' ? '1st' : level === '2' ? '2nd' : level === '3' ? '3rd' : `${level}th`;
                                                         const spellNames = (spellIds as number[]).map(id => {
-                                                            const spell = SPELL_ID_LIST.find(s => s.id === id);
-                                                            const spellName = spell?.name || `Unknown Spell (${id})`;
+                                                            const spellName = getSpellNameFromCache(queryClient, id) || `Unknown Spell (${id})`;
                                                             return (
-                                                                <Link key={id} to={`/spells/${id}`} className="entity-link">
+                                                                <EntityLink key={id} entityType="spell" entityId={id} href={`/spells/${id}`}>
                                                                     {spellName}
-                                                                </Link>
+                                                                </EntityLink>
                                                             );
                                                         });
                                                         return (
@@ -212,13 +211,12 @@ export function ClassDisplay({
                                         <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
                                             <span className="text-sm">
                                                 {removedSpellIds.map((id, index) => {
-                                                    const spell = SPELL_ID_LIST.find(s => s.id === id);
-                                                    const spellName = spell?.name || `Unknown Spell (${id})`;
+                                                    const spellName = getSpellNameFromCache(queryClient, id) || `Unknown Spell (${id})`;
                                                     return (
                                                         <React.Fragment key={id}>
-                                                            <Link to={`/spells/${id}`} className="entity-link">
+                                                            <EntityLink entityType="spell" entityId={id} href={`/spells/${id}`}>
                                                                 {spellName}
-                                                            </Link>
+                                                            </EntityLink>
                                                             {index < removedSpellIds.length - 1 && ', '}
                                                         </React.Fragment>
                                                     );

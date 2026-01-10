@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { DomainDisplay } from '@/features/domain/DomainDisplay';
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
+import { EntityLink } from '@/components/entity-link';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
@@ -356,7 +357,20 @@ function CompanionDisplayWrapper({ companionId, choiceType, showHeader: _showHea
     return (
         <div className="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
             <h4 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-2">{companionTypeName}</h4>
-            <p className="text-indigo-600 dark:text-indigo-300 mb-2">{companionName}</p>
+            <p className="text-indigo-600 dark:text-indigo-300 mb-2">
+                {companion.monsterId && companion.monster ? (
+                    <EntityLink
+                        entityType="monster"
+                        entityId={companion.monsterId}
+                        href={`/monsters/${companion.monsterId}`}
+                        className="text-indigo-600 dark:text-indigo-300 hover:underline"
+                    >
+                        {companionName}
+                    </EntityLink>
+                ) : (
+                    companionName
+                )}
+            </p>
             {choiceType === EntityAppliesToType.Familiar && benefitProgression && benefitProgression.entities && benefitProgression.entities.length > 0 && (
                 <div className="mt-3">
                     <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200 mb-2">Benefits:</p>

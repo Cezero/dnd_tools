@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { QueryResponseSchema } from './query.js';
 
 export const BaseSourceBookSchema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -6,11 +7,31 @@ export const BaseSourceBookSchema = z.object({
     releaseDate: z.date().nullable(),
     editionId: z.number().int().positive('Edition ID must be a positive integer').nullable(),
     description: z.string().nullable(),
-    isVisible: z.boolean().default(true),
+    isVisible: z.boolean().default(false),
+    settingId: z.number().int().positive('Setting ID must be a positive integer').nullable(),
+    hasClasses: z.boolean().default(false),
+    hasSpells: z.boolean().default(false),
+    hasRaces: z.boolean().default(false),
+    hasDomains: z.boolean().default(false),
+    hasDeities: z.boolean().default(false),
+    hasItems: z.boolean().default(false),
 });
 
 export const SourceBookSchema = BaseSourceBookSchema.extend({
     id: z.number().int().positive('Source book ID must be a positive integer'),
+});
+
+/**
+ * Thin cache schema for SourceBook - includes only essential fields for lookups
+ * Excludes: releaseDate, description (large text fields)
+ */
+export const SourceBookCacheSchema = SourceBookSchema.omit({
+    releaseDate: true,
+    description: true,
+});
+
+export const SourceBookCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(SourceBookCacheSchema),
 });
 
 export const SourceBookWithSpellsSchema = SourceBookSchema.extend({
@@ -34,3 +55,5 @@ export type SourceBook = z.infer<typeof SourceBookSchema>;
 export type SourceMap = z.infer<typeof SourceMapSchema>;
 export type SourceBookWithSpellsResponse = z.infer<typeof SourceBookWithSpellsSchema>;
 export type SourceBookIdParamRequest = z.infer<typeof SourceBookIdParamSchema>;
+export type SourceBookCacheEntry = z.infer<typeof SourceBookCacheSchema>;
+export type SourceBookCacheResponse = z.infer<typeof SourceBookCacheResponseSchema>;

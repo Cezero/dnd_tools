@@ -13,7 +13,7 @@ import { SourceEditor } from '@/components/forms/SourceEditor';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { useCacheFunctions } from '@/services/cache';
 import { DeityQueryHooks } from '@/services/query/DeityQueryHooks';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import { CreateDeityRequest, UpdateDeityRequest, UpdateDeitySchema, CreateDeitySchema } from '@shared/schema';
 import { EDITION_LIST, ALIGNMENT_LIST, AlignmentId, EditionId, SourceType, PANTHEON_LIST, ITEM_TYPE_ENUM, CoreComponent } from '@shared/static-data';
 
@@ -115,22 +115,32 @@ export function DeityEdit() {
     useEffect(() => {
         const fetchWeapons = async () => {
             try {
-                // For GET requests with requestSchema, pass the query object directly (not wrapped in requestData)
-                const weapons = await ItemQueryHooks.itemQueryQueryFn({
-                    queryType: 'byType',
-                    typeId: ITEM_TYPE_ENUM.Weapon.toString()
-                });
-                setWeaponsData(weapons);
-                if (weapons?.results && Array.isArray(weapons.results)) {
+                const cacheData = await CacheQueryHooks.getItemsCache();
+                if (cacheData?.results) {
+                    const weapons = cacheData.results.filter(item => 
+                        item.typeId === ITEM_TYPE_ENUM.Weapon
+                    );
+                    // Transform items to match expected format
+                    const weaponsResponse = {
+                        results: weapons.map(w => ({
+                            id: w.id,
+                            name: w.name,
+                            typeId: w.typeId,
+                            weapon: w.weaponCategory ? { category: w.weaponCategory } : null,
+                            armor: null,
+                        })),
+                        total: weapons.length,
+                    };
+                    setWeaponsData(weaponsResponse);
                     // Transform items to CoreComponent format
-                    const weaponComponents: CoreComponent[] = weapons.results.map(item => ({
+                    const weaponComponents: CoreComponent[] = weapons.map(item => ({
                         id: item.id,
                         name: item.name,
                         abbreviation: item.name // Use name as abbreviation if needed
                     }));
                     setWeapons(weaponComponents);
                 } else {
-                    console.warn('No weapons found in response:', weapons);
+                    console.warn('No weapons found in cache');
                     setWeapons([]);
                 }
             } catch (error) {

@@ -1,3 +1,4 @@
 export { EntityTooltip } from './EntityTooltip';
 export { SpellTooltip } from './SpellTooltip';
-export type { EntityType, EntityTooltipProps, SpellTooltipProps } from './types';
+export { MonsterTooltip } from './MonsterTooltip';
+export type { EntityType, EntityTooltipProps, SpellTooltipProps, MonsterTooltipProps } from './types';

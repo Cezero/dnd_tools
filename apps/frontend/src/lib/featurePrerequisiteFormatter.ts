@@ -1,7 +1,10 @@
+import type { QueryClient } from '@tanstack/react-query';
+
+import { getSkillNameFromCache } from '@/services/cache/IdMapHelpers';
+
 import { FeaturePrerequisite } from '@shared/schema';
 import {
     FeaturePrerequisiteType,
-    SKILL_MAP,
     ABILITY_MAP,
     SIZE_LIST,
     PROFICIENCY_TYPE_LIST,
@@ -13,11 +16,14 @@ import {
 export const formatFeaturePrerequisite = (
     prereq: FeaturePrerequisite,
     getFeatNameById?: (id: number) => Promise<string | null>,
-    getFeatureNameById?: (id: number) => Promise<string | null>
+    getFeatureNameById?: (id: number) => Promise<string | null>,
+    queryClient?: QueryClient
 ): string => {
     switch (prereq.type) {
         case FeaturePrerequisiteType.SkillRanks: {
-            const skillName = prereq.appliesToId ? SKILL_MAP[prereq.appliesToId]?.name || 'Unknown Skill' : 'Skill';
+            const skillName = prereq.appliesToId && queryClient
+                ? getSkillNameFromCache(queryClient, prereq.appliesToId) || 'Unknown Skill'
+                : prereq.appliesToId ? 'Unknown Skill' : 'Skill';
             return `${skillName} ${prereq.minValue} ranks`;
         }
         case FeaturePrerequisiteType.AbilityScore: {
@@ -64,11 +70,11 @@ export const formatFeaturePrerequisite = (
  * Format an array of FeaturePrerequisite objects for display
  * Returns a single comma-separated string (for simple display)
  */
-export const formatPrerequisites = (prerequisites: FeaturePrerequisite[]): string => {
+export const formatPrerequisites = (prerequisites: FeaturePrerequisite[], queryClient?: QueryClient): string => {
     if (!prerequisites || prerequisites.length === 0) return 'None';
 
     return prerequisites.map((prereq, index) => {
-        const text = formatFeaturePrerequisite(prereq);
+        const text = formatFeaturePrerequisite(prereq, undefined, undefined, queryClient);
         return index === prerequisites.length - 1 ? text : text + ', ';
     }).join('');
 };
@@ -81,12 +87,13 @@ export const formatPrerequisites = (prerequisites: FeaturePrerequisite[]): strin
 export const formatFeaturePrerequisites = async (
     prerequisites: FeaturePrerequisite[],
     getFeatNameById?: (id: number) => Promise<string | null>,
-    getFeatureNameById?: (id: number) => Promise<string | null>
+    getFeatureNameById?: (id: number) => Promise<string | null>,
+    queryClient?: QueryClient
 ): Promise<string[]> => {
     const formattedTexts: string[] = [];
 
     for (const prereq of prerequisites) {
-        let text = formatFeaturePrerequisite(prereq, getFeatNameById, getFeatureNameById);
+        let text = formatFeaturePrerequisite(prereq, getFeatNameById, getFeatureNameById, queryClient);
 
         // Resolve Feat names if needed
         if (prereq.type === FeaturePrerequisiteType.Feat && prereq.appliesToId && getFeatNameById) {

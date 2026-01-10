@@ -420,6 +420,51 @@ export function GenericList<T>({
         }
     };
 
+    // Helper function to check if a value is a primitive type (string, number, boolean, null, undefined)
+    const isPrimitive = (value: unknown): boolean => {
+        return value === null || value === undefined ||
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean';
+    };
+
+    // Helper function to check if a React element is already a link-like component
+    const isLinkElement = (element: React.ReactElement): boolean => {
+        // Check if it's an <a> tag
+        if (element.type === 'a') {
+            return true;
+        }
+        // Check if it has href or onClick props (like EntityLink or other link components)
+        if (element.props && typeof element.props === 'object' && ('href' in element.props || 'onClick' in element.props)) {
+            return true;
+        }
+        // Check if it's a component with a displayName that suggests it's a link
+        if (typeof element.type === 'function') {
+            const componentType = element.type as { displayName?: string; name?: string };
+            if (componentType.displayName === 'EntityLink' ||
+                componentType.name === 'EntityLink' ||
+                componentType.displayName === 'Link' ||
+                componentType.name === 'Link') {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // Helper function to determine if we should apply detail link
+    const shouldApplyDetailLink = (cellValue: unknown): boolean => {
+        // If it's a primitive, we should apply the link
+        if (isPrimitive(cellValue)) {
+            return true;
+        }
+        // If it's a React element, only apply link if it's not already a link
+        if (React.isValidElement(cellValue)) {
+            return !isLinkElement(cellValue);
+        }
+        // For other types, don't apply link (shouldn't happen in practice)
+        return false;
+    };
+
     // Helper function to find route by type
     const findRouteByType = (routeType: 'detail' | 'edit' | 'delete') => {
         const matchingRoutes = routes?.filter(route => route.routeType === routeType) || [];
@@ -706,8 +751,8 @@ export function GenericList<T>({
                                                         let finalCellValue = cellValue;
 
                                                         // Apply detail navigation to required column
-                                                        // Skip if cellValue is already a React element (like EntityLink)
-                                                        if (isRequiredColumn && (routes || functions?.detail) && !React.isValidElement(cellValue)) {
+                                                        // Apply link if cellValue is a primitive or not already a link-like element
+                                                        if (isRequiredColumn && (routes || functions?.detail) && shouldApplyDetailLink(cellValue)) {
                                                             finalCellValue = renderDetailCell(row.original, cell);
                                                         }
 

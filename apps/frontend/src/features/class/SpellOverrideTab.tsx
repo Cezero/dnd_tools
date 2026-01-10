@@ -1,11 +1,13 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { SpellSearchInput } from '@/components/forms/SpellSearchInput';
 import { SpellApi } from '@/features/spell/SpellApi';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
+import { getSpellNameFromCache } from '@/services/cache/IdMapHelpers';
 import { ClassVariantSpellOverrideCreate, Spell } from '@shared/schema';
-import { SPELL_ID_LIST } from '@shared/static-data';
 
 import type { ClassTabProps } from './tabs/types';
 
@@ -21,10 +23,14 @@ export function SpellOverrideTab({
     onSpellOverridesUpdate,
     isLoading = false
 }: SpellOverrideTabProps) {
+    const queryClient = useQueryClient();
     const [baseClassSpells, setBaseClassSpells] = useState<Spell[]>([]);
     const [loadingSpells, setLoadingSpells] = useState(false);
     const [newSpellLevel, setNewSpellLevel] = useState<number | null>(null);
     const [newSpellId, setNewSpellId] = useState<number | null>(null);
+
+    // Fetch spell cache for filtering
+    const { data: spellsCache } = CacheQueryHooks.useSpellsCache();
 
     // Load base class spells when base class changes
     useEffect(() => {
@@ -59,15 +65,21 @@ export function SpellOverrideTab({
         }
     }, [newSpellLevel, newSpellId, spellOverrides, onSpellOverridesUpdate]);
 
-    // Filter spells for add input (exclude base class spells)
-    const availableSpellsForAdding = SPELL_ID_LIST.filter(spell =>
-        !baseClassSpells.some(baseSpell => baseSpell.id === spell.id)
-    );
+    // Filter spells for add input (exclude base class spells) - use cache
+    const availableSpellsForAdding = useMemo(() => {
+        if (!spellsCache?.results) return [];
+        return spellsCache.results.filter(spell =>
+            !baseClassSpells.some(baseSpell => baseSpell.id === spell.id)
+        );
+    }, [spellsCache?.results, baseClassSpells]);
 
-    // Filter spells for remove input (only base class spells)
-    const availableSpellsForRemoving = SPELL_ID_LIST.filter(spell =>
-        baseClassSpells.some(baseSpell => baseSpell.id === spell.id)
-    );
+    // Filter spells for remove input (only base class spells) - use cache
+    const availableSpellsForRemoving = useMemo(() => {
+        if (!spellsCache?.results) return [];
+        return spellsCache.results.filter(spell =>
+            baseClassSpells.some(baseSpell => baseSpell.id === spell.id)
+        );
+    }, [spellsCache?.results, baseClassSpells]);
 
     // Separate additions and removals
     const additions = spellOverrides.filter(override => override.level > 0);
@@ -94,8 +106,7 @@ export function SpellOverrideTab({
     };
 
     const getSpellName = (spellId: number) => {
-        const spell = SPELL_ID_LIST.find(s => s.id === spellId);
-        return spell?.name || `Unknown Spell (${spellId})`;
+        return getSpellNameFromCache(queryClient, spellId) || `Unknown Spell (${spellId})`;
     };
 
     if (loadingSpells) {

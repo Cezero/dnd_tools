@@ -2,8 +2,8 @@ import { Dialog } from '@base-ui-components/react/dialog';
 import React, { useState, useEffect, useMemo } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import type { Feat, FeatureProgression, ItemWithDetails } from '@shared/schema';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
+import type { FeatCacheEntry, FeatureProgression, ItemWithDetails } from '@shared/schema';
 import { ITEM_TYPE_ENUM, FeaturePrerequisiteType, FeatureSourceType, CoreComponent } from '@shared/static-data';
 import { extractProficiencies } from '@/lib/attack-calculation';
 
@@ -11,7 +11,7 @@ interface FeatSubIdSelectionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: (weaponId: number) => void;
-    feat: Feat | null;
+    feat: FeatCacheEntry | null;
     resolvedProgressions: FeatureProgression[];
 }
 
@@ -47,9 +47,9 @@ export function FeatSubIdSelectionModal({
     // Check if feat has proficiency prerequisite from Feature system
     const hasProficiencyPrereq = useMemo(() => {
         if (!featProgressions.length) return false;
-        
+
         // Check if any progression has a proficiency prerequisite
-        return featProgressions.some(progression => 
+        return featProgressions.some(progression =>
             progression.feature?.prerequisites?.some(
                 prereq => prereq.type === FeaturePrerequisiteType.Proficiency
             )
@@ -62,13 +62,18 @@ export function FeatSubIdSelectionModal({
             setIsLoadingWeapons(true);
             const fetchWeapons = async () => {
                 try {
-                    const weaponsResponse = await ItemQueryHooks.itemQueryQueryFn({
-                        queryType: 'byType',
-                        typeId: ITEM_TYPE_ENUM.Weapon.toString()
-                    });
-
-                    if (weaponsResponse?.results && Array.isArray(weaponsResponse.results)) {
-                        setWeaponItems(weaponsResponse.results);
+                    const cacheData = await CacheQueryHooks.getItemsCache();
+                    if (cacheData?.results) {
+                        const weapons = cacheData.results.filter(item =>
+                            item.typeId === ITEM_TYPE_ENUM.Weapon
+                        );
+                        setWeaponItems(weapons.map(w => ({
+                            id: w.id,
+                            name: w.name,
+                            typeId: w.typeId,
+                            weapon: w.weaponCategory ? { category: w.weaponCategory } : null,
+                            armor: null,
+                        })));
                     } else {
                         setWeaponItems([]);
                     }
@@ -157,7 +162,7 @@ export function FeatSubIdSelectionModal({
                             </div>
                         ) : filteredWeapons.length === 0 ? (
                             <div className="py-4 text-center text-gray-500 dark:text-gray-400">
-                                {hasProficiencyPrereq 
+                                {hasProficiencyPrereq
                                     ? 'No weapons available. You must be proficient with a weapon to select this feat.'
                                     : 'No weapons available.'}
                             </div>

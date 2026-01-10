@@ -649,7 +649,14 @@ model SourceBook {
   releaseDate  DateTime?
   editionId    Int
   description  String?   @db.Text
-  isVisible    Boolean   @default(true)
+  isVisible    Boolean   @default(false)
+  settingId    Int?      // Reference to Setting enum (nullable for books not tied to a setting)
+  hasClasses   Boolean   @default(false) // Flag indicating book contains class options
+  hasSpells    Boolean   @default(false) // Flag indicating book contains spells
+  hasRaces     Boolean   @default(false) // Flag indicating book contains race options
+  hasDomains   Boolean   @default(false) // Flag indicating book contains domain options
+  hasDeities   Boolean   @default(false) // Flag indicating book contains deity options
+  hasItems     Boolean   @default(false) // Flag indicating book contains item options
 
   classes                    ClassSourceMap[]
   races                      RaceSourceMap[]

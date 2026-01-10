@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import type { EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import { calculatorRegistry } from '../calculator-registry';
@@ -54,7 +55,7 @@ export class RegistryManager {
     /**
      * Apply a label using the labeler registry
      */
-    applyLabel(formattedValue: string, entity: CalculatedEntity, showLabels: boolean) {
-        return labelerRegistry.applyLabel(formattedValue, entity, showLabels);
+    applyLabel(formattedValue: string, entity: CalculatedEntity, showLabels: boolean, queryClient?: QueryClient) {
+        return labelerRegistry.applyLabel(formattedValue, entity, showLabels, queryClient);
     }
 }

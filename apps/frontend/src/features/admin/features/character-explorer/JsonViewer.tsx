@@ -60,6 +60,15 @@ export function JsonViewer({ data, loading = false, error = null }: JsonViewerPr
         );
     }
 
+    // Ensure data is an object for JsonView
+    if (typeof data !== 'object') {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <div className="text-gray-600 dark:text-gray-400">Data must be an object</div>
+            </div>
+        );
+    }
+
     // Light theme colors
     const lightTheme = {
         '--w-rjv-color': '#000000',
@@ -122,9 +131,8 @@ export function JsonViewer({ data, loading = false, error = null }: JsonViewerPr
             </style>
             <div className={`w-full h-full overflow-auto max-h-[calc(100vh-300px)] border border-gray-300 dark:border-gray-600 rounded-md p-4 ${themeId}`}>
                 <JsonView
-                    value={data}
-                    style={themeStyles}
-                    theme="default"
+                    value={data as object}
+                    style={themeStyles as React.CSSProperties}
                 />
             </div>
         </>

@@ -98,8 +98,8 @@ export const useCacheFunctions = () => {
     const getFeatNameById = async (id: number): Promise<FeatCacheEntry | undefined> => {
         try {
             const featsData = await queryClient.fetchQuery({
-                queryKey: ['feats-cache', { queryType: 'all' }],
-                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn({ queryType: 'all' }),
+                queryKey: ['feats-cache'],
+                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn(),
                 staleTime: Infinity,
                 gcTime: Infinity,
             });
@@ -113,8 +113,8 @@ export const useCacheFunctions = () => {
         try {
             // Fetch all feats cache (proficiency feats are now identified via FeatureProgressions)
             const allFeatsData = await queryClient.fetchQuery({
-                queryKey: ['feats-cache', { queryType: 'all' }],
-                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn({ queryType: 'all' }),
+                queryKey: ['feats-cache'],
+                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn(),
                 staleTime: Infinity,
                 gcTime: Infinity,
             });
@@ -241,8 +241,8 @@ export const useCacheFunctions = () => {
     const getFeatSelectFull = async (): Promise<CacheEntryAsCoreComponent<FeatCacheEntry>[]> => {
         try {
             const featsData = await queryClient.fetchQuery({
-                queryKey: ['feats-cache', { queryType: 'all' }],
-                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn({ queryType: 'all' }),
+                queryKey: ['feats-cache'],
+                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn(),
                 staleTime: Infinity,
                 gcTime: Infinity,
             });
@@ -261,8 +261,8 @@ export const useCacheFunctions = () => {
         try {
             // Fetch all feats cache (proficiency feats are now identified via FeatureProgressions)
             const allFeatsData = await queryClient.fetchQuery({
-                queryKey: ['feats-cache', { queryType: 'all' }],
-                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn({ queryType: 'all' }),
+                queryKey: ['feats-cache'],
+                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn(),
                 staleTime: Infinity,
                 gcTime: Infinity,
             });

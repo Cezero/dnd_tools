@@ -100,44 +100,6 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
         prevAppliesToRef.current = currentAppliesTo;
     }, [entity?.appliesTo, entity, index, setFormData]);
 
-    // Smart fetching: Load full entity data when appliesTo/appliesToId changes
-    useEffect(() => {
-        const fetchFullEntityData = async () => {
-            if (!entity.appliesToId) return;
-
-            try {
-                if (entity.appliesTo === EntityAppliesToType.Feat) {
-                    // Feat data is no longer included in entity - use cache lookups when needed
-                    // This is handled by formatters and other components via cache helpers
-                } else if (entity.appliesTo === EntityAppliesToType.WeaponFamiliarity) {
-                    // Check if we already have full weapon data
-                    if (entity.item && entity.item.id === entity.appliesToId) {
-                        return; // Already have the full data
-                    }
-
-                    // For now, we'll skip the API call and let the component handle data fetching
-                    // This should be refactored to use query hooks at the component level
-                    console.log('Item data fetching should be handled by query hooks at component level');
-                } else if (entity.appliesTo === EntityAppliesToType.Domain) {
-                    // Check if we already have full domain data
-                    if (entity.domain && entity.domain.id === entity.appliesToId) {
-                        return; // Already have the full data
-                    }
-
-                    // For now, we'll skip the API call and let the component handle data fetching
-                    // This should be refactored to use query hooks at the component level
-                    console.log('Domain data fetching should be handled by query hooks at component level');
-                }
-                // Add other entity type fetching logic as needed
-            } catch (error) {
-                console.error('Failed to fetch full entity data:', error);
-            }
-        };
-
-        fetchFullEntityData();
-    }, [entity.appliesTo, entity.appliesToId, entity.feat, entity.item, entity.domain, index, setFormData]);
-
-
     // Safety check - if entity doesn't exist, don't render
     if (!entity) {
         return null;
@@ -278,8 +240,8 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
 
                         // For other types (like Craft/Knowledge skills, Attack bonuses), use existing logic
                         if (subIdOptions.length > 0) {
-                            const label = entity.appliesTo === EntityAppliesToType.Attack 
-                                ? "Attack Bonus Applies To" 
+                            const label = entity.appliesTo === EntityAppliesToType.Attack
+                                ? "Attack Bonus Applies To"
                                 : "Applies To Sub ID";
                             return (
                                 <ValidatedCustomSelect

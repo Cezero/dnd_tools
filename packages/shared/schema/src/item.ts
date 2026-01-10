@@ -206,6 +206,41 @@ export type ItemApplicableType = z.infer<typeof ItemApplicableTypeEnumSchema>;
 export type CreateItemTemplatePropertyRequest = z.infer<typeof CreateItemTemplatePropertySchema>;
 export type UpdateItemTemplatePropertyRequest = z.infer<typeof UpdateItemTemplatePropertySchema>;
 
+/**
+ * Item Cache Schema
+ * 
+ * Lightweight schema for item cache endpoint, optimized for dropdowns, select components, and client-side filtering.
+ * 
+ * **Omitted Fields**: Excludes heavy fields (description, cost, weight, quantity, sizeId) to minimize payload size.
+ * 
+ * **Extended Fields**: Includes weaponCategory and armorCategory to enable client-side filtering by proficiency type.
+ * These fields were added to eliminate the need for server-side query endpoints (e.g., /items/query).
+ * 
+ * **Usage**: Used by `/items/cache` endpoint and client-side filtering operations in FeatureSystemService.
+ * 
+ * **Relationship to ItemWithDetailsSchema**: This is a subset of ItemWithDetailsSchema. For full item details
+ * including weapon/armor objects, use the `/items` endpoint which returns ItemWithDetailsSchema.
+ * 
+ * @see ItemWithDetailsSchema for complete item data structure
+ * @see [Query Hooks and Caching Architecture](../../docs/application-overview/query-hooks-and-caching.md)
+ */
+export const ItemCacheSchema = ItemSchema.omit({
+    description: true,
+    cost: true,
+    weight: true,
+    quantity: true,
+    sizeId: true,
+}).extend({
+    weaponCategory: z.number().int().nullable(),
+    armorCategory: z.number().int().nullable(),
+});
+
+export const ItemCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(ItemCacheSchema),
+});
+
 export type CreateItemRequest = z.infer<typeof CreateItemSchema>;
 export type UpdateItemRequest = z.infer<typeof UpdateItemSchema>;
 export type ItemQueryRequest = z.infer<typeof ItemQuerySchema>;
+export type ItemCacheResponse = z.infer<typeof ItemCacheResponseSchema>;
+export type ItemCacheEntry = z.infer<typeof ItemCacheSchema>;

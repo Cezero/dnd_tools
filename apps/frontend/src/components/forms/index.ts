@@ -19,7 +19,6 @@ export {
     CustomCheckbox,
     type CustomSelectProps,
     type CustomCheckboxProps,
-    type SelectOption,
 } from './FormComponents';
 
 export {

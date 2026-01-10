@@ -18,10 +18,18 @@ function LayoutComponent({ auth }: LayoutProps): React.JSX.Element {
     const [sidebarExpanded, setSidebarExpanded] = useState<boolean>(true);
     const [sidebarHidden, setSidebarHidden] = useState<boolean>(false);
 
+    // Convert UserDiceConfig to UpdateUserDiceConfigRequest if valid
+    const userDiceConfig = auth.userDiceConfig && auth.userDiceConfig.diceConfigBase !== null
+        ? {
+            diceConfigBase: auth.userDiceConfig.diceConfigBase,
+            diceConfigOverrides: auth.userDiceConfig.diceConfigOverrides
+        }
+        : null;
+
     return (
         <ToastProvider>
             <LogPanelProvider>
-                <DiceBoxProvider userDiceConfig={auth.userDiceConfig}>
+                <DiceBoxProvider userDiceConfig={userDiceConfig}>
                     <div className="h-screen flex flex-col">
                         <NavBar />
                         <div>
