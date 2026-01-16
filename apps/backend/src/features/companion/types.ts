@@ -9,6 +9,7 @@ import {
     CreateCharacterCompanionRequest,
     UpdateCharacterCompanionRequest,
     GetAllCharacterCompanionsResponse,
+    CompanionCacheResponse,
 } from '@shared/schema';
 
 export interface CompanionService {
@@ -21,5 +22,6 @@ export interface CompanionService {
     createCharacterCompanion(data: CreateCharacterCompanionRequest): Promise<CreateResponse>;
     updateCharacterCompanion(data: UpdateCharacterCompanionRequest, query: { id: number }): Promise<UpdateResponse>;
     deleteCharacterCompanion(query: { id: number }): Promise<UpdateResponse>;
+    getCompanionCache(): Promise<CompanionCacheResponse>;
 }
 

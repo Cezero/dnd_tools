@@ -20,3 +20,9 @@ export interface MonsterTooltipProps {
     children: React.ReactNode;
     href?: string;
 }
+
+export interface ItemTooltipProps {
+    itemId: number;
+    children: React.ReactNode;
+    href?: string;
+}

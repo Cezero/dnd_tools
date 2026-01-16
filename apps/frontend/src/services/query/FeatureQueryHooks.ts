@@ -2,6 +2,7 @@ import {
     FeatureQuerySchema,
     GetAllFeaturesResponseSchema,
     FeatureIdParamSchema,
+    EditionIdParamSchema,
     GetFeatureResponseSchema,
     CreateFeatureSchema,
     UpdateFeatureSchema,
@@ -174,4 +175,16 @@ export const FeatureQueryHooks = {
             return ['features', 'by-feat', 'progressions', typedParams?.pathParams?.id];
         },
     }).fetch({ pathParams: { id: featId } }),
+
+    getFeatureProgressionsByEditionId: (editionId: number) => createQueryHooks({
+        path: '/features/by-edition/:editionId/progressions',
+        method: 'GET',
+        paramsSchema: EditionIdParamSchema,
+        responseSchema: GetFeatureProgressionsResponseSchema,
+        queryKey: 'features',
+        queryKeyBuilder: (params) => {
+            const typedParams = params as { pathParams?: { editionId?: number } } | undefined;
+            return ['features', 'by-edition', 'progressions', typedParams?.pathParams?.editionId];
+        },
+    }).fetch({ pathParams: { editionId } }),
 };

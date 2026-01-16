@@ -6,10 +6,10 @@ import { DetailPage } from '@/components/common/DetailPage';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
+import { getSourceDisplay } from '@/services/cache';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import type { FeatureProgression } from '@shared/schema';
 import { FEAT_TYPES, EDITION_MAP, FeatureSourceType, DisplayType } from '@shared/static-data';
-import { GetSourceDisplay } from '@shared/utils';
 
 import { formatFeatureEntity } from './FeatUtil';
 
@@ -135,7 +135,7 @@ export function FeatDetail() {
                     <div className="text-right">
                         <p><strong>Edition:</strong> {EDITION_MAP[feat.editionId]?.abbreviation}</p>
                         {feat.sourceBookInfo && feat.sourceBookInfo.length > 0 && (
-                            <p><strong>Source:</strong> {GetSourceDisplay(feat.sourceBookInfo, true)}</p>
+                            <p><strong>Source:</strong> {getSourceDisplay(feat.sourceBookInfo, true)}</p>
                         )}
                     </div>
                 </div>

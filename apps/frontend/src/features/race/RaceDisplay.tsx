@@ -1,13 +1,13 @@
 import pluralize from 'pluralize';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { useCacheFunctions } from '@/services/cache';
+import { useCacheFunctions, getSourceDisplay } from '@/services/cache';
 import { Race } from '@shared/schema';
 import { DisplayType, SIZE_MAP, EDITION_MAP, SpecialFeatureId } from '@shared/static-data';
-import { GetSourceDisplay } from '@shared/utils';
 
 
 interface RaceDisplayProps {
@@ -32,7 +32,22 @@ export function RaceDisplay({
     // Precache all entities referenced in feature progressions
     usePrecacheFeatureEntities(race?.features);
 
-    const { getClassNameById } = useCacheFunctions();
+    // Extract mechanics from feature progressions
+    const mechanics = useMemo(() => {
+        if (race.features && race.features.length > 0) {
+            const raceId = (race as { id?: number }).id;
+            return extractRaceMechanics(race.features, raceId);
+        }
+        // Return null values if no features
+        return {
+            sizeId: null,
+            speed: null,
+            favoredClassId: null,
+            levelAdjustment: null,
+        };
+    }, [race]);
+
+    const { getClassSummaryById } = useCacheFunctions();
     const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
     const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1";
 
@@ -133,7 +148,7 @@ export function RaceDisplay({
                             <div className="text-right">
                                 <p><strong>Edition:</strong> {EDITION_MAP[race.editionId]?.abbreviation}</p>
                                 {race.sourceBookInfo && race.sourceBookInfo.length > 0 && (
-                                    <p><strong>Source:</strong> {GetSourceDisplay(race.sourceBookInfo, true)}</p>
+                                    <p><strong>Source:</strong> {getSourceDisplay(race.sourceBookInfo, true)}</p>
                                 )}
                                 <p><strong>Display:</strong> {race.isVisible ? 'Yes' : 'No'}</p>
                             </div>
@@ -142,10 +157,10 @@ export function RaceDisplay({
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <p><strong>Size:</strong> {SIZE_MAP[race.sizeId]?.name}</p>
-                            <p><strong>Speed:</strong> {race.speed}</p>
-                            <p><strong>Level Adjustment:</strong> {race.levelAdjustment && race.levelAdjustment > 0 ? `+${race.levelAdjustment}` : (race.levelAdjustment || 0)}</p>
-                            <p><strong>Favored Class:</strong> {race.favoredClassId === -1 ? 'Any' : (getClassNameById(race.favoredClassId)?.name || 'Loading...')}</p>
+                            <p><strong>Size:</strong> {SIZE_MAP[mechanics.sizeId ?? 0]?.name}</p>
+                            <p><strong>Speed:</strong> {mechanics.speed ?? 0}</p>
+                            <p><strong>Level Adjustment:</strong> {mechanics.levelAdjustment && mechanics.levelAdjustment > 0 ? `+${mechanics.levelAdjustment}` : (mechanics.levelAdjustment || 0)}</p>
+                            <p><strong>Favored Class:</strong> {mechanics.favoredClassId === -1 ? 'Any' : (getClassSummaryById(mechanics.favoredClassId ?? 0)?.name || 'Loading...')}</p>
                         </div>
                         <div>
                             <p>

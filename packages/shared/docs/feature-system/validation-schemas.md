@@ -94,7 +94,12 @@ The main schema for feature progression validation, used for bulk operations and
 - **`sourceType`**: Required integer, 0-1 range (0=Race, 1=Class)
 - **`level`**: Required integer, 1-20 range for character level
 - **`featureId`**: Required positive integer linking to the feature
-- **`classId`/`raceId`**: Optional positive integers (mutually exclusive)
+- **`variantOverrideId`**: Optional integer for class variant overrides
+- **`domainId`**: Optional integer for domain-granted features
+- **`featId`**: Optional integer for feat-granted features
+- **`companionId`**: Optional integer for companion-granted features
+- **`classes`**: Optional array of class mappings via many-to-many relationship (for shared progressions)
+- **`races`**: Optional array of race mappings via many-to-many relationship (for shared progressions)
 - **`feature`**: Optional nested feature schema for complete data
 - **`class`**: Optional class summary object for display
 - **`entities`**: Optional array of feature entity schemas (unified approach)

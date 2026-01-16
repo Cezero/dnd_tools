@@ -1,29 +1,31 @@
 import { z } from 'zod';
+
+import { commonValidations, numericParam } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 
 export const SkillIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export const SkillSchema = z.object({
-    id: z.number().int().positive('Skill ID must be a positive integer'),
-    name: z.string().min(1, 'Skill name is required').max(100, 'Skill name must be less than 100 characters').trim(),
-    abilityId: z.number().int().min(0, 'Ability ID must be 0 or higher'),
+    id: commonValidations.positiveInt('Skill ID'),
+    name: commonValidations.name(),
+    abilityId: commonValidations.nonNegativeInt('Ability ID'),
     trainedOnly: z.boolean().nullable(),
     affectedByArmor: z.boolean().default(false),
     isAnalog: z.boolean().default(false),
     description: z.string().max(10000, 'Description must be less than 10000 characters').nullish(),
     checkDescription: z.string().max(10000, 'Check description must be less than 10000 characters').nullish(),
     actionDescription: z.string().max(10000, 'Action description must be less than 10000 characters').nullish(),
-    retryTypeId: z.number().int().min(0, 'Retry type ID must be 0 or higher').nullish(),
+    retryTypeId: commonValidations.nonNegativeInt('Retry type ID').nullish(),
     retryDescription: z.string().max(10000, 'Retry description must be less than 10000 characters').nullish(),
     specialNotes: z.string().max(10000, 'Special notes must be less than 10000 characters').nullish(),
     synergyNotes: z.string().max(10000, 'Synergy notes must be less than 10000 characters').nullish(),
     untrainedNotes: z.string().max(10000, 'Untrained notes must be less than 10000 characters').nullish(),
     restrictionNotes: z.string().max(10000, 'Restriction notes must be less than 10000 characters').nullish(),
     isVisible: z.boolean().default(true),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    editionId: commonValidations.positiveInt('Edition ID'),
     hasSubtypes: z.boolean().default(false),
     usesCustomSubtype: z.boolean().default(false),
     hasNoMaxRanks: z.boolean().default(false),
@@ -32,9 +34,9 @@ export const SkillSchema = z.object({
 });
 
 export const SkillSubtypeCacheSchema = z.object({
-    id: z.number().int().positive('Skill Subtype ID must be a positive integer'),
+    id: commonValidations.positiveInt('Skill Subtype ID'),
     name: z.string().min(1, 'Skill subtype name is required'),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    editionId: commonValidations.positiveInt('Edition ID'),
     isVisible: z.boolean().default(true),
 });
 

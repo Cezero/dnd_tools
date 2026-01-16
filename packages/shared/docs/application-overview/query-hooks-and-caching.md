@@ -106,6 +106,7 @@ Cache endpoints provide lightweight data structures optimized for dropdowns, sel
 - `/deities/cache` - Deity cache data
 - `/domains/cache` - Domain cache data
 - `/monsters/cache` - Monster cache data
+- `/companions/cache` - Companion cache data (includes monster names)
 - `/sourcebooks/cache` - Sourcebook cache data
 
 **When to Use Cache Endpoints**:

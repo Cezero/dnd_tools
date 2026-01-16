@@ -6,6 +6,8 @@ import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react'
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
 import { TabComponentProps, CharacterEditStateUpdateType } from '@/features/character/types';
+import { canSplitItem, getOccupiedLocations, getSplitTargetLocation, getSplitTargetLocationName, calculateSplitQuantities } from '@/features/character/utils/equipmentUtils';
+import { getTotalGoldInGp, convertGpToMoney, addGpToMoney, getItemCostInGp } from '@/features/character/utils/moneyUtils';
 import { useStartingGold } from '@/features/character/utils/startingGold';
 import { formatCostAsCurrency } from '@/features/item/utils';
 import { extractProficiencies } from '@/lib/attack-calculation';
@@ -15,51 +17,6 @@ import { CURRENCY_LIST, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TY
 
 import { EquipmentList } from '../components/EquipmentList';
 import type { EquipmentItem } from '../types';
-
-
-/**
- * Convert Money object to total gold pieces
- */
-function getTotalGoldInGp(money: { platinum: number; gold: number; silver: number; copper: number }): number {
-    const { platinum, gold, silver, copper } = money;
-    return platinum * 10 + gold + silver * 0.1 + copper * 0.01;
-}
-
-/**
- * Convert gold pieces to Money object, keeping gold as gold (no upconversion to platinum)
- */
-function convertGpToMoney(gp: number): { platinum: number; gold: number; silver: number; copper: number } {
-    const gold = Math.floor(gp);
-    const goldDecimal = gp - gold;
-    const silver = Math.floor(goldDecimal * 10);
-    const copper = Math.round((goldDecimal * 10 - silver) * 10);
-    return { platinum: 0, gold, silver, copper };
-}
-
-/**
- * Add gold pieces to existing money
- */
-function addGpToMoney(money: { platinum: number; gold: number; silver: number; copper: number }, gp: number): { platinum: number; gold: number; silver: number; copper: number } {
-    const totalGp = getTotalGoldInGp(money) + gp;
-    return convertGpToMoney(totalGp);
-}
-
-/**
- * Get item cost in gold pieces
- */
-function getItemCostInGp(item: ItemWithDetails): number {
-    if (!item.cost) {
-        return 0;
-    }
-    const costStr = typeof item.cost === 'string' ? item.cost : item.cost.toString();
-    return parseFloat(costStr) || 0;
-}
-
-/**
- * Extract proficiencies from resolved feature progressions
- * Returns weapon category IDs, armor category IDs, and specific item IDs
- */
-// extractProficiencies is now imported from shared attackCalculationService
 
 export function EquipmentTab({
     state,
@@ -393,19 +350,15 @@ export function EquipmentTab({
             size: 95,
             cell: info => {
                 const item = info.row.original;
-                // Find the first equipment item instance (since items are aggregated by itemId)
+                // Find the first equipment item instance (since items are aggregated by baseItemId)
                 // For now, we'll edit the first instance's location
                 const firstEquipmentItemId = item._equipmentItemIds?.[0] ?? item._equipmentItemId;
                 const equipmentItem = state.equipment.find(eq => eq.id === firstEquipmentItemId);
                 const currentLocation = equipmentItem?.location ?? null;
 
                 // Get all occupied locations (except 'carried' which allows multiple)
-                const occupiedLocations = new Set(
-                    state.equipment
-                        .filter(eq => eq.id !== equipmentItem?.id && eq.location !== null && eq.location !== LOCATION_ENUM.Carried)
-                        .map(eq => eq.location)
-                        .filter((loc): loc is number => loc !== null)
-                );
+                const excludeIds = equipmentItem ? new Set([equipmentItem.id]) : undefined;
+                const occupiedLocations = getOccupiedLocations(state.equipment, excludeIds);
 
                 return (
                     <CustomSelect
@@ -447,11 +400,8 @@ export function EquipmentTab({
                 const currentLocation = item._location ?? null;
                 const quantity = item._quantity;
 
-                // Show split button only if:
-                // - Quantity > 1
-                // - Location is Owned (null/0) or Carried (1)
-                const canSplit = quantity > 1 &&
-                    (currentLocation === null || currentLocation === LOCATION_ENUM.Owned || currentLocation === LOCATION_ENUM.Carried);
+                // Show split button only if quantity > 1 and in Owned or Carried location
+                const canSplit = canSplitItem(quantity, currentLocation);
 
                 if (!canSplit) {
                     return null;
@@ -506,13 +456,13 @@ export function EquipmentTab({
     }, [queryClient]);
 
     // Data fetcher for owned items - convert EquipmentItem[] to ItemWithDetails[] with equipment item ID
-    // Aggregates items with the same itemId and sums their quantities
+    // Aggregates items with the same baseItemId and sums their quantities
     // Use useCallback to ensure it updates when equipment changes
     const ownedItemsDataFetcher = useCallback(async () => {
-        // Only show items that were purchased (have itemId)
+        // Only show items that were purchased (have baseItemId)
         // Use ref to get the latest equipment state (avoids stale closure issues)
         const currentEquipment = equipmentRef.current;
-        const purchasedItems = currentEquipment.filter(eq => eq.itemId !== null);
+        const purchasedItems = currentEquipment.filter(eq => eq.baseItemId !== null);
 
         if (purchasedItems.length === 0) {
             return {
@@ -529,8 +479,8 @@ export function EquipmentTab({
             gcTime: 10 * 60 * 1000, // 10 minutes
         });
 
-        // Aggregate items by itemId and location (only group items with same location)
-        // Use a composite key: `${itemId}-${location ?? 'null'}`
+        // Aggregate items by baseItemId and location (only group items with same location)
+        // Use a composite key: `${baseItemId}-${location ?? 'null'}`
         const itemMap = new Map<string, {
             item: ItemWithDetails;
             quantity: number;
@@ -540,16 +490,16 @@ export function EquipmentTab({
         }>();
 
         for (const equipmentItem of purchasedItems) {
-            if (equipmentItem.itemId) {
-                const item = allItemsResult.results.find(i => i.id === equipmentItem.itemId);
+            if (equipmentItem.baseItemId) {
+                const item = allItemsResult.results.find(i => i.id === equipmentItem.baseItemId);
                 if (!item) {
                     continue;
                 }
                 const location = equipmentItem.location ?? null;
-                const key = `${equipmentItem.itemId}-${location ?? 'null'}`;
+                const key = `${equipmentItem.baseItemId}-${location ?? 'null'}`;
                 const existing = itemMap.get(key);
                 if (existing) {
-                    // Aggregate: sum quantities and collect equipment item IDs (same itemId and location)
+                    // Aggregate: sum quantities and collect equipment item IDs (same baseItemId and location)
                     existing.quantity += equipmentItem.quantity || 1;
                     existing.equipmentItemIds.push(equipmentItem.id);
                 } else {
@@ -593,7 +543,7 @@ export function EquipmentTab({
         // Add item to equipment
         const newItem: EquipmentItem = {
             id: Date.now(),
-            itemId: item.id,
+            baseItemId: item.id,
             costInGp: costInGp,
             quantity: 1,
             location: null,
@@ -645,12 +595,11 @@ export function EquipmentTab({
             splitItem._equipmentItemIds?.includes(eq.id) || eq.id === splitItem._equipmentItemId
         );
 
-        if (equipmentItems.length === 0 || !equipmentItems[0].itemId) return;
+        if (equipmentItems.length === 0 || !equipmentItems[0].baseItemId) return;
 
         const firstItem = equipmentItems[0];
         const totalQuantity = splitItem._quantity;
-        const keepQuantity = Math.max(1, Math.min(splitKeepQuantity, totalQuantity - 1));
-        const moveQuantity = totalQuantity - keepQuantity;
+        const { keepQuantity, moveQuantity } = calculateSplitQuantities(totalQuantity, splitKeepQuantity);
 
         if (moveQuantity <= 0) {
             setSplitDialogOpen(false);
@@ -659,9 +608,7 @@ export function EquipmentTab({
 
         // Use the location from the aggregated item (stored in _location)
         const currentLocation = splitItem._location ?? null;
-        const newLocation = currentLocation === null || currentLocation === LOCATION_ENUM.Owned
-            ? LOCATION_ENUM.Carried
-            : LOCATION_ENUM.Owned;
+        const newLocation = getSplitTargetLocation(currentLocation);
 
         // Remove all existing items that are part of this aggregated group
         const otherEquipment = state.equipment.filter(eq =>
@@ -671,7 +618,7 @@ export function EquipmentTab({
         // Create two new items: one for keep, one for move
         const keepItem: EquipmentItem = {
             id: Date.now(),
-            itemId: firstItem.itemId,
+            baseItemId: firstItem.baseItemId,
             costInGp: firstItem.costInGp,
             quantity: keepQuantity,
             location: currentLocation,
@@ -680,7 +627,7 @@ export function EquipmentTab({
 
         const moveItem: EquipmentItem = {
             id: Date.now() + 1,
-            itemId: firstItem.itemId,
+            baseItemId: firstItem.baseItemId,
             costInGp: firstItem.costInGp,
             quantity: moveQuantity,
             location: newLocation === LOCATION_ENUM.Owned ? null : newLocation,
@@ -834,9 +781,7 @@ export function EquipmentTab({
                             />
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 {splitItem._quantity - splitKeepQuantity} will be moved to{' '}
-                                {(splitItem._location === null || splitItem._location === LOCATION_ENUM.Owned)
-                                    ? 'Carried'
-                                    : 'Owned'}
+                                {getSplitTargetLocationName(splitItem._location)}
                             </p>
                         </div>
                         <div className="flex gap-3 justify-end">

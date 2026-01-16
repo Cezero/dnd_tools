@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
+import { commonValidations } from './common.js';
 
 // Enum schemas
 export const TextAlignmentEnumSchema = z.enum(['left', 'center', 'right']);
@@ -29,7 +30,7 @@ export const TableColumnSchema = z.object({
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
-    index: z.number().int().min(0, 'Column index must be non-negative'),
+    index: commonValidations.nonNegativeInt('Column index'),
     header: z.string()
         .min(1, 'Header is required')
         .max(100, 'Header must be less than 100 characters')
@@ -44,8 +45,8 @@ export const TableCellSchema = z.object({
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
-    rowIndex: z.number().int().min(0, 'Row index must be non-negative'),
-    columnIndex: z.number().int().min(0, 'Column index must be non-negative'),
+    rowIndex: commonValidations.nonNegativeInt('Row index'),
+    columnIndex: commonValidations.nonNegativeInt('Column index'),
     value: z.string().max(10000, 'Cell value must be less than 10000 characters').nullable(),
     colSpan: z.number().int().min(1, 'Column span must be at least 1').max(10, 'Column span must be at most 10').optional().nullable(),
     rowSpan: z.number().int().min(1, 'Row span must be at least 1').max(10, 'Row span must be at most 10').optional().nullable()
@@ -57,7 +58,7 @@ export const TableRowSchema = z.object({
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
-    index: z.number().int().min(0, 'Row index must be non-negative'),
+    index: commonValidations.nonNegativeInt('Row index'),
     cells: z.array(TableCellSchema).nullable(),
 });
 
@@ -67,8 +68,8 @@ export const ReferenceTableDataResponseSchema = ReferenceTableSchema.extend({
 });
 
 export const ReferenceTableSummarySchema = ReferenceTableSchema.extend({
-    rows: z.number().int().min(0, 'Rows must be non-negative'),
-    columns: z.number().int().min(0, 'Columns must be non-negative'),
+    rows: commonValidations.nonNegativeInt('Rows'),
+    columns: commonValidations.nonNegativeInt('Columns'),
 });
 
 export const GetAllReferenceTablesResponseSchema = QueryResponseSchema.extend({

@@ -4,32 +4,7 @@ import React from 'react';
 
 import { CoreComponent } from '@shared/static-data';
 
-export interface NestedSelectOption<C extends CoreComponent> {
-    id: number;
-    name: string;
-    abbreviation?: string;
-    children?: NestedSelectOption<C>[];
-    disabled?: boolean;
-}
-
-export interface CustomNestedSelectProps<C extends CoreComponent> {
-    value: number | null;
-    onValueChange: (value: number | null) => void;
-    options: NestedSelectOption<C>[];
-    useAbbreviation?: boolean;
-    placeholder?: string;
-    label?: string;
-    required?: boolean;
-    disabled?: boolean;
-    componentExtraClassName?: string;
-    triggerExtraClassName?: string;
-    popupExtraClassName?: string;
-    itemExtraClassName?: string;
-    itemTextExtraClassName?: string;
-    icon?: React.ReactNode;
-    displayValue?: (value: number | null) => string;
-    labelExtraClassName?: string;
-}
+import type { CustomNestedSelectProps, NestedSelectOption } from './types';
 
 export function CustomNestedSelect<C extends CoreComponent>({
     value,

@@ -19,25 +19,13 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 
 import { useToast } from '@/components/toast/useToast';
 import { CharacterApi } from '@/features/character';
-import { TabComponentProps, CharacterEditStateUpdateType, AttackDefinition } from '@/features/character/types';
+import { TabComponentProps, CharacterEditStateUpdateType, type AttackDefinition } from '@/features/character/types';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { CharacterWithAllDetailsResponse, ItemWithDetails } from '@shared/schema';
 
+import type { CalculatedAttackDisplay } from './types';
 import { AttackDefinitionModal } from '../components/AttackDefinitionModal';
 
-interface CalculatedAttackDisplay {
-    attackDefinition: AttackDefinition;
-    weaponName: string;
-    totalAttackBonus: number | string; // Can be number or "X / Y nonlethal" string
-    damage: string;
-    critical: string;
-    range: string | null;
-    weight: string | null;
-    type: string;
-    size: string | null;
-    specialProperties: string | null;
-    uniqueKey: string; // Unique identifier for React keys
-}
 
 function SortableAttackRow({
     attack: attackDisplay,

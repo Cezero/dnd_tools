@@ -1,3 +1,4 @@
+import { routes as editionFeaturesRoutes } from '@/features/admin/edition-features/EditionFeaturesConfig';
 import { routes as characterExplorerRoutes } from '@/features/admin/features/character-explorer/CharacterExplorerConfig';
 import { routes as diceConfigurationRoutes } from '@/features/admin/features/dice-configuration/DiceConfigurationConfig';
 import { routes as diceTestingRoutes } from '@/features/admin/features/dice-testing/DiceTestingConfig';
@@ -21,7 +22,8 @@ export const routes: RouteConfig[] = [
             ...referenceTableRoutes,
             ...diceConfigurationRoutes,
             ...diceTestingRoutes,
-            ...characterExplorerRoutes
+            ...characterExplorerRoutes,
+            ...editionFeaturesRoutes,
         ],
     },
 ];

@@ -1,15 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useMemo } from 'react';
 
-import type { ResolutionContext, PendingChoice } from '@/features/character/types';
+import type { ResolutionContext } from '@/features/character/types';
+import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
-import type { FormattedCharacterResult, DisplayResult } from '@/lib/formatters/types';
+import type { FormattedCharacterResult, DisplayResult, BaseCharacterInfo } from '@/lib/formatters/types';
 import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
 import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import type { CharacterWithAllDetailsResponse, FeatureProgression, DnDClass, Race, ItemWithDetails, Feat } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureProgression, DnDClass, ItemWithDetails, PendingChoice } from '@shared/schema';
 import { DisplayType } from '@shared/static-data';
 
 import type { CharacterExplorerData } from './types';
@@ -209,7 +209,7 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
             return null;
         }
 
-        const characterContext: import('@/lib/formatters/types').BaseCharacterInfo = {
+        const characterContext: BaseCharacterInfo = {
             abilityScores: Object.fromEntries(
                 character.abilityScores.map(a => [a.abilityId, a.value])
             ),
@@ -220,7 +220,14 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
                 })
             ),
             raceId: character.raceId ?? undefined,
-            sizeId: (character.race && 'sizeId' in character.race && typeof character.race.sizeId === 'number') ? character.race.sizeId : undefined
+            sizeId: (() => {
+                // Extract sizeId from resolved progressions
+                if (character.raceId && resolvedProgressions.length > 0) {
+                    const raceMechanics = extractRaceMechanics(resolvedProgressions, character.raceId);
+                    return raceMechanics.sizeId ?? undefined;
+                }
+                return undefined;
+            })()
         };
 
         try {
@@ -232,7 +239,6 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
                 classDetailsMap,
                 {
                     character: characterContext,
-                    queryClient,
                     classSkills: classSkills.length > 0 ? classSkills : undefined,
                     skillBonuses: skillBonuses.length > 0 ? skillBonuses : undefined
                 },

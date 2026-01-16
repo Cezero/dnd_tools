@@ -1,4 +1,3 @@
-import { ColumnDef } from '@tanstack/react-table';
 import React, { useMemo } from 'react';
 
 import { ScrollableCategorizedList } from '@/components/scrollable-categorized-list';
@@ -6,39 +5,7 @@ import type { GroupingConfig, ItemFilterConfig } from '@/components/scrollable-c
 import { getFieldValue } from '@/components/scrollable-categorized-list/types';
 import type { ItemWithDetails } from '@shared/schema';
 
-export interface EquipmentListProps<T extends ItemWithDetails = ItemWithDetails> {
-    // Data fetching
-    dataFetcher: () => Promise<{ results: T[]; total: number }>;
-
-    // Column definitions
-    columns: ColumnDef<T, unknown>[];
-
-    // Grouping fields
-    groupingFields: string[];
-
-    // Action button configuration
-    actionButtonLabel: string;
-    onAction: (item: T) => void;
-    isActionDisabled?: (item: T) => boolean;
-
-    // Proficiency filtering
-    proficientWeaponCategories?: number[];
-    proficientArmorCategories?: number[];
-    proficientItemIds?: number[];
-    allowAll?: boolean;
-
-    // Search
-    searchPlaceholder?: string;
-
-    // State persistence
-    storageKey?: string;
-
-    // Display
-    itemDesc?: string;
-
-    // Height configuration
-    maxHeight?: number | 'auto';
-}
+import type { EquipmentListProps } from './types';
 
 /**
  * Equipment-specific wrapper around ScrollableCategorizedList

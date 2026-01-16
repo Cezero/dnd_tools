@@ -8,6 +8,16 @@ import { ClassDisplay } from '@/features/class/ClassDisplay';
 import { useCacheFunctions } from '@/services/cache';
 import { EditionId, CoreComponent } from '@shared/static-data';
 
+/**
+ * Class tab component for managing character class selection.
+ * 
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * - Updates state via `updateState()` when class changes
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
+ * - Do NOT call `resolution.applyUpdate()` directly from this tab
+ * 
+ * @see CharacterEdit component for sync pattern documentation
+ */
 export function ClassTab({
     state,
     updateState,
@@ -37,7 +47,7 @@ export function ClassTab({
             const editionId = state.editionId || EditionId.DND_3x;
             setIsLoadingClasses(true);
             try {
-                const classesData = getClassSelectByEdition(editionId, false, state.allowVariantClasses);
+                const classesData = getClassSelectByEdition(editionId, false);
                 setAllClasses(classesData || []);
             } catch (error) {
                 console.error('Failed to fetch classes:', error);

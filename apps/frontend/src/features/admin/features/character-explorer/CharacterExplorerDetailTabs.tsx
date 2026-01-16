@@ -4,14 +4,7 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { DISPLAY_TYPE_LIST, DisplayType } from '@shared/static-data';
 
 import { JsonViewer } from './JsonViewer';
-import type { CharacterExplorerData } from './types';
-
-interface CharacterExplorerDetailTabsProps {
-    activeTab: string;
-    explorerData: CharacterExplorerData;
-    selectedDisplayType: DisplayType;
-    onDisplayTypeChange: (type: DisplayType) => void;
-}
+import type { CharacterExplorerData, CharacterExplorerDetailTabsProps } from './types';
 
 export function CharacterExplorerDetailTabs({
     activeTab,

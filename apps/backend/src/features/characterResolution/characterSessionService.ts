@@ -1,20 +1,29 @@
 import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, ClassSpellSelection, DnDClass, FeatInQueryResponse } from '@shared/schema';
 
 import { getSessionDatabase } from './sessionDatabase';
 import type { CharacterEditState, ResolutionResult } from './types';
 
 /**
  * Extended resolution result with derived data for frontend
+ * 
+ * **Feat Data Distinction**:
+ * - `availableFeatsCount` (number): Count of feat slots/choices available to the character. Answers "How many feats can you select?"
+ * - `qualifiedFeats` (array): List of feats the character qualifies for based on prerequisites, proficiencies, etc. Answers "Which feats can you select from?"
  */
 export interface ResolvedCharacterResult extends ResolutionResult {
     classSkills: Array<{ skillId: number; skillSubId: number | null }>;
     skillBonuses: Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }>;
     grantedFeats: number[];
-    availableFeats: number;
+    /** Count of feat slots/choices available to the character. Calculated from resolved progressions. */
+    availableFeatsCount: number;
     availableFighterBonusFeats: number;
+    /** List of feats the character qualifies for, filtered by prerequisites, proficiencies, owned feats, etc. */
+    qualifiedFeats: FeatInQueryResponse[];
+    spellSelection?: Record<string, ClassSpellSelection>;
+    effectiveClassDetails?: DnDClass | null;
     sessionId: string;
 }
 

@@ -18,7 +18,7 @@ import { FormulaManager } from './FormulaManager';
 import type { BaseFormProps } from './types';
 import { getAppliesToSubIdSelectOptions, useProficiencySubIdOptions } from './utils';
 
-export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeature, progression: _progression }: BaseFormProps) {
+export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeature, progression: _progression, editionId }: BaseFormProps) {
     const { formData, setFormData } = useFormContext();
     const entities = useMemo(() =>
         formData.entities as FeatureEntity[] || [],
@@ -177,6 +177,9 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                         index={index}
                         appliesTo={entity.appliesTo}
                         entityType={entity.type}
+                        formulaId={entity.formulaParams?.formulaId ?? null}
+                        valuesRepresent={entity.formulaParams?.valuesRepresent ?? null}
+                        editionId={editionId}
                     />
                 </div>
             </div>
@@ -242,7 +245,9 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                         if (subIdOptions.length > 0) {
                             const label = entity.appliesTo === EntityAppliesToType.Attack
                                 ? "Attack Bonus Applies To"
-                                : "Applies To Sub ID";
+                                : entity.appliesTo === EntityAppliesToType.SavingThrow
+                                    ? "Progression Type"
+                                    : "Applies To Sub ID";
                             return (
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.appliesToSubId`}

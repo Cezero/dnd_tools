@@ -8,14 +8,15 @@ import type {
     Race,
     DnDClass,
     CharacterWithAllDetailsResponse,
-    Feat,
     CharacterFeatureChoice,
     CharacterCompanion,
     Monster,
     Deity,
     Domain,
+    Spell,
+    GetSpellResponse,
 } from '@shared/schema';
-import type { BreakdownComponentType, Formula } from '@shared/static-data';
+import type { CalculationMethodType, Formula } from '@shared/static-data';
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
 // CalculatedEntity extends FeatureEntity but allows value to be string for formatted display
@@ -167,10 +168,12 @@ export interface Condition {
 export interface BreakdownComponent {
     source: string;
     value: number | string;
-    type: BreakdownComponentType;
+    type: CalculationMethodType;
     description?: string;
     formula?: string;
     condition?: Condition;
+    sourceType?: number; // EntityAppliesToType value (e.g., EntityAppliesToType.Ability)
+    sourceId?: number; // The ID for the source type (e.g., AbilityId.Constitution for abilities, skillId for skills)
 }
 
 // Conditional value for conditional calculations
@@ -246,6 +249,8 @@ export interface FormattedAttackResult {
     type: string | null; // e.g., "Slashing" or null
     size: string | null; // e.g., "Medium" or null
     weaponName: string; // e.g., "Longsword"
+    attackBreakdown?: CalculationBreakdown; // Breakdown of attack bonus calculation
+    damageBreakdown?: CalculationBreakdown; // Breakdown of damage calculation
 }
 
 // Formatted skill result
@@ -535,4 +540,24 @@ export interface ConditionFormatter {
  */
 export interface ConditionValueFormatter {
     format(conditionValue: number): string;
+}
+
+// ============================================================================
+// Spell Formatting Types
+// ============================================================================
+
+/**
+ * Type for spell-like objects that can be formatted
+ * Includes both Spell (with id) and GetSpellResponse (without id)
+ */
+export type SpellLike = Spell | GetSpellResponse;
+
+/**
+ * Options for spell formatting functions
+ */
+export interface SpellFormatOptions {
+    /** Whether to use abbreviations (true) or full names (false). Default: true */
+    useAbbreviation?: boolean;
+    /** Whether to include subschools/descriptors in brackets. Default: true */
+    includeBrackets?: boolean;
 }

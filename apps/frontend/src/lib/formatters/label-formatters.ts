@@ -69,7 +69,7 @@ export function displayNameLabeler(value: string, modifier: CalculatedEntity): s
 export function attackBonusLabeler(value: string, modifier: CalculatedEntity): string {
     const typeInfo = ENTITY_APPLIES_TO_TYPES[modifier.appliesTo];
     const baseLabel = typeInfo?.displayName || 'Atk';
-    
+
     // Check if appliesToSubId is set (for special attack bonus contexts)
     if (modifier.appliesToSubId !== null && modifier.appliesToSubId !== undefined) {
         const contextType = ATTACK_BONUS_APPLIES_TO_TYPES[modifier.appliesToSubId];
@@ -79,7 +79,7 @@ export function attackBonusLabeler(value: string, modifier: CalculatedEntity): s
             return `${baseLabel}: ${value} (${contextName})`;
         }
     }
-    
+
     // Default: just show the base label and value
     return `${baseLabel}: ${value}`;
 }
@@ -124,6 +124,16 @@ export function savingThrowModifierLabeler(value: string, modifier: CalculatedEn
         }
     }
     return value;
+}
+
+// Labeler for Saving Throw progression (EntityType.Other + EntityAppliesToType.SavingThrow)
+export function savingThrowProgressionLabeler(value: string, _modifier: CalculatedEntity): string {
+    return `Save: ${value}`;
+}
+
+// Labeler for Casting Ability (EntityType.Other + EntityAppliesToType.CastingAbility)
+export function castingAbilityLabeler(value: string, _modifier: CalculatedEntity): string {
+    return `Casting Ability: ${value}`;
 }
 
 // Labeler for Creature Type modifiers

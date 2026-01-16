@@ -49,8 +49,6 @@ export class ClassSkillService {
                 id: Math.floor(Date.now() + Math.random() * 1000), // Temporary ID for frontend state
                 featureId: SpecialFeatureId.ClassSkill,
                 sourceType: 1, // 1 for Class
-                classId: classId,
-                raceId: null,
                 level: 1, // Class skills are level 1 features
                 // REMOVED: appliesToType and appliesTo - redundant with SpecialFeatureId
                 feature: {

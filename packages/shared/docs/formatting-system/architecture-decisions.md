@@ -368,6 +368,110 @@ The [Race System](../race-system/README.md) uses the formatting system to displa
 ### **Feature System Integration**
 The main [Feature System](../README.md) uses the formatting system for feature detail displays and editing interfaces. This ensures consistent formatting across all feature-related displays in the application, with the new groupingId approach providing more accurate and logical grouping.
 
+### **7. Spell Formatting Consolidation**
+
+#### **Decision**: Create centralized spell formatters in frontend, remove from static-data
+
+**Context**: Spell formatting logic was duplicated across multiple locations:
+- `static-data/SpellData.ts` - Pure ID-to-name functions (`SpellSchoolNameList`, `SpellSubschoolNameList`, `SpellComponentAbbrList`, `SpellDescriptorNameList`)
+- `spellcastingUtils.ts` - Spell object formatters with bracket notation
+- `characterPdfService.ts` - Local helper functions
+
+**Options Considered**:
+1. **Keep in spellcastingUtils.ts**: Minimal change but maintains duplication
+2. **Extend static-data functions**: Adds presentation logic to data package
+3. **Create lib/formatters/spell-formatters.ts**: Centralized, follows existing patterns
+4. **Extend FormattedCharacterResult**: Over-engineering for simple formatting
+
+**Chosen Solution**: Option C - Create `lib/formatters/spell-formatters.ts`
+
+**Rationale**:
+- **Separation of Concerns**: Presentation formatting belongs in frontend, not static-data
+- **Backend Independence**: Backend does not need spell formatting - it returns raw data
+- **Follows Existing Patterns**: Consistent with `pure-formatters.ts` approach
+- **Flexibility**: Options parameter supports both abbreviations and full names
+- **Discoverability**: Centralized in formatters directory
+
+**Implementation**:
+- Created `spell-formatters.ts` with unified formatting functions:
+  - `formatSpellSchool()` - Formats school and subschool with options for abbreviation and bracket style
+  - `formatSpellComponents()` - Formats component IDs to names or abbreviations
+  - `formatSpellDescriptors()` - Formats descriptor IDs to names
+- Removed formatting helper functions from `static-data/SpellData.ts`:
+  - `SpellSchoolNameList`, `SpellSubschoolNameList`, `SpellComponentAbbrList`, `SpellDescriptorNameList`
+- Kept static data maps in `static-data/SpellData.ts`:
+  - `SPELL_SCHOOL_MAP`, `SPELL_SUBSCHOOL_MAP`, `SPELL_COMPONENT_MAP`, `SPELL_DESCRIPTOR_MAP`
+- Updated all callers to use new formatters
+- **Note**: Source formatting functions (`formatSpellSource`, `getSpellSourceDisplay`) were later moved to `services/cache/CacheFunctions.ts` as part of source formatting consolidation (see section 8)
+
+**Benefits Achieved**:
+- ✅ **Single Source of Truth**: All spell formatting in one location
+- ✅ **Separation of Concerns**: Data in static-data, presentation in formatters
+- ✅ **Flexibility**: Options support both abbreviations and full names
+- ✅ **Reduced Bundle Size**: Removed unused functions from shared package
+- ✅ **Discoverability**: Formatters are in the expected location
+
+---
+
+### **8. Source Formatting Consolidation**
+
+#### **Decision**: Consolidate all source book reference formatting into unified functions in `services/cache/CacheFunctions.ts`
+
+**Context**: Source book reference formatting was duplicated across multiple locations:
+- `services/cache/CacheFunctions.ts` - `getSourceDisplay()` with parentheses format `"PHB (pg 123)"`
+- `lib/formatters/spell-formatters.ts` - `formatSpellSource()` and `getSpellSourceDisplay()` with space format `"PHB 123"`
+- Inconsistent formats across 15+ files
+
+**Key Findings**:
+1. **sourceBookInfo Structure**: Contains only `sourceBookId` and `pageNumber` - no sourcebook names/abbreviations. All formatting must use `getSourceBookFromCache()`.
+2. **Array Usage**: Arrays support items appearing in multiple sourcebooks (e.g., spell in both PHB and supplement).
+3. **Format Inconsistency**: Two different formats used (`"PHB (pg 123)"` vs `"PHB 123"`).
+
+**Options Considered**:
+1. **Keep both formats with options**: Maintains flexibility but adds complexity
+2. **Standardize on parentheses format**: Most common but less compact
+3. **Standardize on space format**: More compact, cleaner appearance
+4. **Keep separate functions**: Maintains duplication
+
+**Chosen Solution**: Option 3 - Create unified functions with standardized space format
+
+**Rationale**:
+- **Single Source of Truth**: All source formatting in one location (`services/cache/CacheFunctions.ts`)
+- **Consistency**: Standardized format (`"PHB 123"`) across entire application
+- **Compactness**: Space format is more compact and cleaner
+- **Simplicity**: No format options needed, reduces complexity
+- **Cache Integration**: Functions use `getSourceBookFromCache()` internally, leveraging existing infrastructure
+- **Flexibility**: Supports single source, arrays, and objects with `sourceBookInfo` property
+
+**Implementation**:
+- Created unified formatting functions in `services/cache/CacheFunctions.ts`:
+  - `formatSourceReference()` - Format single source reference
+  - `formatSourceReferences()` - Format multiple sources (comma-separated)
+  - `formatSourceFromObject()` - Convenience function for objects with `sourceBookInfo`
+- Updated `getSourceDisplay()` to use unified functions internally (backward compatible signature)
+- Removed redundant functions from `spell-formatters.ts`:
+  - `formatSpellSource()` - Replaced by `formatSourceFromObject()`
+  - `getSpellSourceDisplay()` - Replaced by `formatSourceReference()`
+- Standardized format: Changed from `"PHB (pg 123)"` to `"PHB 123"` everywhere
+- Updated all callers (15+ files) to use unified functions
+
+**Format Standardization**:
+- **Decision**: Use space format (`"PHB 123"`) everywhere
+- **Impact**: All existing `getSourceDisplay()` callers changed format (visual change only)
+- **Benefits**: Consistent, compact appearance across tables, detail pages, and PDFs
+
+**Benefits Achieved**:
+- ✅ **Single Source of Truth**: All source formatting in one location
+- ✅ **Consistency**: Standardized format across entire application
+- ✅ **Flexibility**: Support multiple input formats (single source, array, object)
+- ✅ **Maintainability**: One place to update formatting logic
+- ✅ **Type Safety**: Proper TypeScript types for all input formats
+- ✅ **Simplified API**: No format options needed (standardized on space format)
+- ✅ **Leverages Cache**: Uses existing `getSourceBookFromCache` infrastructure
+- ✅ **Clear Structure**: `sourceBookInfo` only contains IDs - formatting always uses cache
+
+---
+
 ## Conclusion
 
 The architectural decisions made during the refactoring and groupingId integration have created a solid foundation for the Feature Formatting System:
@@ -376,6 +480,9 @@ The architectural decisions made during the refactoring and groupingId integrati
 - **Type Consolidation**: Improves maintainability and type safety
 - **Enum Usage**: Enhances code quality and readability
 - **GroupingId Integration**: Provides accurate and logical feature grouping
+- **Centralized QueryClient Accessor**: Eliminates boilerplate and prevents errors
+- **Spell Formatting Consolidation**: Separates presentation from data, reduces duplication
+- **Source Formatting Consolidation**: Unified source book reference formatting with standardized format
 - **Future Extensibility**: Enables growth and evolution
 
 These decisions ensure that the system can evolve gracefully as new requirements emerge while maintaining clean separation of concerns and high code quality. The groupingId integration specifically addresses the complex feature scenarios that were problematic with the old entity type-based approach, providing content administrators with full control over feature grouping while maintaining the system's architectural integrity.

@@ -1,11 +1,13 @@
 import { z } from 'zod';
+
+import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
-import { CreateFeatureProgressionSchema, FeatureProgressionSchema } from './feature.js';
+import { CreateFeatureProgressionRequestSchema, FeatureProgressionResponseSchema } from './feature.js';
 import { CharacterFeatureChoiceForEnrichmentSchema } from './class.js';
 
 export const RaceIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 // Query schema for optional character feature choices
@@ -21,22 +23,18 @@ export const RaceIdQuerySchema = z.object({
 });
 
 export const BaseRaceSchema = z.object({
-    name: z.string().min(1, 'Race name is required').max(100, 'Race name must be less than 100 characters').trim(),
-    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
-    sizeId: z.number().int().positive('Size ID must be a positive integer'),
-    speed: z.number().int().min(0, 'Speed must be non-negative').max(1000, 'Speed must be less than 1000'),
-    favoredClassId: z.number().int().min(-1, 'Favored class ID must be -1 or greater'),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    name: commonValidations.name(),
+    description: commonValidations.description(10000).nullable(),
+    editionId: commonValidations.positiveInt('Edition ID'),
     isVisible: z.boolean().default(true),
-    levelAdjustment: z.number().int().min(0, 'Level adjustment must be non-negative').max(100, 'Level adjustment must be less than 100').optional().default(0),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureProgressionSchema).nullable(),
+    features: z.array(FeatureProgressionResponseSchema).nullable(),
 });
 
 export const RaceSummarySchema = BaseRaceSchema.omit({
     features: true,
 }).extend({
-    id: z.number().int().positive('Race ID must be a positive integer'),
+    id: commonValidations.positiveInt('Race ID'),
 });
 
 export const GetAllRacesResponseSchema = QueryResponseSchema.extend({
@@ -46,20 +44,17 @@ export const GetAllRacesResponseSchema = QueryResponseSchema.extend({
 export const UpdateRaceSchema = BaseRaceSchema.omit({
     features: true,
 }).extend({
-    features: z.array(CreateFeatureProgressionSchema).nullable(),
+    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
 }).partial();
 
 export const CreateRaceSchema = BaseRaceSchema.omit({
     features: true,
 }).extend({
-    features: z.array(CreateFeatureProgressionSchema).nullable(),
+    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
 });
 
 export const RaceCacheSchema = RaceSummarySchema.omit({
     description: true,
-    favoredClassId: true,
-    levelAdjustment: true,
-    speed: true,
     sourceBookInfo: true,
 });
 

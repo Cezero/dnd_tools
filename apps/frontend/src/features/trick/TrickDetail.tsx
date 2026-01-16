@@ -18,39 +18,46 @@ export function TrickDetail() {
         enabled: !!id
     });
 
-    if (isLoading) return (
-        <div className="pt-8">
-            <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
-                <div className="p-3 bg-content border-content rounded-lg border w-full">
-                    Loading...
-                </div>
-            </div>
-        </div>
-    );
+    const handleBack = () => {
+        navigate(`/tricks${fromListParams}`);
+    };
 
-    if (!trick) return (
-        <div className="pt-8">
-            <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
-                <div className="p-3 bg-content border-content rounded-lg border w-full">
-                    Trick not found
-                </div>
-            </div>
-        </div>
-    );
+    const handleEdit = () => {
+        navigate(`/tricks/${id}/edit`, { state: { fromListParams } });
+    };
+
+    const handleDelete = async () => {
+        if (window.confirm('Are you sure you want to delete this trick?')) {
+            await TrickQueryHooks.deleteTrick(parseInt(id!));
+            navigate(`/tricks${fromListParams}`);
+        }
+    };
 
     return (
         <DetailPage
-            title={trick.name}
-            onBack={() => navigate(`/tricks${fromListParams}`)}
-            onEdit={isAdmin ? () => navigate(`/tricks/${id}/edit`, { state: { fromListParams } }) : undefined}
-            onDelete={isAdmin ? async () => {
-                if (window.confirm('Are you sure you want to delete this trick?')) {
-                    await TrickQueryHooks.deleteTrick(parseInt(id!));
-                    navigate(`/tricks${fromListParams}`);
-                }
-            } : undefined}
+            isLoading={isLoading}
+            item={trick}
+            itemName="Trick"
+            isAdmin={isAdmin}
+            onBack={handleBack}
+            onEdit={handleEdit}
         >
-            <TrickDisplay trick={trick} />
+            {trick && (
+                <>
+                    <TrickDisplay trick={trick} />
+                    {isAdmin && (
+                        <div className="mt-4 text-right">
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                className="inline-block px-4 py-2 bg-red-600 rounded hover:bg-red-700 border dark:border-gray-500"
+                            >
+                                Delete Trick
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
         </DetailPage>
     );
 }

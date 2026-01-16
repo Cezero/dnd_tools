@@ -501,9 +501,20 @@ export function GenericList<T>({
         const itemId = dataItem.id || dataItem.slug;
         if (!itemId) return cellValue;
 
-        // Extract the route path from the detail route (e.g., 'spells/:id' -> 'spells')
-        const routePath = detailRoute.path.split('/:')[0];
-        let detailPath = `${basePath}/${routePath}/${itemId}`;
+        // Construct detail path by replacing :id or :slug in the route path
+        let detailPath: string;
+        if (detailRoute.path.includes('/:id')) {
+            // For routes with :id parameter, replace it with the actual ID
+            detailPath = detailRoute.path.replace(':id', String(itemId));
+        } else if (detailRoute.path.includes('/:slug')) {
+            // For routes with :slug parameter, replace it with the actual slug
+            detailPath = detailRoute.path.replace(':slug', String(itemId));
+        } else {
+            // Fallback: construct path manually
+            const routePath = detailRoute.path.split('/:')[0];
+            detailPath = basePath ? `${basePath}${routePath}/${itemId}` : `${routePath}/${itemId}`;
+        }
+        
         // Ensure path is absolute
         if (!detailPath.startsWith('/')) {
             detailPath = `/${detailPath}`;

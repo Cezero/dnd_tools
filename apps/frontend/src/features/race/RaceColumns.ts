@@ -2,7 +2,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import React, { useEffect, useState } from 'react';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
-import { useCacheFunctions } from '@/services/cache';
+import { useCacheFunctions, getSourceDisplay, getSourceBooksByType } from '@/services/cache';
 import { RaceSummary } from '@shared/schema';
 import {
     EDITION_LIST,
@@ -15,20 +15,19 @@ import {
     BOOLEAN_FILTER_LIST,
     BooleanFilter
 } from '@shared/static-data';
-import { GetSourceDisplay, GetSourceBookTypeList } from '@shared/utils';
 
 interface AsyncClassNameProps {
     classId: number;
 }
 
 function AsyncClassName({ classId }: AsyncClassNameProps): React.JSX.Element {
-    const { getClassNameById } = useCacheFunctions();
+    const { getClassSummaryById } = useCacheFunctions();
     const [display, setDisplay] = useState<string>(`Class ${classId}`);
 
     useEffect(() => {
         const loadClassName = async () => {
             try {
-                const classItem = getClassNameById(classId);
+                const classItem = getClassSummaryById(classId);
                 if (classItem) {
                     setDisplay(classItem.name);
                 } else {
@@ -40,7 +39,7 @@ function AsyncClassName({ classId }: AsyncClassNameProps): React.JSX.Element {
         };
 
         loadClassName();
-    }, [classId, getClassNameById]);
+    }, [classId, getClassSummaryById]);
 
     return React.createElement('span', null, display);
 }
@@ -91,7 +90,7 @@ export const useRaceColumns = (): ColumnDef<RaceSummary, unknown>[] => {
             cell: info => {
                 const sourceBookInfo = info.getValue() as { sourceBookId: number; pageNumber: number }[];
                 if (sourceBookInfo && sourceBookInfo.length > 0) {
-                    return GetSourceDisplay(sourceBookInfo, true);
+                    return getSourceDisplay(sourceBookInfo, true);
                 }
                 return '';
             },
@@ -100,7 +99,7 @@ export const useRaceColumns = (): ColumnDef<RaceSummary, unknown>[] => {
                 options: (currentFilters: Array<{ id: string; value: unknown }>) => {
                     const editionFilter = currentFilters.find(f => f.id === 'editionId');
                     const editionId = editionFilter?.value as EditionId;
-                    return GetSourceBookTypeList(SourceType.Races, editionId);
+                    return getSourceBooksByType(SourceType.Races, editionId);
                 },
             },
         },

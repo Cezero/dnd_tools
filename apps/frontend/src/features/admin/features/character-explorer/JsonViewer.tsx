@@ -1,11 +1,7 @@
 import JsonView from '@uiw/react-json-view';
 import React, { useEffect, useState } from 'react';
 
-interface JsonViewerProps {
-    data: unknown;
-    loading?: boolean;
-    error?: string | null;
-}
+import type { JsonViewerProps } from './types';
 
 export function JsonViewer({ data, loading = false, error = null }: JsonViewerProps): React.JSX.Element {
     const [isDarkMode, setIsDarkMode] = useState(false);

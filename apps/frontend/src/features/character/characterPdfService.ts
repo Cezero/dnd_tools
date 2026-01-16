@@ -6,16 +6,17 @@ import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow
 import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
-import { displayStrategyFactory } from '@/lib/formatters';
+import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
+import { displayStrategyFactory, formatSpellSchool, formatSpellComponents } from '@/lib/formatters';
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
 import { hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes, getSkillSubtypeName } from '@/lib/skill-utils';
-import { getRaceNameFromCache, getClassNameFromCache, getSkillNameById } from '@/services/cache';
+import { getRaceNameFromCache, getClassNameFromCache, getSkillSummaryById, formatSourceFromObject } from '@/services/cache';
 import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, CharacterItem, Spell } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType, SPELL_COMPONENT_MAP, SPELL_SCHOOL_MAP, SPELL_SUBSCHOOL_MAP } from '@shared/static-data';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 /**
@@ -93,6 +94,9 @@ export async function generateCharacterPdf(
     const characterSheetStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
     let formattedCharacter: FormattedCharacterResult | null = null;
 
+    // Extract race mechanics from resolved progressions
+    const raceMechanics = extractRaceMechanicsFromResolved(resolvedProgressions);
+
     // Build character context (used for both page 1 and page 2)
     const characterContext: BaseCharacterInfo = {
         abilityScores: Object.fromEntries(
@@ -105,7 +109,7 @@ export async function generateCharacterPdf(
             })
         ),
         raceId: character.raceId ?? undefined,
-        sizeId: fullRace?.sizeId ?? undefined
+        sizeId: raceMechanics.sizeId ?? undefined
     };
 
     if (!characterSheetStrategy.formatCharacter) {
@@ -123,7 +127,6 @@ export async function generateCharacterPdf(
                 character: characterContext,
                 classSkills: classSkills && classSkills.length > 0 ? classSkills : undefined,
                 skillBonuses: skillBonuses && skillBonuses.length > 0 ? skillBonuses : undefined,
-                queryClient
             },
             fullRace
         );
@@ -491,8 +494,9 @@ export async function generateCharacterPdf(
     drawField(xPos, line2Y, fieldWidths.line2.race, raceName, 'RACE');
     xPos += fieldWidths.line2.race + fieldSpacing;
 
-    // Size (from full race object, if available)
-    const sizeName = fullRace?.sizeId ? SIZE_MAP[fullRace.sizeId as keyof typeof SIZE_MAP]?.name || '' : '';
+    // Size (from extracted race mechanics, fallback to full race object for backward compatibility)
+    const sizeId = raceMechanics.sizeId;
+    const sizeName = sizeId ? SIZE_MAP[sizeId as keyof typeof SIZE_MAP]?.name || '' : '';
     drawField(xPos, line2Y, fieldWidths.line2.size, sizeName, 'SIZE');
     xPos += fieldWidths.line2.size + fieldSpacing;
 
@@ -1012,16 +1016,11 @@ export async function generateCharacterPdf(
     drawLabel(savingThrowsHeaderX, savingThrowsHeaderY, savingThrowsWhiteBoxWidth, ['TEMP', 'MODIFIER']);
 
     // Draw three rows: FORTITUDE, REFLEX, WILL
-    // DEBUG: Check what we have
-    console.log('[PDF] formattedCharacter?.savingThrows:', formattedCharacter?.savingThrows);
-
     const savingThrowsData = formattedCharacter?.savingThrows || {
         fortitude: formattedCharacter.savingThrows.fortitude,
         reflex: formattedCharacter.savingThrows.reflex,
         will: formattedCharacter.savingThrows.will
     };
-
-    console.log('[PDF] Final savingThrowsData.fortitude.base:', savingThrowsData.fortitude.base);
 
     const savingThrows = [
         { name: 'CONSTITUTION', abbr: 'FORTITUDE', data: savingThrowsData.fortitude },
@@ -1088,7 +1087,8 @@ export async function generateCharacterPdf(
     const strMod = parseModifier(formattedCharacter.abilities.find(a => a.abilityId === AbilityId.Strength)?.modifier ?? '+0');
 
     // Special Size Modifier for grapple (from SIZE_MAP)
-    const sizeMod = fullRace?.sizeId ? (SIZE_MAP[fullRace.sizeId as keyof typeof SIZE_MAP]?.grappleModifier ?? 0) : 0;
+    const effectiveSizeId = raceMechanics.sizeId;
+    const sizeMod = effectiveSizeId ? (SIZE_MAP[effectiveSizeId as keyof typeof SIZE_MAP]?.grappleModifier ?? 0) : 0;
     const grappleMisc = 0; // Misc bonus not calculated yet
     const grappleTotal = firstBab + strMod + sizeMod + grappleMisc;
 
@@ -1219,7 +1219,6 @@ export async function generateCharacterPdf(
                 // Format this entity using the display strategy
                 const displayResult = characterSheetStrategy.format([progression], {
                     character: characterContext,
-                    queryClient
                 });
 
                 // Find the formatted entity in the result
@@ -1331,7 +1330,8 @@ export async function generateCharacterPdf(
     const attackFirstBab = parseInt(attackBabString.split('/')[0].replace(/[^-\d]/g, ''), 10) || 0;
     const attackStrMod = parseModifier(formattedCharacter.abilities.find(a => a.abilityId === AbilityId.Strength)?.modifier ?? '+0');
     const attackDexMod = parseModifier(formattedCharacter.abilities.find(a => a.abilityId === AbilityId.Dexterity)?.modifier ?? '+0');
-    const attackSizeMod = fullRace?.sizeId ? (SIZE_MAP[fullRace.sizeId as keyof typeof SIZE_MAP]?.sizeModifier ?? 0) : 0;
+    const effectiveSizeIdForAttack = raceMechanics.sizeId;
+    const attackSizeMod = effectiveSizeIdForAttack ? (SIZE_MAP[effectiveSizeIdForAttack as keyof typeof SIZE_MAP]?.sizeModifier ?? 0) : 0;
     const meleeMisc = 0; // Misc bonus not calculated yet
     const rangedMisc = 0; // Misc bonus not calculated yet
 
@@ -1715,7 +1715,6 @@ export async function generateCharacterPdf(
                 // Format this entity using the display strategy
                 const displayResult = characterSheetStrategy.format([progression], {
                     character: characterContext,
-                    queryClient
                 });
 
                 // Find the formatted entity in the result
@@ -1727,7 +1726,7 @@ export async function generateCharacterPdf(
                 if (formattedEntity && formattedEntity.formattedValue) {
                     // Remove skill name prefix if present (format is "Skill Name: value")
                     let modifierText = formattedEntity.formattedValue;
-                    const skillData = getSkillNameById(entity.appliesToId);
+                    const skillData = getSkillSummaryById(entity.appliesToId);
                     if (skillData) {
                         // Check for skill name with subtype
                         let skillNameWithSubtype = skillData.name;
@@ -1786,7 +1785,7 @@ export async function generateCharacterPdf(
         skillX += classSkillWidth + 2;
 
         // SKILL NAME (plain text) - add superscript '1' if can be used untrained
-        const skillData = getSkillNameById(skill.skillId);
+        const skillData = getSkillSummaryById(skill.skillId);
         const canBeUsedUntrained = skillData && !skillData.trainedOnly;
 
         // Build skill name with subtype - always build it to ensure subtypes are displayed correctly
@@ -1989,14 +1988,17 @@ export async function generateCharacterPdf(
         // Find all classes that have turn undead feature
         for (const progression of resolvedProgressions) {
             // Only check class features (sourceType === 1)
-            if (progression.sourceType === 1 && progression.classId && progression.feature) {
+            if (progression.sourceType === 1 && progression.classes && progression.classes.length > 0 && progression.feature) {
                 const featureName = progression.feature.name.toLowerCase();
                 const featureSlug = progression.feature.slug.toLowerCase();
 
                 // Check if feature name or slug contains "turn" and "undead"
                 if ((featureName.includes('turn') && featureName.includes('undead')) ||
                     (featureSlug.includes('turn') && featureSlug.includes('undead'))) {
-                    classesWithTurnUndead.add(progression.classId);
+                    // Add all classes linked to this progression
+                    for (const classLink of progression.classes) {
+                        classesWithTurnUndead.add(classLink.classId);
+                    }
                 }
             }
         }
@@ -2659,17 +2661,22 @@ export async function generateCharacterPdf(
                 progression.featureId !== SpecialFeatureId.BonusLanguage &&
                 progression.featureId !== SpecialFeatureId.AbilityAdjustment &&
                 progression.feature && // Ensure feature data exists
-                progression.classId && // Must have a classId
-                // Check if feature is active at the specific class level (not total character level)
-                (progression.level <= (classLevelCounts.get(progression.classId) ?? 0))
+                progression.classes && progression.classes.length > 0 // Must have classes linked
             ) {
-                if (!classFeaturesByClass.has(progression.classId)) {
-                    classFeaturesByClass.set(progression.classId, new Map());
-                }
-                const classFeatures = classFeaturesByClass.get(progression.classId)!;
-                // Deduplicate by featureId
-                if (!classFeatures.has(progression.featureId)) {
-                    classFeatures.set(progression.featureId, progression);
+                // Process each class linked to this progression
+                for (const classLink of progression.classes) {
+                    const linkedClassId = classLink.classId;
+                    // Check if feature is active at the specific class level (not total character level)
+                    if (progression.level <= (classLevelCounts.get(linkedClassId) ?? 0)) {
+                        if (!classFeaturesByClass.has(linkedClassId)) {
+                            classFeaturesByClass.set(linkedClassId, new Map());
+                        }
+                        const classFeatures = classFeaturesByClass.get(linkedClassId)!;
+                        // Deduplicate by featureId
+                        if (!classFeatures.has(progression.featureId)) {
+                            classFeatures.set(progression.featureId, progression);
+                        }
+                    }
                 }
             }
         }
@@ -2838,9 +2845,10 @@ export async function generateCharacterPdf(
                     // Prefix with race name
                     const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || 'Race' : 'Race';
                     featureName = `${raceName} ${featureName}`;
-                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classId) {
-                    // Prefix with class name
-                    const className = getClassNameFromCache(progression.classId) || 'Class';
+                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classes && progression.classes.length > 0) {
+                    // Prefix with class name (use first class)
+                    const firstClassId = progression.classes[0].classId;
+                    const className = getClassNameFromCache(firstClassId) || 'Class';
                     featureName = `${className} Granted`;
                 }
 
@@ -2859,9 +2867,10 @@ export async function generateCharacterPdf(
                     // Prefix with race name
                     const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || 'Race' : 'Race';
                     featureName = `${raceName} ${featureName}`;
-                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classId) {
-                    // Prefix with class name
-                    const className = getClassNameFromCache(progression.classId) || 'Class';
+                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classes && progression.classes.length > 0) {
+                    // Prefix with class name (use first class)
+                    const firstClassId = progression.classes[0].classId;
+                    const className = getClassNameFromCache(firstClassId) || 'Class';
                     featureName = `${className} ${featureName}`;
                 }
 
@@ -3008,7 +3017,8 @@ export async function generateCharacterPdf(
     doc.setTextColor(0, 0, 0);
 
     const strScore = character.abilityScores.find(a => a.abilityId === AbilityId.Strength)?.value || 10;
-    const carrying = calculateCarryingCapacity(strScore, fullRace?.sizeId);
+    const effectiveSizeIdForCarrying = raceMechanics.sizeId;
+    const carrying = calculateCarryingCapacity(strScore, effectiveSizeIdForCarrying);
 
     let carryingY = carryingHeaderY + 12;
     const carryingLabels = ['LIGHT LOAD', 'MED LOAD', 'HEAVY LOAD', 'LIFT OVER', 'LIFT OFF GROUND', 'PUSH DRAG'];
@@ -3100,7 +3110,6 @@ export async function generateCharacterPdf(
             character,
             EntityAppliesToType.Uses,
             undefined,
-            undefined, // featsMap is optional - function will use progression.feature?.name as fallback
             resolvedProgressions
         );
         const turnAttemptBonus = turnAttemptBenefits.reduce((sum, b) => sum + b.amount, 0);
@@ -3241,52 +3250,6 @@ export async function generateCharacterPdf(
     doc.save(filename);
 }
 
-/**
- * Helper function to format spell components as abbreviations
- */
-function formatSpellComponents(componentIds: Array<{ componentId: number }> | null | undefined): string {
-    if (!componentIds || componentIds.length === 0) return '';
-    return componentIds.map(c => {
-        const component = SPELL_COMPONENT_MAP[c.componentId as keyof typeof SPELL_COMPONENT_MAP];
-        return component?.abbreviation ?? '';
-    }).filter(Boolean).join(', ');
-}
-
-/**
- * Helper function to format spell school + subschool
- */
-function formatSpellSchool(spell: Spell): string {
-    const schools = spell.schoolIds?.map(s => {
-        const school = SPELL_SCHOOL_MAP[s.schoolId as keyof typeof SPELL_SCHOOL_MAP];
-        return school?.abbreviation ?? '';
-    }).filter(Boolean).join(', ') ?? '';
-
-    const subschools = spell.subSchoolIds?.map(s => {
-        const subschool = SPELL_SUBSCHOOL_MAP[s.subSchoolId as keyof typeof SPELL_SUBSCHOOL_MAP];
-        return subschool?.abbreviation ?? '';
-    }).filter(Boolean);
-
-    if (subschools && subschools.length > 0) {
-        return `${schools} [${subschools.join(', ')}]`;
-    }
-    return schools;
-}
-
-/**
- * Helper function to format spell source reference
- */
-function formatSpellSource(spell: Spell): string {
-    if (!spell.sourceBookInfo || spell.sourceBookInfo.length === 0) return '';
-    // Get first source (usually primary source)
-    const sourceInfo = spell.sourceBookInfo[0];
-    // Type assertion needed - sourceBook relation is included in the query
-    const sourceBook = (sourceInfo as { sourceBook?: { abbreviation: string } | null }).sourceBook;
-    const abbrev = sourceBook?.abbreviation ?? '';
-    const page = sourceInfo.pageNumber;
-    if (!abbrev && !page) return '';
-    if (!page) return abbrev;
-    return `${abbrev} ${page}`;
-}
 
 /**
  * Helper function to calculate spell save DC per level
@@ -3429,8 +3392,30 @@ async function generateSpellSheet(
     // Calculate caster level (typically equals class level, but may have adjustments)
     const casterLevel = classLevel; // TODO: Add adjustments from features if needed
 
-    // Get casting ability modifier
-    const castingAbilityId = spellClass.castingAbilityId;
+    // Get casting ability modifier from feature progressions
+    // Casting ability is stored in level 1 feature progression for the class
+    let castingAbilityId: number | null = null;
+    if (resolvedProgressions) {
+        const classLevel1Progression = resolvedProgressions.find(
+            p => p.sourceType === FeatureSourceType.Class &&
+                p.classes?.some(c => c.classId === classId) &&
+                p.level === 1
+        );
+        if (classLevel1Progression?.entities) {
+            const castingAbilityEntity = classLevel1Progression.entities.find(
+                e => e.appliesTo === EntityAppliesToType.CastingAbility
+            );
+            if (castingAbilityEntity?.appliesToId) {
+                castingAbilityId = castingAbilityEntity.appliesToId;
+            }
+        }
+    }
+
+    if (!castingAbilityId) {
+        console.warn(`No casting ability found for class ${classId}, defaulting to Intelligence`);
+        castingAbilityId = AbilityId.Intelligence; // Default fallback
+    }
+
     const abilityScore = character.abilityScores.find(a => a.abilityId === castingAbilityId)?.value ?? 10;
     const abilityModifier = GetAbilityModifier(abilityScore);
 
@@ -3830,7 +3815,7 @@ async function generateSpellSheet(
         colX += colWidths.description + colGap;
 
         // Ref
-        const ref = formatSpellSource(spellEntry.spell);
+        const ref = formatSourceFromObject(spellEntry.spell, { sourceSelection: 'first' });
         doc.text(ref, colX + 2, yPos);
         doc.line(colX, yPos + 1, colX + colWidths.ref, yPos + 1);
 

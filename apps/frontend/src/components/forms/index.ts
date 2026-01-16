@@ -3,10 +3,6 @@ export {
     ValidatedForm,
     ValidatedCustomSelect,
     ValidatedCustomCheckbox,
-    type ValidatedInputProps,
-    type ValidatedFormProps,
-    type ValidatedCustomSelectProps,
-    type ValidatedCustomCheckboxProps,
 } from './ValidatedForm';
 
 export {
@@ -17,39 +13,36 @@ export {
 export {
     CustomSelect,
     CustomCheckbox,
-    type CustomSelectProps,
-    type CustomCheckboxProps,
 } from './FormComponents';
 
-export {
-    CustomNestedSelect,
-    type CustomNestedSelectProps,
-    type NestedSelectOption,
-} from './CustomNestedSelect';
+export { CustomNestedSelect } from './CustomNestedSelect';
 
-export {
-    CustomNestedContextSelect,
-    type CustomNestedContextSelectProps,
-} from './CustomNestedContextSelect';
+export { CustomNestedContextSelect } from './CustomNestedContextSelect';
 
 export { SliderControl } from './SliderControl';
 
-export {
-    SourceEditor,
-    type SourceEditorProps,
-} from './SourceEditor';
+export { SourceEditor } from './SourceEditor';
 
 export {
     SpellSearchInput,
-    type SpellSearchInputProps,
 } from './SpellSearchInput';
 
-export {
-    GenericSearchInput,
-    type SearchableItem,
-} from './GenericSearchInput';
+export { GenericSearchInput } from './GenericSearchInput';
 
-export {
-    MonsterSearchInput,
-    type MonsterSearchInputProps,
-} from './MonsterSearchInput'; 
+export { MonsterSearchInput } from './MonsterSearchInput';
+
+export type {
+    SourceEditorProps,
+    ValidatedInputProps,
+    ValidatedFormProps,
+    ValidatedCustomSelectProps,
+    ValidatedCustomCheckboxProps,
+    CustomSelectProps,
+    CustomCheckboxProps,
+    CustomNestedSelectProps,
+    NestedSelectOption,
+    CustomNestedContextSelectProps,
+    SpellSearchInputProps,
+    SearchableItem,
+    MonsterSearchInputProps,
+} from './types'; 

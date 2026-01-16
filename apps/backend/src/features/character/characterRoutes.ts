@@ -26,6 +26,19 @@ import {
     AddSpellKnownRequestSchema,
     RemoveSpellKnownRequestSchema,
     CharacterSpellSelectionParamSchema,
+    // NEW: Character detail schemas
+    UpdateFeatureUsesRequestSchema,
+    UpdateMoneyRequestSchema,
+    AddItemRequestSchema,
+    UpdateWoundsRequestSchema,
+    UpdateNotesRequestSchema,
+    SyncItemsRequestSchema,
+    SyncSpellPreparationsRequestSchema,
+    SyncSpellsKnownRequestSchema,
+    SyncSpellsKnownParamSchema,
+    SpellCastParamSchema,
+    FeatureUsesParamSchema,
+    CharacterItemIdParamSchema,
 } from '@shared/schema';
 
 import {
@@ -66,6 +79,22 @@ import {
     GetCharacterSpellSelection,
     AddSpellKnown,
     RemoveSpellKnown,
+    // NEW: Character detail controllers
+    GetCharacterUses,
+    UpdateFeatureUses,
+    ResetDailyUses,
+    ResetAllUses,
+    UpdateMoney,
+    AddItem,
+    RemoveItem,
+    UpdateWounds,
+    UpdateNotes,
+    SyncItems,
+    SyncSpellPreparations,
+    SyncSpellsKnown,
+    CastSpell,
+    UncastSpell,
+    ResetDailySpellPreparations,
 } from './characterController';
 import { requireAuth, requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -93,9 +122,9 @@ deleteRoute('/advancements/:id', requireAuth, { params: AdvancementIdParamSchema
 
 // Spell Preparation Routes
 get('/:id/spell-preparations', requireAuth, { params: CharacterIdParamSchema }, GetCharacterSpellPreparations);
-post('/spell-preparations', requireAuth, { body: CreateSpellPreparationSchema }, CreateSpellPreparation);
-put('/spell-preparations/:id/:prepKey', requireAuth, { params: SpellPreparationParamSchema, body: UpdateSpellPreparationSchema }, UpdateSpellPreparation);
-deleteRoute('/spell-preparations/:id/:prepKey', requireAuth, { params: SpellPreparationParamSchema }, DeleteSpellPreparation);
+post('/:id/spell-preparations', requireAuth, { params: CharacterIdParamSchema, body: CreateSpellPreparationSchema }, CreateSpellPreparation);
+put('/spell-preparations/:preparationId', requireAuth, { params: SpellPreparationParamSchema, body: UpdateSpellPreparationSchema }, UpdateSpellPreparation);
+deleteRoute('/spell-preparations/:preparationId', requireAuth, { params: SpellPreparationParamSchema }, DeleteSpellPreparation);
 
 // Character Ability Score Routes
 get('/:id/abilities', requireAuth, { params: CharacterIdParamSchema }, GetCharacterAbilityScores);
@@ -120,5 +149,22 @@ put('/:id/attack-definitions/reorder', requireAuth, { params: CharacterIdParamSc
 get('/:id/spell-selection/:classId', requireAuth, { params: CharacterSpellSelectionParamSchema }, GetCharacterSpellSelection);
 post('/spell-selection/add', requireAuth, { body: AddSpellKnownRequestSchema }, AddSpellKnown);
 post('/spell-selection/remove', requireAuth, { body: RemoveSpellKnownRequestSchema }, RemoveSpellKnown);
+
+// NEW: Character Detail Routes (uses tracking, money, items, wounds, spell cast)
+get('/:id/uses', requireAuth, { params: CharacterIdParamSchema }, GetCharacterUses);
+post('/:id/uses/:progressionId/:entityId', requireAuth, { params: FeatureUsesParamSchema, body: UpdateFeatureUsesRequestSchema }, UpdateFeatureUses);
+post('/:id/uses/reset-daily', requireAuth, { params: CharacterIdParamSchema }, ResetDailyUses);
+post('/:id/uses/reset-all', requireAuth, { params: CharacterIdParamSchema }, ResetAllUses);
+post('/:id/money', requireAuth, { params: CharacterIdParamSchema, body: UpdateMoneyRequestSchema }, UpdateMoney);
+post('/:id/items', requireAuth, { params: CharacterIdParamSchema, body: AddItemRequestSchema }, AddItem);
+post('/:id/items/sync', requireAuth, { params: CharacterIdParamSchema, body: SyncItemsRequestSchema }, SyncItems);
+deleteRoute('/:id/items/:itemId', requireAuth, { params: CharacterItemIdParamSchema }, RemoveItem);
+post('/:id/wounds', requireAuth, { params: CharacterIdParamSchema, body: UpdateWoundsRequestSchema }, UpdateWounds);
+post('/:id/notes', requireAuth, { params: CharacterIdParamSchema, body: UpdateNotesRequestSchema }, UpdateNotes);
+post('/:id/spell-preparations/:preparationId/cast', requireAuth, { params: SpellCastParamSchema }, CastSpell);
+post('/:id/spell-preparations/:preparationId/uncast', requireAuth, { params: SpellCastParamSchema }, UncastSpell);
+post('/:id/spell-preparations/sync', requireAuth, { params: CharacterIdParamSchema, body: SyncSpellPreparationsRequestSchema }, SyncSpellPreparations);
+post('/:id/spell-preparations/reset-daily', requireAuth, { params: CharacterIdParamSchema }, ResetDailySpellPreparations);
+post('/:id/advancements/:advancementId/spells-known/sync', requireAuth, { params: SyncSpellsKnownParamSchema, body: SyncSpellsKnownRequestSchema }, SyncSpellsKnown);
 
 export { CharacterRouter };

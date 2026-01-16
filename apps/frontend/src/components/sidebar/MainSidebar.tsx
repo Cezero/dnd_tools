@@ -3,6 +3,8 @@ import { ChevronRightIcon, ChevronLeftIcon, UserGroupIcon, SparklesIcon, BookOpe
 import React, { useRef, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+import type { MainSidebarProps } from './types';
+
 // Custom Link component for NavigationMenu.Link to enable client-side routing
 function CustomLink(props: NavigationMenu.Link.Props) {
     return (
@@ -11,13 +13,6 @@ function CustomLink(props: NavigationMenu.Link.Props) {
             {...props}
         />
     );
-}
-
-interface MainSidebarProps {
-    isExpanded: boolean;
-    setIsExpanded: (expanded: boolean) => void;
-    isHidden: boolean;
-    setIsHidden: (hidden: boolean) => void;
 }
 
 export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }: MainSidebarProps): React.JSX.Element {
@@ -288,6 +283,15 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <SparklesIcon className={`${location.pathname.startsWith('/features') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname.startsWith('/features') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Features</span>
+                                        </CustomLink>
+                                        <CustomLink
+                                            className={`flex items-center px-4 py-2 text-sm
+                                                        text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
+                                                        ${location.pathname.startsWith('/admin/edition-features') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                            href="/admin/edition-features"
+                                        >
+                                            <BookOpenIcon className={`${location.pathname.startsWith('/admin/edition-features') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
+                                            <span className={`${location.pathname.startsWith('/admin/edition-features') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Edition Features</span>
                                         </CustomLink>
                                         <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm

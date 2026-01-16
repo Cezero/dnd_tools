@@ -86,9 +86,16 @@ export const characterCalculationService = {
      * Check if a class grants a specific analog skill
      */
     async classGrantsAnalogSkill(classId: number, skillId: number): Promise<boolean> {
+        // Get progression IDs for this class via many-to-many relationship
+        const classLinks = await prisma.featureProgressionClassMap.findMany({
+            where: { classId },
+            select: { progressionId: true }
+        });
+        const progressionIds = classLinks.map(link => link.progressionId);
+
         const progression = await prisma.featureProgression.findFirst({
             where: {
-                classId: classId,
+                id: { in: progressionIds },
                 entities: {
                     some: {
                         appliesTo: EntityAppliesToType.Skill,

@@ -1,9 +1,9 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
+import { getSourceDisplay, getSourceBooksByType } from '@/services/cache';
 import { DeityInQueryResponse } from '@shared/schema';
 import { EDITION_LIST, ALIGNMENT_LIST, FilterType, EDITION_MAP, PANTHEON_MAP, PANTHEON_LIST, SourceType, EditionId } from '@shared/static-data';
-import { GetSourceDisplay, GetSourceBookTypeList } from '@shared/utils';
 
 export const DEITY_COLUMNS: ColumnDef<DeityInQueryResponse, unknown>[] = [
     {
@@ -89,7 +89,7 @@ export const DEITY_COLUMNS: ColumnDef<DeityInQueryResponse, unknown>[] = [
         cell: info => {
             const sourceBookInfo = info.getValue() as { sourceBookId: number; pageNumber: number }[];
             if (sourceBookInfo && sourceBookInfo.length > 0) {
-                return GetSourceDisplay(sourceBookInfo, true);
+                return getSourceDisplay(sourceBookInfo, true);
             }
             return '';
         },
@@ -98,7 +98,7 @@ export const DEITY_COLUMNS: ColumnDef<DeityInQueryResponse, unknown>[] = [
             options: (currentFilters: Array<{ id: string; value: unknown }>) => {
                 const editionFilter = currentFilters.find(f => f.id === 'editionId');
                 const editionId = editionFilter?.value as EditionId;
-                return GetSourceBookTypeList(SourceType.Deities, editionId);
+                return getSourceBooksByType(SourceType.Deities, editionId);
             },
         },
     },

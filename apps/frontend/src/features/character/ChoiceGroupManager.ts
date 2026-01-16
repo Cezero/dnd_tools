@@ -1,7 +1,5 @@
 import type { CharacterFeatureChoice, FeatureProgression, FeatureEntity } from '@shared/schema';
 
-import type { PendingChoice } from './types';
-
 /**
  * Manages complex linked choices for features
  * Extends existing ChoiceResolver patterns for choice groups

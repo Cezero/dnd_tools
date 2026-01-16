@@ -98,7 +98,9 @@ export function RaceList(): React.JSX.Element {
                                         }
                                     });
                                 },
-                                delete: createIdDeleteServiceFunction((_, { id }) => FeatureQueryHooks.deleteFeature(id))
+                                delete: async (feature) => {
+                                    await FeatureQueryHooks.deleteFeature(feature.id);
+                                }
                             }}
                         />
                     </div>

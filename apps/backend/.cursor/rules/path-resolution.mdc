@@ -1,0 +1,9 @@
+---
+description: Use fully specified paths when running commands
+alwaysApply: true
+---
+
+## Path Resolution Strategy
+**ALWAYS** use the full path when using shell tools or commands
+**NEVER** use relative paths
+- When running commands, always assume the repo root as working directory. Use pnpm filters or explicit paths.

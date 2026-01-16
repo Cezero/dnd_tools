@@ -1,9 +1,9 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
+import { getSourceDisplay, getSourceBooksByType } from '@/services/cache';
 import { DomainSummary } from '@shared/schema';
 import { EDITION_LIST, EDITION_MAP, FilterType, SourceType, EditionId } from '@shared/static-data';
-import { GetSourceDisplay, GetSourceBookTypeList } from '@shared/utils';
 
 export const DOMAIN_COLUMNS: ColumnDef<DomainSummary, unknown>[] = [
     {
@@ -48,7 +48,7 @@ export const DOMAIN_COLUMNS: ColumnDef<DomainSummary, unknown>[] = [
         cell: info => {
             const sourceBookInfo = info.getValue() as { sourceBookId: number; pageNumber: number }[];
             if (sourceBookInfo && sourceBookInfo.length > 0) {
-                return GetSourceDisplay(sourceBookInfo, true);
+                return getSourceDisplay(sourceBookInfo, true);
             }
             return '';
         },
@@ -57,7 +57,7 @@ export const DOMAIN_COLUMNS: ColumnDef<DomainSummary, unknown>[] = [
             options: (currentFilters: Array<{ id: string; value: unknown }>) => {
                 const editionFilter = currentFilters.find(f => f.id === 'editionId');
                 const editionId = editionFilter?.value as EditionId;
-                return GetSourceBookTypeList(SourceType.Domains, editionId);
+                return getSourceBooksByType(SourceType.Domains, editionId);
             },
         },
     },

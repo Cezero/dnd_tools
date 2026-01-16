@@ -8,8 +8,6 @@ export interface SpellService {
     deleteSpell(id: SpellIdParamRequest): Promise<UpdateResponse>;
     getSpellsForClass(classId: number, level?: number): Promise<ClassSpellListResponse>;
     getBaseClassSpells(classId: number, level?: number): Promise<ClassSpellListResponse>;
-    getVariantSpellOverrides(variantId: number): Promise<ClassSpellListEntry[]>;
-    applySpellOverrides(baseSpells: ClassSpellListEntry[], overrides: ClassSpellListEntry[]): ClassSpellListEntry[];
     getSpellCache(): Promise<SpellCacheResponse>;
     getDomainSpells(domainIds: number[], characterLevel: number, classId: number): Promise<Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null }>>;
 } 

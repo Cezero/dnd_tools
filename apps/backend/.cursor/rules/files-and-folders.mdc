@@ -1,0 +1,40 @@
+---
+description: Project File and Folder Organization
+alwaysApply: true
+---
+
+## Feature Folder Organization
+### Required Files
+Each feature folder should include related files where applicable:
+
+- `xxxRoutes.ts` - API route definitions
+- `xxxController.ts` - Request handling logic
+- `xxxService.ts` - Business logic
+- `types.ts` - TypeScript type definitions
+- `index.ts` - Exports
+
+### Co-location
+- Keep related files together in the same folder
+- Use clear, descriptive file names
+- Follow consistent naming conventions
+
+### Separation of Concerns
+- Separate business logic from presentation
+- Keep validation separate from components
+- Organize by feature, not by file type
+
+### Import Organization
+- Use index files for clean imports
+- Use relative imports within the feature folder
+
+### Folder naming conventions:
+- Use kebab-case for feature folders, e.g., `user-profile/`.
+- Use kebab-case for folders across the project, e.g., `auth/`, `product-list/`.
+
+### File naming conventions:
+- Use PascalCase for React component filenames, e.g., `UserProfile.tsx`.
+- Use camelCase for React hook filenames prefixed with `use`, e.g., `useAuth.ts`.
+- Use camelCase for utility/helper files, e.g., `formatDate.ts`.
+- Use camelCase for files containing types or interfaces, e.g., `authTypes.ts` or `types.ts`.
+- Use camelCase for service files such as `authService.ts` or `api.ts`.
+- Use camelCase for CSS files to match the component, e.g., `userProfile.module.css`.

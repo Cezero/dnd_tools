@@ -14,11 +14,13 @@ export function initializeFormData(
     if (progression) {
         // Infer sourceType from context if not explicitly set
         if (progression.sourceType === FeatureSourceType.None || !progression.sourceType) {
-            if (progression.featId) {
+            if (progression.editionId) {
+                return { ...progression, sourceType: FeatureSourceType.Edition };
+            } else if (progression.featId) {
                 return { ...progression, sourceType: FeatureSourceType.Feat };
-            } else if (progression.classId) {
+            } else if (progression.classes && progression.classes.length > 0) {
                 return { ...progression, sourceType: FeatureSourceType.Class };
-            } else if (progression.raceId) {
+            } else if (progression.races && progression.races.length > 0) {
                 return { ...progression, sourceType: FeatureSourceType.Race };
             } else if (progression.domainId) {
                 return { ...progression, sourceType: FeatureSourceType.Domain };
@@ -31,12 +33,10 @@ export function initializeFormData(
     return {
         id: 0,
         sourceType: FeatureSourceType.None,
-        classId: null,
-        raceId: null,
         domainId: null,
         featId: null,
         companionId: null,
-        variantOverrideId: null,
+        editionId: null,
         level: 1,
         featureId: preSelectedFeature?.id || 0,
         entities: [],

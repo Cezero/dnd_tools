@@ -1,111 +1,112 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
-import { AbilityId } from '@shared/static-data';
+import { AbilityId, SpellSlotType } from '@shared/static-data';
+import { numericParam, commonValidations } from './common.js';
 
 export const CharacterIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 // Route parameter schemas for new endpoints
 export const AdvancementIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export const CharacterAttackIdParamSchema = CharacterIdParamSchema.extend({
-    attackId: z.string().transform((val: string) => parseInt(val)),
+    attackId: numericParam(),
 });
 
 export const RemoveDisallowedSourceParamSchema = CharacterIdParamSchema.extend({
-    sourceBookId: z.string().transform((val: string) => parseInt(val)),
+    sourceBookId: numericParam(),
 });
 
 export const CharacterSpellSelectionParamSchema = CharacterIdParamSchema.extend({
-    classId: z.string(),
+    classId: numericParam(),
+});
+
+export const SyncSpellsKnownParamSchema = CharacterIdParamSchema.extend({
+    advancementId: numericParam(),
 });
 
 export const ReorderAttackDefinitionsSchema = z.object({
-    attackDefinitionIds: z.array(z.number().int().positive()),
+    attackDefinitionIds: z.array(commonValidations.positiveInt('Attack definition ID')),
 });
 
 export const SpellPreparationParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
-    prepKey: z.string(),
+    preparationId: numericParam(),
 });
 
 export const AbilityIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export const BaseCharacterSchema = z.object({
-    userId: z.number().int().positive('User ID must be a positive integer'),
-    name: z.string()
-        .min(1, 'Character name is required')
-        .max(100, 'Character name must be less than 100 characters')
-        .trim(),
-    raceId: z.number().int().positive('Race ID must be a positive integer'),
-    alignmentId: z.union([z.number().int().positive('Alignment ID must be a positive integer'), z.null()]),
-    deityId: z.number().int().positive('Deity ID must be a positive integer').nullable(),
-    age: z.number().int().min(0, 'Age must be a non-negative integer').max(1000, 'Age must be less than 1000').nullable(),
+    userId: commonValidations.positiveInt('User ID'),
+    name: commonValidations.name(),
+    raceId: commonValidations.positiveInt('Race ID'),
+    alignmentId: z.union([commonValidations.positiveInt('Alignment ID'), z.null()]),
+    deityId: commonValidations.positiveInt('Deity ID').nullable(),
+    age: commonValidations.nonNegativeInt('Age', 1000).nullable(),
     height: z.number().int().min(1, 'Height must be a positive integer').max(1000, 'Height must be less than 1000').nullable(),
     weight: z.number().int().min(1, 'Weight must be a positive integer').max(10000, 'Weight must be less than 10000').nullable(),
     eyes: z.string().max(50, 'Eye color must be less than 50 characters').nullable(),
     hair: z.string().max(50, 'Hair color must be less than 50 characters').nullable(),
     gender: z.string().max(20, 'Gender must be less than 20 characters').nullable(),
-    notes: z.string().max(1000, 'Notes must be less than 1000 characters').nullable(),
+    notes: commonValidations.description(10000).nullable(),
 
     // NEW: Character configuration fields
-    editionId: z.number().int().positive('Edition ID must be a positive integer').nullable(),
+    editionId: commonValidations.positiveInt('Edition ID').nullable(),
     allowVariantClasses: z.boolean().default(false),
     isGestalt: z.boolean().default(false),
     ignoreLevelAdjustment: z.boolean().default(false),
 
     // Money fields
-    platinum: z.number().int().min(0, 'Platinum must be non-negative').default(0),
-    gold: z.number().int().min(0, 'Gold must be non-negative').default(0),
-    silver: z.number().int().min(0, 'Silver must be non-negative').default(0),
-    copper: z.number().int().min(0, 'Copper must be non-negative').default(0),
+    platinum: commonValidations.nonNegativeInt('Platinum').default(0),
+    gold: commonValidations.nonNegativeInt('Gold').default(0),
+    silver: commonValidations.nonNegativeInt('Silver').default(0),
+    copper: commonValidations.nonNegativeInt('Copper').default(0),
 });
 
 export const CharacterSchema = BaseCharacterSchema.extend({
-    id: z.number().int().positive('Character ID must be a positive integer'),
-    xp: z.number().int().min(0, 'XP must be a non-negative integer').default(0),
+    id: commonValidations.positiveInt('Character ID'),
+    xp: commonValidations.nonNegativeInt('XP').default(0),
 });
 
 // Schema for character with race information
 // race object removed - frontend should resolve race names from races-cache using raceId (already in base schema)
 export const CharacterWithRaceSchema = CharacterSchema.extend({
     // Class/level information calculated from advancements
-    characterLevel: z.number().int().min(0, 'Character level must be non-negative').default(0),
+    characterLevel: commonValidations.nonNegativeInt('Character level').default(0),
     classLevelString: z.string().default(''),
 });
 
 // Character ability score schema
 export const CharacterAbilityScoreSchema = z.object({
-    id: z.number().int().positive('Ability score ID must be a positive integer'),
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    abilityId: z.number().int().positive('Ability ID must be a positive integer'),
+    id: commonValidations.positiveInt('Ability score ID'),
+    characterId: commonValidations.positiveInt('Character ID'),
+    abilityId: commonValidations.positiveInt('Ability ID'),
     value: z.number().int().min(1, 'Ability score value must be a positive integer').max(50, 'Ability score value must be less than 50'),
 });
 
 // Character advancement schemas
 export const CharacterAdvancementSchema = z.object({
-    id: z.number().int().positive('Advancement ID must be a positive integer'),
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
+    id: commonValidations.positiveInt('Advancement ID'),
+    characterId: commonValidations.positiveInt('Character ID'),
     level: z.number().int().min(1, 'Level must be a positive integer').max(100, 'Level must be less than 100'),
     version: z.number().int().min(1, 'Version must be a positive integer'),
-    classId: z.number().int().positive('Class ID must be a positive integer'),
-    secondaryClassId: z.number().int().positive('Secondary class ID must be a positive integer').nullable(),
+    classId: commonValidations.positiveInt('Class ID'),
+    secondaryClassId: commonValidations.positiveInt('Secondary class ID').nullable(),
     hitPoints: z.number().int().min(1, 'Hit points must be a positive integer'),
-    abilityId: z.number().int().positive('Ability ID must be a positive integer').nullable(),
+    abilityId: commonValidations.positiveInt('Ability ID').nullable(),
     notes: z.string().max(1000, 'Notes must be less than 1000 characters').nullable(),
     createdAt: z.coerce.date(), // Accepts both Date objects and ISO date strings
 });
 
 export const AdvancementSkillSchema = z.object({
-    advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
-    skillId: z.number().int().positive('Skill ID must be a positive integer'),
-    skillSubId: z.union([z.number().int().positive('Skill subtype ID must be a positive integer'), z.null()]),
-    pointsSpent: z.number().int().min(0, 'Points spent must be a non-negative integer'),
+    advancementId: commonValidations.positiveInt('Advancement ID'),
+    skillId: commonValidations.positiveInt('Skill ID'),
+    skillSubId: z.union([commonValidations.positiveInt('Skill subtype ID'), z.null()]),
+    pointsSpent: commonValidations.nonNegativeInt('Points spent'),
     customSubtype: z.union([z.string().max(100, 'Custom subtype must be less than 100 characters'), z.null()]),
 });
 
@@ -113,28 +114,28 @@ export const AdvancementSkillSchema = z.object({
 export const CreateAdvancementSkillSchema = AdvancementSkillSchema.omit({ advancementId: true });
 
 export const AdvancementFeatSchema = z.object({
-    advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
-    featId: z.number().int().positive('Feat ID must be a positive integer'),
-    featSubId: z.number().int().positive('Feat sub ID must be a positive integer').nullable().optional(),
+    advancementId: commonValidations.positiveInt('Advancement ID'),
+    featId: commonValidations.positiveInt('Feat ID'),
+    featSubId: commonValidations.positiveInt('Feat sub ID').nullable().optional(),
 });
 
 // Schema for creating advancement feats (without advancementId, as it's set by the parent)
 export const CreateAdvancementFeatSchema = AdvancementFeatSchema.omit({ advancementId: true });
 
 export const AdvancementSpellSchema = z.object({
-    advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
-    spellId: z.number().int().positive('Spell ID must be a positive integer'),
+    advancementId: commonValidations.positiveInt('Advancement ID'),
+    spellId: commonValidations.positiveInt('Spell ID'),
     isFreeGrant: z.boolean().default(false),
 });
 
 // Character feature choice schema
 export const CharacterFeatureChoiceSchema = z.object({
-    id: z.number().int().positive('Character feature choice ID must be a positive integer'),
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    progressionId: z.number().int().positive('Progression ID must be a positive integer'),
-    advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
-    featureEntityId: z.number().int().positive('Feature entity ID must be a positive integer'),
-    appliesToId: z.number().int().positive('Applies to ID must be a positive integer'),
+    id: commonValidations.positiveInt('Character feature choice ID'),
+    characterId: commonValidations.positiveInt('Character ID'),
+    progressionId: commonValidations.positiveInt('Progression ID'),
+    advancementId: commonValidations.positiveInt('Advancement ID'),
+    featureEntityId: commonValidations.positiveInt('Feature entity ID'),
+    appliesToId: commonValidations.positiveInt('Applies to ID'),
     appliesToSubId: z.number().int().nullable(),
     choiceIndex: z.number().int().nullable(),
     choiceGroupId: z.string().nullable().optional(),
@@ -154,42 +155,18 @@ export const CharacterAdvancementWithDetailsSchema = CharacterAdvancementSchema.
     featureChoices: z.array(CharacterFeatureChoiceSchema),
 });
 
-// Spell preparation schemas
-export const CharacterSpellPreparationSchema = z.object({
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    classId: z.number().int().positive('Class ID must be a positive integer'),
-    spellId: z.number().int().positive('Spell ID must be a positive integer'),
-    spellLevel: z.number().int().min(0, 'Spell level must be a non-negative integer').max(20, 'Spell level must be less than 20'),
-    quantity: z.number().int().min(1, 'Quantity must be a positive integer'),
-    prepKey: z.string().min(1, 'Preparation key is required'),
-    slotType: z.number().int().min(1, 'Slot type must be a positive integer').default(1),
-    isDomainSpell: z.boolean().default(false), // NEW: Is this a domain spell?
-    domainId: z.number().int().positive('Domain ID must be a positive integer').nullable(), // NEW: Which domain (if domain spell)
-});
-
-export const SpellPreparationMetamagicSchema = z.object({
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    prepKey: z.string().min(1, 'Preparation key is required'),
-    featId: z.number().int().positive('Feat ID must be a positive integer'),
-});
-
-// Character spell preparation with metamagic
-export const CharacterSpellPreparationWithMetamagicSchema = CharacterSpellPreparationSchema.extend({
-    metamagics: z.array(SpellPreparationMetamagicSchema),
-});
-
 // Character disallowed source schemas
 export const CharacterDisallowedSourceSchema = z.object({
-    id: z.number().int().positive('Disallowed source ID must be a positive integer'),
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    sourceBookId: z.number().int().positive('Source book ID must be a positive integer'),
+    id: commonValidations.positiveInt('Disallowed source ID'),
+    characterId: commonValidations.positiveInt('Character ID'),
+    sourceBookId: commonValidations.positiveInt('Source book ID'),
 });
 
 // Character language map schemas
 export const CharacterLanguageMapSchema = z.object({
-    id: z.number().int().positive('Character language map ID must be a positive integer'),
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    languageId: z.number().int().positive('Language ID must be a positive integer'),
+    id: commonValidations.positiveInt('Character language map ID'),
+    characterId: commonValidations.positiveInt('Character ID'),
+    languageId: commonValidations.positiveInt('Language ID'),
 });
 
 // Request/response schemas for character language map
@@ -197,28 +174,41 @@ export const CreateCharacterLanguageMapSchema = CharacterLanguageMapSchema.omit(
 
 // Character item schemas (defined before CharacterWithAllDetailsSchema to avoid forward reference)
 export const CharacterItemSchema = z.object({
-    id: z.number().int().positive('Character item ID must be a positive integer'),
-    name: z.string().min(1, 'Character item name is required').max(100, 'Character item name must be less than 100 characters').trim(),
+    id: commonValidations.positiveInt('Character item ID'),
+    name: commonValidations.name(),
     quantity: z.number().int().min(1, 'Quantity must be at least 1').nullable(),
-    location: z.number().int().min(0).max(15).nullable(),
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    baseItemId: z.number().int().positive('Base item ID must be a positive integer'),
+    location: commonValidations.nonNegativeInt('Location', 15).nullable(),
+    characterId: commonValidations.positiveInt('Character ID'),
+    baseItemId: commonValidations.positiveInt('Base item ID'),
 });
 
 // Character attack definition schemas (defined before CharacterWithAllDetailsSchema to avoid forward reference)
 export const CharacterAttackDefinitionSchema = z.object({
-    id: z.number().int().positive('Attack definition ID must be a positive integer'),
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
+    id: commonValidations.positiveInt('Attack definition ID'),
+    characterId: commonValidations.positiveInt('Character ID'),
     attackSlot: z.number().int().min(1).max(7).nullable(),
-    mainHandCharacterItemId: z.number().int().positive('Main hand character item ID must be a positive integer').nullable(),
-    offHandCharacterItemId: z.number().int().positive('Off hand character item ID must be a positive integer').nullable(),
+    mainHandCharacterItemId: commonValidations.positiveInt('Main hand character item ID').nullable(),
+    offHandCharacterItemId: commonValidations.positiveInt('Off hand character item ID').nullable(),
+});
+
+// Spell preparation schemas
+export const CharacterSpellPreparationSchema = z.object({
+    id: commonValidations.positiveInt('Spell preparation ID'),
+    characterId: commonValidations.positiveInt('Character ID'),
+    classId: commonValidations.positiveInt('Class ID'),
+    spellId: commonValidations.positiveInt('Spell ID'),
+    spellLevel: commonValidations.nonNegativeInt('Spell level', 20),
+    quantity: z.number().int().min(1, 'Quantity must be a positive integer'),
+    timesCast: commonValidations.nonNegativeInt('Times cast').default(0).optional(),
+    slotType: z.enum(SpellSlotType).default(SpellSlotType.NORMAL).optional(), // 0=NORMAL, 1=BONUS, 2=DOMAIN
+    featId: commonValidations.positiveInt('Feat ID').nullable().optional(),
 });
 
 // Character with all related data
 export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
     abilityScores: z.array(CharacterAbilityScoreSchema),
     advancements: z.array(CharacterAdvancementWithDetailsSchema),
-    preparedSpells: z.array(CharacterSpellPreparationWithMetamagicSchema),
+    preparedSpells: z.array(CharacterSpellPreparationSchema),
     disallowedSources: z.array(CharacterDisallowedSourceSchema),
     characterLanguages: z.array(CharacterLanguageMapSchema).optional(),
     characterItems: z.array(CharacterItemSchema).optional(),
@@ -229,19 +219,42 @@ export const GetAllCharactersResponseSchema = QueryResponseSchema.extend({
     results: z.array(CharacterWithRaceSchema),
 });
 
+// Schema for character with user information (for admin endpoints)
+export const CharacterWithRaceAndUserSchema = CharacterWithRaceSchema.extend({
+    // User information (included in admin endpoints for administrative oversight)
+    user: z.object({
+        id: commonValidations.positiveInt('User ID'),
+        username: z.string(),
+    }).optional(),
+});
+
+export const GetAllCharactersAdminResponseSchema = QueryResponseSchema.extend({
+    results: z.array(CharacterWithRaceAndUserSchema),
+});
+
 export const UpdateCharacterSchema = BaseCharacterSchema.partial();
 
 export const CreateCharacterSchema = BaseCharacterSchema;
 
-// Request/response schemas for advancement
-export const CreateAdvancementSchema = z.object({
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    level: z.number().int().min(1, 'Level must be a positive integer').max(100, 'Level must be less than 100'),
-    classId: z.number().int().positive('Class ID must be a positive integer'),
-    secondaryClassId: z.union([z.number().int().positive('Secondary class ID must be a positive integer'), z.null()]),
-    hitPoints: z.number().int().min(1, 'Hit points must be a positive integer'),
-    abilityId: z.union([z.number().int().positive('Ability ID must be a positive integer'), z.null()]),
-    notes: z.union([z.string().max(1000, 'Notes must be less than 1000 characters'), z.null()]),
+/**
+ * Schema for creating a character advancement.
+ * 
+ * This schema uses CharacterAdvancementSchema.omit() to avoid duplication while excluding
+ * fields that are auto-generated (id, version, createdAt). The characterId is kept as it's
+ * required for creation. The schema is extended with optional nested arrays for skills, feats, and feature choices.
+ * 
+ * Pattern: BaseSchema.omit({ auto-generated fields }) + optional nested data
+ * 
+ * @see CharacterAdvancementSchema - Base schema this is derived from
+ * @see CreateAdvancementSkillSchema - Schema for nested skills
+ * @see CreateAdvancementFeatSchema - Schema for nested feats
+ * @see CreateCharacterFeatureChoiceSchema - Schema for nested feature choices
+ */
+export const CreateAdvancementSchema = CharacterAdvancementSchema.omit({
+    id: true,
+    version: true,
+    createdAt: true,
+}).extend({
     skills: z.array(CreateAdvancementSkillSchema).optional(),
     feats: z.array(CreateAdvancementFeatSchema).optional(),
     featureChoices: z.array(CreateCharacterFeatureChoiceSchema.omit({ characterId: true, advancementId: true })).optional(),
@@ -249,23 +262,18 @@ export const CreateAdvancementSchema = z.object({
 
 export const UpdateAdvancementSchema = CreateAdvancementSchema.partial();
 
-// Request/response schemas for spell preparation
-export const CreateSpellPreparationSchema = z.object({
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    classId: z.number().int().positive('Class ID must be a positive integer'),
-    spellId: z.number().int().positive('Spell ID must be a positive integer'),
-    spellLevel: z.number().int().min(0, 'Spell level must be a non-negative integer').max(20, 'Spell level must be less than 20'),
-    quantity: z.number().int().min(1, 'Quantity must be a positive integer'),
-    slotType: z.number().int().min(1, 'Slot type must be a positive integer').default(1),
-});
-
-export const UpdateSpellPreparationSchema = CreateSpellPreparationSchema.partial();
-
-// Request/response schemas for character ability scores
-export const CreateCharacterAbilityScoreSchema = z.object({
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    abilityId: z.number().int().positive('Ability ID must be a positive integer'),
-    value: z.number().int().min(1, 'Ability score value must be a positive integer').max(50, 'Ability score value must be less than 50'),
+/**
+ * Schema for creating a character ability score.
+ * 
+ * This schema uses CharacterAbilityScoreSchema.omit() to avoid duplication while excluding
+ * the id field which is auto-generated during creation.
+ * 
+ * Pattern: BaseSchema.omit({ auto-generated fields })
+ * 
+ * @see CharacterAbilityScoreSchema - Base schema this is derived from
+ */
+export const CreateCharacterAbilityScoreSchema = CharacterAbilityScoreSchema.omit({
+    id: true,
 });
 
 // Bulk upsert ability scores schema (replaces all ability scores for a character)
@@ -275,9 +283,9 @@ export const UpsertCharacterAbilityScoresSchema = z.object({
 });
 
 export const CharacterItemPropertySchema = z.object({
-    id: z.number().int().positive('Character item property ID must be a positive integer'),
-    characterItemId: z.number().int().positive('Character item ID must be a positive integer'),
-    propertyId: z.number().int().positive('Property ID must be a positive integer'),
+    id: commonValidations.positiveInt('Character item property ID'),
+    characterItemId: commonValidations.positiveInt('Character item ID'),
+    propertyId: commonValidations.positiveInt('Property ID'),
 });
 
 // Request/response schemas for character items
@@ -292,7 +300,7 @@ export const CreateCharacterAttackDefinitionSchema = CharacterAttackDefinitionSc
 export const UpdateCharacterAttackDefinitionSchema = CreateCharacterAttackDefinitionSchema.partial();
 export const GetAllCharacterAttackDefinitionsResponseSchema = z.array(CharacterAttackDefinitionSchema);
 export const ReorderCharacterAttackDefinitionsSchema = z.object({
-    attackDefinitionIds: z.array(z.number().int().positive('Attack definition ID must be a positive integer')),
+    attackDefinitionIds: z.array(commonValidations.positiveInt('Attack definition ID')),
 });
 
 
@@ -325,6 +333,85 @@ export const SaveCharacterSchema = BaseCharacterSchema.extend({
 export const CreateCharacterDisallowedSourceSchema = CharacterDisallowedSourceSchema.omit({ id: true });
 export const UpdateCharacterDisallowedSourceSchema = CreateCharacterDisallowedSourceSchema.partial();
 
+// Character feature uses schemas
+export const CharacterFeatureUsesSchema = z.object({
+    id: commonValidations.positiveInt('Feature uses ID'),
+    characterId: commonValidations.positiveInt('Character ID'),
+    progressionId: commonValidations.positiveInt('Progression ID'),
+    featureEntityId: commonValidations.positiveInt('Feature entity ID'),
+    currentUses: commonValidations.nonNegativeInt('Current uses'),
+    maxUses: commonValidations.nonNegativeInt('Max uses'),
+    frequency: z.number().int().min(1, 'Frequency must be a positive integer'),
+});
+
+// Request/response schemas for spell preparations
+export const CreateSpellPreparationSchema = CharacterSpellPreparationSchema.omit({ id: true, characterId: true });
+export const UpdateSpellPreparationSchema = CharacterSpellPreparationSchema.partial().omit({ id: true, characterId: true, classId: true, spellId: true, spellLevel: true });
+export const GetCharacterSpellPreparationsResponseSchema = z.array(CharacterSpellPreparationSchema);
+export const GetCharacterUsesResponseSchema = z.array(CharacterFeatureUsesSchema);
+
+export const UpdateFeatureUsesRequestSchema = z.object({
+    delta: z.number().int(), // Positive to increment, negative to decrement
+});
+
+export const UpdateMoneyRequestSchema = z.object({
+    platinum: z.number().int().optional(),
+    gold: z.number().int().optional(),
+    silver: z.number().int().optional(),
+    copper: z.number().int().optional(),
+});
+
+export const AddItemRequestSchema = CreateCharacterItemSchema.omit({ characterId: true });
+
+export const UpdateWoundsRequestSchema = z.object({
+    wounds: commonValidations.nonNegativeInt('Wounds').optional(),
+    nonlethal: commonValidations.nonNegativeInt('Nonlethal damage').optional(),
+});
+
+export const UpdateNotesRequestSchema = z.object({
+    notes: z.string().max(10000, 'Notes must be less than 10000 characters').nullable(),
+});
+
+// Sync schemas for bulk operations
+export const SyncItemsRequestSchema = z.object({
+    items: z.array(
+        CharacterItemSchema
+            .omit({ characterId: true })
+            .extend({
+                id: z.number().int().positive().optional(), // Optional for new items (temporary IDs)
+            })
+    ),
+});
+
+export const SyncSpellPreparationsRequestSchema = z.object({
+    spellPreparations: z.array(
+        CharacterSpellPreparationSchema
+            .omit({ characterId: true })
+            .extend({
+                id: z.number().int().positive().nullable().optional(), // null for new preparations
+            })
+    ),
+});
+
+export const SyncSpellsKnownRequestSchema = z.object({
+    spellsKnown: z.array(
+        AdvancementSpellSchema.omit({ advancementId: true })
+    ),
+});
+
+export const SpellCastParamSchema = CharacterIdParamSchema.extend({
+    preparationId: numericParam(),
+});
+
+export const FeatureUsesParamSchema = CharacterIdParamSchema.extend({
+    progressionId: numericParam(),
+    entityId: numericParam(),
+});
+
+export const CharacterItemIdParamSchema = CharacterIdParamSchema.extend({
+    itemId: numericParam(),
+});
+
 // Character context for formatter calculations
 export const CharacterContextSchema = z.object({
     abilityScores: z.record(z.enum(AbilityId), z.number().int()), // abilityId -> score
@@ -339,14 +426,17 @@ export type SpellPreparationParamRequest = z.infer<typeof SpellPreparationParamS
 export type CharacterAttackIdParamRequest = z.infer<typeof CharacterAttackIdParamSchema>;
 export type RemoveDisallowedSourceParamRequest = z.infer<typeof RemoveDisallowedSourceParamSchema>;
 export type AbilityIdParamRequest = z.infer<typeof AbilityIdParamSchema>;
+export type SyncSpellsKnownParamRequest = z.infer<typeof SyncSpellsKnownParamSchema>;
 
 export type CreateCharacterRequest = z.infer<typeof CreateCharacterSchema>;
 export type UpdateCharacterRequest = z.infer<typeof UpdateCharacterSchema>;
 export type SaveCharacterRequest = z.infer<typeof SaveCharacterSchema>;
 export type Character = z.infer<typeof CharacterSchema>;
 export type CharacterWithRaceResponse = z.infer<typeof CharacterWithRaceSchema>;
+export type CharacterWithRaceAndUserResponse = z.infer<typeof CharacterWithRaceAndUserSchema>;
 export type CharacterWithAllDetailsResponse = z.infer<typeof CharacterWithAllDetailsSchema>;
 export type GetAllCharactersResponse = z.infer<typeof GetAllCharactersResponseSchema>;
+export type GetAllCharactersAdminResponse = z.infer<typeof GetAllCharactersAdminResponseSchema>;
 
 // Advancement types
 export type CreateAdvancementRequest = z.infer<typeof CreateAdvancementSchema>;
@@ -358,7 +448,6 @@ export type CharacterAdvancementWithDetailsResponse = z.infer<typeof CharacterAd
 export type CreateSpellPreparationRequest = z.infer<typeof CreateSpellPreparationSchema>;
 export type UpdateSpellPreparationRequest = z.infer<typeof UpdateSpellPreparationSchema>;
 export type CharacterSpellPreparationResponse = z.infer<typeof CharacterSpellPreparationSchema>;
-export type CharacterSpellPreparationWithMetamagicResponse = z.infer<typeof CharacterSpellPreparationWithMetamagicSchema>;
 
 // Character item types
 export type CharacterItem = z.infer<typeof CharacterItemSchema>;
@@ -394,6 +483,18 @@ export type UpdateCharacterDisallowedSourceRequest = z.infer<typeof UpdateCharac
 // Character language map types
 export type CharacterLanguageMap = z.infer<typeof CharacterLanguageMapSchema>;
 export type CreateCharacterLanguageMapRequest = z.infer<typeof CreateCharacterLanguageMapSchema>;
+
+// Character feature uses types
+export type CharacterFeatureUses = z.infer<typeof CharacterFeatureUsesSchema>;
+export type UpdateFeatureUsesRequest = z.infer<typeof UpdateFeatureUsesRequestSchema>;
+export type UpdateMoneyRequest = z.infer<typeof UpdateMoneyRequestSchema>;
+export type AddItemRequest = z.infer<typeof AddItemRequestSchema>;
+export type UpdateWoundsRequest = z.infer<typeof UpdateWoundsRequestSchema>;
+export type UpdateNotesRequest = z.infer<typeof UpdateNotesRequestSchema>;
+export type SyncItemsRequest = z.infer<typeof SyncItemsRequestSchema>;
+export type SyncSpellPreparationsRequest = z.infer<typeof SyncSpellPreparationsRequestSchema>;
+export type SyncSpellsKnownRequest = z.infer<typeof SyncSpellsKnownRequestSchema>;
+export type SpellCastParamRequest = z.infer<typeof SpellCastParamSchema>;
 
 // Character context type
 export type CharacterContext = z.infer<typeof CharacterContextSchema>;

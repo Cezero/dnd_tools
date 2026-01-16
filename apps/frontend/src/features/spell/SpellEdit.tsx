@@ -20,7 +20,7 @@ import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RA
 
 
 export function SpellEdit() {
-    const { getSpellcasterClassSelectByEdition, getClassNameById } = useCacheFunctions();
+    const { getSpellcasterClassSelectByEdition, getClassSummaryById } = useCacheFunctions();
     const queryClient = useQueryClient();
     const { id } = useParams();
     const navigate = useNavigate();
@@ -119,7 +119,7 @@ export function SpellEdit() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run once on mount
 
-    // Load class names for classLevelMappings using getClassNameById
+    // Load class names for classLevelMappings using getClassSummaryById
     useEffect(() => {
         if (classLevelMappings.length === 0) {
             return;
@@ -141,7 +141,7 @@ export function SpellEdit() {
         if (classIdsToLoad.length > 0) {
             // Load class names asynchronously
             Promise.all(
-                classIdsToLoad.map(classId => getClassNameById(classId))
+                classIdsToLoad.map(classId => getClassSummaryById(classId))
             ).then(classData => {
                 setClassNames(prev => {
                     const updated = new Map(prev);

@@ -663,6 +663,98 @@ Validates the response when fetching available feats for a character.
 
 **Related Documentation**: [Character Resolution System](./character-resolution-system.md) for complete API endpoint documentation
 
+## 🖥️ **Frontend Type Integration**
+
+The character management system provides types that are designed for direct use in frontend code. This section documents the type reuse pattern and when to create frontend-specific types.
+
+### **Shared Types for Frontend Use**
+
+The following types from `@shared/schema` are designed for direct use in frontend code:
+
+| Type | Source File | Frontend Usage |
+|------|-------------|----------------|
+| `PendingChoice` | characterResolution.ts | Choice resolution UI, displaying pending feature choices |
+| `PendingChoiceOption` | characterResolution.ts | Individual choice options in selection dialogs |
+| `SkillBonus` | characterResolution.ts | Skill bonus tracking and display |
+| `ClassSkill` | characterResolution.ts | Class skill identification for skill point allocation |
+| `CharacterFeatureChoice` | character.ts | Saved feature choice data |
+| `CharacterAbilityScoreResponse` | character.ts | Ability score display and editing |
+| `CharacterDisallowedSource` | character.ts | Source book restriction management |
+| `FeatureProgression` | feature.ts | Feature progression display and resolution |
+| `FeatureEntity` | feature.ts | Feature entity details and effects |
+
+**Import Pattern**:
+```typescript
+import type { 
+    PendingChoice, 
+    PendingChoiceOption, 
+    SkillBonus,
+    CharacterFeatureChoice 
+} from '@shared/schema';
+```
+
+### **Frontend-Specific Types**
+
+Some types remain frontend-specific due to different requirements between UI state and database persistence. These types are defined in `apps/frontend/src/features/character/types.ts`.
+
+**Reasons for Frontend-Specific Types**:
+
+- **UI State Management**: Types like `SkillRank` track in-memory state during editing before persistence. They differ from database schemas (e.g., `AdvancementSkill`) which include foreign keys like `advancementId`.
+
+- **Different Semantics**: Types like `FeatureProgressionSourceType` serve different purposes than similar shared types. The frontend enum includes `SecondaryClass` for gestalt character UI pooling, which doesn't exist in the database `FeatureSourceType`.
+
+- **React Integration**: Component props (`TabComponentProps`, `ChoicePresentationProps`) and hook return types (`FeatureResolutionReturn`) are inherently frontend-specific.
+
+- **UI-Only State**: Types like `Money`, `EquipmentItem`, and tab state types (`AbilityTabState`, `ClassTabState`, etc.) manage UI state that doesn't directly map to a single database entity.
+
+### **Type Relationship Examples**
+
+**SkillRank vs AdvancementSkill**:
+```typescript
+// Frontend type (UI state during editing)
+interface SkillRank {
+    skillId: number;
+    skillSubId: number | null;
+    customSubtype: string | null;
+    pointsSpent: number;
+}
+
+// Shared type (database persistence)
+// AdvancementSkillSchema includes advancementId for database FK
+```
+
+**FeatureProgressionSourceType vs FeatureSourceType**:
+```typescript
+// Frontend enum (UI pooling with SecondaryClass support)
+enum FeatureProgressionSourceType {
+    Race = 1,
+    Class = 2,
+    SecondaryClass = 3,  // Frontend-only for gestalt UI
+    Feat = 4,
+    // ...
+}
+
+// Shared enum (database source types)
+// FeatureSourceType in @shared/static-data has different values
+// and doesn't include SecondaryClass
+```
+
+### **Best Practices**
+
+1. **Prefer Shared Types**: Always check if a type exists in `@shared/schema` before creating a frontend-specific type.
+
+2. **Document Relationships**: When creating frontend-specific types that relate to shared types, add JSDoc comments explaining the relationship.
+
+3. **Use Type Aliases**: For backward compatibility, use type aliases when renaming types:
+   ```typescript
+   /** @deprecated Use PendingChoiceOption from @shared/schema */
+   export type ChoiceOption = PendingChoiceOption;
+   ```
+
+4. **Keep UI State Separate**: UI state types should be clearly separated from API request/response types.
+
+**Source File**: `apps/frontend/src/features/character/types.ts` for frontend-specific types
+
 ## 🔗 **Related Documentation**
 
 - **[Database Schema](database-schema.md)** - Character management database models and relationships

@@ -1,27 +1,29 @@
 import z from "zod";
+
+import { numericParam, commonValidations } from "./common";
 import { QueryResponseSchema } from "./query";
 
 // Trick Schema
 export const TrickSchema = z.object({
-    id: z.number().int().positive('Trick ID must be a positive integer'),
-    name: z.string().min(1, 'Trick name is required').max(100, 'Trick name must be less than 100 characters').trim(),
-    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable().optional(),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    id: commonValidations.positiveInt('Trick ID'),
+    name: commonValidations.name(),
+    description: commonValidations.description(10000).nullable().optional(),
+    editionId: commonValidations.positiveInt('Edition ID'),
     isVisible: z.boolean().default(true),
 });
 
 // Character Companion Trick Schema (join table)
 export const CharacterCompanionTrickSchema = z.object({
-    id: z.number().int().positive('Character companion trick ID must be a positive integer'),
-    characterCompanionId: z.number().int().positive('Character companion ID must be a positive integer'),
-    trickId: z.number().int().positive('Trick ID must be a positive integer'),
+    id: commonValidations.positiveInt('Character companion trick ID'),
+    characterCompanionId: commonValidations.positiveInt('Character companion ID'),
+    trickId: commonValidations.positiveInt('Trick ID'),
 });
 
 // Trick with relations schema
 export const TrickWithRelationsSchema = TrickSchema.extend({
     sourceBookInfo: z.array(z.object({
-        sourceBookId: z.number().int().positive(),
-        pageNumber: z.number().int().positive().nullable().optional(),
+        sourceBookId: commonValidations.positiveInt(),
+        pageNumber: commonValidations.positiveInt().nullable().optional(),
     })).optional(),
 });
 
@@ -30,8 +32,8 @@ export const CreateTrickSchema = TrickSchema.omit({
     id: true,
 }).extend({
     sourceBookInfo: z.array(z.object({
-        sourceBookId: z.number().int().positive(),
-        pageNumber: z.number().int().positive().nullable().optional(),
+        sourceBookId: commonValidations.positiveInt(),
+        pageNumber: commonValidations.positiveInt().nullable().optional(),
     })).optional(),
 });
 
@@ -39,7 +41,7 @@ export const UpdateTrickSchema = CreateTrickSchema.partial();
 
 // Parameter schemas
 export const TrickIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 // Response schemas

@@ -6,7 +6,7 @@ import type {
 import {
     FORMULA_MAP,
     DisplayType,
-    BreakdownComponentType,
+    CalculationMethodType,
     FormulaId,
     GetAbilityModifier,
     ABILITY_MAP
@@ -28,7 +28,6 @@ import type {
  */
 export class FormulaCalculatorImpl implements FormulaCalculator {
     calculate(formula: FormulaParamsData, level: number, context?: CalculationContext, entityValue?: number): CalculationResult {
-        console.log('FormulaCalculatorImpl.calculate()', formula, level, context, entityValue);
         const formulaDef = FORMULA_MAP[formula.formulaId];
         if (!formulaDef) {
             return {
@@ -46,7 +45,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
         const components: Array<{
             source: string;
             value: number | string;
-            type: BreakdownComponentType;
+            type: CalculationMethodType;
             description: string;
             formula?: string;
         }> = [];
@@ -78,7 +77,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                 components.push({
                     source: formulaDef.name,
                     value: value || 0,
-                    type: BreakdownComponentType.formula,
+                    type: CalculationMethodType.formula,
                     description: formulaDef.description,
                     formula: formulaString
                 });
@@ -88,7 +87,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             components.push({
                 source: formulaDef.name,
                 value: value || 0, // Use 0 for breakdown display when value is null
-                type: BreakdownComponentType.formula,
+                type: CalculationMethodType.formula,
                 description: value === null ? `Formula does not apply at level ${level}` : formulaDef.description,
                 formula: formulaString
             });
@@ -114,7 +113,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
         components: Array<{
             source: string;
             value: number | string;
-            type: BreakdownComponentType;
+            type: CalculationMethodType;
             description: string;
             formula?: string;
         }>
@@ -126,7 +125,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             const baseValue = params.baseValue as number;
             const abilityId = params.abilityId as number;
             const abilityName = ABILITY_MAP[abilityId]?.abbreviation || 'ability';
-            
+
             if (params.context && typeof params.context === 'object' && 'character' in params.context) {
                 const context = params.context as { character?: { abilityScores: Record<number, number> } };
                 if (context.character && context.character.abilityScores) {
@@ -138,7 +137,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                         components.push({
                             source: 'Base value',
                             value: baseValue,
-                            type: BreakdownComponentType.base,
+                            type: CalculationMethodType.base,
                             description: `Base value: ${baseValue}`
                         });
 
@@ -147,7 +146,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                         components.push({
                             source: abilityName,
                             value: modifier,
-                            type: BreakdownComponentType.ability,
+                            type: CalculationMethodType.formula,
                             description: `${abilityName}: ${modifierString}`
                         });
                         return;
@@ -162,7 +161,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
         if (formulaId === FormulaId.ABILITY_MODIFIER) {
             const abilityId = params.abilityId as number;
             const abilityName = ABILITY_MAP[abilityId]?.abbreviation || 'ability';
-            
+
             if (params.context && typeof params.context === 'object' && 'character' in params.context) {
                 const context = params.context as { character?: { abilityScores: Record<number, number> } };
                 if (context.character && context.character.abilityScores) {
@@ -174,7 +173,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                         components.push({
                             source: abilityName,
                             value: modifier,
-                            type: BreakdownComponentType.ability,
+                            type: CalculationMethodType.formula,
                             description: `${abilityName}: ${modifierString}`
                         });
                         return;
@@ -190,7 +189,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             const abilityId = params.abilityId as number;
             const level = params.level as number;
             const abilityName = ABILITY_MAP[abilityId]?.abbreviation || 'ability';
-            
+
             if (params.context && typeof params.context === 'object' && 'character' in params.context) {
                 const context = params.context as { character?: { abilityScores: Record<number, number> } };
                 if (context.character && context.character.abilityScores) {
@@ -201,7 +200,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                         components.push({
                             source: 'Level',
                             value: level,
-                            type: BreakdownComponentType.base,
+                            type: CalculationMethodType.base,
                             description: `Level: ${level}`
                         });
 
@@ -209,7 +208,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                         components.push({
                             source: abilityName,
                             value: modifier,
-                            type: BreakdownComponentType.ability,
+                            type: CalculationMethodType.formula,
                             description: `${abilityName}: ${modifierString}`
                         });
                         return;
@@ -225,7 +224,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             const abilityId = params.abilityId as number;
             const level = params.level as number;
             const abilityName = ABILITY_MAP[abilityId]?.abbreviation || 'ability';
-            
+
             if (params.context && typeof params.context === 'object' && 'character' in params.context) {
                 const context = params.context as { character?: { abilityScores: Record<number, number> } };
                 if (context.character && context.character.abilityScores) {
@@ -236,7 +235,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                         components.push({
                             source: 'Level',
                             value: level,
-                            type: BreakdownComponentType.base,
+                            type: CalculationMethodType.base,
                             description: `Level: ${level}`
                         });
 
@@ -244,7 +243,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                         components.push({
                             source: abilityName,
                             value: modifier,
-                            type: BreakdownComponentType.ability,
+                            type: CalculationMethodType.formula,
                             description: `${abilityName}: ${modifierString}`
                         });
                         return;
@@ -295,7 +294,7 @@ export class ConditionalValueDetectorImpl implements ConditionalValueDetector {
                 components: [{
                     source: 'Conditional',
                     value: entity.value,
-                    type: BreakdownComponentType.conditional,
+                    type: CalculationMethodType.conditional,
                     description: `Conditional bonus: ${entity.value}`
                 }],
                 explanation: 'Conditional modifier'

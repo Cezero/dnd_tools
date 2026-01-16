@@ -39,6 +39,7 @@ export const raceService: RaceService = {
         const racesWithFeatures = await Promise.all(
             races.map(async (race) => {
                 const features = await featureSystemService.getFeatureProgressionsByRaceId(race.id);
+
                 return {
                     ...race,
                     features,
@@ -154,7 +155,6 @@ export const raceService: RaceService = {
                 name: true,
                 editionId: true,
                 isVisible: true,
-                sizeId: true,
             }
         });
 

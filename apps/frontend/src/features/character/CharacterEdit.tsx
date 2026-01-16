@@ -4,6 +4,7 @@ import {
     UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon, BoltIcon, Bars3Icon
 } from '@heroicons/react/24/outline';
 import { useQueryClient } from '@tanstack/react-query';
+import isEqual from 'lodash/isEqual';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -13,23 +14,62 @@ import { useToast } from '@/components/toast/useToast';
 import { useCharacterEditState } from '@/features/character';
 import { CharacterApi } from '@/features/character/CharacterApi';
 import { CharacterEditStateUpdateType, type EquipmentItem, type SkillRank, type TabConfig, type TabComponentProps } from '@/features/character/types';
+import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
 import { hasNoMaxRanks } from '@/lib/skill-utils';
-import { CharacterResolutionApi, type CharacterUpdate } from '@/services/api/CharacterResolutionApi';
-import { useCacheFunctions } from '@/services/cache';
+import type { CharacterUpdate } from '@/services/api/CharacterResolutionApi';
 import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatInQueryResponse, Feat, ItemWithDetails, FeatureProgression } from '@shared/schema';
-import { EditionId, DisplayType } from '@shared/static-data';
+import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatWithFeatureInfo, ItemWithDetails, FeatureProgression } from '@shared/schema';
+import { EditionId, DisplayType, EntityType, EntityAppliesToType } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
 import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab, SpellSelectionTab } from './tabs';
 import { useCharacterResolution } from './useCharacterResolution';
 
+/**
+ * Main character editing component with tab-based interface.
+ * 
+ * **State Synchronization Pattern**:
+ * 
+ * This component implements the standardized state → useEffect → API/applyUpdate pattern for
+ * synchronizing character state changes with the resolution session:
+ * 
+ * 1. **Tabs update state**: Tab components call `updateState()` to modify character state
+ * 2. **CharacterEdit syncs automatically**: useEffect hooks watch state changes and automatically
+ *    call `resolution.applyUpdate()` or API endpoints to sync changes
+ * 3. **Resolution session updates**: Backend resolution session is updated, and resolved data
+ *    flows back to tabs via `resolvedData` prop
+ * 
+ * **Note**: `spellsKnown` uses a different pattern (state → useEffect → API + refreshState) similar
+ * to `spellPreparations` in CharacterDetail, using lodash/isEqual for comparison and sending the
+ * full array to a backend sync endpoint.
+ * 
+ * **Benefits of this pattern**:
+ * - Centralized sync logic: All sync happens in CharacterEdit, easier to maintain
+ * - Tabs are simpler: Tabs don't need to know about resolution API
+ * - Automatic sync: No risk of forgetting to sync - it's automatic
+ * - React-idiomatic: Uses effects to react to state changes
+ * - Consistent: All tabs work the same way
+ * 
+ * **useEffect Hooks**:
+ * - Class changes: Watches `state.classId` and `state.secondaryClassId`
+ * - Race changes: Watches `state.raceId`
+ * - Level changes: Watches `state.level`
+ * - Skill ranks: Watches `state.skillRanks` array
+ * - Feature choices: Watches `state.featureChoices` array
+ * - Spells known: Watches `state.spellsKnown` array (uses lodash/isEqual for comparison, same pattern as spellPreparations in CharacterDetail)
+ * 
+ * **Why refs are used**: Refs track previous values to avoid syncing on initial mount and
+ * to detect actual changes vs. initial state loading.
+ * 
+ * @see useCharacterResolution - For resolution session management
+ * @see TabComponentProps - For tab component interface
+ */
 export function CharacterEdit(): React.JSX.Element {
     const { user, isLoading: isAuthLoading } = useAuthAuto();
     const { state, updateState } = useCharacterEditState();
@@ -57,9 +97,9 @@ export function CharacterEdit(): React.JSX.Element {
     const [classDetailsMap, setClassDetailsMap] = useState<Map<number, DnDClass>>(new Map());
 
     // Shared data for all tabs - feats, classes, race
-    const [allFeats, setAllFeats] = useState<FeatInQueryResponse[]>([]);
+    const [allFeats, setAllFeats] = useState<FeatWithFeatureInfo[]>([]);
     const [isLoadingFeats, setIsLoadingFeats] = useState(false);
-    const [featsMap, setFeatsMap] = useState<Map<number, Feat>>(new Map());
+    const [featsMap, setFeatsMap] = useState<Map<number, FeatWithFeatureInfo>>(new Map());
     const [isLoadingFullFeats, setIsLoadingFullFeats] = useState(false);
 
     // Initialize from user preferences
@@ -106,8 +146,10 @@ export function CharacterEdit(): React.JSX.Element {
                 skillBonuses: [],
                 pendingChoices: [],
                 grantedFeats: [],
-                availableFeats: 0,
-                availableFighterBonusFeats: 0
+                availableFeatsCount: 0,
+                availableFighterBonusFeats: 0,
+                qualifiedFeats: [],
+                spellSelection: undefined,
             };
         }
 
@@ -119,8 +161,8 @@ export function CharacterEdit(): React.JSX.Element {
             grantedFeats: resolution.resolvedCharacter.grantedFeats.map(featId => ({
                 id: 0,
                 progressionId: 0,
-                type: 0,
-                appliesTo: 2, // EntityAppliesToType.Feat
+                type: EntityType.Bonus,
+                appliesTo: EntityAppliesToType.Feat,
                 appliesToId: featId,
                 appliesToSubId: null,
                 value: null,
@@ -130,8 +172,10 @@ export function CharacterEdit(): React.JSX.Element {
                 displayInDetail: true,
                 filterType: null,
             })),
-            availableFeats: resolution.resolvedCharacter.availableFeats,
-            availableFighterBonusFeats: resolution.resolvedCharacter.availableFighterBonusFeats
+            availableFeatsCount: resolution.resolvedCharacter.availableFeatsCount,
+            availableFighterBonusFeats: resolution.resolvedCharacter.availableFighterBonusFeats,
+            qualifiedFeats: resolution.resolvedCharacter.qualifiedFeats || [],
+            spellSelection: resolution.resolvedCharacter.spellSelection,
         };
     }, [resolution.resolvedCharacter]);
 
@@ -143,8 +187,18 @@ export function CharacterEdit(): React.JSX.Element {
     const prevSecondaryClassIdRef = useRef<number | null>(null);
     const prevRaceIdRef = useRef<number | null>(null);
     const prevLevelRef = useRef<number | null>(null);
+    const prevSkillRanksRef = useRef<string>('');
+    const prevFeatureChoicesRef = useRef<string>('');
+    const prevSpellsKnownRef = useRef<typeof state.spellsKnown | null>(null);
 
-    // Sync class changes to resolution session
+    /**
+     * Sync class changes to resolution session.
+     * 
+     * Automatically syncs primary and secondary class changes to the resolution session.
+     * Watches `state.classId` and `state.secondaryClassId` for changes.
+     * 
+     * @see CharacterEdit component JSDoc for overall sync pattern documentation
+     */
     useEffect(() => {
         // Only sync if session is initialized and we have a character ID
         if (!state.characterId || !resolution.sessionId) {
@@ -185,7 +239,14 @@ export function CharacterEdit(): React.JSX.Element {
         prevSecondaryClassIdRef.current = state.secondaryClassId;
     }, [state.characterId, state.classId, state.secondaryClassId, resolution.sessionId, resolution.applyUpdate]);
 
-    // Sync race changes to resolution session
+    /**
+     * Sync race changes to resolution session.
+     * 
+     * Automatically syncs race changes to the resolution session.
+     * Watches `state.raceId` for changes.
+     * 
+     * @see CharacterEdit component JSDoc for overall sync pattern documentation
+     */
     useEffect(() => {
         // Only sync if session is initialized and we have a character ID
         if (!state.characterId || !resolution.sessionId) {
@@ -213,7 +274,14 @@ export function CharacterEdit(): React.JSX.Element {
         prevRaceIdRef.current = state.raceId;
     }, [state.characterId, state.raceId, resolution.sessionId, resolution.applyUpdate]);
 
-    // Sync level changes to resolution session
+    /**
+     * Sync level changes to resolution session.
+     * 
+     * Automatically syncs level changes to the resolution session.
+     * Watches `state.level` for changes.
+     * 
+     * @see CharacterEdit component JSDoc for overall sync pattern documentation
+     */
     useEffect(() => {
         // Only sync if session is initialized and we have a character ID
         if (!state.characterId || !resolution.sessionId) {
@@ -239,7 +307,159 @@ export function CharacterEdit(): React.JSX.Element {
         prevLevelRef.current = state.level;
     }, [state.characterId, state.level, resolution.sessionId, resolution.applyUpdate]);
 
+    /**
+     * Sync skill rank changes to resolution session.
+     * 
+     * This useEffect hook automatically syncs skill rank changes to the resolution session
+     * when the skillRanks array in state changes. It follows the standardized pattern where
+     * tabs update state and CharacterEdit automatically handles the sync.
+     * 
+     * **Pattern**: State → useEffect → applyUpdate
+     * - Tab updates state.skillRanks via updateState()
+     * - This useEffect detects the change
+     * - Automatically calls resolution.applyUpdate() for each skill rank change
+     * 
+     * **Why refs are used**: The prevSkillRanksRef tracks the previous array state to avoid
+     * syncing on initial mount and to detect actual changes.
+     * 
+     * @see CharacterEdit component JSDoc for overall sync pattern documentation
+     */
+    useEffect(() => {
+        // Only sync if session is initialized and we have a character ID
+        if (!state.characterId || !resolution.sessionId) {
+            return;
+        }
+
+        // Serialize current skill ranks for comparison
+        const currentSkillRanksStr = JSON.stringify(state.skillRanks);
+
+        // Initialize ref on first session availability (don't send update on initial sync)
+        if (prevSkillRanksRef.current === '') {
+            prevSkillRanksRef.current = currentSkillRanksStr;
+            return;
+        }
+
+        // Check if skill ranks changed
+        if (currentSkillRanksStr !== prevSkillRanksRef.current) {
+            // Skill ranks actually changed - sync each skill rank to resolution session
+            for (const skillRank of state.skillRanks) {
+                resolution.applyUpdate({
+                    type: 'SET_SKILL_RANK',
+                    payload: {
+                        skillId: skillRank.skillId,
+                        skillSubId: skillRank.skillSubId,
+                        customSubtype: skillRank.customSubtype,
+                        pointsSpent: skillRank.pointsSpent
+                    }
+                }).catch(error => {
+                    console.error('Failed to sync skill rank update to resolution session:', error);
+                });
+            }
+        }
+        prevSkillRanksRef.current = currentSkillRanksStr;
+    }, [state.characterId, state.skillRanks, resolution.sessionId, resolution.applyUpdate]);
+
+    /**
+     * Sync feature choice changes to resolution session.
+     * 
+     * This useEffect hook automatically syncs feature choice changes to the resolution session
+     * when the featureChoices array in state changes. It follows the standardized pattern where
+     * tabs update state and CharacterEdit automatically handles the sync.
+     * 
+     * **Pattern**: State → useEffect → applyUpdate
+     * - Tab updates state.featureChoices via updateState()
+     * - This useEffect detects the change
+     * - Automatically calls resolution.applyUpdate() for each choice change
+     * 
+     * **Why refs are used**: The prevFeatureChoicesRef tracks the previous array state to avoid
+     * syncing on initial mount and to detect actual changes.
+     * 
+     * @see CharacterEdit component JSDoc for overall sync pattern documentation
+     */
+    useEffect(() => {
+        // Only sync if session is initialized and we have a character ID
+        if (!state.characterId || !resolution.sessionId) {
+            return;
+        }
+
+        // Serialize current feature choices for comparison
+        const currentFeatureChoicesStr = JSON.stringify(state.featureChoices);
+
+        // Initialize ref on first session availability (don't send update on initial sync)
+        if (prevFeatureChoicesRef.current === '') {
+            prevFeatureChoicesRef.current = currentFeatureChoicesStr;
+            return;
+        }
+
+        // Check if feature choices changed
+        if (currentFeatureChoicesStr !== prevFeatureChoicesRef.current) {
+            // Feature choices actually changed - sync each choice to resolution session
+            for (const choice of state.featureChoices) {
+                resolution.applyUpdate({
+                    type: 'MAKE_CHOICE',
+                    payload: {
+                        progressionId: choice.progressionId,
+                        featureEntityId: choice.featureEntityId,
+                        appliesToId: choice.appliesToId,
+                        appliesToSubId: choice.appliesToSubId ?? null
+                    }
+                }).catch(error => {
+                    console.error('Failed to sync feature choice update to resolution session:', error);
+                });
+            }
+        }
+        prevFeatureChoicesRef.current = currentFeatureChoicesStr;
+    }, [state.characterId, state.featureChoices, resolution.sessionId, resolution.applyUpdate]);
+
+    /**
+     * Sync spellsKnown changes to backend.
+     * 
+     * Automatically syncs spellsKnown array changes to the backend and refreshes resolution state.
+     * Watches `state.spellsKnown` for changes. Sends full array to backend sync endpoint.
+     * 
+     * **Pattern**: State → useEffect → API + refreshState (same as spellPreparations in CharacterDetail)
+     * - Tab updates state.spellsKnown via updateState()
+     * - This useEffect detects the change using lodash/isEqual
+     * - Automatically calls CharacterApi.syncSpellsKnown() with full array
+     * - Backend handles diffing and updates database
+     * - Refreshes resolution state after sync
+     * 
+     * @see CharacterDetail component for spellPreparations sync pattern
+     * @see CharacterEdit component JSDoc for overall sync pattern documentation
+     */
+    useEffect(() => {
+        if (!state.characterId || !state.currentAdvancementId || !resolution.sessionId) {
+            return;
+        }
+
+        if (prevSpellsKnownRef.current === null) {
+            prevSpellsKnownRef.current = state.spellsKnown;
+            return;
+        }
+
+        if (!isEqual(state.spellsKnown, prevSpellsKnownRef.current)) {
+            CharacterApi.syncSpellsKnown(
+                { spellsKnown: state.spellsKnown },
+                { id: state.characterId, advancementId: state.currentAdvancementId }
+            )
+                .then(() => {
+                    queryClient.invalidateQueries({
+                        queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(state.characterId!),
+                    });
+                    if (resolution.sessionId) {
+                        return resolution.refreshState();
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to sync spellsKnown to backend:', error);
+                });
+            prevSpellsKnownRef.current = state.spellsKnown;
+        }
+    }, [state.characterId, state.currentAdvancementId, state.spellsKnown, resolution.sessionId, resolution.refreshState, queryClient]);
+
     // Handle choice selection - apply update to resolution session
+    // NOTE: This handler is kept for backward compatibility but should not be called directly
+    // from tabs. Tabs should update state.featureChoices and let the useEffect hook handle sync.
     const handleChoiceSelection = useCallback(async (choiceType: number, selectedId: number, _features: FeatureProgression[]) => {
         if (!state.characterId || !resolution.sessionId) {
             console.warn('Cannot save choice: session not initialized');
@@ -338,7 +558,7 @@ export function CharacterEdit(): React.JSX.Element {
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
-                // getFeats returns GetAllFeatsResponse which has results: FeatInQueryResponse[]
+                // getFeats returns GetAllFeatsWithFeatureInfoResponse which has results: Feat[]
                 if (isMounted && featResponse?.results) {
                     setAllFeats(featResponse.results);
                 } else if (isMounted) {
@@ -375,9 +595,9 @@ export function CharacterEdit(): React.JSX.Element {
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
-                // getFeats returns GetAllFeatsWithFeatureInfoResponse which has results: Feat[]
+                // getFeats returns GetAllFeatsWithFeatureInfoResponse which has results: FeatWithFeatureInfo[]
                 if (isMounted && featResponse?.results) {
-                    const map = new Map<number, Feat>();
+                    const map = new Map<number, FeatWithFeatureInfo>();
                     for (const feat of featResponse.results) {
                         map.set(feat.id, feat);
                     }
@@ -577,7 +797,7 @@ export function CharacterEdit(): React.JSX.Element {
                         .filter(item => item.baseItemId !== null && item.baseItemId !== undefined)
                         .map((item) => ({
                             id: item.id,
-                            itemId: item.baseItemId!,
+                            baseItemId: item.baseItemId!,
                             costInGp: null, // Cost not stored in CharacterItem, would need to fetch from baseItem
                             quantity: item.quantity ?? 1,
                             location: item.location ?? null,
@@ -628,6 +848,13 @@ export function CharacterEdit(): React.JSX.Element {
                     });
                     updateState({ type: CharacterEditStateUpdateType.SET_SELECTED_FEATS, payload: { selectedFeats } });
                     updateState({ type: CharacterEditStateUpdateType.SET_FEAT_SUB_IDS, payload: { featSubIds } });
+
+                    // Load spellsKnown
+                    const spellsKnown = advancement.spellsKnown?.map(s => ({
+                        spellId: s.spellId,
+                        isFreeGrant: s.isFreeGrant ?? false
+                    })) || [];
+                    updateState({ type: CharacterEditStateUpdateType.SET_SPELLS_KNOWN, payload: { spellsKnown } });
 
                     // Load feature choices
                     updateState({ type: CharacterEditStateUpdateType.SET_FEATURE_CHOICES, payload: { featureChoices: advancement.featureChoices } });
@@ -777,6 +1004,10 @@ export function CharacterEdit(): React.JSX.Element {
                         featId,
                         featSubId: state.featSubIds[featId] ?? null,
                     })),
+                    spellsKnown: state.spellsKnown.map(s => ({
+                        spellId: s.spellId,
+                        isFreeGrant: s.isFreeGrant
+                    })),
                     // Include feature choices (choices made in ChoicesTab)
                     // Omit id, characterId, and advancementId as per CreateCharacterFeatureChoiceSchema
                     featureChoices: state.featureChoices.length > 0 ? state.featureChoices.map(choice => ({
@@ -787,17 +1018,17 @@ export function CharacterEdit(): React.JSX.Element {
                         choiceIndex: choice.choiceIndex ?? null,
                     })) : undefined,
                 } : undefined,
-                // Include equipment (only items with itemId, which are purchased items)
+                // Include equipment (only items with baseItemId, which are purchased items)
                 // Send individual items to preserve location per instance
                 // Only send if there are items to avoid accidentally deleting all equipment
                 equipment: (() => {
                     const equipmentItems = state.equipment
-                        .filter(item => item.itemId !== null)
+                        .filter(item => item.baseItemId !== null)
                         .map(item => ({
                             name: item.notes || 'Unknown Item',
                             quantity: item.quantity || 1,
                             location: item.location ?? null,
-                            baseItemId: item.itemId!,
+                            baseItemId: item.baseItemId!,
                         }));
                     // Return undefined if empty to preserve existing equipment
                     return equipmentItems.length > 0 ? equipmentItems : undefined;
@@ -1109,7 +1340,14 @@ export function CharacterEdit(): React.JSX.Element {
                 })
             ),
             raceId: characterData.raceId ?? undefined,
-            sizeId: (characterData.race && 'sizeId' in characterData.race && typeof characterData.race.sizeId === 'number') ? characterData.race.sizeId : undefined
+            sizeId: (() => {
+                // Extract sizeId from resolved progressions
+                if (characterData.raceId && resolvedData.progressions) {
+                    const raceMechanics = extractRaceMechanics(resolvedData.progressions, characterData.raceId);
+                    return raceMechanics.sizeId ?? undefined;
+                }
+                return undefined;
+            })()
         };
 
         try {
@@ -1121,7 +1359,6 @@ export function CharacterEdit(): React.JSX.Element {
                 classDetailsMap,
                 {
                     character: characterContext,
-                    queryClient,
                     skillRanks: state.skillRanks,
                     classSkills: resolvedData.classSkills.map(skill => ({ skillId: skill.skillId, skillSubId: skill.skillSubId ?? null })),
                     skillBonuses: resolvedData.skillBonuses.map(bonus => ({ skillId: bonus.skillId, skillSubId: bonus.skillSubId ?? null, bonus: bonus.bonus, source: bonus.source }))

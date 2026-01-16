@@ -1,4 +1,6 @@
 import { z } from 'zod';
+
+import { numericParam, commonValidations } from './common.js';
 import { UserDiceConfigOverrideSchema, DiceBoxAdminConfigSchema } from './diceBox.js';
 
 // User dice configuration schema (aligned with Prisma database structure)
@@ -9,16 +11,9 @@ export const UserDiceConfigSchema = z.object({
 
 // Schema for user registration
 export const RegisterUserSchema = z.object({
-    username: z.string()
-        .min(3, 'Username must be at least 3 characters long')
-        .max(50, 'Username must be less than 50 characters')
-        .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
-    email: z.email({ message: 'Invalid email format' })
-        .max(255, { message: 'Email must be less than 255 characters' }),
-    password: z.string()
-        .min(8, 'Password must be at least 8 characters long')
-        .max(100, 'Password must be less than 100 characters')
-        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one lowercase letter, one uppercase letter, and one number'),
+    username: commonValidations.username,
+    email: commonValidations.email,
+    password: commonValidations.password,
 });
 
 // Base auth user schema (authentication and role information only)
@@ -38,18 +33,12 @@ export const UserProfileSchema = AuthUserSchema.extend({
 
 // Schema for user login
 export const LoginUserSchema = z.object({
-    username: z.string()
-        .min(1, 'Username is required'),
-    password: z.string()
-        .min(1, 'Password is required'),
+    username: commonValidations.username,
+    password: commonValidations.password,
 });
 
 // Schema for JWT token in Authorization header
-export const AuthHeaderSchema = z.object({
-    authorization: z.string()
-        .regex(/^Bearer\s+/, 'Authorization header must start with "Bearer "')
-        .min(7, 'Authorization header is too short'),
-});
+export const AuthHeaderSchema = commonValidations.authHeader;
 
 // Schema for JWT token payload (extends AuthUserSchema with JWT fields)
 export const JwtPayloadSchema = AuthUserSchema.extend({
@@ -66,13 +55,13 @@ export const AuthServiceResultSchema = z.object({
 
 // Schema for updating user profile (matches Prisma User model field names)
 export const UpdateUserProfileSchema = z.object({
-    preferredEditionId: z.number().int().positive().optional(),
-    diceConfigBase: z.number().int().positive().optional(),
+    preferredEditionId: commonValidations.positiveInt().optional(),
+    diceConfigBase: commonValidations.positiveInt().optional(),
     diceConfigOverrides: z.array(UserDiceConfigOverrideSchema).optional(),
 });
 
 export const UserProfileIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 // Schema for user profile response
@@ -87,7 +76,7 @@ export const UserProfileUpdateResponseSchema = z.object({
 
 // Schema for updating user dice configuration (separate from profile updates)
 export const UpdateUserDiceConfigSchema = z.object({
-    diceConfigBase: z.number().int().positive(),
+    diceConfigBase: commonValidations.positiveInt(),
     diceConfigOverrides: z.array(UserDiceConfigOverrideSchema).default([])
 });
 

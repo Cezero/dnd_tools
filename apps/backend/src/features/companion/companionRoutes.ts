@@ -13,6 +13,7 @@ import {
 import {
     GetAllCompanions,
     GetCompanionById,
+    GetCompanionCache,
     CreateCompanion,
     UpdateCompanion,
     DeleteCompanion,
@@ -28,6 +29,8 @@ const { router: CompanionRouter, get, post, put, delete: deleteRoute } = buildVa
 // Companion Definition Read Routes (public)
 // GET /api/companions - Get all companion definitions
 get('/', {}, GetAllCompanions);
+// GET /api/companions/cache - Get cached companion data (public)
+get('/cache', {}, GetCompanionCache);
 // GET /api/companions/:id - Get specific companion definition by ID
 get('/:id', { params: CompanionIdParamSchema }, GetCompanionById);
 

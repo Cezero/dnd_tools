@@ -27,7 +27,15 @@ import {
     SpellSaveDCFormatter,
     ResistanceFormatter,
     PrerequisiteFormatter,
-    SpellbookSpellFormatter
+    SpellbookSpellFormatter,
+    BaseAttackBonusFormatter,
+    SavingThrowProgressionFormatter,
+    SpeedFormatter,
+    FavoredClassFormatter,
+    LevelAdjustmentFormatter,
+    CastingAbilityFormatter,
+    CastingTypeFormatter,
+    SpellcastingProgressionFormatter
 } from './pure-formatters';
 import { generateKey } from './registry-utils';
 import type { BaseFormatter } from './types';
@@ -130,6 +138,14 @@ export class FormatterRegistry implements IFormatterRegistry {
         const spellSaveDCFormatter = new SpellSaveDCFormatter();
         const resistanceFormatter = new ResistanceFormatter();
         const spellbookSpellFormatter = new SpellbookSpellFormatter();
+        const baseAttackBonusFormatter = new BaseAttackBonusFormatter();
+        const savingThrowProgressionFormatter = new SavingThrowProgressionFormatter();
+        const speedFormatter = new SpeedFormatter();
+        const favoredClassFormatter = new FavoredClassFormatter();
+        const levelAdjustmentFormatter = new LevelAdjustmentFormatter();
+        const castingAbilityFormatter = new CastingAbilityFormatter();
+        const castingTypeFormatter = new CastingTypeFormatter();
+        const spellcastingProgressionFormatter = new SpellcastingProgressionFormatter();
 
         // Bonus-compatible types (using convenience wrapper)
         this.registerBonusFormatter(EntityAppliesToType.Ability, signedValueFormatter);
@@ -175,13 +191,25 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerOtherFormatter(EntityAppliesToType.SizeCategory, sizeCategoryFormatter);
         this.registerOtherFormatter(EntityAppliesToType.DamageType, damageTypeFormatter);
         this.registerOtherFormatter(EntityAppliesToType.WeaponFamiliarity, weaponFamiliarityFormatter);
-        
+
         // Prerequisite formatter
         const prerequisiteFormatter = new PrerequisiteFormatter();
         this.registerOtherFormatter(EntityAppliesToType.Prerequisite, prerequisiteFormatter);
 
         // SpellbookSpell formatter
         this.registerOtherFormatter(EntityAppliesToType.SpellbookSpell, spellbookSpellFormatter);
+
+        // Class/Race mechanics formatters
+        this.registerOtherFormatter(EntityAppliesToType.BaseAttackBonus, baseAttackBonusFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.HitDice, diceFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.SavingThrow, savingThrowProgressionFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.Size, sizeCategoryFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.FavoredClass, favoredClassFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.LevelAdjustment, levelAdjustmentFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.SkillPoints, valueFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.CastingAbility, castingAbilityFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.CastingType, castingTypeFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.SpellcastingProgression, spellcastingProgressionFormatter);
 
         // Proficiency-compatible types
         this.registerProficiencyFormatter(EntityAppliesToType.Proficiency, proficiencyFormatter);
@@ -195,6 +223,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.CreatureType, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.AnimalCompanion, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.Familiar, featureEntityFormatter);
+        this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.Ability, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Allocation, EntityAppliesToType.Feat, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Allocation, EntityAppliesToType.Spell, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Allocation, EntityAppliesToType.Feature, featureEntityFormatter);

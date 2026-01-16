@@ -1,51 +1,42 @@
 import { z } from 'zod';
+
+import { numericParam, optionalBooleanParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 import { CastingType, ProgressionType } from '@shared/static-data';
-import { CreateFeatureProgressionSchema, FeatureProgressionSchema } from './feature.js';
+import { CreateFeatureProgressionRequestSchema, FeatureProgressionResponseSchema } from './feature.js';
 import { CreateSpellcastingProgressionSchema, SpellcastingProgressionWithSlotsSchema } from './spellcasting.js';
 
 // Simplified schema for character feature choices (for enriching progressions)
 // Shared between class and race endpoints
 export const CharacterFeatureChoiceForEnrichmentSchema = z.object({
-    progressionId: z.number().int().positive('Progression ID must be a positive integer'),
-    featureEntityId: z.number().int().positive('Feature entity ID must be a positive integer'),
-    appliesToId: z.number().int().positive('Applies to ID must be a positive integer').nullable(),
+    progressionId: commonValidations.positiveInt('Progression ID'),
+    featureEntityId: commonValidations.positiveInt('Feature entity ID'),
+    appliesToId: commonValidations.positiveInt('Applies to ID').nullable(),
     appliesToSubId: z.number().int().nullable(),
 });
 
 export const BaseClassSchema = z.object({
-    name: z.string()
-        .min(1, 'Class name is required')
-        .max(100, 'Class name must be less than 100 characters')
-        .trim(),
+    name: commonValidations.name(),
     abbreviation: z.string()
         .min(1, 'Class abbreviation is required')
         .max(10, 'Class abbreviation must be less than 10 characters')
         .trim(),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    editionId: commonValidations.positiveInt('Edition ID'),
     isPrestige: z.boolean().default(false),
     isVisible: z.boolean().default(true),
     canCastSpells: z.boolean().default(false),
     spellsKnown: z.boolean().default(false),
     isDivine: z.boolean().default(false),
-    hitDie: z.number().int().min(0, 'Hit die must be at least 0').max(20, 'Hit die must be at most 20'),
-    skillPoints: z.number().int().min(0, 'Skill points must be non-negative').max(100, 'Skill points must be less than 100'),
-    castingAbilityId: z.number().int().positive('Casting ability ID must be a positive integer').nullable(),
-    castingType: z.enum(CastingType).nullable(),
-    babProgression: z.enum(ProgressionType),
-    fortProgression: z.enum(ProgressionType),
-    refProgression: z.enum(ProgressionType),
-    willProgression: z.enum(ProgressionType),
-    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
+    description: commonValidations.description(10000).nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureProgressionSchema).nullable(),
+    features: z.array(FeatureProgressionResponseSchema).nullable(),
     spellcastingProgression: z.array(SpellcastingProgressionWithSlotsSchema).optional().nullable(),
     spellsKnownProgression: z.array(SpellcastingProgressionWithSlotsSchema).optional().nullable(),
 });
 
 export const ClassIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 // Query schema for optional character feature choices
@@ -65,30 +56,22 @@ export const ClassSummarySchema = BaseClassSchema.omit({
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
-    id: z.number().int().positive('Class ID must be a positive integer'),
+    id: commonValidations.positiveInt('Class ID'),
 });
 
 export const ClassCacheSchema = ClassSummarySchema.omit({
     spellsKnown: true,
-    hitDie: true,
-    skillPoints: true,
-    castingAbilityId: true,
-    castingType: true,
-    babProgression: true,
-    fortProgression: true,
-    refProgression: true,
-    willProgression: true,
     description: true,
     sourceBookInfo: true,
 });
 
 export const GetAllClassesQuerySchema = z.object({
-    baseClassesOnly: z.boolean().optional(),
-    isVisible: z.boolean().optional(),
-    isPrestige: z.boolean().optional(),
-    canCastSpells: z.boolean().optional(),
-    editionId: z.number().int().positive().optional(),
-    editionIds: z.array(z.number().int().positive()).optional(),
+    baseClassesOnly: optionalBooleanParam(),
+    isVisible: optionalBooleanParam(),
+    isPrestige: optionalBooleanParam(),
+    canCastSpells: optionalBooleanParam(),
+    editionId: commonValidations.positiveInt().optional(),
+    editionIds: z.array(commonValidations.positiveInt()).optional(),
 });
 
 export const ClassCacheResponseSchema = QueryResponseSchema.extend({
@@ -104,7 +87,7 @@ export const UpdateClassSchema = BaseClassSchema.omit({
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
-    features: z.array(CreateFeatureProgressionSchema).nullable(),
+    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
     spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 }).partial();
@@ -114,7 +97,7 @@ export const CreateClassSchema = BaseClassSchema.omit({
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
-    features: z.array(CreateFeatureProgressionSchema).nullable(),
+    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
     spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 });

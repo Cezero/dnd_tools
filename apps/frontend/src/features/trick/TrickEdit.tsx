@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import {
@@ -11,7 +11,7 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { TrickQueryHooks } from '@/services/query/TrickQueryHooks';
 import { CreateTrickRequest, UpdateTrickRequest, UpdateTrickSchema, CreateTrickSchema } from '@shared/schema';
-import { EDITION_LIST } from '@shared/static-data';
+import { EDITION_LIST, SourceType, EditionId } from '@shared/static-data';
 
 // Type definitions for the form state
 type TrickFormData = CreateTrickRequest | UpdateTrickRequest;
@@ -33,17 +33,32 @@ export function TrickEdit() {
     const isNew = id === 'new';
     const fromListParams = location.state?.fromListParams || '';
 
-    // Form validation
-    const form = useValidatedForm<TrickFormData>({
-        schema: isNew ? CreateTrickSchema : UpdateTrickSchema,
-        defaultValues: {
-            name: '',
-            description: null,
-            editionId: 1,
-            isVisible: true,
-            sourceBookInfo: [],
-        },
-    });
+    // Determine which schema to use based on whether we're creating or editing
+    const schema = isNew ? CreateTrickSchema : UpdateTrickSchema;
+
+    // Initialize form data with default values
+    const initialFormData: TrickFormData = useMemo(() => ({
+        name: '',
+        description: null,
+        editionId: 1,
+        isVisible: true,
+        sourceBookInfo: [],
+        ...(id !== 'new' && { id: parseInt(id) })
+    }), [id]);
+
+    const [formData, setFormData] = useState<TrickFormData>(initialFormData);
+
+    // Use the validated form hook
+    const form = useValidatedForm(
+        schema,
+        formData,
+        setFormData,
+        {
+            validateOnChange: true,
+            validateOnBlur: true,
+            debounceMs: 300
+        }
+    );
 
     // Load existing trick if editing
     useEffect(() => {
@@ -53,12 +68,13 @@ export function TrickEdit() {
                 .then((data) => {
                     setTrick(data);
                     if (data) {
-                        form.reset({
+                        setFormData({
                             name: data.name,
                             description: data.description || null,
                             editionId: data.editionId,
                             isVisible: data.isVisible,
                             sourceBookInfo: (data as { sourceBookInfo?: Array<{ sourceBookId: number; pageNumber?: number | null }> }).sourceBookInfo || [],
+                            ...(id !== 'new' && { id: parseInt(id) })
                         });
                     }
                 })
@@ -70,23 +86,29 @@ export function TrickEdit() {
                     setIsLoadingTrick(false);
                 });
         }
-    }, [id, isNew, form]);
+    }, [id, isNew]);
 
-    const handleSubmit = useCallback(async (data: TrickFormData) => {
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         setError(null);
         setMessage('');
+
+        // Validate the entire form
+        if (!form.validation.validateForm(formData)) {
+            return;
+        }
 
         try {
             if (isNew) {
                 setIsCreating(true);
-                await TrickQueryHooks.createTrick(data);
+                await TrickQueryHooks.createTrick(formData as CreateTrickRequest);
                 setMessage('Trick created successfully!');
                 setTimeout(() => {
                     navigate(`/tricks${fromListParams}`);
                 }, 1000);
             } else if (id) {
                 setIsUpdating(true);
-                await TrickQueryHooks.updateTrick(parseInt(id), data);
+                await TrickQueryHooks.updateTrick(parseInt(id), formData as UpdateTrickRequest);
                 setMessage('Trick updated successfully!');
                 setTimeout(() => {
                     navigate(`/tricks/${id}${fromListParams}`);
@@ -100,7 +122,7 @@ export function TrickEdit() {
             setIsCreating(false);
             setIsUpdating(false);
         }
-    }, [isNew, id, navigate, fromListParams]);
+    };
 
     if (isLoadingTrick) {
         return <div className="p-4">Loading...</div>;
@@ -126,39 +148,43 @@ export function TrickEdit() {
                 </div>
             )}
 
-            <ValidatedForm form={form} onSubmit={handleSubmit}>
+            <ValidatedForm
+                onSubmit={handleSubmit}
+                validationState={form.validation.validationState}
+                isLoading={isCreating || isUpdating}
+                formData={formData}
+                setFormData={setFormData}
+                validation={form.validation}
+            >
                 <div className="space-y-4">
                     <ValidatedInput
-                        form={form}
-                        name="name"
+                        field="name"
                         label="Name"
                         placeholder="Enter trick name"
+                        required
                     />
 
                     <div>
                         <label className="block text-sm font-medium mb-1">Description</label>
                         <MarkdownEditor
-                            value={form.watch('description') || ''}
-                            onChange={(value) => form.setValue('description', value || null)}
+                            value={(formData.description as string) || ''}
+                            onChange={(value) => setFormData({ ...formData, description: value || null })}
                         />
                     </div>
 
                     <CustomSelect
                         label="Edition"
-                        value={form.watch('editionId')?.toString() || '1'}
-                        onChange={(value) => form.setValue('editionId', parseInt(value))}
-                        options={EDITION_LIST.map(edition => ({
-                            value: edition.id.toString(),
-                            label: edition.name
-                        }))}
+                        value={formData.editionId}
+                        onValueChange={(value) => setFormData({ ...formData, editionId: value })}
+                        options={EDITION_LIST}
                     />
 
                     <div className="flex items-center">
                         <input
                             type="checkbox"
                             id="isVisible"
-                            checked={form.watch('isVisible') ?? true}
-                            onChange={(e) => form.setValue('isVisible', e.target.checked)}
+                            checked={formData.isVisible ?? true}
+                            onChange={(e) => setFormData({ ...formData, isVisible: e.target.checked })}
                             className="mr-2"
                         />
                         <label htmlFor="isVisible" className="text-sm font-medium">
@@ -167,8 +193,10 @@ export function TrickEdit() {
                     </div>
 
                     <SourceEditor
-                        value={form.watch('sourceBookInfo') || []}
-                        onChange={(value) => form.setValue('sourceBookInfo', value)}
+                        sources={formData.sourceBookInfo || []}
+                        onSourcesChange={(sources) => setFormData({ ...formData, sourceBookInfo: sources })}
+                        sourceType={SourceType.Core}
+                        editionId={formData.editionId as EditionId}
                     />
 
                     <div className="flex gap-4">

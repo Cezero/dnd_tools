@@ -7,59 +7,19 @@ import { ScrollableCategorizedList } from '@/components/scrollable-categorized-l
 import { formatCostAsCurrency } from '@/features/item/utils';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { ItemWithDetails } from '@shared/schema';
-import { CurrencyId, CURRENCY, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, FilterType } from '@shared/static-data';
+import { ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, FilterType } from '@shared/static-data';
 
 import type { Money } from '../types';
-import { CharacterEditStateUpdateType } from '../types';
+import type { EquipmentPurchaseDialogProps } from './types';
+import { getTotalGoldInGp, getItemCostInGp, convertGpToMoney } from '../utils/moneyUtils';
 
-interface EquipmentPurchaseDialogProps {
-    isOpen: boolean;
-    onClose: () => void;
-    money: Money;
-    onPurchase: (item: ItemWithDetails, newMoney: Money) => void;
-}
-
-/**
- * Convert Money object to total gold pieces
- */
-function getTotalGoldInGp(money: Money): number {
-    const { platinum, gold, silver, copper } = money;
-    return platinum * 10 + gold + silver * 0.1 + copper * 0.01;
-}
-
-/**
- * Convert gold pieces to Money object, preferring gold pieces
- */
-function convertGpToMoney(gp: number): Money {
-    const platinum = Math.floor(gp / 10);
-    const remainingAfterPlatinum = gp - (platinum * 10);
-    const gold = Math.floor(remainingAfterPlatinum);
-    const remainingAfterGold = remainingAfterPlatinum - gold;
-    const silver = Math.floor(remainingAfterGold * 10);
-    const remainingAfterSilver = remainingAfterGold - (silver * 0.1);
-    const copper = Math.round(remainingAfterSilver * 100);
-
-    return {
-        platinum,
-        gold,
-        silver,
-        copper,
-    };
-}
-
-/**
- * Get item cost in gold pieces
- */
-function getItemCostInGp(item: ItemWithDetails): number {
-    if (!item.cost) {
-        return 0;
-    }
-    const costStr = typeof item.cost === 'string' ? item.cost : item.cost.toString();
-    return parseFloat(costStr) || 0;
-}
 
 /**
  * Deduct cost from money
+ * 
+ * @param money - The existing money object
+ * @param costInGp - The cost in gold pieces to deduct
+ * @returns New money object with the cost deducted
  */
 function deductCost(money: Money, costInGp: number): Money {
     const totalGp = getTotalGoldInGp(money);

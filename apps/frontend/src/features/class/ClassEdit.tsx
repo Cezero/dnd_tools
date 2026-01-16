@@ -23,14 +23,9 @@ import {
     UpdateClassSchema,
     CreateClassRequest,
     UpdateClassRequest,
-    BaseClassVariantSchema,
-    CreateClassVariantRequest,
-    UpdateClassVariantRequest,
     FeatureProgression,
     SpellcastingProgressionWithSlots,
     FeatureEntity,
-    ClassVariantFeatureProgressionOverride,
-    ClassVariantSpellOverrideCreate
 } from '@shared/schema';
 import {
     EntityType,
@@ -38,19 +33,11 @@ import {
     EntityAppliesToType,
     FeatureSourceType,
 } from '@shared/static-data';
-import {
-    isVariantId,
-    extractBaseClassId,
-    applyFeatureProgressionOverrides,
-    generateFeatureProgressionOverrides
-} from '@shared/utils';
-
 
 import { ClassApi } from './ClassApi';
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
 import { ClassProficiencyService } from './ClassProficiencyService';
 import { ClassSkillService } from './ClassSkillService';
-import { SpellOverrideTab } from './SpellOverrideTab';
 import {
     BasicInfoTab,
     SkillsTab,
@@ -61,7 +48,6 @@ import {
     type TabConfig,
     type ClassFormData
 } from './tabs';
-import { VariantClassApi } from './VariantClassApi';
 
 export default function ClassEdit() {
     const { id } = useParams<{ id: string }>();
@@ -69,161 +55,49 @@ export default function ClassEdit() {
     const location = useLocation();
     const queryClient = useQueryClient();
 
-    // Check if this is a variant class from ID or user toggle
-    const [isVariant, setIsVariant] = useState(() => {
-        if (id === 'new') {
-            return location.state?.isVariant || false;
-        }
-        return isVariantId(parseInt(id));
-    });
-    const [baseClassId, setBaseClassId] = useState<number>(0);
-    const [availableBaseClasses, setAvailableBaseClasses] = useState<Array<{ id: number; name: string }>>([]);
     const [cls, setCls] = useState<ClassFormData | null>(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     /**
-     * Helper function to create a feature progression with correct source type and classId for variants
+     * Helper function to create a feature progression
      */
     const createFeatureProgression = useCallback((baseProgression: Partial<FeatureProgression>): FeatureProgression => {
         return {
             id: Date.now() + Math.random(), // Temporary ID for frontend
-            sourceType: isVariant ? FeatureSourceType.ClassVariant : FeatureSourceType.Class,
-            classId: isVariant ? null : parseInt(id || '0'),
+            sourceType: FeatureSourceType.Class,
+            classId: parseInt(id || '0'),
             raceId: null,
             domainId: null, // Set domainId to null for class-based progressions
-            variantOverrideId: null, // Will be set by backend for variants
             level: 1, // Default to level 1
             ...baseProgression,
         } as FeatureProgression;
-    }, [isVariant, id]);
+    }, [id]);
     const [activeTab, setActiveTab] = useState<string>('basic');
     const [isFeatureAssocOpen, setIsFeatureAssocOpen] = useState(false);
 
-    // Base class data (for variants)
-    const [baseClassData, setBaseClassData] = useState<{
-        features: FeatureProgression[];
-        spellcastingProgression: SpellcastingProgressionWithSlots[];
-        spellsKnownProgression: SpellcastingProgressionWithSlots[];
-    } | null>(null);
-
-    // Variant overrides (for variants) - store with IDs for shared utility, convert to create objects for API
-    const [variantOverrides, setVariantOverrides] = useState<{
-        featureProgressionOverrides: ClassVariantFeatureProgressionOverride[];
-        spellOverrides: ClassVariantSpellOverrideCreate[];
-    }>({
-        featureProgressionOverrides: [],
-        spellOverrides: []
-    });
-
-    // Current display data (resolved for variants, direct for base classes)
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
     const [spellcastingProgression, setSpellcastingProgression] = useState<SpellcastingProgressionWithSlots[]>([]);
     const [spellsKnownProgression, setSpellsKnownProgression] = useState<SpellcastingProgressionWithSlots[]>([]);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
-    const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string; displayInCharacterSheet: boolean } | undefined>(undefined);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<FeatureProgression['feature'] | undefined>(undefined);
 
     // Ref to track if we've already processed the newFeature
     const processedNewFeatureRef = useRef<boolean>(false);
     // Ref to track current preSelectedFeature
-    const preSelectedFeatureRef = useRef<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
+    const preSelectedFeatureRef = useRef<FeatureProgression['feature'] | undefined>(undefined);
 
     // Update ref when preSelectedFeature changes
     useEffect(() => {
         preSelectedFeatureRef.current = preSelectedFeature;
     }, [preSelectedFeature]);
 
-    // Use shared override utilities (no need for local implementations)
-
-    // Use ref to access current variantOverrides without creating dependency
-    const variantOverridesRef = useRef(variantOverrides);
-    variantOverridesRef.current = variantOverrides;
-
-    // Resolve display data for variants (base class + overrides) - only on initial load
-    const resolveDisplayData = useCallback(() => {
-        if (!isVariant || !baseClassData) {
-            // For base classes, use the current state directly
-            return;
-        }
-
-        // Set flag to prevent circular updates
-        isResolvingDisplayDataRef.current = true;
-
-        // Apply feature overrides to base class features using shared utility
-        // The frontend works with objects that have temporary IDs, just like regular class editing
-        const resolvedFeatures = applyFeatureProgressionOverrides(
-            baseClassData.features,
-            variantOverridesRef.current.featureProgressionOverrides
-        );
-
-        // TODO: Apply spell additions to spellcasting progression
-        // For now, just use base spellcasting data
-        const resolvedSpellcasting = baseClassData.spellcastingProgression;
-        const resolvedSpellsKnown = baseClassData.spellsKnownProgression;
-
-        // Update the display data
-        setFeatureProgressions(resolvedFeatures);
-        setSpellcastingProgression(resolvedSpellcasting);
-        setSpellsKnownProgression(resolvedSpellsKnown);
-
-        // Clear flag after state updates
-        setTimeout(() => {
-            isResolvingDisplayDataRef.current = false;
-        }, 0);
-    }, [isVariant, baseClassData]); // No dependency on variantOverrides to prevent circular updates
-
-    // Only resolve display data when creating a new variant (not when editing existing variants)
-    // Existing variants come pre-resolved from the backend
-    useEffect(() => {
-        if (baseClassData && id === 'new' && isVariant) {
-            resolveDisplayData();
-        }
-    }, [baseClassData, resolveDisplayData, id, isVariant]);
-
-
-    // Generate feature progression overrides when user makes changes using shared utility
-    // Generate override objects based on user changes to the resolved class
-    const generateFeatureProgressionOverridesForForm = useCallback((currentFeatures: FeatureProgression[]): ClassVariantFeatureProgressionOverride[] => {
-        if (!isVariant || !baseClassData) {
-            return [];
-        }
-
-        // Use shared utility to generate overrides with temporary IDs
-        return generateFeatureProgressionOverrides(baseClassData.features, currentFeatures);
-    }, [isVariant, baseClassData]);
-
-    // Update variant overrides when features change (but not when resolving display data)
-    const updateVariantOverrides = useCallback(() => {
-        if (!isVariant) {
-            return;
-        }
-
-        const featureProgressionOverrides = generateFeatureProgressionOverridesForForm(featureProgressions);
-        setVariantOverrides(prev => ({
-            ...prev,
-            featureProgressionOverrides
-        }));
-    }, [isVariant, featureProgressions, generateFeatureProgressionOverridesForForm]);
-
-    // Update overrides when features change, but use a ref to prevent circular updates
-    const isResolvingDisplayDataRef = useRef(false);
-
-    useEffect(() => {
-        // Don't update overrides if we're currently resolving display data
-        if (isResolvingDisplayDataRef.current) {
-            return;
-        }
-        updateVariantOverrides();
-    }, [updateVariantOverrides]);
-
-    // Determine which schema to use based on whether we're creating or editing and if it's a variant
+    // Determine which schema to use based on whether we're creating or editing
     const schema = useMemo(() => {
-        return id === 'new'
-            ? (isVariant ? BaseClassVariantSchema : CreateClassSchema)
-            : (isVariant ? BaseClassVariantSchema : UpdateClassSchema);
-    }, [id, isVariant]);
+        return id === 'new' ? CreateClassSchema : UpdateClassSchema;
+    }, [id]);
 
     /**
      * Handles adding a class skill via the feature system.
@@ -325,14 +199,7 @@ export default function ClassEdit() {
         isVisible: true,
         canCastSpells: false,
         isDivine: false,
-        hitDie: 1,
-        skillPoints: 0,
         description: '',
-        castingAbilityId: null,
-        babProgression: 2, // poor
-        fortProgression: 2, // poor
-        refProgression: 2, // poor
-        willProgression: 2, // poor
         spellcastingProgression: [],
         ...(id !== 'new' && { id: parseInt(id) })
     }), [id]);
@@ -343,7 +210,6 @@ export default function ClassEdit() {
     const tabs: TabConfig[] = [
         { id: 'basic', label: 'Basic Info', icon: DocumentTextIcon, component: BasicInfoTab },
         ...(formData.canCastSpells ? [{ id: 'spells', label: 'Spellcasting', icon: BeakerIcon, component: SpellcastingTab }] : []),
-        ...(isVariant && formData.canCastSpells ? [{ id: 'spellOverrides', label: 'Spell Overrides', icon: BeakerIcon, component: SpellOverrideTab }] : []),
         { id: 'skills', label: 'Skills', icon: ShieldCheckIcon, component: SkillsTab },
         { id: 'proficiencies', label: 'Proficiencies', icon: AcademicCapIcon, component: ProficienciesTab },
         { id: 'features', label: 'Features', icon: SparklesIcon, component: FeaturesTab },
@@ -361,13 +227,19 @@ export default function ClassEdit() {
             // But provide fallback in case it doesn't
             const progressionWithFeature = {
                 ...progression,
-                feature: progression.feature || {
-                    id: progression.featureId,
-                    name: preSelectedFeatureRef.current?.name || `Feature ${progression.featureId}`,
-                    description: preSelectedFeatureRef.current?.description || '',
-                    slug: preSelectedFeatureRef.current?.slug || `feature-${progression.featureId}`,
+                feature: progression.feature || (preSelectedFeatureRef.current ? {
+                    id: preSelectedFeatureRef.current.id,
+                    name: preSelectedFeatureRef.current.name,
+                    description: preSelectedFeatureRef.current.description || '',
+                    slug: preSelectedFeatureRef.current.slug,
                     displayInCharacterSheet: true,
-                }
+                } : {
+                    id: progression.featureId,
+                    name: `Feature ${progression.featureId}`,
+                    description: '',
+                    slug: `feature-${progression.featureId}`,
+                    displayInCharacterSheet: true,
+                })
             };
 
             // Always add as a new progression - allow multiple progressions per feature/level
@@ -478,40 +350,11 @@ export default function ClassEdit() {
 
             try {
                 setIsLoading(true);
-                // Use unified API call - backend will determine if it's a variant from the ID
                 const fetchedClass = await ClassApi.getClassById(undefined, { id: parseInt(id) });
                 setCls(fetchedClass);
                 setFormData(fetchedClass);
 
-                if (isVariant) {
-                    // For variants, we need to load the base class data and existing overrides
-                    const extractedBaseClassId = extractBaseClassId(parseInt(id));
-                    setBaseClassId(extractedBaseClassId);
-
-                    // Load base class data
-                    const baseClassData = await ClassApi.getClassById(undefined, { id: extractedBaseClassId });
-                    setBaseClassData({
-                        features: baseClassData.features || [],
-                        spellcastingProgression: baseClassData.spellcastingProgression || [],
-                        spellsKnownProgression: baseClassData.spellsKnownProgression || []
-                    });
-
-                    // Load existing variant overrides
-                    const variantData = await VariantClassApi.getVariantById(undefined, { id: parseInt(id) });
-                    setVariantOverrides({
-                        featureProgressionOverrides: variantData.featureProgressionOverrides || [],
-                        spellOverrides: variantData.spellOverrides || []
-                    });
-                } else {
-                    // For base classes, use the data directly
-                    setBaseClassData(null);
-                    setVariantOverrides({
-                        featureProgressionOverrides: [],
-                        spellOverrides: []
-                    });
-                }
-
-                // Load feature progressions from the class data (resolved for variants)
+                // Load feature progressions from the class data
                 if (fetchedClass.features) {
                     setFeatureProgressions(fetchedClass.features);
                 } else {
@@ -539,62 +382,7 @@ export default function ClassEdit() {
         };
 
         fetchClass();
-    }, [id, initialFormData, isVariant]);
-
-    // Fetch available base classes when working with variants
-    useEffect(() => {
-        const fetchBaseClasses = async () => {
-            if (isVariant) {
-                try {
-                    const response = await ClassApi.getClasses({
-                        baseClassesOnly: true,
-                        isVisible: true,
-                        isPrestige: false,
-                        editionIds: [4, 5] // 3E and 3.5E classes only
-                    });
-                    const baseClasses = response.results;
-                    setAvailableBaseClasses(baseClasses.map(cls => ({ id: cls.id, name: cls.name })));
-                } catch (err) {
-                    console.error('Failed to fetch base classes:', err);
-                }
-            }
-        };
-
-        fetchBaseClasses();
-    }, [isVariant]);
-
-    // Load base class data when baseClassId is selected
-    useEffect(() => {
-        const loadBaseClassData = async () => {
-            if (isVariant && baseClassId > 0 && id === 'new') {
-                try {
-                    const baseClassData = await ClassApi.getClassById(undefined, { id: baseClassId });
-                    // Set form data with base class data, but keep variant-specific fields
-                    setFormData({
-                        ...baseClassData,
-                        name: '', // Clear name so user must enter variant name
-                    });
-
-                    // Store base class data separately for variant resolution
-                    setBaseClassData({
-                        features: baseClassData.features || [],
-                        spellcastingProgression: baseClassData.spellcastingProgression || [],
-                        spellsKnownProgression: baseClassData.spellsKnownProgression || []
-                    });
-
-                    // Reset variant overrides when loading new base class
-                    setVariantOverrides({
-                        featureProgressionOverrides: [],
-                        spellOverrides: []
-                    });
-                } catch (err) {
-                    console.error('Failed to load base class data:', err);
-                }
-            }
-        };
-
-        loadBaseClassData();
-    }, [baseClassId, isVariant, id]);
+    }, [id, initialFormData]);
 
     // Handle new feature from association dialog
     useEffect(() => {
@@ -608,9 +396,10 @@ export default function ClassEdit() {
                 feature: {
                     id: newFeature.featureId,
                     name: newFeature.name,
-                    description: newFeature.description,
+                    description: newFeature.description || '',
                     slug: newFeature.slug,
                     displayInCharacterSheet: true,
+                    summary: null,
                 },
                 entities: [],
             });
@@ -625,169 +414,88 @@ export default function ClassEdit() {
         setMessage('');
         setError(null);
 
-        // Validate the entire form (skip validation for variants as we add required fields later)
-        if (!isVariant && !form.validation.validateForm(formData)) {
+        // Validate the entire form
+        if (!form.validation.validateForm(formData)) {
             setError('Please fix the validation errors before submitting');
             return;
         }
 
         try {
             setIsLoading(true);
-            const {
-                features: _features,
-                spellcastingProgression: _spellcastingProgression,
-                spellsKnownProgression: _spellsKnownProgression,
-                isPrestige: _isPrestige,
-                canCastSpells: _canCastSpells,
-                editionId: _editionId,
-                isVisible: _isVisible,
-                spellsKnown: _spellsKnown,
-                castingAbilityId: _castingAbilityId,
-                castingType: _castingType,
-                ...createVariantData
-            } = formData;
-            if (isVariant) {
-                // For variants, create variant data with overrides
-                const variantData = {
-                    ...createVariantData,
-                    baseClassId: baseClassId,
-                    sourceBookInfo: createVariantData.sourceBookInfo,
-                    featureProgressionOverrides: variantOverrides.featureProgressionOverrides.map(override => ({
-                        originalFeatureProgressionId: override.originalFeatureProgressionId,
-                        removeEntities: override.removeEntities?.map(entity => ({
-                            featureEntityId: entity.featureEntityId
-                        })) || [],
-                        replacementFeatureProgression: override.replacementFeatureProgression?.map(progression => {
-                            const { id: _, ...progressionData } = progression;
-                            return {
-                                ...progressionData,
-                                entities: progression.entities?.map(entity => {
-                                    const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
-                                    // Ensure formulaParams is properly structured for backend
-                                    if (entityData.formulaParams && entityData.formulaParams.formulaId) {
-                                        // Keep the formulaParams data but remove any temporary IDs
-                                        const formulaParamsData = { ...entityData.formulaParams };
-                                        delete (formulaParamsData as { id?: unknown }).id; // Remove id if it exists
-                                        entityData.formulaParams = formulaParamsData;
-                                        // Remove formulaParamsId as it will be set by the backend
-                                        delete entityData.formulaParamsId;
-                                    } else {
-                                        // If no formula is selected, remove formulaParams entirely
-                                        delete entityData.formulaParams;
-                                        delete entityData.formulaParamsId;
-                                    }
-                                    return entityData;
-                                }) || []
-                            };
+            // Prepare the complete class data including feature progressions and spellcasting progression
+            const classData = {
+                ...formData,
+                features: featureProgressions.map(prog => {
+                    const { id: _, classes: _classes, races: _races, ...progressionData } = prog;
+                    return {
+                        ...progressionData,
+                        // Remove temporary IDs from related entities
+                        entities: prog.entities?.map(entity => {
+                            const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                            // Ensure formulaParams is properly structured for backend
+                            if (entityData.formulaParams && entityData.formulaParams.formulaId) {
+                                // Keep the formulaParams data but remove any temporary IDs
+                                const formulaParamsData = { ...entityData.formulaParams };
+                                delete (formulaParamsData as { id?: unknown }).id; // Remove id if it exists
+                                entityData.formulaParams = formulaParamsData;
+                                // Remove formulaParamsId as it will be set by the backend
+                                delete entityData.formulaParamsId;
+                            } else {
+                                // If no formula is selected, remove formulaParams entirely
+                                delete entityData.formulaParams;
+                                delete entityData.formulaParamsId;
+                            }
+                            // The backend will use appliesToId to link to the actual feat/feature/item
+                            // No need to send the related objects
+                            return entityData;
+                        }) || [],
+
+                    };
+                }),
+                spellcastingProgression: spellcastingProgression.map(prog => {
+                    const { id: _, classId: __, ...progressionData } = prog;
+                    return {
+                        ...progressionData,
+                        slots: prog.slots?.map(slot => {
+                            const { id: _, progressionId: __, ...slotData } = slot;
+                            return slotData;
                         }) || []
-                    })),
-                    spellOverrides: variantOverrides.spellOverrides
-                };
+                    };
+                }),
+                spellsKnownProgression: spellsKnownProgression.map(prog => {
+                    const { id: _, classId: __, ...progressionData } = prog;
+                    return {
+                        ...progressionData,
+                        slots: prog.slots?.map(slot => {
+                            const { id: _, progressionId: __, ...slotData } = slot;
+                            return slotData;
+                        }) || []
+                    };
+                })
+            };
 
-                if (id === 'new') {
-                    // For variant creation, we need to add baseClassId from the form
-                    if (baseClassId === 0) {
-                        setError('Please select a base class for the variant');
-                        return;
-                    }
-                    await VariantClassApi.createVariant(variantData as CreateClassVariantRequest);
-                    setMessage('Variant class created successfully!');
-                    // Invalidate class caches
-                    await queryClient.invalidateQueries({
-                        queryKey: ['classes'],
-                        exact: false
-                    });
-                    setTimeout(() => navigate('/classes'), 1500);
-                } else {
-                    const numericId = parseInt(id);
-                    await VariantClassApi.updateVariant(variantData as UpdateClassVariantRequest, { id: numericId });
-                    setMessage('Variant class updated successfully!');
-                    // Invalidate class caches
-                    await queryClient.invalidateQueries({
-                        queryKey: ClassQueryHooks.getClassByIdQueryKey(numericId)
-                    });
-                    await queryClient.invalidateQueries({
-                        queryKey: ['classes'],
-                        exact: false
-                    });
-                    navigate(`/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true, isVariant } });
-                }
+            if (id === 'new') {
+                const newClass = await ClassApi.createClass(classData as CreateClassRequest);
+                setMessage('Class created successfully!');
+                // Invalidate class caches
+                await queryClient.invalidateQueries({
+                    queryKey: ['classes'],
+                    exact: false
+                });
+                setTimeout(() => navigate(`/classes/${newClass.id}`), 1500);
             } else {
-                // For regular classes, prepare the complete class data including feature progressions and spellcasting progression
-                const classData = {
-                    ...formData,
-                    features: featureProgressions.map(prog => {
-                        const { id: _, ...progressionData } = prog;
-                        return {
-                            ...progressionData,
-                            // Remove temporary IDs from related entities
-                            entities: prog.entities?.map(entity => {
-                                const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
-                                // Ensure formulaParams is properly structured for backend
-                                if (entityData.formulaParams && entityData.formulaParams.formulaId) {
-                                    // Keep the formulaParams data but remove any temporary IDs
-                                    const formulaParamsData = { ...entityData.formulaParams };
-                                    delete (formulaParamsData as { id?: unknown }).id; // Remove id if it exists
-                                    entityData.formulaParams = formulaParamsData;
-                                    // Remove formulaParamsId as it will be set by the backend
-                                    delete entityData.formulaParamsId;
-                                } else {
-                                    // If no formula is selected, remove formulaParams entirely
-                                    delete entityData.formulaParams;
-                                    delete entityData.formulaParamsId;
-                                }
-                                // The backend will use appliesToId to link to the actual feat/feature/item
-                                // No need to send the related objects
-                                return entityData;
-                            }) || [],
-
-                        };
-                    }),
-                    spellcastingProgression: spellcastingProgression.map(prog => {
-                        const { id: _, classId: __, ...progressionData } = prog;
-                        return {
-                            ...progressionData,
-                            slots: prog.slots?.map(slot => {
-                                const { id: _, progressionId: __, ...slotData } = slot;
-                                return slotData;
-                            }) || []
-                        };
-                    }),
-                    spellsKnownProgression: spellsKnownProgression.map(prog => {
-                        const { id: _, classId: __, ...progressionData } = prog;
-                        return {
-                            ...progressionData,
-                            slots: prog.slots?.map(slot => {
-                                const { id: _, progressionId: __, ...slotData } = slot;
-                                return slotData;
-                            }) || []
-                        };
-                    })
-                };
-
-                if (id === 'new') {
-                    const newClass = await ClassApi.createClass(classData as CreateClassRequest);
-                    setMessage('Class created successfully!');
-                    // Invalidate class caches
-                    await queryClient.invalidateQueries({
-                        queryKey: ['classes'],
-                        exact: false
-                    });
-                    setTimeout(() => navigate(`/classes/${newClass.id}`), 1500);
-                } else {
-                    const numericId = parseInt(id);
-                    await ClassApi.updateClass(classData as UpdateClassRequest, { id: numericId });
-                    setMessage('Class updated successfully!');
-                    // Invalidate class caches
-                    await queryClient.invalidateQueries({
-                        queryKey: ClassQueryHooks.getClassByIdQueryKey(numericId)
-                    });
-                    await queryClient.invalidateQueries({
-                        queryKey: ['classes'],
-                        exact: false
-                    });
-                    navigate(`/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true, isVariant } });
-                }
+                const numericId = parseInt(id);
+                await ClassApi.updateClass(classData as UpdateClassRequest, { id: numericId });
+                setMessage('Class updated successfully!');
+                // Invalidate class caches
+                await queryClient.invalidateQueries({
+                    queryKey: ClassQueryHooks.getClassByIdQueryKey(numericId)
+                });
+                await queryClient.invalidateQueries({
+                    queryKey: ['classes'],
+                    exact: false
+                });
+                navigate(`/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true } });
             }
         } catch (err) {
             console.error('Error saving class:', err);
@@ -844,7 +552,17 @@ export default function ClassEdit() {
         const featureId = progression.featureId;
         if (!acc[featureId]) {
             acc[featureId] = {
-                feature: progression.feature,
+                feature: progression.feature ? {
+                    id: progression.feature.id,
+                    name: progression.feature.name,
+                    description: progression.feature.description || '',
+                    slug: progression.feature.slug
+                } : {
+                    id: featureId,
+                    name: `Feature ${featureId}`,
+                    description: '',
+                    slug: `feature-${featureId}`
+                },
                 progressions: []
             };
         }
@@ -857,8 +575,8 @@ export default function ClassEdit() {
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
                     {id === 'new'
-                        ? (isVariant ? 'Create New Variant Class' : 'Create New Class')
-                        : (isVariant ? 'Edit Variant Class' : 'Edit Class')
+                        ? 'Create New Class'
+                        : 'Edit Class'
                     }
                 </h1>
 
@@ -926,10 +644,6 @@ export default function ClassEdit() {
                                 setIsFeatureAssocOpen={setIsFeatureAssocOpen}
                                 isProgressionDialogOpen={isProgressionDialogOpen}
                                 setIsProgressionDialogOpen={setIsProgressionDialogOpen}
-                                // Spell override props for variant classes
-                                baseClassId={baseClassId}
-                                spellOverrides={variantOverrides.spellOverrides}
-                                onSpellOverridesUpdate={(overrides) => setVariantOverrides(prev => ({ ...prev, spellOverrides: overrides }))}
                                 editingProgression={editingProgression}
                                 setEditingProgression={setEditingProgression}
                                 preSelectedFeature={preSelectedFeature}
@@ -942,11 +656,6 @@ export default function ClassEdit() {
                                 onAddProficiency={handleAddProficiency}
                                 onRemoveProficiency={handleRemoveProficiency}
                                 classId={id !== 'new' ? parseInt(id) : undefined}
-                                // Variant-specific props
-                                isVariant={isVariant}
-                                setIsVariant={setIsVariant}
-                                setBaseClassId={setBaseClassId}
-                                availableBaseClasses={availableBaseClasses}
                             />
                         )}
                     </div>
@@ -966,10 +675,7 @@ export default function ClassEdit() {
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isLoading || form.validation.validationState.hasErrors}
                     >
-                        {isLoading ? 'Saving...' : id === 'new'
-                            ? (isVariant ? 'Create Variant' : 'Create Class')
-                            : (isVariant ? 'Update Variant' : 'Update Class')
-                        }
+                        {isLoading ? 'Saving...' : id === 'new' ? 'Create Class' : 'Update Class'}
                     </button>
                 </div>
             </ValidatedForm>
@@ -1012,6 +718,7 @@ export default function ClassEdit() {
                 }}
                 preSelectedFeature={preSelectedFeature}
                 showSourceTypeSelector={false}
+                editionId={formData.editionId}
             />
         </div>
     );

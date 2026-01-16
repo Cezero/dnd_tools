@@ -1,11 +1,13 @@
 import type { FeatureProgression, CharacterWithAllDetailsResponse, DnDClass, FeatInQueryResponse, FeatureEntity } from '@shared/schema';
-import { EntityType, EntityAppliesToType } from '@shared/static-data';
+import { EditionId } from '@shared/static-data';
 
 import { CascadingResolver } from './cascadingResolver';
 import { ChoiceResolver } from './choiceResolver';
 import { FeatureEntityHandlers } from './featureEntityHandlers';
 import { GestaltClassService } from './gestaltClassService';
 import type { ResolutionContext, ResolutionResult, PendingChoice } from './types';
+import { companionService } from '../companion/companionService';
+import { featureSystemService } from '../featureSystem/featureSystemService';
 
 /**
  * Main service for resolving character features.
@@ -120,6 +122,9 @@ class FeatureResolution {
             await this.resolveClassFeatures(this.context.classDetails);
         }
 
+        // Resolve edition features (feat progression, ability score increases, etc.)
+        await this.resolveEditionFeatures();
+
         // Resolve feat features
         await this.resolveFeatFeatures();
 
@@ -213,7 +218,14 @@ class FeatureResolution {
     }
 
     /**
-     * Resolve a generic choice by appliesTo type and selected ID
+     * Resolve a generic choice by appliesTo type and selected ID.
+     * 
+     * Uses ChoiceResolver's centralized method to resolve the choice and adds the
+     * granted feature progressions to the resolved progressions array. Processes
+     * entities in the granted progressions to handle cascading effects.
+     * 
+     * @param appliesToType - The EntityAppliesToType value indicating what type of choice this is
+     * @param selectedId - The ID of the selected entity (domain, feat, spell, etc.)
      */
     private async resolveGenericChoice(appliesToType: number, selectedId: number): Promise<void> {
         // Use ChoiceResolver's centralized method
@@ -223,24 +235,13 @@ class FeatureResolution {
             this.resolvedProgressions
         );
 
-        if (grantedProgressions && grantedProgressions.length > 0) {
-            // Process each feature progression
-            for (const progression of grantedProgressions) {
-                // Check if this progression already exists to avoid duplicates
-                const existingProgression = this.resolvedProgressions.find(p => p.id === progression.id);
-                if (existingProgression) {
-                    continue;
-                }
-
-                if (progression.entities) {
-                    for (const entity of progression.entities) {
-                        const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
-                        this.processEntityResult(result, progression);
-                    }
-                }
-                this.resolvedProgressions.push(progression);
+        // Add progressions using utility function with entity processing
+        ChoiceResolver.addResolvedProgressions(this.resolvedProgressions, grantedProgressions, {
+            processEntities: true,
+            onEntityProcessed: (result, progression) => {
+                this.processEntityResult(result, progression);
             }
-        }
+        });
     }
 
     /**
@@ -279,6 +280,7 @@ class FeatureResolution {
             pendingChoices: this.pendingChoices,
             warnings: this.warnings,
             errors: this.errors,
+            effectiveClassDetails: this.context.effectiveClassDetails,
         };
     }
 
@@ -291,8 +293,13 @@ class FeatureResolution {
         // Use the feature progressions that are already available in the race data
         const racialProgressions = this.context.raceDetails.features;
 
-        // Process each racial progression
-        for (const progression of racialProgressions) {
+        // Filter progressions to only include those at or below the target level
+        const applicableProgressions = racialProgressions.filter(
+            progression => progression.level <= this.targetLevel
+        );
+
+        // Process each applicable racial progression
+        for (const progression of applicableProgressions) {
             if (progression.entities) {
                 for (const entity of progression.entities) {
                     const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
@@ -311,8 +318,62 @@ class FeatureResolution {
         // Use the feature progressions that are already available in the class data
         const classProgressions = classDetails.features;
 
-        // Process each class progression
-        for (const progression of classProgressions) {
+        // Filter progressions to only include those at or below the target level
+        const applicableProgressions = classProgressions.filter(
+            progression => progression.level <= this.targetLevel
+        );
+
+        // Process each applicable class progression
+        for (const progression of applicableProgressions) {
+            if (progression.entities) {
+                for (const entity of progression.entities) {
+                    const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
+                    this.processEntityResult(result, progression);
+                }
+            }
+            this.resolvedProgressions.push(progression);
+        }
+    }
+
+    /**
+     * Resolves edition-specific features (feat progression, ability score increases, etc.).
+     * 
+     * Queries FeatureProgression with sourceType: Edition and editionId matching the character's edition.
+     * Special handling: DND_3x features apply to both DND_3E and DND_3_5E characters.
+     * These features are automatically applied to all characters with the matching edition.
+     */
+    private async resolveEditionFeatures(): Promise<void> {
+        if (!this.character.editionId) {
+            return;
+        }
+
+        // Get edition IDs to query for
+        // DND_3x features apply to both DND_3E and DND_3_5E characters
+        const editionIdsToQuery: number[] = [this.character.editionId];
+        if (this.character.editionId === EditionId.DND_3E || this.character.editionId === EditionId.DND_3_5E) {
+            editionIdsToQuery.push(EditionId.DND_3x);
+        }
+
+        // Get all edition progressions for the character's edition(s)
+        const allEditionProgressions: FeatureProgression[] = [];
+        for (const editionId of editionIdsToQuery) {
+            const progressions = await featureSystemService.getFeatureProgressionsByEditionId(editionId);
+            allEditionProgressions.push(...progressions);
+        }
+
+        // Filter progressions to only include those at or below the target level
+        const applicableProgressions = allEditionProgressions.filter(
+            progression => progression.level <= this.targetLevel
+        );
+
+        // Process each edition progression
+        for (const progression of applicableProgressions) {
+            // Check if this progression already exists to avoid duplicates
+            const existingProgression = this.resolvedProgressions.find(p => p.id === progression.id);
+            if (existingProgression) {
+                continue;
+            }
+
             if (progression.entities) {
                 for (const entity of progression.entities) {
                     const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
@@ -348,14 +409,16 @@ class FeatureResolution {
             return;
         }
 
-        // Import featureSystemService to get feat progressions
-        const { featureSystemService } = await import('../featureSystem/featureSystemService');
-
         // Get all feat progressions for the selected feats
         const featProgressions = await featureSystemService.getFeatureProgressionsByFeatIds(Array.from(featIds));
 
-        // Process each feat progression
-        for (const progression of featProgressions) {
+        // Filter progressions to only include those at or below the target level
+        const applicableProgressions = featProgressions.filter(
+            progression => progression.level <= this.targetLevel
+        );
+
+        // Process each applicable feat progression
+        for (const progression of applicableProgressions) {
             // Check if this progression already exists to avoid duplicates
             const existingProgression = this.resolvedProgressions.find(p => p.id === progression.id);
             if (existingProgression) {
@@ -375,17 +438,21 @@ class FeatureResolution {
     /**
      * Resolves companion features from character's selected companions.
      * 
-     * For each CharacterCompanion with a companionId, retrieves the corresponding FeatureProgression
-     * with sourceType: Companion and adds it to resolved progressions.
+     * Fetches character companions from the companion service and for each CharacterCompanion
+     * with a companionId, retrieves the corresponding FeatureProgression with sourceType: Companion
+     * and adds it to resolved progressions.
      */
     private async resolveCompanionFeatures(): Promise<void> {
-        if (!this.character.companions) {
+        // Fetch character companions from the companion service
+        const companionsResponse = await companionService.getCharacterCompanions(this.character.id);
+
+        if (!companionsResponse.results || companionsResponse.results.length === 0) {
             return;
         }
 
         // Collect all unique companion IDs from character companions
         const companionIds = new Set<number>();
-        for (const characterCompanion of this.character.companions) {
+        for (const characterCompanion of companionsResponse.results) {
             if (characterCompanion.companionId) {
                 companionIds.add(characterCompanion.companionId);
             }
@@ -395,15 +462,17 @@ class FeatureResolution {
             return;
         }
 
-        // Import featureSystemService to get companion progressions
-        const { featureSystemService } = await import('../featureSystem/featureSystemService');
-
         // Get all companion progressions for the selected companions
         for (const companionId of companionIds) {
             const companionProgressions = await featureSystemService.getFeatureProgressionsByCompanionId(companionId);
 
-            // Process each companion progression
-            for (const progression of companionProgressions) {
+            // Filter progressions to only include those at or below the target level
+            const applicableProgressions = companionProgressions.filter(
+                progression => progression.level <= this.targetLevel
+            );
+
+            // Process each applicable companion progression
+            for (const progression of applicableProgressions) {
                 // Check if this progression already exists to avoid duplicates
                 const existingProgression = this.resolvedProgressions.find(p => p.id === progression.id);
                 if (existingProgression) {

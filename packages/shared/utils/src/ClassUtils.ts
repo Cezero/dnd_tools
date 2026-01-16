@@ -1,33 +1,5 @@
 import { ProgressionType } from '@shared/static-data';
 
-/**
- * Calculate a variant class ID from base class ID and variant ID
- */
-export function calculateVariantId(baseClassId: number, variantId: number): number {
-    return baseClassId * 100000 + variantId;
-}
-
-/**
- * Check if an ID is a variant class ID
- */
-export function isVariantId(id: number): boolean {
-    return id >= 100000;
-}
-
-/**
- * Extract the base class ID from a variant class ID
- */
-export function extractBaseClassId(variantId: number): number {
-    return Math.floor(variantId / 100000);
-}
-
-/**
- * Extract the variant ID from a variant class ID
- */
-export function extractVariantId(customId: number): number {
-    return customId % 100000;
-}
-
 // Good Save Progression: floor(level / 2) + 2
 export function getGoodSave(level: number): number {
     return Math.floor(level / 2) + 2;
@@ -135,10 +107,25 @@ export function formatHalfRank(ranks: number): string {
         : `${whole}-1/2`;
 }
 
+/**
+ * @deprecated Use feature-based resolution instead. Feat counts are now determined by
+ * edition-specific features that provide feat choices at appropriate levels.
+ * Use ResolvedFeatureService.getAvailableFeatsCount() to get feat counts from resolved progressions.
+ * 
+ * This function is kept for backward compatibility but should not be used in new code.
+ */
 export function getFeatCount(level: number): number {
     return 1 + Math.floor((level - 1) / 3);
 }
 
+/**
+ * @deprecated Use feature-based resolution instead. Ability score increases are now determined by
+ * edition-specific features that provide ability score increase choices at appropriate levels.
+ * Use ResolvedFeatureService.getAvailableAbilityScoreIncreases() to get ability score increase
+ * counts from resolved progressions.
+ * 
+ * This function is kept for backward compatibility but should not be used in new code.
+ */
 export function getAbilityScoreIncreases(level: number): number {
     return Math.floor(level / 4);
 }

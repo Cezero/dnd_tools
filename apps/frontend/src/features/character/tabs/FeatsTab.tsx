@@ -1,102 +1,50 @@
-import { useQueryClient, useQuery } from '@tanstack/react-query';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
-import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
-import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import type { ItemWithDetails, FeatInQueryResponse } from '@shared/schema';
-import { ITEM_TYPE_ENUM, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
+import { useCacheFunctions } from '@/services/cache/CacheFunctions';
+import type { FeatInQueryResponse } from '@shared/schema';
+import { EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
 import { FeatSubIdSelectionModal } from '../components/FeatSubIdSelectionModal';
 
+/**
+ * Feats tab component for managing character feat selection.
+ * 
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * - Updates state via `updateState()` when feats change
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
+ * - Do NOT call `resolution.applyUpdate()` directly from this tab
+ * 
+ * @see CharacterEdit component for sync pattern documentation
+ */
 export function FeatsTab({
-    formattedCharacter,
+    formattedCharacter: _formattedCharacter,
     state,
     updateState,
     resolvedData,
     isLoading,
     triggerFeatureResolution,
     sharedData,
-    character
+    character: _character
 }: TabComponentProps): React.JSX.Element {
-    const queryClient = useQueryClient();
-    
-    // Fetch available feats from backend
-    const { data: featResponse, isLoading: isLoadingFeats } = useQuery({
-        queryKey: ['availableFeats', character?.id],
-        queryFn: () => {
-            if (!character?.id) {
-                throw new Error('Character ID is required');
-            }
-            return CharacterResolutionApi.getAvailableFeats(character.id);
-        },
-        enabled: !!character?.id,
-        staleTime: 30 * 1000, // 30 seconds
-    });
+    const { getItemNameMap } = useCacheFunctions();
+
+    // Use qualifiedFeats from resolvedData instead of separate API call
+    // qualifiedFeats contains all feats the character qualifies for (filtered by prerequisites, etc.)
     const [searchTerm, setSearchTerm] = useState('');
     const [modalFeat, setModalFeat] = useState<FeatInQueryResponse | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [items, setItems] = useState<ItemWithDetails[]>([]);
 
-    // Load items to get names for feat sub-ids
-    // Note: Loading all items, not just weapons, in case feats can apply to other item types
-    useEffect(() => {
-        const fetchItems = async () => {
-            try {
-                // Use queryClient.fetchQuery to leverage TanStack Query cache
-                const allItemsResponse = await queryClient.fetchQuery({
-                    queryKey: ItemQueryHooks.getItemsQueryKey(),
-                    queryFn: () => ItemQueryHooks.getItemsQueryFn(),
-                    staleTime: 5 * 60 * 1000, // 5 minutes
-                    gcTime: 10 * 60 * 1000, // 10 minutes
-                });
-                if (allItemsResponse?.results) {
-                    setItems(allItemsResponse.results);
-                    console.log(`Loaded ${allItemsResponse.results.length} items for feat display`);
-                } else {
-                    // Fallback to filter weapons from cache
-                    try {
-                        const cacheData = await CacheQueryHooks.getItemsCache();
-                        if (cacheData?.results) {
-                            const weapons = cacheData.results.filter(item => 
-                                item.typeId === ITEM_TYPE_ENUM.Weapon
-                            );
-                            setItems(weapons.map(w => ({
-                                id: w.id,
-                                name: w.name,
-                                typeId: w.typeId,
-                                weapon: w.weaponCategory ? { category: w.weaponCategory } : null,
-                                armor: null,
-                            })));
-                            console.log(`Loaded ${weapons.length} weapons from cache for feat display`);
-                        }
-                    } catch (cacheError) {
-                        console.error('Failed to load weapons from cache:', cacheError);
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to fetch items for feat display:', error);
-            }
-        };
-        fetchItems();
-    }, [queryClient]);
+    // Get item name map directly from cache (synchronous, no state needed)
+    const itemNameMap = getItemNameMap();
 
-    // Create a map of item ID to item name for quick lookup
-    const itemNameMap = useMemo(() => {
-        const map = new Map<number, string>();
-        items.forEach(item => {
-            map.set(item.id, item.name);
-        });
-        return map;
-    }, [items]);
-
-    const availableSlots = resolvedData.availableFeats;
+    const availableSlots = resolvedData.availableFeatsCount;
     const selectedCount = state.selectedFeats.length;
 
-    // Memoize availableFeats to prevent dependency issues
-    const availableFeats = useMemo(() => featResponse?.results || [], [featResponse?.results]);
+    // Use qualifiedFeats from resolvedData (list of feats the character qualifies for)
+    // Note: This is the list of qualified feats, not the count (availableFeatsCount is the count)
+    const qualifiedFeats = useMemo(() => resolvedData.qualifiedFeats || [], [resolvedData.qualifiedFeats]);
 
     // Create a map of feat ID to feature data from resolved progressions
     const featFeatureMap = useMemo(() => {
@@ -116,16 +64,16 @@ export function FeatsTab({
 
     // Filter feats based on search term (including feature description and summary)
     const filteredFeats = useMemo(() => {
-        if (!searchTerm.trim()) return availableFeats;
+        if (!searchTerm.trim()) return qualifiedFeats;
 
         const term = searchTerm.toLowerCase();
-        return availableFeats.filter(feat => {
+        return qualifiedFeats.filter(feat => {
             const featureData = featFeatureMap.get(feat.id);
             return feat.name.toLowerCase().includes(term) ||
                 featureData?.description?.toLowerCase().includes(term) ||
                 featureData?.summary?.toLowerCase().includes(term);
         });
-    }, [availableFeats, searchTerm, featFeatureMap]);
+    }, [qualifiedFeats, searchTerm, featFeatureMap]);
 
 
     // Get granted feats from resolved data
@@ -139,15 +87,15 @@ export function FeatsTab({
         return state.selectedFeats.map(featId => {
             const feat = sharedData.allFeats.find(f => f.id === featId);
             if (!feat) return null;
-            
+
             // Get sub-id from state.featSubIds (stored in AdvancementFeat.featSubId)
             const featSubId = state.featSubIds[featId];
             const subIdName = featSubId && featSubId > 0
-                ? itemNameMap.get(featSubId) 
+                ? itemNameMap.get(featSubId)
                 : undefined;
-            
-            return { 
-                ...feat, 
+
+            return {
+                ...feat,
                 source: 'selected' as const,
                 subIdName
             };
@@ -167,12 +115,12 @@ export function FeatsTab({
                 // Look in sharedData.allFeats since granted feats are filtered out of availableFeats
                 const feat = sharedData.allFeats.find(f => f.id === entity.appliesToId);
                 if (!feat) return null;
-                
+
                 // Get sub-id name if present (for granted feats with useSubId)
                 const subIdName = entity.appliesToSubId && entity.appliesToSubId > 0
                     ? itemNameMap.get(entity.appliesToSubId)
                     : undefined;
-                
+
                 return { ...feat, source: 'granted' as const, subIdName };
             })
             .filter(Boolean);
@@ -201,8 +149,8 @@ export function FeatsTab({
 
             // Only include if this is a feat choice
             if (entityAppliesTo === EntityAppliesToType.Feat) {
-                // Use sharedData.allFeats for lookup since owned feats are filtered out of availableFeats
-                const feat = sharedData.allFeats.find(f => f.id === choice.appliesToId);
+                // Use qualifiedFeats for lookup since it has all the required properties
+                const feat = resolvedData.qualifiedFeats?.find(f => f.id === choice.appliesToId);
                 if (feat) {
                     const subIdName = choice.appliesToSubId && choice.appliesToSubId > 0
                         ? itemNameMap.get(choice.appliesToSubId)
@@ -219,7 +167,7 @@ export function FeatsTab({
         }
 
         return choiceFeats;
-    }, [state.featureChoices, resolvedData.progressions, sharedData.allFeats, itemNameMap]);
+    }, [state.featureChoices, resolvedData.progressions, resolvedData.qualifiedFeats, itemNameMap]);
 
     // Combine all owned feats for display (selected, granted, and choice-based)
     const allOwnedFeats = useMemo(() => {
@@ -234,29 +182,29 @@ export function FeatsTab({
         if (isSelected) {
             // Remove the feat
             newSelectedFeats = state.selectedFeats.filter(id => id !== featId);
-            
+
             // Remove feat sub-id if it exists
             const newFeatSubIds = { ...state.featSubIds };
             delete newFeatSubIds[featId];
-            
+
             updateState({
                 type: CharacterEditStateUpdateType.SET_SELECTED_FEATS,
                 payload: { selectedFeats: newSelectedFeats }
             });
-            
+
             updateState({
                 type: CharacterEditStateUpdateType.SET_FEAT_SUB_IDS,
                 payload: { featSubIds: newFeatSubIds }
             });
-            
+
             // Trigger feature resolution when feats change
             await triggerFeatureResolution();
         } else {
             // Add the feat (if we have available slots)
             if (selectedCount >= availableSlots) return;
-            
+
             // Check if the feat requires a sub-id selection
-            const feat = availableFeats.find(f => f.id === featId);
+            const feat = qualifiedFeats.find(f => f.id === featId);
             if (feat?.useSubId) {
                 // Show modal for weapon selection
                 setModalFeat(feat);
@@ -282,15 +230,15 @@ export function FeatsTab({
         const newSelectedFeats = state.selectedFeats.includes(modalFeat.id)
             ? state.selectedFeats
             : [...state.selectedFeats, modalFeat.id];
-        
+
         // Store the weapon sub-id for this feat
         const newFeatSubIds = { ...state.featSubIds, [modalFeat.id]: weaponId };
-        
+
         updateState({
             type: CharacterEditStateUpdateType.SET_SELECTED_FEATS,
             payload: { selectedFeats: newSelectedFeats }
         });
-        
+
         updateState({
             type: CharacterEditStateUpdateType.SET_FEAT_SUB_IDS,
             payload: { featSubIds: newFeatSubIds }
@@ -313,17 +261,8 @@ export function FeatsTab({
     };
 
 
-    if (isLoadingFeats) {
-        return (
-            <div className="p-6">
-                <div className="flex items-center justify-center h-32">
-                    <div className="text-gray-500">
-                        Loading feats and character data...
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // No longer need separate loading state since qualifiedFeats comes from resolvedData
+    // The isLoading prop from TabComponentProps covers the overall resolution loading state
 
     return (
         <div className="p-6">
@@ -428,7 +367,7 @@ export function FeatsTab({
                             Available Feats ({availableSlots - selectedCount} remaining)
                         </h3>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {filteredFeats.length} of {availableFeats.length} feats
+                            {filteredFeats.length} of {qualifiedFeats.length} feats
                         </div>
                     </div>
 

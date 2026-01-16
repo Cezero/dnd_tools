@@ -4,7 +4,7 @@ import type {
     FormulaParamsData
 } from '@shared/schema';
 import {
-    BreakdownComponentType,
+    CalculationMethodType,
     EntityType,
     FORMULA_MAP,
     ConditionalScalingValueType,
@@ -143,7 +143,7 @@ export class ValueGenerationPhase {
                     const calculator = new FormulaCalculatorImpl();
                     const result = calculator.calculate(formula, level, calculationContext, formulaEntity.value);
                     singleValue = result.value ?? calculatedValue; // Fall back to calculatedValue if result.value is null
-                    
+
                     // Use the detailed breakdown from the calculator
                     breakdown = result.breakdown;
                 } else {
@@ -155,7 +155,7 @@ export class ValueGenerationPhase {
                         components: [{
                             source: 'Formula',
                             value: 0, // Use 0 for string values
-                            type: BreakdownComponentType.formula,
+                            type: CalculationMethodType.formula,
                             description: singleValue as string
                         }]
                     };
@@ -167,7 +167,7 @@ export class ValueGenerationPhase {
                     components: [{
                         source: 'Formula',
                         value: singleValue as number,
-                        type: BreakdownComponentType.formula,
+                        type: CalculationMethodType.formula,
                         description: `Formula calculation at level ${level}`
                     }]
                 };
@@ -380,7 +380,7 @@ export class ValueGenerationPhase {
                             components: [{
                                 source: 'Static',
                                 value: entity.value ?? 0,
-                                type: BreakdownComponentType.base,
+                                type: CalculationMethodType.base,
                                 description: `Static modifier: ${entity.value ?? 0}`
                             }]
                         },

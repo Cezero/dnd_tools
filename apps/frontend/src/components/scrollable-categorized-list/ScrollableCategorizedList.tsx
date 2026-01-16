@@ -76,7 +76,7 @@ function formatCategoryLabel<T>(
     if (value === null || value === undefined) {
         return 'Unknown';
     }
-    
+
     // If fieldPath doesn't match any column and looks like a formatted label
     // (contains spaces or capital letters, different from default string representation),
     // use it directly as the label
@@ -84,7 +84,7 @@ function formatCategoryLabel<T>(
     if (fieldPath !== defaultString && (fieldPath.includes(' ') || /[A-Z]/.test(fieldPath))) {
         return fieldPath;
     }
-    
+
     return defaultString;
 }
 
@@ -343,7 +343,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
             hasFetchedRef.current = true;
         }
     }, [fetchData, dataFetcher]);
-    
+
     // Update data when dataFetcher result changes (but don't trigger loading state)
     useEffect(() => {
         if (dataFetcher && hasFetchedRef.current) {
@@ -547,34 +547,53 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
     // Calculate height from parent if maxHeight is 'auto'
     useEffect(() => {
         if (maxHeight === 'auto' && containerRef.current) {
+            let isUpdating = false; // Prevent infinite loops
+
             const updateHeight = () => {
-                if (containerRef.current) {
-                    // The parent is the h-[500px] div, but the padding is on the grandparent (p-6)
-                    const parent = containerRef.current.parentElement;
-                    const grandparent = parent?.parentElement;
-                    const containerHeight = containerRef.current.clientHeight;
-                    const parentClientHeight = parent ? parent.clientHeight : containerHeight;
+                if (isUpdating || !containerRef.current) return;
 
-                    // The parent has h-[500px] but is inside a grandparent with p-6 padding
-                    // The parent's clientHeight is 500px, but the grandparent's bottom padding
-                    // reduces the actual available visual space, causing clipping
-                    let availableContainerHeight = parentClientHeight;
-                    if (grandparent) {
-                        const grandparentPaddingBottom = parseFloat(window.getComputedStyle(grandparent).paddingBottom) || 0;
-                        // Subtract the grandparent's bottom padding from available height
-                        // to prevent the table from being clipped
-                        availableContainerHeight = parentClientHeight - grandparentPaddingBottom;
+                isUpdating = true;
+                requestAnimationFrame(() => {
+                    if (containerRef.current) {
+                        // The parent is the h-[500px] div, but the padding is on the grandparent (p-6)
+                        const parent = containerRef.current.parentElement;
+                        const grandparent = parent?.parentElement;
+                        const containerHeight = containerRef.current.clientHeight;
+                        const parentClientHeight = parent ? parent.clientHeight : containerHeight;
+
+                        // The parent has h-[500px] but is inside a grandparent with p-6 padding
+                        // The parent's clientHeight is 500px, but the grandparent's bottom padding
+                        // reduces the actual available visual space, causing clipping
+                        let availableContainerHeight = parentClientHeight;
+                        if (grandparent) {
+                            const grandparentPaddingBottom = parseFloat(window.getComputedStyle(grandparent).paddingBottom) || 0;
+                            // Subtract the grandparent's bottom padding from available height
+                            // to prevent the table from being clipped
+                            availableContainerHeight = parentClientHeight - grandparentPaddingBottom;
+                        }
+
+                        // Get actual search div height (including padding, excluding margin)
+                        // The margin-bottom (mb-4 = 16px) is handled by flexbox spacing
+                        const searchHeight = searchRef.current ?
+                            searchRef.current.offsetHeight : 0;
+                        // Calculate available height for the table container
+                        // This should be availableContainerHeight - searchHeight (margin is handled by flex)
+                        const availableHeight = availableContainerHeight - searchHeight;
+                        const newHeight = Math.max(200, availableHeight); // Minimum 200px
+
+                        // Only update if height actually changed to prevent infinite loops
+                        setCalculatedHeight(prev => {
+                            if (prev === newHeight) {
+                                isUpdating = false;
+                                return prev;
+                            }
+                            isUpdating = false;
+                            return newHeight;
+                        });
+                    } else {
+                        isUpdating = false;
                     }
-
-                    // Get actual search div height (including padding, excluding margin)
-                    // The margin-bottom (mb-4 = 16px) is handled by flexbox spacing
-                    const searchHeight = searchRef.current ?
-                        searchRef.current.offsetHeight : 0;
-                    // Calculate available height for the table container
-                    // This should be availableContainerHeight - searchHeight (margin is handled by flex)
-                    const availableHeight = availableContainerHeight - searchHeight;
-                    setCalculatedHeight(Math.max(200, availableHeight)); // Minimum 200px
-                }
+                });
             };
 
             // Use requestAnimationFrame to ensure DOM is ready
@@ -582,13 +601,12 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
                 updateHeight();
             }, 0);
 
-            // Watch for container and parent size changes
+            // Watch for parent size changes only (not the container itself to avoid loops)
             const resizeObserver = new ResizeObserver(() => {
                 updateHeight();
             });
-            if (containerRef.current) {
-                resizeObserver.observe(containerRef.current);
-            }
+
+            // Only observe the parent, not the container itself
             const parent = containerRef.current?.parentElement;
             if (parent) {
                 resizeObserver.observe(parent);
@@ -723,7 +741,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
                     {/* Scrollable body */}
                     <ScrollArea.Root className="flex-1 min-h-0">
                         <ScrollArea.Viewport ref={scrollViewportRef} className="h-full">
-                            <ScrollArea.Content className="p-0">
+                            <ScrollArea.Content className="p-0 pb-4">
                                 <table className="table-fixed w-full border-collapse border border-solid border-gray-600">
                                     <colgroup>
                                         {table.getVisibleLeafColumns().map(column => (

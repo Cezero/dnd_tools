@@ -2,27 +2,24 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { EntityLink } from '@/components/entity-link';
 import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { useCacheFunctions } from '@/services/cache';
+import { formatSpellSchool, formatSpellComponents, formatSpellDescriptors } from '@/lib/formatters';
+import { useCacheFunctions, getSourceDisplay, getSourceBooksByType } from '@/services/cache';
 import { Spell } from '@shared/schema/spell';
 import {
     SPELL_SCHOOL_LIST,
     SPELL_DESCRIPTOR_LIST,
     SPELL_COMPONENT_LIST,
-    SpellSchoolNameList,
-    SpellDescriptorNameList,
-    SpellComponentAbbrList,
     FilterType,
     SourceType,
     EditionId,
     EDITION_LIST,
     EDITION_MAP
 } from '@shared/static-data';
-import { GetSourceDisplay, GetSourceBookTypeList } from '@shared/utils';
 
 import { AsyncClassDisplay } from './AsyncClassDisplay';
 
 export const useSpellColumns = (): ColumnDef<Spell, unknown>[] => {
-    const { getClassSelectByEdition, getClassNameById: _getClassNameById } = useCacheFunctions();
+    const { getClassSelectByEdition, getClassSummaryById: _getClassSummaryById } = useCacheFunctions();
     return [
         {
             accessorKey: 'name',
@@ -98,9 +95,8 @@ export const useSpellColumns = (): ColumnDef<Spell, unknown>[] => {
             enableResizing: true,
             filterFn: createArrayIdFilter<Spell>('schoolId'),
             cell: info => {
-                const schools = info.getValue() as { schoolId: number }[];
-                const labels = SpellSchoolNameList(schools.map(s => s.schoolId));
-                return labels;
+                const spell = info.row.original;
+                return formatSpellSchool(spell, { useAbbreviation: true, includeBrackets: true });
             },
             meta: {
                 filterType: FilterType.MULTI_SELECT,
@@ -114,9 +110,8 @@ export const useSpellColumns = (): ColumnDef<Spell, unknown>[] => {
             enableResizing: true,
             filterFn: createArrayIdFilter<Spell>('descriptorId'),
             cell: info => {
-                const descriptors = info.getValue() as { descriptorId: number }[];
-                const labels = SpellDescriptorNameList(descriptors.map(d => d.descriptorId));
-                return labels;
+                const spell = info.row.original;
+                return formatSpellDescriptors(spell);
             },
             meta: {
                 filterType: FilterType.MULTI_SELECT,
@@ -131,9 +126,8 @@ export const useSpellColumns = (): ColumnDef<Spell, unknown>[] => {
             size: 100,
             filterFn: createArrayIdFilter<Spell>('componentId'),
             cell: info => {
-                const components = info.getValue() as { componentId: number }[];
-                const labels = SpellComponentAbbrList(components.map(c => c.componentId));
-                return labels;
+                const spell = info.row.original;
+                return formatSpellComponents(spell);
             },
             meta: {
                 filterType: FilterType.MULTI_SELECT,
@@ -149,7 +143,7 @@ export const useSpellColumns = (): ColumnDef<Spell, unknown>[] => {
             filterFn: createArrayIdFilter<Spell>('sourceBookId'),
             cell: info => {
                 const sources = info.getValue() as { sourceBookId: number, pageNumber: number }[];
-                const labels = GetSourceDisplay(sources, true);
+                const labels = getSourceDisplay(sources, true);
                 return labels;
             },
             meta: {
@@ -157,7 +151,7 @@ export const useSpellColumns = (): ColumnDef<Spell, unknown>[] => {
                 options: (currentFilters: Array<{ id: string; value: unknown }>) => {
                     const editionFilter = currentFilters.find(f => f.id === 'editionId');
                     const editionId = editionFilter?.value as EditionId;
-                    return GetSourceBookTypeList(SourceType.Spells, editionId);
+                    return getSourceBooksByType(SourceType.Spells, editionId);
                 },
             },
         },

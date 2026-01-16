@@ -43,16 +43,14 @@ Defines when and how features are granted to characters, including level-based p
 - **`sourceType`**: Type of source (Race, Class, Template, ClassVariant, Domain, Feat, Companion) - references @FeatureSourceType enum
 - **`level`**: Character level when feature is granted
 - **`featureId`**: Reference to the feature being granted
-- **`classId`**: Reference to class (if class-granted)
-- **`raceId`**: Reference to race (if race-granted)
 - **`variantOverrideId`**: Reference to class variant override (if variant-granted)
 - **`domainId`**: Reference to domain (if domain-granted)
 - **`featId`**: Reference to feat (if feat-granted)
 - **`companionId`**: Reference to companion (if companion-granted)
 
 **Relationships**:
-- **`class`**: Links to class that grants this feature
-- **`race`**: Links to race that grants this feature
+- **`classes`**: Many-to-many relationship via `FeatureProgressionClassMap` - links to classes that grant this feature (for shared progressions)
+- **`races`**: Many-to-many relationship via `FeatureProgressionRaceMap` - links to races that grant this feature (for shared progressions)
 - **`classVariantOverride`**: Links to class variant override (if applicable)
 - **`domain`**: Links to domain that grants this feature (if applicable)
 - **`feat`**: Links to feat that grants this feature (if applicable)
@@ -237,7 +235,8 @@ The feature system follows the standard **Data Integrity** patterns documented i
 **Foreign Key Constraints**: All relationships are properly constrained with appropriate cascade behavior
 
 **Nullable Fields**: Appropriate fields are nullable based on usage:
-- `classId`, `raceId`, `variantOverrideId`, `domainId`, `featId`, and `companionId` in FeatureProgression (only one source type should be set per progression)
+- `variantOverrideId`, `domainId`, `featId`, and `companionId` in FeatureProgression (only one source type should be set per progression)
+- Class and race relationships are handled via many-to-many junction tables (`FeatureProgressionClassMap` and `FeatureProgressionRaceMap`)
 - `appliesToId`, `appliesToSubId`, `formulaParamsId` in FeatureEntity (optional based on entity type)
 - `value`, `bonusType`, `filterType` in FeatureEntity (optional based on entity type)
 

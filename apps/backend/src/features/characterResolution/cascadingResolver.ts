@@ -95,25 +95,66 @@ export class CascadingResolver {
     }
 
     /**
-     * Process features granted by other features
+     * Process features granted by other features.
+     * 
+     * When a feature entity grants another feature (e.g., a feat granting domain features),
+     * this method resolves the granted feature and adds it to the progressions array.
+     * This enables cascading resolution to continue detecting new features.
+     * 
+     * Examples:
+     * - Ranger features that grant feats (e.g., Track feat)
+     * - Fighting Style choices that determine other features
+     * - Features that grant feats which in turn grant more features (multi-level cascading)
+     * 
+     * @param result - Entity processing result containing granted entities
+     * @param sourceProgression - The progression that granted these features
+     * @param progressions - Array of progressions to add granted features to (modified in place)
+     * 
+     * @example
+     * ```typescript
+     * // Entity grants a feat (appliesTo: Feat, appliesToId: 123)
+     * const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
+     * await this.processGrantedFeatures(result, progression, progressions);
+     * // progressions now includes the feat's feature progressions
+     * ```
      */
     private async processGrantedFeatures(
         result: EntityProcessingResult,
-        _sourceProgression: FeatureProgression,
-        _progressions: FeatureProgression[]
+        sourceProgression: FeatureProgression,
+        progressions: FeatureProgression[]
     ): Promise<void> {
-        // Process granted entities
-        if (result.grants) {
-            for (const _entity of result.grants) {
-                // TODO: Process different types of granted entities
-                // This would need to be implemented based on the actual entity types
-                //console.log('Processing granted entity:', entity);
+        if (!result.grants || result.grants.length === 0) {
+            return;
+        }
+
+        for (const entity of result.grants) {
+            // Only process entities that can grant features (have appliesTo and appliesToId)
+            if (!entity.appliesTo || !entity.appliesToId) {
+                continue;
             }
+
+            // Resolve the granted feature using ChoiceResolver
+            const grantedProgressions = await ChoiceResolver.resolveChoiceByType(
+                entity.appliesTo,
+                entity.appliesToId,
+                progressions
+            );
+
+            // Add progressions using utility function (no entity processing needed here,
+            // as entities will be processed in the next iteration of the cascading loop)
+            ChoiceResolver.addResolvedProgressions(progressions, grantedProgressions);
         }
     }
 
     /**
-     * Resolve user choices and their cascading effects
+     * Resolve user choices and their cascading effects.
+     * 
+     * Processes user-selected choices (e.g., domain selections, feat choices) and adds
+     * the granted feature progressions to the progressions array. Uses the centralized
+     * utility function to avoid duplicate code.
+     * 
+     * @param userChoices - Record mapping appliesTo types to arrays of selected IDs
+     * @param progressions - Array of progressions to add granted features to (modified in place)
      */
     private async resolveUserChoices(
         userChoices: Record<number, number[]>,
@@ -122,15 +163,15 @@ export class CascadingResolver {
         // Generic choice resolution - handle any appliesTo type
         for (const [appliesToType, selectedIds] of Object.entries(userChoices)) {
             for (const selectedId of selectedIds) {
-                const grantedProgressions = await ChoiceResolver.resolveChoiceByType(parseInt(appliesToType), selectedId, progressions);
+                const grantedProgressions = await ChoiceResolver.resolveChoiceByType(
+                    parseInt(appliesToType),
+                    selectedId,
+                    progressions
+                );
 
-                // Only add progressions that don't already exist to avoid duplicates
-                for (const progression of grantedProgressions) {
-                    const existingProgression = progressions.find(p => p.id === progression.id);
-                    if (!existingProgression) {
-                        progressions.push(progression);
-                    }
-                }
+                // Add progressions using utility function (no entity processing needed here,
+                // as entities will be processed in the next iteration of the cascading loop)
+                ChoiceResolver.addResolvedProgressions(progressions, grantedProgressions);
             }
         }
     }

@@ -16,10 +16,10 @@ export const FeatureSourceType = {
     Class: 1,
     Template: 2,
     None: 3,
-    ClassVariant: 4,
-    Domain: 5, // NEW: Domain-granted features
-    Feat: 6, // NEW: Feat-granted features
-    Companion: 7, // NEW: Companion-granted features
+    Domain: 4, // Domain-granted features
+    Feat: 5, // Feat-granted features
+    Companion: 6, // Companion-granted features
+    Edition: 7, // Edition-granted features (feat progression, ability score increases, etc.)
 } as const;
 
 export type FeatureSourceType = typeof FeatureSourceType[keyof typeof FeatureSourceType];
@@ -48,9 +48,10 @@ export const FEATURE_SOURCE_TYPES: BaseMap<CoreComponent> = {
     [FeatureSourceType.Class]: { id: FeatureSourceType.Class, name: 'Class' },
     [FeatureSourceType.Template]: { id: FeatureSourceType.Template, name: 'Template' },
     [FeatureSourceType.None]: { id: FeatureSourceType.None, name: 'None' },
-    [FeatureSourceType.ClassVariant]: { id: FeatureSourceType.ClassVariant, name: 'Class Variant' },
     [FeatureSourceType.Domain]: { id: FeatureSourceType.Domain, name: 'Domain' },
     [FeatureSourceType.Feat]: { id: FeatureSourceType.Feat, name: 'Feat' },
+    [FeatureSourceType.Companion]: { id: FeatureSourceType.Companion, name: 'Companion' },
+    [FeatureSourceType.Edition]: { id: FeatureSourceType.Edition, name: 'Edition' },
 }
 
 export const FEATURE_SOURCE_LIST = Object.values(FEATURE_SOURCE_TYPES);
@@ -123,6 +124,16 @@ export const EntityAppliesToType = {
     Prerequisite: 35,   // Prerequisites for features
     Proficiency: 36,     // Proficiency (weapon, armor, etc.)
     SpellbookSpell: 37,  // Spellbook spell selection (wizard, etc.)
+
+    // NEW: Class/Race refactoring types
+    SpellcastingProgression: 38, // Reference to SpellcastingProgression
+    CastingAbility: 39,          // Casting ability (Intelligence, Wisdom, Charisma)
+    CastingType: 40,             // Casting type (Prepared, Spontaneous)
+    BaseAttackBonus: 41,         // Base Attack Bonus progression type
+    Size: 42,                    // Creature size (for race)
+    Speed: 43,                   // Base speed (for race)
+    FavoredClass: 44,            // Favored class (for race)
+    LevelAdjustment: 45,         // Level adjustment (for race)
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -172,6 +183,16 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.Prerequisite]: { id: EntityAppliesToType.Prerequisite, name: 'Prerequisite', displayName: 'Prerequisite' },
     [EntityAppliesToType.Proficiency]: { id: EntityAppliesToType.Proficiency, name: 'Proficiency', displayName: 'Proficiency' },
     [EntityAppliesToType.SpellbookSpell]: { id: EntityAppliesToType.SpellbookSpell, name: 'Spellbook Spell', displayName: 'Spellbook Spell' },
+
+    // NEW: Class/Race refactoring types
+    [EntityAppliesToType.SpellcastingProgression]: { id: EntityAppliesToType.SpellcastingProgression, name: 'Spellcasting Progression', displayName: 'Spellcasting' },
+    [EntityAppliesToType.CastingAbility]: { id: EntityAppliesToType.CastingAbility, name: 'Casting Ability', displayName: 'Casting Ability' },
+    [EntityAppliesToType.CastingType]: { id: EntityAppliesToType.CastingType, name: 'Casting Type', displayName: 'Casting Type' },
+    [EntityAppliesToType.BaseAttackBonus]: { id: EntityAppliesToType.BaseAttackBonus, name: 'Base Attack Bonus', displayName: 'BAB' },
+    [EntityAppliesToType.Size]: { id: EntityAppliesToType.Size, name: 'Size', displayName: 'Size' },
+    [EntityAppliesToType.Speed]: { id: EntityAppliesToType.Speed, name: 'Speed', displayName: 'Speed' },
+    [EntityAppliesToType.FavoredClass]: { id: EntityAppliesToType.FavoredClass, name: 'Favored Class', displayName: 'Favored Class' },
+    [EntityAppliesToType.LevelAdjustment]: { id: EntityAppliesToType.LevelAdjustment, name: 'Level Adjustment', displayName: 'LA' },
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
@@ -225,6 +246,18 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.SizeCategory,
         EntityAppliesToType.CreatureType,
         EntityAppliesToType.DamageType,
+
+        // NEW: Class/Race refactoring types
+        EntityAppliesToType.SpellcastingProgression, // Spellcasting progression reference
+        EntityAppliesToType.CastingAbility, // Casting ability
+        EntityAppliesToType.CastingType, // Casting type
+        EntityAppliesToType.BaseAttackBonus, // BAB progression
+        EntityAppliesToType.HitDice, // Hit dice (for class mechanics)
+        EntityAppliesToType.Size, // Creature size
+        EntityAppliesToType.FavoredClass, // Favored class
+        EntityAppliesToType.LevelAdjustment, // Level adjustment
+        EntityAppliesToType.SkillPoints, // Skill points (for class mechanics)
+        EntityAppliesToType.SavingThrow, // Saving throw progression (for class mechanics)
     ],
     [EntityType.Choice]: [
         EntityAppliesToType.Feat, // Choice between feats
@@ -235,6 +268,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.AnimalCompanion, // Choice between animal companions
         EntityAppliesToType.Familiar, // Choice between familiars
         EntityAppliesToType.SpellbookSpell, // Choice for spellbook spells (wizard, etc.)
+        EntityAppliesToType.Ability, // Choice for ability score increases (e.g., every 4th level)
     ],
     [EntityType.Allocation]: [
         EntityAppliesToType.Feat, // Allocation to feats

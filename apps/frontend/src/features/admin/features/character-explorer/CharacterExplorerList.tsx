@@ -1,12 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useCacheFunctions } from '@/services/cache';
 import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
-import type { GetAllCharactersResponse } from '@shared/schema';
+import type { GetAllCharactersAdminResponse } from '@shared/schema';
 
 export function CharacterExplorerList(): React.JSX.Element {
     const navigate = useNavigate();
     const { data, isLoading, error } = CharacterQueryHooks.useGetAllCharactersAdmin();
+    const { getRaceSummaryById } = useCacheFunctions();
 
     if (isLoading) {
         return (
@@ -24,7 +26,7 @@ export function CharacterExplorerList(): React.JSX.Element {
         );
     }
 
-    const characters = (data as GetAllCharactersResponse | undefined)?.results || [];
+    const characters = (data as GetAllCharactersAdminResponse | undefined)?.results || [];
 
     return (
         <div className="p-4">
@@ -71,16 +73,16 @@ export function CharacterExplorerList(): React.JSX.Element {
                                         {character.name}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {(character as unknown as { user?: { username?: string } }).user?.username || 'Unknown'}
+                                        {character.user?.username || 'Unknown'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {(character as unknown as { characterLevel?: number }).characterLevel || 0}
+                                        {character.characterLevel || 0}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {(character as unknown as { classLevelString?: string }).classLevelString || '-'}
+                                        {character.classLevelString || '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {character.race?.name || '-'}
+                                        {getRaceSummaryById(character.raceId)?.name || '-'}
                                     </td>
                                 </tr>
                             ))

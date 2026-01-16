@@ -1,20 +1,47 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 import { ValidatedInput, SourceEditor } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
+import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { useCacheFunctions } from '@/services/cache';
 import { EDITION_LIST, SIZE_LIST, SourceType, EditionId, CoreComponent } from '@shared/static-data';
 
+import { findRaceMechanicsProgression, updateRaceMechanicsEntity } from '../raceMechanicsHelpers';
 import type { RaceTabProps } from './types';
 
 
 export function BasicInfoTab({
     formData,
     setFormData,
-    isLoading: _isLoading = false
+    isLoading: _isLoading = false,
+    featureProgressions = [],
+    setFeatureProgressions,
+    raceId
 }: RaceTabProps): React.JSX.Element {
     const { getBaseClassSelectByEdition } = useCacheFunctions();
     const [availableClasses, setAvailableClasses] = useState<CoreComponent[]>([]);
+
+    // Extract mechanics from progressions
+    const mechanics = useMemo(() => {
+        if (!raceId) {
+            return { sizeId: null, speed: null, favoredClassId: null, levelAdjustment: null };
+        }
+        return extractRaceMechanics(featureProgressions, raceId);
+    }, [featureProgressions, raceId]);
+
+    // Helper to update progressions directly
+    const handleMechanicsFieldChange = (
+        field: 'sizeId' | 'speed' | 'favoredClassId' | 'levelAdjustment',
+        value: number | null
+    ) => {
+        // Update progressions if available
+        if (setFeatureProgressions && raceId && value !== null) {
+            const mechanicsProgression = findRaceMechanicsProgression(featureProgressions, raceId);
+            if (mechanicsProgression) {
+                updateRaceMechanicsEntity(mechanicsProgression, field, value, featureProgressions, setFeatureProgressions);
+            }
+        }
+    };
 
     useEffect(() => {
         const loadClasses = async () => {
@@ -51,35 +78,38 @@ export function BasicInfoTab({
                         />
                         <CustomSelect
                             label="Size"
-                            value={formData.sizeId}
+                            value={mechanics.sizeId ?? undefined}
                             options={SIZE_LIST}
                             required
                             componentExtraClassName="flex items-center gap-2"
                             labelExtraClassName="w-30"
                             itemExtraClassName="w-auto"
                             itemTextExtraClassName="w-16"
-                            onValueChange={(value) => setFormData({ ...formData, sizeId: value as number })}
+                            onValueChange={(value) => handleMechanicsFieldChange('sizeId', value as number)}
                             placeholder="Select size"
                         />
-                        <ValidatedInput
-                            field="speed"
-                            label="Speed"
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-30"
-                            inputExtraClassName="w-auto"
-                            type="number"
-                            min={0}
-                            max={60}
-                            step={5}
-                        />
+                        <div className="flex items-center gap-2">
+                            <label className={`block font-medium w-30 ${mechanics.speed === null ? 'text-gray-400' : ''}`}>
+                                Speed
+                            </label>
+                            <input
+                                type="number"
+                                min={0}
+                                max={60}
+                                step={5}
+                                value={mechanics.speed ?? ''}
+                                onChange={(e) => handleMechanicsFieldChange('speed', e.target.value ? parseInt(e.target.value, 10) : null)}
+                                className="w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                        </div>
                         <CustomSelect
                             label="Favored Class"
                             componentExtraClassName="flex items-center gap-2"
                             labelExtraClassName="w-30"
                             itemExtraClassName="w-full"
                             itemTextExtraClassName="w-24"
-                            value={formData.favoredClassId}
-                            onValueChange={(value) => setFormData({ ...formData, favoredClassId: value as number })}
+                            value={mechanics.favoredClassId ?? undefined}
+                            onValueChange={(value) => handleMechanicsFieldChange('favoredClassId', value as number)}
                             options={[
                                 { id: -1, name: 'Any' },
                                 ...availableClasses
@@ -106,18 +136,21 @@ export function BasicInfoTab({
                                 checked={formData.isVisible as boolean}
                                 onCheckedChange={(checked) => setFormData({ ...formData, isVisible: checked })}
                             />
-                            <ValidatedInput
-                                field="levelAdjustment"
-                                label="Level Adjustment"
-                                componentExtraClassName="flex items-center gap-2"
-                                labelExtraClassName="w-30"
-                                inputExtraClassName="w-auto"
-                                type="number"
-                                min={0}
-                                max={100}
-                                step={1}
-                                placeholder="0"
-                            />
+                            <div className="flex items-center gap-2">
+                                <label className={`block font-medium w-30 ${mechanics.levelAdjustment === null ? 'text-gray-400' : ''}`}>
+                                    Level Adjustment
+                                </label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    placeholder="0"
+                                    value={mechanics.levelAdjustment ?? ''}
+                                    onChange={(e) => handleMechanicsFieldChange('levelAdjustment', e.target.value ? parseInt(e.target.value, 10) : null)}
+                                    className="w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

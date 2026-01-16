@@ -188,9 +188,18 @@ Defines character spell preparation and casting data.
 - **`classId`**: Reference to the class whose spell slot was used
 - **`spellId`**: Reference to the spell
 - **`spellLevel`**: Actual spell level used (post-metamagic)
-- **`quantity`**: Number of spells prepared
+- **`quantity`**: Number of spells prepared (for prepared casters) or maximum spells per day for this level (for known casters)
+- **`timesCast`**: How many of the prepared spells have been cast (default: 0)
 - **`prepKey`**: Unique identifier for this exact combination
 - **`slotType`**: Type of spell slot used
+- **`isDomainSpell`**: Whether this is a domain spell
+- **`domainId`**: Reference to the domain (if domain spell)
+
+**Cast Tracking**:
+- The `timesCast` field tracks how many times a prepared spell has been cast
+- For prepared casters: `timesCast` cannot exceed `quantity`
+- For known casters: `timesCast` cannot exceed `quantity` (which equals `maxSlotsPerLevel` for that spell level)
+- Reset daily uses sets all `timesCast = 0` for all character's spell preparations
 
 **Relationships**:
 - **`character`**: Links to the character
@@ -220,6 +229,36 @@ Defines metamagic feat applications to spell preparation.
 **Usage**: Provides metamagic data for character spell preparation.
 
 **Source File**: `prisma/schema.prisma` (SpellPreparationMetamagic model)
+
+### **CharacterFeatureUses Model**
+
+Tracks feature uses for characters, including current uses, maximum uses, and frequency.
+
+**Purpose**: Manages feature uses tracking for features that have limited uses per day, week, level, or encounter.
+
+**Key Fields**:
+- **`id`**: Unique identifier for the feature uses record
+- **`characterId`**: Reference to the character
+- **`progressionId`**: Reference to the feature progression
+- **`featureEntityId`**: Reference to the feature entity
+- **`currentUses`**: Current number of uses remaining (default: 0)
+- **`maxUses`**: Maximum number of uses available
+- **`frequency`**: Frequency type (PER_DAY, PER_WEEK, PER_LEVEL, PER_ENCOUNTER)
+
+**Relationships**:
+- **`character`**: Links to the character
+- **`progression`**: Links to the feature progression
+- **`featureEntity`**: Links to the feature entity
+
+**Usage**: Tracks feature uses for features with limited uses, enabling gameplay tracking of feature usage.
+
+**Frequency Types**:
+- **PER_DAY**: Uses reset daily (via reset daily uses)
+- **PER_WEEK**: Uses reset weekly
+- **PER_LEVEL**: Uses reset per character level
+- **PER_ENCOUNTER**: Uses reset per encounter
+
+**Source File**: `prisma/schema.prisma` (CharacterFeatureUses model)
 
 ## 🔗 **Cross-System Relationships**
 

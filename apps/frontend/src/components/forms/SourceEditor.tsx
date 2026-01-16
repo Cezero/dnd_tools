@@ -1,23 +1,13 @@
 import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 
-import { useCacheFunctions } from '@/services/cache';
+import { useCacheFunctions, getSourceBooksByType } from '@/services/cache';
 import type { SourceMap } from '@shared/schema';
-import {
-    SourceType,
-    EditionId
-} from '@shared/static-data';
-import { GetSourceBookTypeList } from '@shared/utils';
+
+import type { SourceEditorProps } from './types';
 
 import { CustomSelect } from './index';
 
-export interface SourceEditorProps {
-    sources: SourceMap[];
-    onSourcesChange: (sources: SourceMap[]) => void;
-    sourceType: SourceType;
-    editionId?: EditionId;
-    className?: string;
-}
 
 export function SourceEditor({ sources, onSourcesChange, sourceType, editionId, className = '' }: SourceEditorProps) {
     const { getSourceBookFromCache } = useCacheFunctions();
@@ -25,9 +15,8 @@ export function SourceEditor({ sources, onSourcesChange, sourceType, editionId, 
     const [pageNumber, setPageNumber] = useState<string>('');
 
     // Filter out already selected books
-    const availableBooks = GetSourceBookTypeList(sourceType, editionId).filter(book =>
-        !sources.some(source => source.sourceBookId === book.id)
-    );
+    const availableBooks = getSourceBooksByType(sourceType, editionId)
+        .filter(book => !sources.some(source => source.sourceBookId === book.id));
 
     const handleAddSource = () => {
         if (!selectedBookId) return;

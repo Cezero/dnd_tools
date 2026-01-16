@@ -10,11 +10,13 @@
 - **[validation-schemas.md](validation-schemas.md)** — Zod validation schemas
 - **[backend-implementation.md](backend-implementation.md)** — Backend services and API
 - **[frontend-components.md](frontend-components.md)** — Frontend React components
+- **[character-detail.md](character-detail.md)** — CharacterDetail component for in-game character interaction
 
 ### **Specialized Documentation**
 - **[character-creation.md](character-creation.md)** — Character creation workflow and validation
 - **[character-advancement.md](character-advancement.md)** — Leveling up and multiclassing
 - **[character-sheet.md](character-sheet.md)** — Character sheet display and calculations
+- **[character-detail.md](character-detail.md)** — In-game character interaction and tracking
 - **[character-integration.md](character-integration.md)** — Integration with other game systems
 - **[attack-calculation.md](attack-calculation.md)** — Attack calculation library for combat statistics
 

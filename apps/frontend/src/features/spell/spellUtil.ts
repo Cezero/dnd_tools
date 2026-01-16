@@ -1,11 +1,11 @@
-import { getClassNameById } from '@/services/cache';
+import { getClassSummaryById } from '@/services/cache';
 import { SpellLevelMapping } from '@shared/schema';
 
 export const GetClassDisplay = (classes: SpellLevelMapping[], spellLevel: number): string => {
     if (!classes || classes.length === 0) return '';
 
     const formattedClasses = classes.map(cls => {
-        const classItem = getClassNameById(cls.classId);
+        const classItem = getClassSummaryById(cls.classId);
         if (classItem) {
             if (cls.level !== spellLevel) {
                 return `${classItem.abbreviation} ${cls.level}`;
@@ -25,7 +25,7 @@ export const GetClassLevelAbbr = (classLevels: SpellLevelMapping[]): string => {
     const organizedClassLevels = new Map<number, { sorcererPresent: boolean; wizardPresent: boolean; otherClasses: Set<string> }>();
 
     classLevels.forEach((cl: SpellLevelMapping) => {
-        const classItem = getClassNameById(cl.classId);
+        const classItem = getClassSummaryById(cl.classId);
         if (classItem) {
             const levelData = organizedClassLevels.get(cl.level) || {
                 sorcererPresent: false,

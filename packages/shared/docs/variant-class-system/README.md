@@ -4,12 +4,34 @@
 
 ## 📋 **Overview**
 
-The Variant Class System allows the creation of modified versions of existing base classes, enabling Unearthed Arcana variant classes while minimizing data duplication. The system uses an **override-based architecture** where variants store only the differences from their base class, with the backend resolving complete class data on demand.
+**⚠️ MIGRATION IN PROGRESS**
+
+The Variant Class System is being migrated to a new architecture where variants are modeled as first-order classes with reusable feature progressions. The old override-based system is being phased out.
+
+**New Approach (Post-Refactoring):**
+- Variants are regular `Class` entries (not `ClassVariant` entries)
+- Variants share feature progressions with base class via many-to-many relationship
+- Clone workflow: Copy progression references from base class
+- Fork workflow: Create class-specific copies when needed
+- No resolution-time logic needed
+
+**Migration Status:**
+- ⏳ **Phase 1**: FeatureProgression many-to-many support - In progress
+- ⏸️ **Phase 2**: Variant-to-class migration - Pending Phase 1 completion
+- ⏸️ **Phase 4**: Remove ClassVariant model - Pending Phases 1-3 completion
+
+**Legacy System (Being Phased Out):**
+
+The old variant class system allows the creation of modified versions of existing base classes, enabling Unearthed Arcana variant classes while minimizing data duplication. The system uses an **override-based architecture** where variants store only the differences from their base class, with the backend resolving complete class data on demand.
 
 **Target Use Cases:**
 - Unearthed Arcana variant classes (Cloistered Cleric, Urban Ranger, etc.)
 - Custom variant classes for homebrew campaigns
 - Class modifications that maintain the core identity of the base class
+
+**TODO: Remove ClassVariant Model in Phase 4**
+
+After migration is complete, the `ClassVariant` model and all related code will be removed. Variants will be regular classes with shared progressions.
 
 ## 🏗️ **Architecture Principles**
 

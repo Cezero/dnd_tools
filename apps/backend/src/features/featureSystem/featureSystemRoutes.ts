@@ -1,11 +1,14 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     FeatureIdParamSchema,
+    EditionIdParamSchema,
     CreateFeatureSchema,
     UpdateFeatureSchema,
-    CreateFeatureProgressionSchema,
+    CreateFeatureProgressionRequestSchema,
     UpdateFeatureProgressionsRequestSchema,
     FeatureQuerySchema,
+    CloneClassFeaturesRequestSchema,
+    ForkProgressionRequestSchema,
 } from '@shared/schema';
 
 import {
@@ -18,7 +21,10 @@ import {
     UpdateFeatureProgressions,
     GetFeatureProgressions,
     GetFeatureProgressionsByFeatId,
+    GetFeatureProgressionsByEditionId,
     GetFeatureList,
+    CloneClassFeatures,
+    ForkProgressionForClass,
 } from './featureSystemController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -39,7 +45,14 @@ put('/:id/progressions', requireAdmin, { params: FeatureIdParamSchema, body: Upd
 // Feature Progression Routes (for feat management)
 get('/by-feat/:id/progressions', { params: FeatureIdParamSchema }, GetFeatureProgressionsByFeatId);
 
+// Feature Progression Routes (for edition management)
+get('/by-edition/:editionId/progressions', { params: EditionIdParamSchema }, GetFeatureProgressionsByEditionId);
+
 // Bulk Feature Progression Routes (for class/race creation)
-post('/progressions/bulk', requireAdmin, { body: CreateFeatureProgressionSchema }, CreateFeatureProgressionWithRelations);
+post('/progressions/bulk', requireAdmin, { body: CreateFeatureProgressionRequestSchema }, CreateFeatureProgressionWithRelations);
+
+// Clone and Fork Routes (for variant class creation)
+post('/clone-class-features', requireAdmin, { body: CloneClassFeaturesRequestSchema }, CloneClassFeatures);
+post('/fork-progression', requireAdmin, { body: ForkProgressionRequestSchema }, ForkProgressionForClass);
 
 export { FeatureSystemRouter }; 

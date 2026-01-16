@@ -43,7 +43,7 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
         skillBonuses: [],
         pendingChoices: [],
         grantedFeats: [],
-        availableFeats: 0,
+        availableFeatsCount: 0,
 
         // Skills Tab UI State
         skillRanks: [],
@@ -54,6 +54,9 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
         // Feats Tab UI State
         selectedFeats: [],
         featSubIds: {},
+
+        // Spells Tab UI State
+        spellsKnown: [],
 
         // Description Tab UI State
         alignmentId: null,
@@ -120,6 +123,8 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
                     return { ...prev, selectedFeats: update.payload.selectedFeats };
                 case CharacterEditStateUpdateType.SET_FEAT_SUB_IDS:
                     return { ...prev, featSubIds: update.payload.featSubIds };
+                case CharacterEditStateUpdateType.SET_SPELLS_KNOWN:
+                    return { ...prev, spellsKnown: update.payload.spellsKnown };
                 case CharacterEditStateUpdateType.SET_ALIGNMENT:
                     return { ...prev, alignmentId: update.payload.alignmentId };
                 case CharacterEditStateUpdateType.SET_AGE:

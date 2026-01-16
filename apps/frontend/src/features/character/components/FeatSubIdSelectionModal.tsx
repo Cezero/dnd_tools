@@ -3,17 +3,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { extractProficiencies } from '@/lib/attack-calculation';
-import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
-import type { FeatCacheEntry, FeatureProgression, ItemWithDetails } from '@shared/schema';
-import { ITEM_TYPE_ENUM, FeaturePrerequisiteType, FeatureSourceType, CoreComponent } from '@shared/static-data';
+import { useCacheFunctions } from '@/services/cache/CacheFunctions';
+import { FeaturePrerequisiteType, FeatureSourceType } from '@shared/static-data';
 
-interface FeatSubIdSelectionModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: (weaponId: number) => void;
-    feat: FeatCacheEntry | null;
-    resolvedProgressions: FeatureProgression[];
-}
+import type { FeatSubIdSelectionModalProps } from './types';
 
 export function FeatSubIdSelectionModal({
     isOpen,
@@ -23,8 +16,7 @@ export function FeatSubIdSelectionModal({
     resolvedProgressions,
 }: FeatSubIdSelectionModalProps): React.JSX.Element {
     const [selectedWeaponId, setSelectedWeaponId] = useState<number | null>(null);
-    const [weaponItems, setWeaponItems] = useState<ItemWithDetails[]>([]);
-    const [isLoadingWeapons, setIsLoadingWeapons] = useState(false);
+    const { getAllWeapons, transformItemCacheEntriesToCoreComponents } = useCacheFunctions();
 
     // Extract proficiencies from resolved progressions
     const proficiencies = useMemo(() => {
@@ -56,39 +48,20 @@ export function FeatSubIdSelectionModal({
         );
     }, [featProgressions]);
 
-    // Load weapons when modal opens
-    useEffect(() => {
-        if (isOpen && feat) {
-            setIsLoadingWeapons(true);
-            const fetchWeapons = async () => {
-                try {
-                    const cacheData = await CacheQueryHooks.getItemsCache();
-                    if (cacheData?.results) {
-                        const weapons = cacheData.results.filter(item =>
-                            item.typeId === ITEM_TYPE_ENUM.Weapon
-                        );
-                        setWeaponItems(weapons.map(w => ({
-                            id: w.id,
-                            name: w.name,
-                            typeId: w.typeId,
-                            weapon: w.weaponCategory ? { category: w.weaponCategory } : null,
-                            armor: null,
-                        })));
-                    } else {
-                        setWeaponItems([]);
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch weapons:', error);
-                    setWeaponItems([]);
-                } finally {
-                    setIsLoadingWeapons(false);
-                }
-            };
-            fetchWeapons();
-        }
-    }, [isOpen, feat]);
+    /**
+     * Retrieves all weapons from the items cache.
+     * Only loads weapons when the modal is open and a feat is provided.
+     */
+    const weaponItems = useMemo(() => {
+        if (!isOpen || !feat) return [];
+        return getAllWeapons();
+    }, [isOpen, feat, getAllWeapons]);
 
-    // Filter weapons based on prerequisites
+    /**
+     * Filters weapons based on proficiency prerequisites.
+     * If the feat has no proficiency prerequisite, all weapons are shown.
+     * Otherwise, only weapons the character is proficient with are shown.
+     */
     const filteredWeapons = useMemo(() => {
         if (!feat) {
             return [];
@@ -96,36 +69,26 @@ export function FeatSubIdSelectionModal({
 
         // If no proficiency prerequisite, show all weapons
         if (!hasProficiencyPrereq) {
-            return weaponItems.map(item => ({
-                id: item.id,
-                name: item.name,
-                abbreviation: item.name
-            }));
+            return transformItemCacheEntriesToCoreComponents(weaponItems);
         }
 
         // Filter weapons based on proficiency
         const proficientWeapons = weaponItems.filter(item => {
-            if (!item.weapon) return false;
-
             // Check if weapon is in proficient item IDs (specific item proficiency)
             if (proficiencies.itemIds.includes(item.id)) {
                 return true;
             }
 
             // Check if weapon category is in proficient weapon categories
-            if (proficiencies.weaponCategories.includes(item.weapon.category)) {
+            if (item.weaponCategory && proficiencies.weaponCategories.includes(item.weaponCategory)) {
                 return true;
             }
 
             return false;
         });
 
-        return proficientWeapons.map(item => ({
-            id: item.id,
-            name: item.name,
-            abbreviation: item.name
-        }));
-    }, [weaponItems, feat, hasProficiencyPrereq, proficiencies]);
+        return transformItemCacheEntriesToCoreComponents(proficientWeapons);
+    }, [weaponItems, feat, hasProficiencyPrereq, proficiencies, transformItemCacheEntriesToCoreComponents]);
 
     // Reset selection when modal closes
     useEffect(() => {
@@ -156,11 +119,7 @@ export function FeatSubIdSelectionModal({
                             {featureDescription || 'Please select a weapon for this feat.'}
                         </Dialog.Description>
 
-                        {isLoadingWeapons ? (
-                            <div className="py-4 text-center text-gray-500 dark:text-gray-400">
-                                Loading weapons...
-                            </div>
-                        ) : filteredWeapons.length === 0 ? (
+                        {filteredWeapons.length === 0 ? (
                             <div className="py-4 text-center text-gray-500 dark:text-gray-400">
                                 {hasProficiencyPrereq
                                     ? 'No weapons available. You must be proficient with a weapon to select this feat.'
@@ -191,7 +150,7 @@ export function FeatSubIdSelectionModal({
                             <button
                                 type="button"
                                 onClick={handleConfirm}
-                                disabled={selectedWeaponId === null || isLoadingWeapons}
+                                disabled={selectedWeaponId === null}
                                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Confirm

@@ -18,20 +18,11 @@ export class GestaltClassService {
             isVisible: primaryClass.isVisible,
             canCastSpells: primaryClass.canCastSpells || secondaryClass.canCastSpells,
             spellsKnown: primaryClass.spellsKnown || secondaryClass.spellsKnown,
+            isDivine: primaryClass.isDivine || secondaryClass.isDivine,
             description: primaryClass.description,
             sourceBookInfo: primaryClass.sourceBookInfo,
 
-            // Gestalt rules - choose the better aspects
-            hitDie: Math.max(primaryClass.hitDie, secondaryClass.hitDie),
-            skillPoints: Math.max(primaryClass.skillPoints, secondaryClass.skillPoints),
-            babProgression: Math.min(primaryClass.babProgression, secondaryClass.babProgression) as 0 | 1 | 2,
-            fortProgression: Math.min(primaryClass.fortProgression, secondaryClass.fortProgression) as 0 | 1 | 2,
-            refProgression: Math.min(primaryClass.refProgression, secondaryClass.refProgression) as 0 | 1 | 2,
-            willProgression: Math.min(primaryClass.willProgression, secondaryClass.willProgression) as 0 | 1 | 2,
-
-            // Casting ability - use primary class, but could be enhanced for gestalt
-            castingAbilityId: primaryClass.castingAbilityId,
-            castingType: primaryClass.castingType,
+            // Mechanics are now handled via feature progressions, not class fields
 
             // Merged features with source tracking
             features: this.mergeFeatures(primaryClass.features || [], secondaryClass.features || [], primaryClass.name, secondaryClass.name),

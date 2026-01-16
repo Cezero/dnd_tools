@@ -7,12 +7,10 @@ import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { ClassSummary, Feature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
-import { isVariantId } from '@shared/utils';
 
 import { ClassApi } from './ClassApi';
 import { CLASS_COLUMNS } from './ClassColumns';
 import { FEATURE_COLUMNS } from './FeatureColumns';
-import { VariantClassApi } from './VariantClassApi';
 
 export default function ClassList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -38,7 +36,7 @@ export default function ClassList(): React.JSX.Element {
     }, []);
 
     const featuresDataFetcher = useCallback(async () => {
-        return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [FeatureSourceType.Class, FeatureSourceType.ClassVariant] } });
+        return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [FeatureSourceType.Class] } });
     }, []);
 
     if (isAuthLoading) {
@@ -85,22 +83,13 @@ export default function ClassList(): React.JSX.Element {
                             });
                         },
                         delete: async (item) => {
-                            if (isVariantId(item.id)) {
-                                try {
-                                    await VariantClassApi.deleteVariant(undefined, { id: item.id });
-                                    // The QueryBasedList will handle refreshing the data
-                                } catch (error) {
-                                    console.error('Failed to delete variant:', error);
-                                    alert('Failed to delete variant.');
-                                }
-                            } else {
-                                try {
-                                    await ClassApi.deleteClass(undefined, { id: item.id });
-                                    // The QueryBasedList will handle refreshing the data
-                                } catch (error) {
-                                    console.error('Failed to delete class:', error);
-                                    alert('Failed to delete class.');
-                                }
+                            // Use ClassApi for all classes
+                            try {
+                                await ClassApi.deleteClass(undefined, { id: item.id });
+                                // The QueryBasedList will handle refreshing the data
+                            } catch (error) {
+                                console.error('Failed to delete class:', error);
+                                alert('Failed to delete class.');
                             }
                         }
                     }}

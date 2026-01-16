@@ -1,10 +1,8 @@
 import { useCallback } from 'react';
 
 import { getClassNameFromCache, getDomainSelectByEdition } from '@/services/cache';
-import { FeatureProgression, FeatureEntity } from '@shared/schema';
+import type { FeatureProgression, FeatureEntity, PendingChoice, PendingChoiceOption } from '@shared/schema';
 import { EntityType, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES } from '@shared/static-data';
-
-import type { PendingChoice, ChoiceOption } from './types';
 
 /**
  * React hook for resolving character choices
@@ -99,7 +97,7 @@ function createPendingChoice(
 /**
  * Generate feat options for a choice
  */
-function generateFeatOptions(_entity: FeatureEntity): ChoiceOption[] {
+function generateFeatOptions(_entity: FeatureEntity): PendingChoiceOption[] {
     // TODO: Implement feat options generation
     // This would need to query available feats based on prerequisites
     return [
@@ -114,7 +112,7 @@ function generateFeatOptions(_entity: FeatureEntity): ChoiceOption[] {
 function generateDomainOptions(
     entity: FeatureEntity,
     editionId?: number
-): ChoiceOption[] {
+): PendingChoiceOption[] {
     if (!editionId) {
         return [];
     }
@@ -131,7 +129,7 @@ function generateDomainOptions(
 /**
  * Generate skill options for a choice
  */
-function generateSkillOptions(_entity: FeatureEntity): ChoiceOption[] {
+function generateSkillOptions(_entity: FeatureEntity): PendingChoiceOption[] {
     // TODO: Implement skill options generation
     return [
         { id: '1', name: 'Sample Skill 1', description: 'A sample skill option', value: 1 },
@@ -142,7 +140,7 @@ function generateSkillOptions(_entity: FeatureEntity): ChoiceOption[] {
 /**
  * Generate spell options for a choice
  */
-function generateSpellOptions(_entity: FeatureEntity): ChoiceOption[] {
+function generateSpellOptions(_entity: FeatureEntity): PendingChoiceOption[] {
     // TODO: Implement spell options generation
     return [
         { id: '1', name: 'Sample Spell 1', description: 'A sample spell option', value: 1 },
@@ -153,7 +151,7 @@ function generateSpellOptions(_entity: FeatureEntity): ChoiceOption[] {
 /**
  * Generate feature options for a choice
  */
-function generateFeatureOptions(_entity: FeatureEntity): ChoiceOption[] {
+function generateFeatureOptions(_entity: FeatureEntity): PendingChoiceOption[] {
     // TODO: Implement feature options generation
     return [
         { id: '1', name: 'Sample Feature 1', description: 'A sample feature option', value: 1 },
@@ -164,7 +162,7 @@ function generateFeatureOptions(_entity: FeatureEntity): ChoiceOption[] {
 /**
  * Generate generic options for a choice
  */
-function generateGenericOptions(_entity: FeatureEntity): ChoiceOption[] {
+function generateGenericOptions(_entity: FeatureEntity): PendingChoiceOption[] {
     return [
         { id: '1', name: 'Option 1', description: 'Generic option 1', value: 1 },
         { id: '2', name: 'Option 2', description: 'Generic option 2', value: 2 },
@@ -175,8 +173,9 @@ function generateGenericOptions(_entity: FeatureEntity): ChoiceOption[] {
  * Get source name for a progression
  */
 function getSourceName(progression: FeatureProgression): string {
-    if (progression.classId) {
-        const className = getClassNameFromCache(progression.classId);
+    if (progression.classes && progression.classes.length > 0) {
+        const firstClassId = progression.classes[0].classId;
+        const className = getClassNameFromCache(firstClassId);
         if (className) {
             return className;
         }

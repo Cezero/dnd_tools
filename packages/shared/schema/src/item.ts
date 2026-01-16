@@ -1,4 +1,6 @@
 import { z } from 'zod';
+
+import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { Decimal } from 'decimal.js';
 
@@ -7,7 +9,7 @@ export const ItemPropertyTypeEnumSchema = z.enum(['Material', 'Enhancement', 'Sp
 export const ItemApplicableTypeEnumSchema = z.enum(['Weapon', 'Armor', 'Shield', 'MountArmor', 'Ammunition']);
 
 export const ItemIdParamSchema = z.object({
-  id: z.string().transform((val: string) => parseInt(val)),
+  id: numericParam(),
 });
 
 export const ItemQueryTypeSchema = z.enum(['byType', 'byCategory', 'byName']);
@@ -15,12 +17,12 @@ export const ItemQueryTypeSchema = z.enum(['byType', 'byCategory', 'byName']);
 export const ItemQuerySchema = z.discriminatedUnion('queryType', [
   z.object({
     queryType: z.literal(ItemQueryTypeSchema.enum.byType),
-    typeId: z.string().transform((val: string) => parseInt(val))
+    typeId: numericParam()
   }),
   z.object({
     queryType: z.literal(ItemQueryTypeSchema.enum.byCategory),
-    typeId: z.string().transform((val: string) => parseInt(val)),
-    category: z.string().transform((val: string) => parseInt(val))
+    typeId: numericParam(),
+    category: numericParam()
   }),
   z.object({
     queryType: z.literal(ItemQueryTypeSchema.enum.byName),
@@ -29,9 +31,9 @@ export const ItemQuerySchema = z.discriminatedUnion('queryType', [
 ]);
 
 export const BaseItemSchema = z.object({
-  name: z.string().min(1, 'Item name is required').max(100, 'Item name must be less than 100 characters').trim(),
-  description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
-  typeId: z.number().int().positive('Item type ID must be a positive integer'),
+  name: commonValidations.name(),
+  description: commonValidations.description(10000).nullable(),
+  typeId: commonValidations.positiveInt('Item type ID'),
   cost: z.string().nullable()
     .transform((val) => {
       if (val === null || val.trim() === '') return null;
@@ -50,8 +52,8 @@ export const BaseItemSchema = z.object({
     .refine((val) => val === null || (val.gte(0) && val.lte(999.99)), {
       message: 'Weight must be between 0 and 999.99',
     }).optional(),
-  quantity: z.number().int().min(0, 'Quantity must be non-negative').nullable().optional(),
-  sizeId: z.number().int().positive('Size ID must be a positive integer').nullable().default(5), // Default to Medium (5)
+  quantity: commonValidations.nonNegativeInt('Quantity').nullable().optional(),
+  sizeId: commonValidations.positiveInt('Size ID').nullable().default(5), // Default to Medium (5)
 });
 
 export const ItemSchema = BaseItemSchema.extend({
@@ -106,14 +108,14 @@ export type ItemWithDetails = z.infer<typeof ItemWithDetailsSchema>;
 export type GetAllItemsResponse = z.infer<typeof GetAllItemsResponseSchema>;
 // Item Type schemas
 export const ItemTypeSchema = z.object({
-  id: z.number().int().positive('Item type ID must be a positive integer'),
-  name: z.string().min(1, 'Item type name is required').max(100, 'Item type name must be less than 100 characters').trim(),
+  id: commonValidations.positiveInt('Item type ID'),
+  name: commonValidations.name(),
 });
 
 // Item Property schemas
 export const ItemPropertySchema = z.object({
-  id: z.number().int().positive('Property ID must be a positive integer'),
-  name: z.string().min(1, 'Property name is required').max(100, 'Property name must be less than 100 characters').trim(),
+  id: commonValidations.positiveInt('Property ID'),
+  name: commonValidations.name(),
   type: ItemPropertyTypeEnumSchema,
   flatCostModifier: z.number().int().nullable(),
   costMultiplier: z.number().nullable(),
@@ -124,28 +126,28 @@ export const ItemPropertySchema = z.object({
 });
 
 export const ItemPropertyAppliesToSchema = z.object({
-  id: z.number().int().positive('Applies to ID must be a positive integer'),
-  propertyId: z.number().int().positive('Property ID must be a positive integer'),
+  id: commonValidations.positiveInt('Applies to ID'),
+  propertyId: commonValidations.positiveInt('Property ID'),
   itemType: ItemApplicableTypeEnumSchema,
 });
 
 export const ItemPropertyIncompatibilitySchema = z.object({
-  id: z.number().int().positive('Incompatibility ID must be a positive integer'),
-  propertyAId: z.number().int().positive('Property A ID must be a positive integer'),
-  propertyBId: z.number().int().positive('Property B ID must be a positive integer'),
+  id: commonValidations.positiveInt('Incompatibility ID'),
+  propertyAId: commonValidations.positiveInt('Property A ID'),
+  propertyBId: commonValidations.positiveInt('Property B ID'),
 });
 
 // Item Template schemas
 export const ItemTemplateSchema = z.object({
-  id: z.number().int().positive('Template ID must be a positive integer'),
-  name: z.string().min(1, 'Template name is required').max(100, 'Template name must be less than 100 characters').trim(),
-  itemId: z.number().int().positive('Item ID must be a positive integer'),
+  id: commonValidations.positiveInt('Template ID'),
+  name: commonValidations.name(),
+  itemId: commonValidations.positiveInt('Item ID'),
 });
 
 export const ItemTemplatePropertySchema = z.object({
-  id: z.number().int().positive('Template property ID must be a positive integer'),
-  templateId: z.number().int().positive('Template ID must be a positive integer'),
-  propertyId: z.number().int().positive('Property ID must be a positive integer'),
+  id: commonValidations.positiveInt('Template property ID'),
+  templateId: commonValidations.positiveInt('Template ID'),
+  propertyId: commonValidations.positiveInt('Property ID'),
 });
 
 // Request/response schemas for item types
@@ -225,18 +227,18 @@ export type UpdateItemTemplatePropertyRequest = z.infer<typeof UpdateItemTemplat
  * @see [Query Hooks and Caching Architecture](../../docs/application-overview/query-hooks-and-caching.md)
  */
 export const ItemCacheSchema = ItemSchema.omit({
-    description: true,
-    cost: true,
-    weight: true,
-    quantity: true,
-    sizeId: true,
+  description: true,
+  cost: true,
+  weight: true,
+  quantity: true,
+  sizeId: true,
 }).extend({
-    weaponCategory: z.number().int().nullable(),
-    armorCategory: z.number().int().nullable(),
+  weaponCategory: z.number().int().nullable(),
+  armorCategory: z.number().int().nullable(),
 });
 
 export const ItemCacheResponseSchema = QueryResponseSchema.extend({
-    results: z.array(ItemCacheSchema),
+  results: z.array(ItemCacheSchema),
 });
 
 export type CreateItemRequest = z.infer<typeof CreateItemSchema>;

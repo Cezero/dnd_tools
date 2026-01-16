@@ -410,7 +410,6 @@ export function ReferenceTableEditor() {
                 };
             }).filter(rowCells => rowCells.cells.length > 0) // Filter out any rows that became empty due to all cells being merged
         };
-        console.log('[ReferenceTableEditor:HandleSave] tableData', tableData);
         try {
             if (slug === 'new') {
                 const response = await ReferenceTableApi.createReferenceTable(tableData);

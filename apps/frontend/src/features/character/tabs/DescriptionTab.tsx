@@ -17,16 +17,7 @@ import {
     EntityAppliesToType
 } from '@shared/static-data';
 
-/**
- * Age table data based on D&D 3.5e rules
- * Table 6-4: Random Starting Ages
- */
-interface AgeTableEntry {
-    adulthood: number;
-    category1: { dice: number; sides: number }; // Barbarian, Rogue, Sorcerer
-    category2: { dice: number; sides: number }; // Bard, Fighter, Paladin, Ranger
-    category3: { dice: number; sides: number }; // Cleric, Druid, Monk, Wizard
-}
+import type { AgeTableEntry, HeightWeightEntry } from './types';
 
 const AGE_TABLE: Record<string, AgeTableEntry> = {
     'human': { adulthood: 15, category1: { dice: 1, sides: 4 }, category2: { dice: 1, sides: 6 }, category3: { dice: 2, sides: 6 } },
@@ -37,17 +28,6 @@ const AGE_TABLE: Record<string, AgeTableEntry> = {
     'half-orc': { adulthood: 14, category1: { dice: 1, sides: 4 }, category2: { dice: 1, sides: 6 }, category3: { dice: 2, sides: 6 } },
     'halfling': { adulthood: 20, category1: { dice: 2, sides: 4 }, category2: { dice: 3, sides: 6 }, category3: { dice: 4, sides: 6 } }
 };
-
-/**
- * Height and Weight table data based on D&D 3.5e rules
- * Table 6-6: Random Height and Weight
- */
-interface HeightWeightEntry {
-    baseHeightInches: number; // Base height in total inches
-    heightModifier: { dice: number; sides: number };
-    baseWeight: number; // Base weight in pounds
-    weightModifier: { dice: number; sides: number } | null; // null means "× 1 lb"
-}
 
 const HEIGHT_WEIGHT_TABLE: Record<string, { male: HeightWeightEntry; female: HeightWeightEntry }> = {
     'human': {
@@ -173,7 +153,7 @@ export function DescriptionTab({
     isLoading,
     resolvedData
 }: TabComponentProps): React.JSX.Element {
-    const { getRaceNameById, getClassNameById } = useCacheFunctions();
+    const { getRaceSummaryById, getClassSummaryById } = useCacheFunctions();
     const { rollDice, rollDiceGroups, isReady, onRollComplete } = useDiceBox();
     const [isRollingAge, setIsRollingAge] = useState(false);
     const isAgeRollPendingRef = useRef(false);
@@ -254,8 +234,8 @@ export function DescriptionTab({
         setIsRollingAge(true);
         isAgeRollPendingRef.current = true;
         try {
-            const raceData = getRaceNameById(state.raceId);
-            const classData = getClassNameById(state.classId);
+            const raceData = getRaceSummaryById(state.raceId);
+            const classData = getClassSummaryById(state.classId);
 
             if (raceData?.name && classData?.name) {
                 const notation = getAgeDiceNotation(raceData.name, classData.name);
@@ -284,7 +264,7 @@ export function DescriptionTab({
 
         setIsRollingHeightWeight(true);
         try {
-            const raceData = getRaceNameById(state.raceId);
+            const raceData = getRaceSummaryById(state.raceId);
 
             if (raceData?.name) {
                 const config = getHeightWeightConfig(raceData.name, state.gender);

@@ -95,3 +95,50 @@ export interface GenericListColumnMeta {
     truncate?: number; // Number of characters to truncate to
     isMarkdown?: boolean; // Whether to wrap content in ProcessMarkdown
 }
+
+// Generic type for item data
+export interface BaseItem {
+    name: string;
+    slug: string;
+    description?: string;
+    [key: string]: unknown;
+}
+
+// Generic type for selected item data
+export interface BaseSelectedItem {
+    slug: string;
+    description?: string;
+    [key: string]: unknown;
+}
+
+// Props interface for the generic ListSelectionDialog component
+export interface ListSelectionDialogProps<T extends BaseItem, U extends BaseSelectedItem> {
+    /** Whether the dialog is open */
+    isOpen: boolean;
+    /** Function to call when the dialog is closed */
+    onClose: () => void;
+    /** Function to call with the selected item data when items are chosen */
+    onSave: (items: U[]) => void;
+    /** Array of item IDs already associated */
+    initialSelectedIds: (string | number)[];
+    /** The ID of the parent item currently being edited */
+    parentId?: number;
+    /** The type of parent item (class or race) */
+    parentType?: 'class' | 'race';
+    /** Data fetcher function to fetch all items */
+    dataFetcher: () => Promise<{ results: T[]; total: number }>;
+    /** Storage key for the GenericList */
+    storageKey: string;
+    /** Item description for UI text */
+    itemDesc: string;
+    /** Route to navigate to for creating new items */
+    createNewRoute: string;
+    /** Optional callback for creating new items (if provided, used instead of navigating) */
+    onCreateNew?: () => void;
+    /** Function to transform selected items to the expected format */
+    transformSelectedItems: (items: T[]) => U[];
+    /** Title for the dialog */
+    dialogTitle: string;
+    /** Button text for creating new items */
+    createNewButtonText: string;
+}

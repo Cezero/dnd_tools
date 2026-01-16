@@ -1,20 +1,26 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, EntityAppliesToType } from '@shared/static-data';
 
 import { getAbilityScore } from './abilityScore';
-import { resolveFeatBenefits } from '../core/featBenefitResolver';
-import { resolveFeatureBonuses } from '../core/featureBonusResolver';
-import type { CalculationResult } from '../types';
-import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
+import type { CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
+import { createBreakdownComponent, createFeatBreakdownComponent, createFeatureBreakdownComponent, createItemBreakdownComponent } from '../utils/breakdownBuilder';
+import { resolveStandardBonuses, buildCalculationResult } from '../utils/calculationHelpers';
 
 /**
- * Breakdown map for initiative
+ * Breakdown map for initiative calculation.
+ * 
+ * Follows the standard breakdown component architecture pattern:
+ * - Extends BreakdownMap to ensure compatibility with breakdown utilities
+ * - Uses BreakdownComponent for all fields (not custom inline types)
+ * 
+ * @see {@link BreakdownComponent} for the standard breakdown component structure
+ * @see {@link BreakdownMap} for the base breakdown map interface
  */
-export interface InitiativeBreakdownMap {
-    dexMod: { value: number; source: string | null; sourceType: 'ability' | null; sourceId?: number };
-    feat: { value: number; source: string | null; sourceType: 'feat' | null; sourceId?: number };
-    feature: { value: number; source: string | null; sourceType: 'feature' | null; sourceId?: number };
-    item: { value: number; source: string | null; sourceType: 'item' | null; sourceId?: number };
+export interface InitiativeBreakdownMap extends BreakdownMap {
+    dexMod: BreakdownComponent;
+    feat: BreakdownComponent;
+    feature: BreakdownComponent;
+    item: BreakdownComponent;
 }
 
 /**
@@ -22,26 +28,19 @@ export interface InitiativeBreakdownMap {
  */
 export function getInitiative(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[],
-    featsMap?: Map<number, Feat>
+    resolvedProgressions: FeatureProgression[]
 ): CalculationResult<InitiativeBreakdownMap> {
     // Get Dex modifier using total ability score (base + racial modifiers + feat bonuses, etc.)
-    const dexScoreResult = getAbilityScore(character, AbilityId.Dexterity, resolvedProgressions, featsMap);
+    const dexScoreResult = getAbilityScore(character, AbilityId.Dexterity, resolvedProgressions);
     const dexTotalValue = dexScoreResult.value;
     const dexMod = GetAbilityModifier(dexTotalValue);
 
-    // Get feat benefits
-    const featBenefits = resolveFeatBenefits(character, EntityAppliesToType.Initiative, undefined, featsMap, resolvedProgressions);
-    const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
-
-    // Get feature bonuses
-    const featureBonuses = resolveFeatureBonuses(
-        resolvedProgressions,
-        EntityAppliesToType.Initiative,
+    // Get standard bonuses (feat and feature)
+    const { featBonus, featureBonus, featBenefits, featureBonuses } = resolveStandardBonuses(
         character,
-        character.advancements.length
+        EntityAppliesToType.Initiative,
+        resolvedProgressions
     );
-    const featureBonus = featureBonuses.reduce((sum, b) => sum + b.value, 0);
 
     // Item bonuses (would come from equipped items)
     const itemBonus = 0; // TODO: Implement item bonus resolution
@@ -52,27 +51,11 @@ export function getInitiative(
     // Build breakdown
     const breakdown: InitiativeBreakdownMap = {
         dexMod: createBreakdownComponent(dexMod, 'Dex modifier', 'ability', AbilityId.Dexterity),
-        feat: createBreakdownComponent(
-            featBonus,
-            featBonus > 0 ? `Feat: ${featBenefits.map(b => b.source.name).join(', ')}` : null,
-            featBonus > 0 ? 'feat' : null,
-            featBenefits[0]?.source.id
-        ),
-        feature: createBreakdownComponent(
-            featureBonus,
-            featureBonus > 0 ? `Feature: ${featureBonuses.map(b => b.source.name).join(', ')}` : null,
-            featureBonus > 0 ? 'feature' : null,
-            featureBonuses[0]?.source.id
-        ),
-        item: createBreakdownComponent(itemBonus, itemBonus > 0 ? 'item' : null, itemBonus > 0 ? 'item' : null),
+        feat: createFeatBreakdownComponent(featBonus, featBenefits),
+        feature: createFeatureBreakdownComponent(featureBonus, featureBonuses),
+        item: createItemBreakdownComponent(itemBonus),
     };
 
-    const breakdownString = buildBreakdownString(breakdown);
-
-    return {
-        value: total,
-        breakdownString: `Initiative: ${breakdownString}`,
-        breakdown,
-    };
+    return buildCalculationResult(total, breakdown, 'Initiative');
 }
 

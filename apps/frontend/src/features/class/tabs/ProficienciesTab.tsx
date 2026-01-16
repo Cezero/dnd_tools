@@ -1,28 +1,15 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 
-import { FeatureSystemService } from '@/components/feature-system/FeatureSystemService';
 import { CustomSelect } from '@/components/forms';
 import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
 import { displayStrategyFactory } from '@/lib/formatters';
 import type { CharacterSheetDisplayResult, FormattedEntityResult } from '@/lib/formatters/types';
-import { DisplayType, SpecialFeatureId, PROFICIENCY_TYPE_LIST, CoreComponent } from '@shared/static-data';
+import { useCacheFunctions } from '@/services/cache/CacheFunctions';
+import { DisplayType, SpecialFeatureId, PROFICIENCY_TYPE_LIST, PROFICIENCY_TYPES, ITEM_TYPE_ENUM, PROFICIENCY_TYPE_ENUM, CoreComponent } from '@shared/static-data';
 
-import type { ClassTabProps } from './types';
-
-export interface ProficiencyItem {
-    id: number;
-    name: string;
-    typeId: number;
-    weapon?: {
-        category: number;
-        type: number;
-    };
-    armor?: {
-        category: number;
-    };
-}
+import type { ClassTabProps, ProficiencyItem } from './types';
 
 export function ProficienciesTab({
     formData: _formData,
@@ -37,50 +24,50 @@ export function ProficienciesTab({
     // Dialog state
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedProficiencyType, setSelectedProficiencyType] = useState<CoreComponent | null>(null);
-    const [proficiencyItems, setProficiencyItems] = useState<ProficiencyItem[]>([]);
     const [selectedProficiencyItem, setSelectedProficiencyItem] = useState<number | null>(null);
     const [_isDialogLoading, _setIsDialogLoading] = useState(false);
 
-    const [isLoadingItems, setIsLoadingItems] = useState(false);
+    const { getAllWeaponsByCategory, getAllArmorByCategory, transformItemCacheEntriesToProficiencyItems } = useCacheFunctions();
 
     const handleProficiencyTypeSelection = (proficiencyTypeId: number) => {
         const proficiencyType = PROFICIENCY_TYPE_LIST.find(pt => pt.id === proficiencyTypeId);
         if (proficiencyType) {
             setSelectedProficiencyType(proficiencyType);
             setSelectedProficiencyItem(null);
-            setProficiencyItems([]);
         }
     };
 
-    // Load items when a proficiency type is selected
-    useEffect(() => {
-        const loadItems = async () => {
-            if (!selectedProficiencyType?.id) {
-                setProficiencyItems([]);
-                return;
-            }
+    // Compute proficiency items from cache based on selected proficiency type
+    const proficiencyItems = useMemo<ProficiencyItem[]>(() => {
+        if (!selectedProficiencyType?.id) {
+            return [];
+        }
 
-            setIsLoadingItems(true);
-            try {
-                const itemsResult = await FeatureSystemService.getItemsByProficiencyType(selectedProficiencyType.id);
-                const transformedItems = (itemsResult.results || []).map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    typeId: item.typeId,
-                    weapon: item.weapon,
-                    armor: item.armor
-                }));
-                setProficiencyItems(transformedItems);
-            } catch (error) {
-                console.error('Failed to load proficiency items:', error);
-                setProficiencyItems([]);
-            } finally {
-                setIsLoadingItems(false);
-            }
-        };
+        const proficiencyInfo = PROFICIENCY_TYPES[selectedProficiencyType.id];
+        if (!proficiencyInfo) {
+            return [];
+        }
 
-        loadItems();
-    }, [selectedProficiencyType]);
+        // Use utility functions to get items by category
+        let filteredItems;
+        if (proficiencyInfo.itemTypeId === ITEM_TYPE_ENUM.Weapon) {
+            filteredItems = getAllWeaponsByCategory(proficiencyInfo.category);
+        } else if (proficiencyInfo.itemTypeId === ITEM_TYPE_ENUM.Armor) {
+            filteredItems = getAllArmorByCategory(proficiencyInfo.category);
+        } else {
+            return [];
+        }
+
+        // Apply additional filtering logic (tower shield)
+        if (selectedProficiencyType.id === PROFICIENCY_TYPE_ENUM.TowerShield) {
+            filteredItems = filteredItems.filter(item =>
+                item.name.toLowerCase().includes('tower')
+            );
+        }
+
+        // Transform to ProficiencyItem format using utility function
+        return transformItemCacheEntriesToProficiencyItems(filteredItems);
+    }, [selectedProficiencyType, getAllWeaponsByCategory, getAllArmorByCategory, transformItemCacheEntriesToProficiencyItems]);
 
     const handleItemSelection = (itemId: number) => {
         setSelectedProficiencyItem(itemId);
@@ -208,7 +195,6 @@ export function ProficienciesTab({
                                                     .map(item => ({ id: item.id, name: item.name }))
                                             ]}
                                             placeholder="Choose items or 'All Items'"
-                                            disabled={isLoadingItems}
                                         />
                                     </div>
                                 )}
@@ -219,14 +205,13 @@ export function ProficienciesTab({
                                     type="button"
                                     onClick={() => setIsDialogOpen(false)}
                                     className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                                    disabled={isLoadingItems}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleAddProficiency}
-                                    disabled={!selectedProficiencyType || selectedProficiencyItem === null || isLoadingItems}
+                                    disabled={!selectedProficiencyType || selectedProficiencyItem === null}
                                     className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Add Proficiency

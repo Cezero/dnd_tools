@@ -2,7 +2,7 @@ import type {
     FormulaParamsData,
     FeatureEntity
 } from '@shared/schema';
-import { FORMULA_MAP, BreakdownComponentType, EntityType, DisplayType, ConditionalScalingValueType } from '@shared/static-data';
+import { FORMULA_MAP, CalculationMethodType, EntityType, DisplayType, ConditionalScalingValueType } from '@shared/static-data';
 
 import { FormulaCalculatorImpl } from './calculators';
 import { buildFormulaParams } from './formula-utils';
@@ -12,7 +12,8 @@ import type {
     ProgressionValue,
     ProgressionGenerator,
     ProgressionGeneratorParams,
-    CalculationBreakdown
+    CalculationBreakdown,
+    FormulaCalculator
 } from './types';
 
 
@@ -21,7 +22,6 @@ import type {
  */
 export class ProgressionGeneratorImpl implements ProgressionGenerator {
     generateValues(params: ProgressionGeneratorParams): Array<ProgressionValue> {
-        console.log('ProgressionGeneratorImpl.generateValues', params);
         const { formula, startLevel, endLevel, context, entityValue, formulaCalculator, originalEntity } = params;
         const values: Array<ProgressionValue> = [];
         const formulaDef = FORMULA_MAP[formula.formulaId];
@@ -205,7 +205,7 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
         level: number,
         context: CalculationContext,
         entityValue: number | undefined,
-        formulaCalculator: FormulaCalculatorImpl | undefined
+        formulaCalculator: FormulaCalculator | undefined
     ): number | string {
         const formulaDef = FORMULA_MAP[formula.formulaId];
 
@@ -241,7 +241,7 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
             components: [{
                 source: formulaDef.name,
                 value: typeof value === 'string' ? 0 : value, // Use 0 for string values
-                type: BreakdownComponentType.formula,
+                type: CalculationMethodType.formula,
                 description: typeof value === 'string' ? value : `Level ${level}: ${formulaDef.name}`, // Use string as description
                 formula: typeof value === 'string' ? value : formulaDef.name // Use string as formula for display
             }],

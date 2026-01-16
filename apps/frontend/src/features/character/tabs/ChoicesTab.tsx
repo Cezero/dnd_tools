@@ -1,4 +1,4 @@
-import { useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
@@ -7,25 +7,34 @@ import { FeatSubIdSelectionModal } from '@/features/character/components/FeatSub
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { useCacheFunctions } from '@/services/cache';
-import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
-import type { FeatCacheEntry, FeatInQueryResponse, GetAllCompanionsResponse } from '@shared/schema';
+import type { FeatCacheEntry, FeatInQueryResponse } from '@shared/schema';
 import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter, CompanionType, FeatureSourceType } from '@shared/static-data';
 
-import { filterAvailableFeats } from '../utils/featFiltering';
 
+/**
+ * Choices tab component for managing character feature choices (domains, feats, etc.).
+ * 
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * - Updates state via `updateState()` when choices change
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
+ * - Do NOT call `resolution.applyUpdate()` or `handleChoiceSelection()` directly from this tab
+ * 
+ * @see CharacterEdit component for sync pattern documentation
+ */
 export function ChoicesTab({
     state,
     updateState,
     resolvedData,
     isLoading,
     triggerFeatureResolution: _triggerFeatureResolution,
-    handleChoiceSelection,
+    handleChoiceSelection: _handleChoiceSelection,
     sharedData,
     character
 }: TabComponentProps): React.JSX.Element {
     const queryClient = useQueryClient();
-    const { getDomainSelectByEdition, getClassNameById, getClassNameFromCache, getFeatNameFromCache, getRaceNameFromCache } = useCacheFunctions();
+    const { getDomainSelectByEdition, getClassSummaryById, getClassNameFromCache, getFeatNameFromCache, getFeatSummaryById, getRaceNameFromCache } = useCacheFunctions();
 
     // State for domain options
     const [domainOptions, setDomainOptions] = useState<{ id: number; name: string; abbreviation?: string }[]>([]);
@@ -33,113 +42,83 @@ export function ChoicesTab({
 
     // State for feat sub-id selection modal
     const [featSubIdModalOpen, setFeatSubIdModalOpen] = useState(false);
-    const [selectedFeatForSubId, setSelectedFeatForSubId] = useState<FeatInQueryResponse | null>(null);
+    const [selectedFeatForSubId, setSelectedFeatForSubId] = useState<FeatCacheEntry | null>(null);
     const [pendingFeatChoiceId, setPendingFeatChoiceId] = useState<string | null>(null);
 
     // State for feat search/filtering (for feat choices) - keyed by choiceId
     const [featSearchTerms, setFeatSearchTerms] = useState<Record<string, string>>({});
 
-    // Get filtered feats for each feat choice
-    const [filteredFeatsForChoices, setFilteredFeatsForChoices] = useState<Record<string, FeatInQueryResponse[]>>({});
-    const [isFilteringFeats, setIsFilteringFeats] = useState(false);
+    // Get filtered feats for each feat choice using qualifiedFeats from resolvedData
+    // qualifiedFeats contains all feats the character qualifies for (filtered by prerequisites, etc.)
+    const filteredFeatsForChoices = useMemo(() => {
+        const filtered: Record<string, FeatInQueryResponse[]> = {};
 
-    useEffect(() => {
-        if (!character || resolvedData.pendingChoices.length === 0) {
-            setFilteredFeatsForChoices({});
-            return;
+        if (!resolvedData.qualifiedFeats || resolvedData.pendingChoices.length === 0) {
+            return filtered;
         }
 
-        const filterFeatsForChoices = async () => {
-            setIsFilteringFeats(true);
-            const filtered: Record<string, FeatInQueryResponse[]> = {};
+        // Create a map of feat ID to feature data from resolved progressions
+        const featFeatureMap = new Map<number, { description?: string | null; summary?: string | null }>();
+        if (resolvedData.progressions) {
+            resolvedData.progressions.forEach(progression => {
+                if (progression.sourceType === FeatureSourceType.Feat && progression.featId && progression.feature) {
+                    featFeatureMap.set(progression.featId, {
+                        description: progression.feature.description,
+                        summary: progression.feature.summary
+                    });
+                }
+            });
+        }
 
-            if (!character) {
-                setFilteredFeatsForChoices({});
-                setIsFilteringFeats(false);
-                return;
-            }
-
-            // Create a map of feat ID to feature data from resolved progressions
-            const featFeatureMap = new Map<number, { description?: string | null; summary?: string | null }>();
-            if (resolvedData.progressions) {
-                resolvedData.progressions.forEach(progression => {
-                    if (progression.sourceType === FeatureSourceType.Feat && progression.featId && progression.feature) {
-                        featFeatureMap.set(progression.featId, {
-                            description: progression.feature.description,
-                            summary: progression.feature.summary
-                        });
-                    }
-                });
-            }
-
-            for (const choice of resolvedData.pendingChoices) {
-                if (choice.type === EntityAppliesToType.Feat) {
-                    // Find the corresponding entity to check filterType
-                    let entityFilterType: number | null = null;
-                    for (const progression of resolvedData.progressions) {
-                        if (progression.entities) {
-                            const entity = progression.entities.find(e =>
-                                `${progression.id}-${e.id}` === choice.id
-                            );
-                            if (entity) {
-                                entityFilterType = entity.filterType ?? null;
-                                break;
-                            }
+        for (const choice of resolvedData.pendingChoices) {
+            if (choice.type === EntityAppliesToType.Feat) {
+                // Find the corresponding entity to check filterType
+                let entityFilterType: number | null = null;
+                for (const progression of resolvedData.progressions) {
+                    if (progression.entities) {
+                        const entity = progression.entities.find(e =>
+                            `${progression.id}-${e.id}` === choice.id
+                        );
+                        if (entity) {
+                            entityFilterType = entity.filterType ?? null;
+                            break;
                         }
                     }
-
-                    // Start with all feats
-                    let availableFeats = sharedData.allFeats;
-
-                    // Apply filterType filtering (e.g., FighterBonus)
-                    if (entityFilterType === FeatureFeatChoiceFilter.FighterBonus) {
-                        availableFeats = availableFeats.filter(feat => feat.fighterBonus === true);
-                    } else if (entityFilterType === FeatureFeatChoiceFilter.MetamagicOrItemCreation) {
-                        // Filter for metamagic or item creation feats
-                        // This would need to be determined by feat category or flags
-                        // For now, include all feats (can be refined later)
-                    }
-
-                    // Get all available feats filtered by prerequisites
-                    const allFilteredFeats = await filterAvailableFeats(availableFeats, state, resolvedData, sharedData, character);
-
-                    // Apply search filter if there's a search term for this choice
-                    const searchTerm = featSearchTerms[choice.id]?.toLowerCase() || '';
-                    const filteredBySearch = searchTerm
-                        ? allFilteredFeats.filter(feat => {
-                            const featureData = featFeatureMap.get(feat.id);
-                            return feat.name.toLowerCase().includes(searchTerm) ||
-                                featureData?.description?.toLowerCase().includes(searchTerm) ||
-                                featureData?.summary?.toLowerCase().includes(searchTerm);
-                        })
-                        : allFilteredFeats;
-
-                    filtered[choice.id] = filteredBySearch;
                 }
+
+                // Start with qualified feats (already filtered by prerequisites, proficiencies, etc.)
+                let availableFeats = resolvedData.qualifiedFeats;
+
+                // Apply filterType filtering (e.g., FighterBonus)
+                if (entityFilterType === FeatureFeatChoiceFilter.FighterBonus) {
+                    availableFeats = availableFeats.filter(feat => feat.fighterBonus === true);
+                } else if (entityFilterType === FeatureFeatChoiceFilter.MetamagicOrItemCreation) {
+                    // Filter for metamagic or item creation feats
+                    // This would need to be determined by feat category or flags
+                    // For now, include all feats (can be refined later)
+                }
+
+                // Apply search filter if there's a search term for this choice
+                const searchTerm = featSearchTerms[choice.id]?.toLowerCase() || '';
+                const filteredBySearch = searchTerm
+                    ? availableFeats.filter(feat => {
+                        const featureData = featFeatureMap.get(feat.id);
+                        return feat.name.toLowerCase().includes(searchTerm) ||
+                            featureData?.description?.toLowerCase().includes(searchTerm) ||
+                            featureData?.summary?.toLowerCase().includes(searchTerm);
+                    })
+                    : availableFeats;
+
+                filtered[choice.id] = filteredBySearch;
             }
+        }
 
-            setFilteredFeatsForChoices(filtered);
-            setIsFilteringFeats(false);
-        };
-
-        filterFeatsForChoices().catch(error => {
-            console.error('Error filtering feats for choices:', error);
-            setFilteredFeatsForChoices({});
-            setIsFilteringFeats(false);
-        });
+        return filtered;
     }, [
-        // Use stable keys to prevent infinite loops
-        resolvedData.pendingChoices.length,
-        resolvedData.progressions.length,
-        state.level,
-        state.classId,
-        state.raceId,
-        state.abilityScores?.length,
-        state.selectedFeats.length,
-        sharedData.allFeats.length,
-        character?.id,
-        // Re-filter when search terms change (use JSON.stringify to detect value changes)
-        JSON.stringify(featSearchTerms)
+        resolvedData.qualifiedFeats,
+        resolvedData.pendingChoices,
+        resolvedData.progressions,
+        featSearchTerms
     ]);
 
     // Create a map of feat ID to feature data from resolved progressions (for display)
@@ -176,10 +155,7 @@ export function ChoicesTab({
     const [allChoices, setAllChoices] = useState<Array<{ choice: typeof resolvedData.pendingChoices[0]; isSelected: boolean; selectedId?: number }>>([]);
 
     // Fetch all companions (cached via TanStack Query) for Familiar/Animal Companion choices
-    const { data: allCompanionsData } = CompanionQueryHooks.useGetCompanions(undefined, {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes
-    } as UseQueryOptions<GetAllCompanionsResponse>);
+    const { data: allCompanionsData } = CacheQueryHooks.useCompanionsCache();
 
     // Memoize companions filtered by type for quick lookup
     const companionsByType = useMemo(() => {
@@ -190,10 +166,9 @@ export function ChoicesTab({
                 if (!byType.has(type)) {
                     byType.set(type, []);
                 }
-                const monsterName = companion.monster?.name || `Companion ${companion.id}`;
                 byType.get(type)!.push({
                     id: companion.id,
-                    name: monsterName,
+                    name: companion.name,
                 });
             }
         }
@@ -269,8 +244,10 @@ export function ChoicesTab({
                     // Otherwise, use the pending choice from backend
                     if (selected) {
                         // Build proper choice name based on type (matching backend logic)
-                        const className = progression.classId ? getClassNameFromCache(progression.classId) : undefined;
-                        const raceName = progression.raceId ? getRaceNameFromCache(progression.raceId) : undefined;
+                        const firstClassId = progression.classes && progression.classes.length > 0 ? progression.classes[0].classId : undefined;
+                        const className = firstClassId ? getClassNameFromCache(firstClassId) : undefined;
+                        const firstRaceId = progression.races && progression.races.length > 0 ? progression.races[0].raceId : undefined;
+                        const raceName = firstRaceId ? getRaceNameFromCache(firstRaceId) : undefined;
                         const source = className || raceName || progression.feature?.name || 'Unknown';
                         let choiceName = '';
                         if (entity.appliesTo === EntityAppliesToType.Domain) {
@@ -439,7 +416,7 @@ export function ChoicesTab({
 
                 // Check if this is a feat choice that requires useSubId
                 if (choice.type === EntityAppliesToType.Feat) {
-                    const featData = sharedData.allFeats.find(f => f.id === selectedId);
+                    const featData = getFeatSummaryById(selectedId);
                     if (featData?.useSubId && subId === undefined) {
                         // Feat requires sub-id selection, show modal
                         setSelectedFeatForSubId(featData);
@@ -483,35 +460,25 @@ export function ChoicesTab({
                     }
                 });
 
-                // Handle the choice asynchronously to avoid blocking the UI
-                // Use setTimeout to defer the feature resolution to the next event loop,
-                // allowing the UI to update first and preventing the blanking effect
-                setTimeout(async () => {
-                    try {
-                        if (choice.type === EntityAppliesToType.Domain) {
-                            const domainData = await queryClient.fetchQuery({
+                // Sync to backend resolution API happens automatically via CharacterEdit useEffect hook
+                // No need to call handleChoiceSelection directly - just update state and sync happens automatically
+                // For domain choices, we still need to fetch domain data for feature resolution, but the sync happens automatically
+                if (choice.type === EntityAppliesToType.Domain) {
+                    // Fetch domain data asynchronously for feature resolution
+                    // The sync to resolution session happens automatically via CharacterEdit useEffect
+                    setTimeout(async () => {
+                        try {
+                            await queryClient.fetchQuery({
                                 queryKey: DomainQueryHooks.getDomainByIdQueryKey(selectedId),
                                 queryFn: () => DomainQueryHooks.getDomainByIdQueryFn({ pathParams: { id: selectedId } }),
                                 staleTime: 5 * 60 * 1000, // 5 minutes
                                 gcTime: 10 * 60 * 1000, // 10 minutes
                             });
-                            if (domainData?.features && handleChoiceSelection) {
-                                await handleChoiceSelection(choice.type, selectedId, domainData.features);
-                            }
-                        } else if (choice.type === EntityAppliesToType.Feat) {
-                            // Feats don't have features - they have benefits that are applied directly
-                            // The feat is already tracked in featureChoices, and getAllCharacterFeats will include it
-                            // Just trigger feature resolution to ensure benefits are recalculated
-                            if (_triggerFeatureResolution) {
-                                await _triggerFeatureResolution();
-                            }
-                        } else if (handleChoiceSelection) {
-                            await handleChoiceSelection(choice.type, selectedId, []);
+                        } catch (error) {
+                            console.error(`Error fetching domain data:`, error);
                         }
-                    } catch (error) {
-                        console.error(`Error handling choice selection:`, error);
-                    }
-                }, 0);
+                    }, 0);
+                }
             }
         } else {
             setPendingQueries(prev => {
@@ -531,7 +498,7 @@ export function ChoicesTab({
                 }
             });
         }
-    }, [resolvedData.pendingChoices, resolvedData.progressions, handleChoiceSelection, updateState, state.featureChoices, state.characterId, sharedData.allFeats, queryClient, _triggerFeatureResolution]);
+    }, [resolvedData.pendingChoices, resolvedData.progressions, updateState, state.featureChoices, state.characterId, sharedData.allFeats, getFeatSummaryById, queryClient]);
 
     // Handle weapon selection from modal
     const handleWeaponSelection = useCallback(async (weaponId: number) => {
@@ -550,7 +517,7 @@ export function ChoicesTab({
             setSelectedFeatForSubId(null);
             setPendingFeatChoiceId(null);
         }
-    }, [pendingFeatChoiceId, selectedFeatForSubId, resolvedData.pendingChoices, pendingQueries, handleSelectionChange, sharedData.allFeats]);
+    }, [pendingFeatChoiceId, selectedFeatForSubId, resolvedData.pendingChoices, pendingQueries, handleSelectionChange]);
 
     // Check if there are any choices to display (pending or selected)
     const hasChoices = allChoices.length > 0;
@@ -782,7 +749,6 @@ export function ChoicesTab({
                                                     disabled={isLoadingDomains}
                                                     value={(() => {
                                                         const selectedValue = selectedChoices[choice.id]?.[0] || null;
-                                                        console.log(`Choice ${choice.id}: selectedValue=${selectedValue}, selectedChoices[${choice.id}]=${JSON.stringify(selectedChoices[choice.id])}`);
                                                         return selectedValue;
                                                     })()}
                                                     onValueChange={(selectedValue) => {
@@ -849,7 +815,7 @@ export function ChoicesTab({
                     setPendingFeatChoiceId(null);
                 }}
                 onConfirm={handleWeaponSelection}
-                feat={selectedFeatForSubId as FeatCacheEntry | null}
+                feat={selectedFeatForSubId}
                 resolvedProgressions={resolvedData.progressions}
             />
         </div>

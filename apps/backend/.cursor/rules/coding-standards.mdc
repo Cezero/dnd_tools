@@ -1,0 +1,30 @@
+---
+description: Project coding guidelines
+alwaysApply: true
+---
+- no explicit any or as unknown
+- in dynamic or inline imports, all imports must be declared at the top of the file
+- Create an index.ts for each feature and component for all exports, do not re-export imports
+- Create a types.ts for each feature and component for all types and interfaces rather than using inline definitions
+- Explicitly define interfaces
+- type definitions belong in types.ts
+- use Zod validation types in shared/schema for any objects shared between the frontend and backend
+- do not include z or manipulate Zod types in the backend or frontend apps, all Zod type manipulation must be in shared/schema
+- Use camelCase for all variable and prop names.
+- Prefix unused variables with _
+- validate all requests with Zod types
+
+Organize imports in the following order:
+1. Built-in Node.js modules
+2. External packages (e.g., React, lodash, express, cors)
+3. Aliased/internal packages (e.g., @shared/schema, @shared/prisma-client, @/lib/foo)
+4. Parent imports (e.g., ../foo)
+5. Sibling imports (e.g., ./bar)
+6. Index imports (e.g., ./)
+
+- Separate each group with a blank line.
+- Within each group, sort imports alphabetically (case-insensitive).
+- Do not add empty lines within a group.
+- Imports starting with @shared/ or @/ are considered internal/aliased and should come after external packages but before parent/sibling/index imports.
+- Alphabetize alias imports with respect to each other and with other internal imports.
+- Type-only imports follow the same order and grouping as value imports.

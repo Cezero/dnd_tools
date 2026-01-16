@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { useCacheFunctions } from '@/services/cache';
+import { useCacheFunctions , getSourceDisplay } from '@/services/cache';
 import { Deity } from '@shared/schema';
 import { EDITION_MAP, ALIGNMENT_MAP, PANTHEON_MAP } from '@shared/static-data';
-import { GetSourceDisplay } from '@shared/utils';
 
 interface DeityDisplayProps {
     deity: Deity;
@@ -13,7 +12,7 @@ interface DeityDisplayProps {
 }
 
 export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
-    const { getClassNameById, getRaceNameById, getItemNameFromCache, getDomainNameFromCache } = useCacheFunctions();
+    const { getClassSummaryById, getRaceSummaryById, getItemNameFromCache, getDomainNameFromCache } = useCacheFunctions();
     const [worshiperNames, setWorshiperNames] = useState<string>('');
     const [imageExists, setImageExists] = useState<boolean>(false);
     const [imageError, setImageError] = useState<boolean>(false);
@@ -71,7 +70,7 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
                 if (hasClasses) {
                     const classNames = await Promise.all(
                         deity.classIds.map(async (classId) => {
-                            const classInfo = getClassNameById(classId);
+                            const classInfo = getClassSummaryById(classId);
                             return classInfo?.name || `Class ${classId}`;
                         })
                     );
@@ -82,7 +81,7 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
                 if (hasRaces) {
                     const raceNames = await Promise.all(
                         deity.raceIds.map(async (raceId) => {
-                            const raceInfo = getRaceNameById(raceId);
+                            const raceInfo = getRaceSummaryById(raceId);
                             return raceInfo?.name || `Race ${raceId}`;
                         })
                     );
@@ -118,7 +117,7 @@ export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
                     <div className="text-right">
                         <p><strong>Edition:</strong> {EDITION_MAP[deity.editionId]?.abbreviation || deity.editionId}</p>
                         {deity.sourceBookInfo && deity.sourceBookInfo.length > 0 && (
-                            <p><strong>Source:</strong> {GetSourceDisplay(deity.sourceBookInfo, true)}</p>
+                            <p><strong>Source:</strong> {getSourceDisplay(deity.sourceBookInfo, true)}</p>
                         )}
                     </div>
                 </div>

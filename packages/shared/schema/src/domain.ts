@@ -1,16 +1,18 @@
 import { z } from 'zod';
+
+import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
-import { CreateFeatureProgressionSchema, FeatureProgressionSchema } from './feature.js';
+import { CreateFeatureProgressionRequestSchema, FeatureProgressionResponseSchema } from './feature.js';
 
 export const DomainIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export const DomainSpellSchema = z.object({
-    id: z.number().int().positive('Domain spell ID must be a positive integer'),
-    domainId: z.number().int().positive('Domain ID must be a positive integer'),
-    spellId: z.number().int().positive('Spell ID must be a positive integer'),
+    id: commonValidations.positiveInt('Domain spell ID'),
+    domainId: commonValidations.positiveInt('Domain ID'),
+    spellId: commonValidations.positiveInt('Spell ID'),
     spellLevel: z.number().int().min(1, 'Spell level must be at least 1').max(9, 'Spell level must be at most 9'),
     // spellName and spellSummary removed - frontend should resolve from spells-cache
 });
@@ -19,20 +21,17 @@ export const DomainSpellSchema = z.object({
 // Frontend should resolve deity names from deities-cache
 
 export const BaseDomainSchema = z.object({
-    name: z.string()
-        .min(1, 'Domain name is required')
-        .max(200, 'Domain name must be less than 200 characters')
-        .trim(),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    name: commonValidations.name(200),
+    editionId: commonValidations.positiveInt('Edition ID'),
     isVisible: z.boolean().default(true),
     domainSpells: z.array(DomainSpellSchema).nullable(),
-    deityIds: z.array(z.number().int().positive()).nullable(),
+    deityIds: z.array(commonValidations.positiveInt()).nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureProgressionSchema).nullable(),
+    features: z.array(FeatureProgressionResponseSchema).nullable(),
 });
 
 export const DomainSchema = BaseDomainSchema.extend({
-    id: z.number().int().positive('Domain ID must be a positive integer'),
+    id: commonValidations.positiveInt('Domain ID'),
 });
 
 export const DomainSummarySchema = DomainSchema.omit({
@@ -56,7 +55,7 @@ export const GetAllDomainsResponseSchema = QueryResponseSchema.extend({
 });
 
 export const CreateDomainSpellSchema = z.object({
-    spellId: z.number().int().positive('Spell ID must be a positive integer'),
+    spellId: commonValidations.positiveInt('Spell ID'),
     spellLevel: z.number().int().min(1, 'Spell level must be at least 1').max(9, 'Spell level must be at most 9'),
 });
 
@@ -66,14 +65,14 @@ export const CreateDomainSchema = BaseDomainSchema.omit({
     features: true,
 }).extend({
     domainSpells: z.array(CreateDomainSpellSchema).nullable(),
-    deityIds: z.array(z.number().int().positive()).nullable(),
-    features: z.array(CreateFeatureProgressionSchema).nullable(),
+    deityIds: z.array(commonValidations.positiveInt()).nullable(),
+    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
 });
 
 export const UpdateDomainSchema = CreateDomainSchema.omit({
     features: true,
 }).extend({
-    features: z.array(CreateFeatureProgressionSchema).nullable(),
+    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
 }).partial();
 
 export type DomainIdParamRequest = z.infer<typeof DomainIdParamSchema>;

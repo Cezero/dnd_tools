@@ -35,6 +35,7 @@ export interface BaseFormProps {
     index: number;
     preSelectedFeature?: Feature;
     progression?: FeatureProgression | null;
+    editionId?: number | null; // Edition ID for context (e.g., for FavoredClass options)
 }
 
 // Formula preview props
@@ -54,6 +55,7 @@ export interface EntitySectionRendererProps {
     setHoveredIndex: (index: string | null) => void;
     preSelectedFeature?: Feature;
     progression?: FeatureProgression | null;
+    editionId?: number | null; // Edition ID for context (e.g., for FavoredClass options)
 }
 
 // Section selector props
@@ -94,4 +96,18 @@ export interface AppliesToSelectorProps {
     // Additional props for enhanced conditional scaling
     formulaId?: number | null;
     valuesRepresent?: number | null;
+    editionId?: number | null; // Edition ID for context (e.g., for FavoredClass options)
+}
+
+/**
+ * Props for FeatureProgressionDetailEdit component
+ */
+export interface FeatureProgressionDetailEditProps {
+    isOpen: boolean;
+    onClose: () => void;
+    progression: FeatureProgression | null;
+    onSave: (progression: FeatureProgression) => void;
+    preSelectedFeature?: Feature;
+    showSourceTypeSelector?: boolean;
+    editionId?: number | null; // Edition ID for context (e.g., for FavoredClass options)
 }

@@ -73,6 +73,132 @@ Comprehensive editing interface for creating and modifying characters. This comp
 
 **Source File**: `frontend/src/features/character/CharacterEdit.tsx`
 
+### **CharacterDetail Component**
+
+Main component for displaying and editing character details in a read-only view. This component follows the same centralized state synchronization pattern as CharacterEdit.
+
+**Character-Specific Features**:
+- **Character Display**: Comprehensive display of character information
+- **Tab Navigation**: Tab-based interface for different character aspects (overview, skills, spells, features, equipment, description)
+- **Editable Fields**: Some fields are editable (wounds, money, notes, items, spell preparations)
+- **Resolution Integration**: Integrates with character resolution system for display of resolved features
+
+**User Workflow**:
+1. **View Character**: Navigate to character detail page
+2. **Browse Tabs**: Switch between different tabs to view character information
+3. **Edit Details**: Modify editable fields (wounds, money, notes, items, spell preparations)
+4. **View Resolved Data**: See resolved features, skills, and other calculated values
+
+**Source File**: `frontend/src/features/character/CharacterDetail.tsx`
+
+#### **Character Edit Tab Architecture**
+
+The CharacterEdit component uses a standardized state synchronization pattern for all tab components:
+
+**State → useEffect → applyUpdate Pattern**:
+
+All character edit tabs follow a consistent pattern for synchronizing state changes with the resolution session:
+
+1. **Tabs update state**: Tab components call `updateState()` to modify character state (e.g., `state.skillRanks`, `state.featureChoices`)
+2. **CharacterEdit syncs automatically**: useEffect hooks in CharacterEdit watch state changes and automatically call `resolution.applyUpdate()` to sync changes to the resolution session
+3. **Resolution session updates**: Backend resolution session is updated, and resolved data flows back to tabs via `resolvedData` prop
+
+**Benefits**:
+- **Centralized sync logic**: All sync happens in CharacterEdit, easier to maintain
+- **Tabs are simpler**: Tabs don't need to know about resolution API
+- **Automatic sync**: No risk of forgetting to sync - it's automatic
+- **React-idiomatic**: Uses effects to react to state changes
+- **Consistent**: All tabs work the same way
+
+**State Fields with Automatic Sync**:
+- `state.classId` and `state.secondaryClassId` → `SET_CLASS` / `SET_SECONDARY_CLASS` updates
+- `state.raceId` → `SET_RACE` updates
+- `state.level` → `SET_LEVEL` updates
+- `state.skillRanks` → `SET_SKILL_RANK` updates (for each skill rank)
+- `state.featureChoices` → `MAKE_CHOICE` updates (for each choice)
+- `state.spellsKnown` → `syncSpellsKnown()` API + `refreshState()` (uses lodash/isEqual for comparison, same pattern as spellPreparations in CharacterDetail)
+
+**Adding a New Tab**:
+1. Create tab component that receives `state` and `updateState` props
+2. Update state via `updateState()` when user makes changes
+3. Add useEffect hook in CharacterEdit if new state field needs sync
+4. Do NOT call `resolution.applyUpdate()` directly from tab
+
+**Common Pitfalls to Avoid**:
+- ❌ Calling `resolution.applyUpdate()` directly from tabs
+- ❌ Expecting `resolvedCharacter` in response schemas for direct database operations
+- ❌ Forgetting to add useEffect hook in CharacterEdit for new state fields
+- ❌ Not using refs to track previous values (causes initial sync on mount)
+
+**Source Files**:
+- CharacterEdit: `frontend/src/features/character/CharacterEdit.tsx`
+- useCharacterResolution: `frontend/src/features/character/useCharacterResolution.ts`
+- Tab Components: `frontend/src/features/character/tabs/*Tab.tsx`
+
+**Related Documentation**:
+- [Character Resolution System](character-resolution-system.md) - Backend resolution system
+- [Frontend Patterns](../application-overview/frontend-patterns.md) - General frontend patterns
+
+#### **Character Detail Tab Architecture**
+
+The CharacterDetail component uses the same standardized state synchronization pattern as CharacterEdit, but for direct database operations:
+
+**State → useEffect → API + refreshState Pattern**:
+
+All character detail tabs follow a consistent pattern for synchronizing state changes with the backend:
+
+1. **Tabs update state**: Tab components call `updateState()` to modify character detail state (e.g., `state.wounds`, `state.money`, `state.items`, `state.spellPreparations`)
+2. **CharacterDetail syncs automatically**: useEffect hooks in CharacterDetail watch state changes and automatically call backend APIs (e.g., `updateWounds()`, `updateMoney()`, `syncItems()`, `syncSpellPreparations()`) and then `resolution.refreshState()` to sync changes
+3. **Backend handles diffing**: For array fields (items, spell preparations), backend receives full arrays and determines what operations to perform (create/update/delete)
+4. **Resolution state updates**: Backend resolution session is updated, and resolved data flows back to tabs via `resolvedCharacter` prop
+
+**Benefits**:
+- **Centralized sync logic**: All sync happens in CharacterDetail, easier to maintain
+- **Tabs are simpler**: Tabs don't need to know about APIs or resolution
+- **Automatic sync**: No risk of forgetting to sync - it's automatic
+- **React-idiomatic**: Uses effects to react to state changes
+- **Consistent**: All tabs work the same way
+- **Backend is source of truth**: Backend handles diffing and determines operations
+
+**State Fields with Automatic Sync**:
+- `state.wounds` → `SET_WOUNDS` updates → calls `updateWounds()` API + `refreshState()`
+- `state.money` → `SET_MONEY` updates → calls `updateMoney()` API + `refreshState()`
+- `state.notes` → `SET_NOTES` updates → calls `updateNotes()` API + `refreshState()`
+- `state.items` → `SET_ITEMS` / `ADD_ITEM` / `REMOVE_ITEM` / `UPDATE_ITEM` updates → calls `syncItems()` API + `refreshState()`
+- `state.spellPreparations` → `SET_SPELL_PREPARATIONS` / `ADD_SPELL_PREPARATION` / `UPDATE_SPELL_PREPARATION` / `REMOVE_SPELL_PREPARATION` / `CAST_SPELL` / `UNCAST_SPELL` updates → calls `syncSpellPreparations()` API + `refreshState()`
+
+**Backend Sync Pattern**:
+- Frontend sends entire state array to backend (no diffing on frontend)
+- Backend receives full array and diffs against current database state
+- Backend determines what operations to perform:
+  - Items: Compare by `id` (database ID) or `baseItemId` + `location` (for new items)
+  - Spell preparations: Compare by `id` (database ID) or composite key `classId-spellId-spellLevel-slotType-featId` (for new preparations)
+- Backend performs all necessary database operations atomically in a transaction
+- Single API call per array field (simpler, more reliable, less error-prone)
+- Backend is source of truth for what operations are needed
+
+**Adding a New Detail Tab**:
+1. Create tab component that receives `state` and `updateState` props
+2. Update state via `updateState()` when user makes changes
+3. Add useEffect hook in CharacterDetail if new state field needs sync
+4. Do NOT call APIs directly from tab
+5. For array fields, use sync endpoints that accept full arrays
+
+**Common Pitfalls to Avoid**:
+- ❌ Calling APIs directly from tabs
+- ❌ Forgetting to add useEffect hook in CharacterDetail for new state fields
+- ❌ Not using refs to track previous values (causes initial sync on mount)
+- ❌ Frontend diffing arrays instead of sending full arrays to backend
+
+**Source Files**:
+- CharacterDetail: `frontend/src/features/character/CharacterDetail.tsx`
+- useCharacterDetailState: `frontend/src/features/character/useCharacterDetailState.ts`
+- Detail Tab Components: `frontend/src/features/character/detail-tabs/*Tab.tsx`
+
+**Related Documentation**:
+- [Character Resolution System](character-resolution-system.md) - Backend resolution system
+- [Frontend Patterns](../application-overview/frontend-patterns.md) - General frontend patterns
+
 ### **CharacterPage Component**
 
 Container component for character detail views with tab navigation. This component follows the shared [Display Components](../application-overview/frontend-components.md#display-components) pattern.
@@ -200,6 +326,33 @@ Component for managing character description and background information.
 4. **Manage Notes**: Add and edit character notes
 
 **Source File**: `frontend/src/features/character/tabs/DescriptionTab.tsx`
+
+### **SpellSelectionTab Component**
+
+Component for managing character spell selection (known spells, spellbook spells, etc.).
+
+**Character-Specific Features**:
+- **Spell Display**: Show available spells for character's spellcasting classes
+- **Spell Selection**: Add and remove spells from character's known spells or spellbook
+- **Spellbook Management**: Manage spellbook spells for spellbook classes (Wizard, etc.)
+- **Free Spell Grants**: Track and manage free spell grants for spellbook classes during level-up
+- **Spell Validation**: Validate spell level and availability based on character advancement
+
+**State Management Pattern**:
+- Follows the standardized state → useEffect → API + refreshState pattern
+- Updates `state.spellsKnown` via `updateState()` when spells are added/removed
+- CharacterEdit component automatically syncs state changes to backend using `syncSpellsKnown()` API
+- Uses lodash/isEqual for deep comparison of spellsKnown array (same pattern as spellPreparations in CharacterDetail)
+- Backend handles diffing and determines create/update/delete operations
+
+**User Workflow**:
+1. **View Spells**: See available spells for selected spellcasting class
+2. **Select Spells**: Add spells to character's known spells or spellbook
+3. **Remove Spells**: Remove spells from character's known spells or spellbook
+4. **Track Free Grants**: View and manage free spell grants for spellbook classes
+5. **Validate Selection**: System validates spell level and availability
+
+**Source File**: `frontend/src/features/character/tabs/SpellSelectionTab.tsx`
 
 ## 🔌 **API Integration**
 

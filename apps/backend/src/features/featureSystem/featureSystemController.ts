@@ -1,11 +1,12 @@
 import { Response, NextFunction } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT } from '@/util/validated-types';
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
 import {
     GetAllFeaturesResponse,
     CreateFeatureRequest,
     UpdateFeatureRequest,
     FeatureIdParamRequest,
+    EditionIdParamRequest,
     FeatureQueryRequest,
     GetFeatureResponse,
     CreateResponse,
@@ -14,6 +15,9 @@ import {
     UpdateFeatureProgressionsRequest,
     GetFeatureProgressionsResponse,
     GetFeatureListResponse,
+    CloneClassFeaturesRequest,
+    ForkProgressionRequest,
+    ForkProgressionResponse,
 } from '@shared/schema';
 
 import { featureSystemService } from './featureSystemService.js';
@@ -111,7 +115,7 @@ export async function UpdateFeatureProgressions(req: ValidatedParamsBodyT<Featur
 export async function GetFeatureProgressions(req: ValidatedParamsT<FeatureIdParamRequest, GetFeatureProgressionsResponse>, res: Response, _next: NextFunction) {
     const progressions = await featureSystemService.getFeatureProgressions(req.params.id);
     res.status(200).json(progressions);
-} 
+}
 
 /**
  * Gets feature progressions for a specific feat.
@@ -119,4 +123,37 @@ export async function GetFeatureProgressions(req: ValidatedParamsT<FeatureIdPara
 export async function GetFeatureProgressionsByFeatId(req: ValidatedParamsT<{ id: number }, GetFeatureProgressionsResponse>, res: Response, _next: NextFunction) {
     const progressions = await featureSystemService.getFeatureProgressionsByFeatIds([req.params.id]);
     res.status(200).json(progressions);
+}
+
+/**
+ * Gets feature progressions for a specific edition.
+ */
+export async function GetFeatureProgressionsByEditionId(req: ValidatedParamsT<EditionIdParamRequest, GetFeatureProgressionsResponse>, res: Response, _next: NextFunction) {
+    const progressions = await featureSystemService.getFeatureProgressionsByEditionId(req.params.editionId);
+    res.status(200).json(progressions);
+}
+
+/**
+ * Clones feature progressions from a source class to a target class.
+ * Used for creating variant classes by copying base class features.
+ */
+export async function CloneClassFeatures(req: ValidatedBodyT<CloneClassFeaturesRequest, UpdateResponse>, res: Response, _next: NextFunction) {
+    await featureSystemService.cloneClassFeatures(
+        req.body.sourceClassId,
+        req.body.targetClassId,
+        req.body.forkProgressions ?? false
+    );
+    res.status(200).json({ message: 'Class features cloned successfully' });
+}
+
+/**
+ * Forks a shared progression to make it class-specific.
+ * Creates a copy of the progression linked directly to the class.
+ */
+export async function ForkProgressionForClass(req: ValidatedBodyT<ForkProgressionRequest, ForkProgressionResponse>, res: Response, _next: NextFunction) {
+    const forkedProgressionId = await featureSystemService.forkProgressionForClass(
+        req.body.progressionId,
+        req.body.classId
+    );
+    res.status(200).json({ forkedProgressionId });
 } 

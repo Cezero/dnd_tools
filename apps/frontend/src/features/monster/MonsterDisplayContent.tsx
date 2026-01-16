@@ -5,7 +5,7 @@ import { EntityLink } from '@/components/entity-link';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { CollapsibleSection } from '@/components/widgets/CollapsibleSection';
 import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
-import { getSkillNameFromCache, useCacheFunctions } from '@/services/cache';
+import { getSkillNameFromCache, useCacheFunctions, getSourceDisplay } from '@/services/cache';
 import {
     EDITION_MAP,
     SIZE_MAP,
@@ -14,7 +14,6 @@ import {
     MonsterSpecialAbilityTypeId,
     MonsterSpellTypeId,
 } from '@shared/static-data';
-import { GetSourceDisplay } from '@shared/utils';
 
 import type { MonsterDisplayContentProps } from './types';
 
@@ -47,7 +46,7 @@ function getSkillNameWithSubtype(skillId: number, skillSubId?: number | null, no
 }
 
 export function MonsterDisplayContent({ monster, showHeader = false }: MonsterDisplayContentProps): React.JSX.Element | null {
-    const { getFeatNameById, getSpellNameById } = useCacheFunctions();
+    const { getFeatSummaryById, getSpellSummaryById } = useCacheFunctions();
     const [spellNames, setSpellNames] = useState<Record<number, string>>({});
     const spellsRef = useRef<string>('');
     const [expandedExtraTypes, setExpandedExtraTypes] = useState<Set<number>>(new Set());
@@ -68,7 +67,7 @@ export function MonsterDisplayContent({ monster, showHeader = false }: MonsterDi
             for (const spell of monster.spells || []) {
                 if (!names[spell.spellId]) {
                     try {
-                        const spellData = getSpellNameById(spell.spellId);
+                        const spellData = getSpellSummaryById(spell.spellId);
                         names[spell.spellId] = spellData?.name || `Unknown Spell (${spell.spellId})`;
                     } catch {
                         names[spell.spellId] = `Unknown Spell (${spell.spellId})`;
@@ -159,7 +158,7 @@ export function MonsterDisplayContent({ monster, showHeader = false }: MonsterDi
         const resolveFeats = async () => {
             const featElements = await Promise.all(
                 monster.feats.map(async (feat, index) => {
-                    const featData = getFeatNameById(feat.featId);
+                    const featData = getFeatSummaryById(feat.featId);
                     const featName = featData?.name || `Feat ${feat.featId}`;
                     const displayName = feat.notes ? `${featName} (${feat.notes})` : featName;
 
@@ -192,7 +191,7 @@ export function MonsterDisplayContent({ monster, showHeader = false }: MonsterDi
                     <div className="text-right space-y-0.25">
                         <p><strong>Edition:</strong> {EDITION_MAP[monster.editionId]?.abbreviation}</p>
                         {monster.sourceBookInfo && monster.sourceBookInfo.length > 0 && (
-                            <p><strong>Source:</strong> {GetSourceDisplay(monster.sourceBookInfo, true)}</p>
+                            <p><strong>Source:</strong> {getSourceDisplay(monster.sourceBookInfo, true)}</p>
                         )}
                     </div>
                 </div>

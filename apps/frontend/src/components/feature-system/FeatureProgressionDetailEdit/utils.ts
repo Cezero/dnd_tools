@@ -1,8 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 
-import { FeatureSystemService } from '@/components/feature-system/FeatureSystemService';
 import { hasSubtypes, getSkillSubtypes } from '@/lib/skill-utils';
-import { getSkillSelectFull } from '@/services/cache';
+import { getSkillSelectFull, getItemsByProficiencyType, useCacheFunctions } from '@/services/cache';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
@@ -14,6 +13,9 @@ import {
     DAMAGE_TYPE_LIST,
     USES_FREQUENCY_LIST,
     LANGUAGE_LIST,
+    SIZE_LIST,
+    BAB_PROGRESSION_LIST,
+    EditionId,
     EntityAppliesToType,
     EntityType,
     ENERGY_DAMAGE_TYPE_LIST,
@@ -21,6 +23,7 @@ import {
     PROFICIENCY_TYPE_LIST,
     PROFICIENCY_TYPES,
     ATTACK_BONUS_APPLIES_TO_LIST,
+    CASTING_TYPE_LIST,
     CoreComponent
 } from '@shared/static-data';
 
@@ -31,6 +34,11 @@ export function getAppliesToSubIdSelectOptions(appliesTo: EntityAppliesToType, a
     // Attack bonus special contexts (two-weapon fighting, thrown weapons, etc.)
     if (appliesTo === EntityAppliesToType.Attack) {
         return ATTACK_BONUS_APPLIES_TO_LIST;
+    }
+
+    // For saving throws, appliesToSubId is the progression type (good/poor)
+    if (appliesTo === EntityAppliesToType.SavingThrow) {
+        return BAB_PROGRESSION_LIST; // Same progression types as BAB (good, average, poor)
     }
 
     // Only show appliesToSubId for specific combinations
@@ -52,8 +60,15 @@ export function getAppliesToSubIdSelectOptions(appliesTo: EntityAppliesToType, a
 
 /**
  * Hook to get applies to select options using query hooks
+ * @param appliesTo - The EntityAppliesToType to get options for
+ * @param entityType - Optional EntityType for filtering
+ * @param editionId - Optional editionId to use for FavoredClass (defaults to DND_3_5E if not provided)
  */
-export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType | null, entityType?: EntityType | null) {
+export function useAppliesToSelectOptions(
+    appliesTo: EntityAppliesToType | null,
+    entityType?: EntityType | null,
+    editionId?: number | null
+) {
     // Use the appropriate query hook based on the appliesTo type
     const featQuery = FeatQueryHooks.useGetFeats();
 
@@ -62,6 +77,43 @@ export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType | null,
     const featureQuery = FeatureQueryHooks.useGetFeatures({
         requestData: { sourceTypes: [EntityAppliesToType.Feature] }
     });
+
+    // For FavoredClass, we need to get classes - use provided editionId or default to 3.5E
+    const { getBaseClassSelectByEdition } = useCacheFunctions();
+    const [favoredClassOptions, setFavoredClassOptions] = useState<CoreComponent[]>([]);
+
+    useEffect(() => {
+        if (appliesTo === EntityAppliesToType.FavoredClass) {
+            // Use provided editionId or default to 3.5E
+            const targetEditionId = editionId ?? EditionId.DND_3_5E;
+            try {
+                const classes = getBaseClassSelectByEdition(targetEditionId);
+                const newOptions = [
+                    { id: -1, name: 'Any' },
+                    ...classes
+                ];
+                // Only update if the options actually changed to prevent infinite loops
+                setFavoredClassOptions(prev => {
+                    if (prev.length === newOptions.length &&
+                        prev.every((opt, idx) => opt.id === newOptions[idx]?.id && opt.name === newOptions[idx]?.name)) {
+                        return prev;
+                    }
+                    return newOptions;
+                });
+            } catch {
+                setFavoredClassOptions(prev => {
+                    const fallbackOptions = [{ id: -1, name: 'Any' }];
+                    if (prev.length === 1 && prev[0]?.id === -1) {
+                        return prev;
+                    }
+                    return fallbackOptions;
+                });
+            }
+        } else {
+            setFavoredClassOptions(prev => prev.length === 0 ? prev : []);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [appliesTo, editionId]); // getBaseClassSelectByEdition is stable, no need in deps
 
     return useMemo(() => {
         if (appliesTo === null || appliesTo === undefined) {
@@ -104,11 +156,15 @@ export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType | null,
                 }
                 return [{ id: -1, name: 'Select a feature...' }];
 
+            case EntityAppliesToType.FavoredClass:
+                // Return classes from cache (async loaded)
+                return favoredClassOptions;
+
             default:
                 // For other types, use the static options
                 return getAppliesToSelectOptionsSync(appliesTo, entityType);
         }
-    }, [appliesTo, entityType, featQuery.data, featQuery.isLoading, domainQuery.data, domainQuery.isLoading, featureQuery.data, featureQuery.isLoading]);
+    }, [appliesTo, entityType, featQuery.data, featQuery.isLoading, domainQuery.data, domainQuery.isLoading, featureQuery.data, featureQuery.isLoading, favoredClassOptions]);
 }
 
 /**
@@ -142,6 +198,37 @@ export function getAppliesToSelectOptionsSync(appliesTo: EntityAppliesToType, _e
                 { id: -1, name: 'Any Language' },
                 ...LANGUAGE_LIST
             ];
+        // New class mechanics entity types
+        // These store their values in appliesToId, not value
+        case EntityAppliesToType.HitDice:
+            return RPG_DICE_LIST;
+        case EntityAppliesToType.Size:
+            return SIZE_LIST;
+        case EntityAppliesToType.SkillPoints:
+            // SkillPoints uses value field (not appliesToId) and should have ABILITY_BASED formula
+            // No appliesToId options needed
+            return [];
+        case EntityAppliesToType.BaseAttackBonus:
+            // BAB progression type - should use BAB_PROGRESSION_LIST
+            return BAB_PROGRESSION_LIST;
+        case EntityAppliesToType.MovementSpeed:
+            // MovementSpeed uses value field (not appliesToId) as it's a literal numeric value
+            // No appliesToId options needed
+            return [];
+        case EntityAppliesToType.LevelAdjustment:
+            // LevelAdjustment uses value field (not appliesToId) as it's a literal numeric value
+            // No appliesToId options needed
+            return [];
+        case EntityAppliesToType.CastingAbility:
+            // CastingAbility stores the ability ID in appliesToId
+            return ABILITY_LIST;
+        case EntityAppliesToType.CastingType:
+            // CastingType stores the casting type ID (Prepared/Spontaneous) in appliesToId
+            return CASTING_TYPE_LIST;
+        case EntityAppliesToType.SpellcastingProgression:
+            // SpellcastingProgression stores the progression ID in appliesToId
+            // Return empty array to use number input instead of dropdown
+            return [];
         default:
             return [];
     }
@@ -185,8 +272,8 @@ export function useProficiencySubIdOptions(
                     return;
                 }
 
-                // Fetch items for this proficiency type
-                const itemsResult = await FeatureSystemService.getItemsByProficiencyType(proficiencyTypeId);
+                // Fetch items for this proficiency type (synchronous, cache is always loaded)
+                const itemsResult = getItemsByProficiencyType(proficiencyTypeId);
 
                 // Transform items to CoreComponent format
                 const itemOptions: CoreComponent[] = (itemsResult.results || []).map(item => ({

@@ -1,4 +1,5 @@
 
+import { getFeatNameFromCache } from '@/services/cache/featCache';
 import { EntityType, EntityAppliesToType, USES_GROUPED_LABEL } from '@shared/static-data';
 
 import { labelerRegistry } from './labeler-registry';
@@ -123,8 +124,8 @@ export class EntityGroupingStrategy extends BaseGroupingStrategy {
                         if (item.entity.spell) {
                             return item.entity.spell.name;
                         }
-                        if (item.entity.feat) {
-                            return item.entity.feat.name;
+                        if (item.entity.appliesTo === EntityAppliesToType.Feat && item.entity.appliesToId) {
+                            return getFeatNameFromCache(item.entity.appliesToId);
                         }
                         if (item.entity.item) {
                             return item.entity.item.name;

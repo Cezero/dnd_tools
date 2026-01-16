@@ -3,83 +3,83 @@ import { EntityAppliesToType } from '@shared/static-data';
 import { FeatureProgressionSchema } from './feature.js';
 import { CharacterWithAllDetailsSchema } from './character.js';
 import { FeatInQueryResponseSchema } from './feat.js';
-import type { CharacterWithAllDetailsResponse } from './character.js';
-import type { FeatInQueryResponse } from './feat.js';
+import { CharacterSpellSelectionEntrySchema } from './spell.js';
+import { commonValidations } from './common.js';
 
 // Character Update Schema - discriminated union for all update operations
 export const CharacterUpdateSchema = z.discriminatedUnion('type', [
     z.object({
         type: z.literal('SET_ABILITY_SCORE'),
         payload: z.object({
-            abilityId: z.number().int().positive(),
+            abilityId: commonValidations.positiveInt(),
             value: z.number().int().min(1).max(100),
         }),
     }),
     z.object({
         type: z.literal('SET_SKILL_RANK'),
         payload: z.object({
-            skillId: z.number().int().positive(),
+            skillId: commonValidations.positiveInt(),
             skillSubId: z.number().int().nullable(),
             customSubtype: z.string().nullable(),
-            pointsSpent: z.number().int().min(0),
+            pointsSpent: commonValidations.nonNegativeInt(),
         }),
     }),
     z.object({
         type: z.literal('SET_RACE'),
         payload: z.object({
-            raceId: z.number().int().positive(),
+            raceId: commonValidations.positiveInt(),
         }),
     }),
     z.object({
         type: z.literal('SET_CLASS'),
         payload: z.object({
-            classId: z.number().int().positive(),
+            classId: commonValidations.positiveInt(),
         }),
     }),
     z.object({
         type: z.literal('SET_SECONDARY_CLASS'),
         payload: z.object({
-            secondaryClassId: z.number().int().positive().nullable(),
+            secondaryClassId: commonValidations.positiveInt().nullable(),
         }),
     }),
     z.object({
         type: z.literal('SET_LEVEL'),
         payload: z.object({
-            level: z.number().int().positive().max(20),
+            level: z.number().int().positive().max(20), // Keep as-is since it has max(20) constraint
         }),
     }),
     z.object({
         type: z.literal('MAKE_CHOICE'),
         payload: z.object({
-            progressionId: z.number().int().positive(),
-            featureEntityId: z.number().int().positive(),
-            appliesToId: z.number().int().positive(),
+            progressionId: commonValidations.positiveInt(),
+            featureEntityId: commonValidations.positiveInt(),
+            appliesToId: commonValidations.positiveInt(),
             appliesToSubId: z.number().int().nullable(),
         }),
     }),
     z.object({
         type: z.literal('SET_FEAT'),
         payload: z.object({
-            featId: z.number().int().positive(),
+            featId: commonValidations.positiveInt(),
             featSubId: z.number().int().nullable(),
         }),
     }),
     z.object({
         type: z.literal('REMOVE_FEAT'),
         payload: z.object({
-            featId: z.number().int().positive(),
+            featId: commonValidations.positiveInt(),
         }),
     }),
     z.object({
         type: z.literal('SET_DISALLOWED_SOURCE'),
         payload: z.object({
-            sourceBookId: z.number().int().positive(),
+            sourceBookId: commonValidations.positiveInt(),
         }),
     }),
     z.object({
         type: z.literal('REMOVE_DISALLOWED_SOURCE'),
         payload: z.object({
-            sourceBookId: z.number().int().positive(),
+            sourceBookId: commonValidations.positiveInt(),
         }),
     }),
 ]);
@@ -107,7 +107,7 @@ export const PendingChoiceOptionSchema = z.object({
     id: z.string(),
     name: z.string(),
     description: z.string(),
-    value: z.number().int().positive(),
+    value: commonValidations.positiveInt(),
 });
 
 // Pending choice schema
@@ -117,30 +117,96 @@ export const PendingChoiceSchema = z.object({
     name: z.string(),
     description: z.string(),
     source: z.string(),
-    level: z.number().int().positive(),
+    level: commonValidations.positiveInt(),
     required: z.boolean(),
     maxSelections: z.number().int().nonnegative(),
     minSelections: z.number().int().nonnegative(),
     options: z.array(PendingChoiceOptionSchema),
 });
 
-// Resolved character result schema
+/**
+ * Schema for a class skill entry.
+ * Represents a skill that is a class skill for a character, including optional skill subtype.
+ * 
+ * This schema is used in resolved character results to indicate which skills are class skills.
+ * 
+ * @see ResolvedCharacterResultSchema - Used in resolved character results
+ * @see AddSpellKnownResponseSchema - Also used in spell addition responses
+ */
+export const ClassSkillSchema = z.object({
+    skillId: commonValidations.positiveInt(),
+    skillSubId: z.number().int().nullable(),
+});
+
+/**
+ * Schema for a skill bonus entry.
+ * Represents a bonus applied to a skill, with the source of the bonus.
+ * 
+ * This schema is used in resolved character results to track skill bonuses from various sources.
+ * 
+ * @see ResolvedCharacterResultSchema - Used in resolved character results
+ * @see AddSpellKnownResponseSchema - Also used in spell addition responses
+ */
+export const SkillBonusSchema = z.object({
+    skillId: commonValidations.positiveInt(),
+    skillSubId: z.number().int().nullable(),
+    bonus: z.number(),
+    source: z.string(),
+});
+
+/**
+ * Schema for spell selection data for a single class.
+ * 
+ * Contains all spell-related data for a specific spellcasting class, including:
+ * - Available spells for the class
+ * - Domain spells (if the character has domains)
+ * - Available free spells for spellbook classes
+ * 
+ * @see ResolvedCharacterResultSchema - Used in resolved character results
+ */
+export const ClassSpellSelectionSchema = z.object({
+    spells: z.array(CharacterSpellSelectionEntrySchema),
+    domainSpells: z.array(CharacterSpellSelectionEntrySchema).optional(),
+    availableFreeSpells: z.number().int().nonnegative().optional(),
+});
+
+/**
+ * Schema for resolved character result.
+ * Contains all computed data from character resolution including progressions, choices, skills, feats, spells, and warnings.
+ * 
+ * This schema represents the complete state of a character after resolution, including:
+ * - Resolved feature progressions
+ * - Pending choices that need user input
+ * - Class skills and skill bonuses
+ * - Available and granted feats
+ * - Qualified feats (list of feats the character qualifies for)
+ * - Spell selection data (by class ID)
+ * - Warnings and errors from resolution
+ * 
+ * **Feat Data Distinction**:
+ * - `availableFeatsCount` (number): Count of feat slots/choices available to the character. Answers "How many feats can you select?"
+ * - `qualifiedFeats` (array): List of feats the character qualifies for based on prerequisites, proficiencies, etc. Answers "Which feats can you select from?"
+ * 
+ * **Spell Selection Data**: The `spellSelection` field contains spell selection data for each spellcasting class
+ * the character has. This data is calculated during resolution using resolved progressions, making it
+ * architecturally consistent with other resolved data.
+ * 
+ * @see ResolvedCharacterResult - TypeScript type for this schema
+ * @see AddSpellKnownResponseSchema - Uses this schema for resolvedCharacter field
+ * @see ClassSpellSelectionSchema - Schema for individual class spell selection data
+ */
 export const ResolvedCharacterResultSchema = z.object({
     resolvedProgressions: z.array(FeatureProgressionSchema),
     pendingChoices: z.array(PendingChoiceSchema),
-    classSkills: z.array(z.object({
-        skillId: z.number().int().positive(),
-        skillSubId: z.number().int().nullable(),
-    })),
-    skillBonuses: z.array(z.object({
-        skillId: z.number().int().positive(),
-        skillSubId: z.number().int().nullable(),
-        bonus: z.number(),
-        source: z.string(),
-    })),
-    grantedFeats: z.array(z.number().int().positive()),
-    availableFeats: z.number().int().nonnegative(),
-    availableFighterBonusFeats: z.number().int().nonnegative(),
+    classSkills: z.array(ClassSkillSchema),
+    skillBonuses: z.array(SkillBonusSchema),
+    grantedFeats: z.array(commonValidations.positiveInt()),
+    /** Count of feat slots/choices available to the character. Calculated from resolved progressions. */
+    availableFeatsCount: commonValidations.nonNegativeInt(),
+    availableFighterBonusFeats: commonValidations.nonNegativeInt(),
+    /** List of feats the character qualifies for, filtered by prerequisites, proficiencies, owned feats, etc. */
+    qualifiedFeats: z.array(FeatInQueryResponseSchema),
+    spellSelection: z.record(z.string(), ClassSpellSelectionSchema).optional(),
     warnings: z.array(z.string()),
     errors: z.array(z.string()),
     sessionId: z.string().uuid(),
@@ -199,6 +265,9 @@ export type CharacterResolutionParamsRequest = z.infer<typeof CharacterResolutio
 export type ApplyCharacterUpdateBodyRequest = z.infer<typeof ApplyCharacterUpdateBodySchema>;
 export type PendingChoiceOption = z.infer<typeof PendingChoiceOptionSchema>;
 export type PendingChoice = z.infer<typeof PendingChoiceSchema>;
+export type ClassSkill = z.infer<typeof ClassSkillSchema>;
+export type SkillBonus = z.infer<typeof SkillBonusSchema>;
+export type ClassSpellSelection = z.infer<typeof ClassSpellSelectionSchema>;
 export type ResolvedCharacterResult = z.infer<typeof ResolvedCharacterResultSchema>;
 export type SaveSessionResponse = z.infer<typeof SaveSessionResponseSchema>;
 export type GetAvailableFeatsResponse = z.infer<typeof GetAvailableFeatsResponseSchema>;

@@ -1,15 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query';
 import pluralize from 'pluralize';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { EntityLink } from '@/components/entity-link';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
+import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { useCacheFunctions } from '@/services/cache';
-import { DnDClass, ClassVariant } from '@shared/schema';
+import { useCacheFunctions, getSourceDisplay } from '@/services/cache';
+import { DnDClass } from '@shared/schema';
 import {
     DisplayType,
     RPG_DICE,
@@ -17,12 +18,12 @@ import {
     ABILITY_MAP,
     SpecialFeatureId,
     CASTING_TYPE_MAP,
+    EntityAppliesToType,
+    FeatureSourceType,
 } from '@shared/static-data';
-import { GetSourceDisplay } from '@shared/utils';
 
 interface ClassDisplayProps {
     cls: DnDClass;
-    variantData?: ClassVariant | null;
     showHeader?: boolean;
     showActions?: boolean;
     onBack?: () => void;
@@ -33,7 +34,6 @@ interface ClassDisplayProps {
 
 export function ClassDisplay({
     cls,
-    variantData,
     showHeader = true,
     showActions = false,
     onBack,
@@ -47,6 +47,50 @@ export function ClassDisplay({
     // Precache all entities referenced in feature progressions
     usePrecacheFeatureEntities(cls?.features);
 
+    // Extract mechanics from feature progressions
+    const mechanics = useMemo(() => {
+        if (cls.features && cls.features.length > 0) {
+            const classId = (cls as { id?: number }).id;
+            return extractClassMechanics(cls.features, classId);
+        }
+        // Return null values if no features
+        return {
+            hitDie: null,
+            skillPoints: null,
+            babProgression: null,
+            fortProgression: null,
+            refProgression: null,
+            willProgression: null,
+        };
+    }, [cls]);
+
+    // Extract casting ability and type from feature progressions
+    const castingInfo = useMemo(() => {
+        if (!cls.features) {
+            return { castingAbilityId: null, castingType: null };
+        }
+        const classId = (cls as { id?: number }).id;
+        // Find level 1 class progression
+        const classLevel1Progression = cls.features.find(
+            p => p.sourceType === FeatureSourceType.Class &&
+                (classId ? (p as { classes?: Array<{ classId: number }> }).classes?.some(c => c.classId === classId) : true) &&
+                p.level === 1
+        );
+        if (classLevel1Progression?.entities) {
+            const castingAbilityEntity = classLevel1Progression.entities.find(
+                e => e.appliesTo === EntityAppliesToType.CastingAbility
+            );
+            const castingTypeEntity = classLevel1Progression.entities.find(
+                e => e.appliesTo === EntityAppliesToType.CastingType
+            );
+            return {
+                castingAbilityId: castingAbilityEntity?.appliesToId ?? null,
+                castingType: castingTypeEntity?.appliesToId ?? null,
+            };
+        }
+        return { castingAbilityId: null, castingType: null };
+    }, [cls]);
+
     if (!cls) {
         return <div>Error: Class not found</div>;
     }
@@ -59,15 +103,15 @@ export function ClassDisplay({
                         <div className="flex justify-between items-start mb-2">
                             <div>
                                 <h1 className="text-2xl font-bold mb-2">{cls.name}</h1>
-                                <p><strong>Hit Die:</strong> {RPG_DICE[cls.hitDie]?.name}</p>
-                                <p><strong>Skill Points:</strong> {cls.skillPoints}</p>
-                                <p><strong>Casting Ability:</strong> {ABILITY_MAP[cls.castingAbilityId]?.name || 'None'}</p>
-                                <p><strong>Casting Type:</strong> {cls.castingType ? CASTING_TYPE_MAP[cls.castingType]?.name || 'Unknown' : 'None'}</p>
+                                <p><strong>Hit Die:</strong> {RPG_DICE[mechanics.hitDie ?? 0]?.name}</p>
+                                <p><strong>Skill Points:</strong> {mechanics.skillPoints ?? 0}</p>
+                                <p><strong>Casting Ability:</strong> {castingInfo.castingAbilityId ? ABILITY_MAP[castingInfo.castingAbilityId]?.name || 'None' : 'None'}</p>
+                                <p><strong>Casting Type:</strong> {castingInfo.castingType ? CASTING_TYPE_MAP[castingInfo.castingType]?.name || 'Unknown' : 'None'}</p>
                             </div>
                             <div className="text-right">
                                 <p><strong>Edition:</strong> {EDITION_MAP[cls.editionId]?.abbreviation}</p>
                                 {cls.sourceBookInfo && cls.sourceBookInfo.length > 0 && (
-                                    <p><strong>Source:</strong> {GetSourceDisplay(cls.sourceBookInfo, true)}</p>
+                                    <p><strong>Source:</strong> {getSourceDisplay(cls.sourceBookInfo, true)}</p>
                                 )}
                                 <p><strong>Display:</strong> {cls.isVisible ? 'Yes' : 'No'}</p>
                                 <p><strong>Prestige Class:</strong> {cls.isPrestige ? 'Yes' : 'No'}</p>
@@ -87,10 +131,10 @@ export function ClassDisplay({
                         <h3 className="text-lg font-semibold mb-2">Class Progression</h3>
                         {(() => {
                             const progressionConfig = {
-                                babProgression: cls.babProgression,
-                                fortProgression: cls.fortProgression,
-                                refProgression: cls.refProgression,
-                                willProgression: cls.willProgression,
+                                babProgression: mechanics.babProgression ?? 0,
+                                fortProgression: mechanics.fortProgression ?? 0,
+                                refProgression: mechanics.refProgression ?? 0,
+                                willProgression: mechanics.willProgression ?? 0,
                                 spellcastingProgression: cls.spellcastingProgression !== null ? cls.spellcastingProgression : undefined,
                                 spellsKnownProgression: cls.spellsKnownProgression !== null ? cls.spellsKnownProgression : undefined,
                             };
@@ -153,82 +197,6 @@ export function ClassDisplay({
                         return null;
                     })()}
 
-                    {/* Added Spells Section (for variant classes) */}
-                    {variantData?.spellOverrides && variantData.spellOverrides.length > 0 && (() => {
-                        // Group spell overrides by level
-                        const addedSpells = variantData.spellOverrides.filter(override => override.level > 0);
-                        const removedSpells = variantData.spellOverrides.filter(override => override.level === -1);
-
-                        // Group added spells by level
-                        const addedByLevel = addedSpells.reduce((acc, override) => {
-                            if (!acc[override.level]) {
-                                acc[override.level] = [];
-                            }
-                            acc[override.level].push(override.spellId);
-                            return acc;
-                        }, {} as Record<number, number[]>);
-
-                        // Group removed spells by level (they're all level -1, but we'll show them as "removed")
-                        const removedSpellIds = removedSpells.map(override => override.spellId);
-
-                        return (
-                            <>
-                                {Object.keys(addedByLevel).length > 0 && (
-                                    <div className="mt-4">
-                                        <h3 className="text-lg font-semibold mb-2">Added Spells</h3>
-                                        <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
-                                            <span className="text-sm">
-                                                {Object.entries(addedByLevel)
-                                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                                    .map(([level, spellIds], levelIndex) => {
-                                                        const levelText = level === '1' ? '1st' : level === '2' ? '2nd' : level === '3' ? '3rd' : `${level}th`;
-                                                        const spellNames = (spellIds as number[]).map(id => {
-                                                            const spellName = getSpellNameFromCache(id) || `Unknown Spell (${id})`;
-                                                            return (
-                                                                <EntityLink key={id} entityType="spell" entityId={id} href={`/spells/${id}`}>
-                                                                    {spellName}
-                                                                </EntityLink>
-                                                            );
-                                                        });
-                                                        return (
-                                                            <span key={level}>
-                                                                {levelText} - {spellNames.map((link, index) => (
-                                                                    <React.Fragment key={index}>
-                                                                        {link}
-                                                                        {index < spellNames.length - 1 && ', '}
-                                                                    </React.Fragment>
-                                                                ))}
-                                                                {levelIndex < Object.entries(addedByLevel).length - 1 && '; '}
-                                                            </span>
-                                                        );
-                                                    })}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-                                {removedSpellIds.length > 0 && (
-                                    <div className="mt-4">
-                                        <h3 className="text-lg font-semibold mb-2">Removed Spells</h3>
-                                        <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
-                                            <span className="text-sm">
-                                                {removedSpellIds.map((id, index) => {
-                                                    const spellName = getSpellNameFromCache(id) || `Unknown Spell (${id})`;
-                                                    return (
-                                                        <React.Fragment key={id}>
-                                                            <EntityLink entityType="spell" entityId={id} href={`/spells/${id}`}>
-                                                                {spellName}
-                                                            </EntityLink>
-                                                            {index < removedSpellIds.length - 1 && ', '}
-                                                        </React.Fragment>
-                                                    );
-                                                })}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        );
-                    })()}
 
                     {/* Class Features Section */}
                     {(() => {

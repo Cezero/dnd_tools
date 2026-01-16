@@ -94,6 +94,63 @@ This documentation follows a layered approach, with each layer building upon the
 
 **Character Integration**: Features applied to character statistics and abilities during character creation and advancement.
 
+### **Reusable Feature Progressions**
+
+Feature progressions can be shared across multiple classes via a many-to-many relationship, enabling efficient variant class creation and data reuse.
+
+**Many-to-Many Relationship:**
+- `FeatureProgressionClassMap` - Junction table linking progressions to classes
+- Progressions can be linked to multiple classes simultaneously
+- Supports both direct `classId` (class-specific) and shared (via `FeatureProgressionClassMap`) patterns
+
+**Clone Workflow:**
+1. Select base class to clone from
+2. Choose to share progressions (default) or fork them (create copies)
+3. System creates `FeatureProgressionClassMap` entries for shared progressions
+4. Variant class now has access to all base class progressions
+
+**Fork Workflow:**
+1. Identify shared progression that needs class-specific modification
+2. Fork the progression to create a class-specific copy
+3. Modify the forked progression independently
+4. Original shared progression remains unchanged for other classes
+
+**Benefits:**
+- No data duplication for shared progressions
+- Easy variant class creation
+- Efficient storage and maintenance
+- Clear separation: shared vs. class-specific progressions
+
+**Source Files:**
+- Database: `apps/backend/prisma/schema.prisma` (FeatureProgressionClassMap model)
+- Backend: `apps/backend/src/features/featureSystem/featureSystemService.ts` (cloneClassFeatures, forkProgressionForClass methods)
+- API: `apps/backend/src/features/featureSystem/featureSystemRoutes.ts` (clone and fork endpoints)
+
+**Related Documentation:**
+- [Class System Refactoring](../application-overview/class-race-feature-refactoring.md) - Complete refactoring overview
+- [Variant Class System](../variant-class-system/README.md) - Variant class implementation
+
+### **Spellcasting Integration**
+
+The feature system integrates with the spellcasting system to enable feature-based spellcasting abilities.
+
+**FeatureProgression Links:**
+- `FeatureProgression` entities can reference `SpellcastingProgression` via `EntityAppliesToType.SpellcastingProgression`
+- Spellcasting progressions linked to classes through feature progressions
+- Enables automatic resolution for gestalt and multiclass characters
+
+**TODO: Future Enhancement - FeatureEntity Formulas:**
+- Consider replacing `SpellcastingProgression`/`SpellcastingSlot` with `FeatureEntity` formulas
+- Status: Deferred to future phase after Approach 1 is validated and stable
+- See: [Spellcasting System Analysis](../class-system/spellcasting-system.md#future-enhancements) for details
+
+**Source Files:**
+- Database: `apps/backend/prisma/schema.prisma` (SpellcastingProgression, SpellcastingLink models)
+- Backend: `apps/backend/src/features/featureSystem/featureSystemService.ts`
+
+**Related Documentation:**
+- [Spellcasting System](../class-system/spellcasting-system.md) - Complete spellcasting documentation
+
 ### **Formula System**
 
 **Linear Scaling**: Features that scale linearly with character level, providing steady progression.

@@ -13,7 +13,8 @@ export function EntitySectionRenderer({
     onUngroup,
     setHoveredIndex,
     preSelectedFeature,
-    progression
+    progression,
+    editionId
 }: EntitySectionRendererProps) {
     const entities = formData.entities || [];
     const groups = getGroupedEntities(entities);
@@ -32,6 +33,7 @@ export function EntitySectionRenderer({
                                     index={index}
                                     preSelectedFeature={preSelectedFeature}
                                     progression={progression}
+                                    editionId={editionId}
                                 />
                             </div>
                             <button
@@ -98,6 +100,7 @@ export function EntitySectionRenderer({
                                             index={index}
                                             preSelectedFeature={preSelectedFeature}
                                             progression={progression}
+                                            editionId={editionId}
                                         />
                                     </div>
                                     <button

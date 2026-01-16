@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 
 import type { ValidatedParamsT, ValidatedParamsBodyT } from '@/util/validated-types';
-import type { CharacterWithAllDetailsResponse, FeatInQueryResponse } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatInQueryResponse, ClassSpellSelection, FeatureProgression } from '@shared/schema';
 
 import { AvailableFeatService } from './availableFeatService';
 import { buildCharacterEditState } from './characterEditStateBuilder';
@@ -13,7 +13,83 @@ import type { CharacterUpdate, UserChoices, CharacterEditState } from './types';
 import { characterService } from '../character/characterService';
 import { classService } from '../class/classService';
 import { featService } from '../feat/featService';
+import { featureSystemService } from '../featureSystem/featureSystemService';
 import { raceService } from '../race/raceService';
+
+/**
+ * Calculate spell selection data for all spellcasting classes in a character.
+ * 
+ * This function iterates through all classes the character has (from advancements)
+ * and calculates spell selection data for each spellcasting class using resolved progressions.
+ * 
+ * @param characterId - The character ID
+ * @param character - The character data with advancements
+ * @param resolvedProgressions - The resolved feature progressions
+ * @returns Record mapping classId (as string) to ClassSpellSelection data
+ */
+async function calculateSpellSelection(
+    characterId: number,
+    character: CharacterWithAllDetailsResponse,
+    resolvedProgressions: FeatureProgression[]
+): Promise<Record<string, ClassSpellSelection>> {
+    const spellSelection: Record<string, ClassSpellSelection> = {};
+
+    if (!character.advancements || character.advancements.length === 0) {
+        return spellSelection;
+    }
+
+    // Get all unique class IDs from advancements (including secondary classes)
+    const classIds = new Set<number>();
+    for (const adv of character.advancements) {
+        if (adv.classId) {
+            classIds.add(adv.classId);
+        }
+        if (adv.secondaryClassId) {
+            classIds.add(adv.secondaryClassId);
+        }
+    }
+
+    // For each class, check if it's spellcasting and calculate spell selection data
+    for (const classId of classIds) {
+        try {
+            const spellData = await characterService.getAvailableSpellsForClass(
+                characterId,
+                classId,
+                resolvedProgressions
+            );
+
+            // Only include if the class has spells or is a spellcasting class
+            if (spellData.spells.length > 0 || spellData.domainSpells.length > 0 || spellData.availableFreeSpells !== undefined) {
+                // Transform to match schema format
+                const spells = spellData.spells.map(s => ({
+                    ...s.spell,
+                    classSpellLevel: s.classSpellLevel,
+                    isKnown: s.isKnown,
+                }));
+
+                const domainSpells = spellData.domainSpells.map(ds => ({
+                    ...ds.spell,
+                    classSpellLevel: ds.classSpellLevel,
+                    isKnown: ds.isKnown,
+                    domainId: ds.domainId,
+                    domainName: ds.domainName,
+                    domainSpellLevel: ds.spellLevel,
+                }));
+
+                spellSelection[classId.toString()] = {
+                    spells,
+                    ...(domainSpells.length > 0 && { domainSpells }),
+                    ...(spellData.availableFreeSpells !== undefined && { availableFreeSpells: spellData.availableFreeSpells }),
+                };
+            }
+        } catch (error) {
+            // Log error but don't fail resolution if spell selection calculation fails
+            console.error(`Failed to calculate spell selection for class ${classId}:`, error);
+        }
+    }
+
+    return spellSelection;
+}
 
 /**
  * Initialize a new resolution session
@@ -137,7 +213,7 @@ export async function InitializeSession(
 
         // Extract derived data
         const classSkills = ResolvedFeatureService.getClassSkills(resolutionResult.resolvedProgressions);
-        const skillBonuses = ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
+        const skillBonuses = await ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
         const grantedFeats = ResolvedFeatureService.getGrantedFeats(resolutionResult.resolvedProgressions);
 
         // Calculate class levels for available feats
@@ -153,12 +229,30 @@ export async function InitializeSession(
             }
         }
 
-        const availableFeats = ResolvedFeatureService.getAvailableFeats(
+        const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
             resolutionResult.resolvedProgressions,
             targetLevel,
             classLevels
         );
         const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(
+            resolutionResult.resolvedProgressions
+        );
+
+        // Calculate qualified feats (list of feats the character qualifies for)
+        // This filters all feats by prerequisites, proficiencies, owned feats, etc.
+        const allFeatsResponse = await featService.getAllFeats();
+        const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
+            character,
+            resolutionResult.resolvedProgressions,
+            classDetails,
+            raceDetails,
+            allFeatsResponse.results
+        );
+
+        // Calculate spell selection data for all spellcasting classes
+        const spellSelection = await calculateSpellSelection(
+            characterId,
+            character,
             resolutionResult.resolvedProgressions
         );
 
@@ -169,15 +263,61 @@ export async function InitializeSession(
             !!secondaryClassDetails
         );
 
+        // Enrich progressions with filtered class/race info (only for character's classes/race)
+        let enrichedProgressions = resolutionResult.resolvedProgressions;
+        const progressionIds = enrichedProgressions.map(p => p.id);
+        if (progressionIds.length > 0) {
+            const enriched = await featureSystemService.getFeatureProgressionsByIds(
+                progressionIds,
+                undefined,
+                true // Include class/race info
+            );
+
+            const enrichedMap = new Map(enriched.map(p => [p.id, p]));
+
+            // Collect all class IDs from all advancements
+            const characterClassIds = new Set<number>();
+            if (character.advancements) {
+                for (const adv of character.advancements) {
+                    if (adv.classId) {
+                        characterClassIds.add(adv.classId);
+                    }
+                    if (adv.secondaryClassId) {
+                        characterClassIds.add(adv.secondaryClassId);
+                    }
+                }
+            }
+            const characterRaceId = character.raceId;
+
+            enrichedProgressions = enrichedProgressions.map(progression => {
+                const enrichedProg = enrichedMap.get(progression.id);
+                if (!enrichedProg) {
+                    return progression;
+                }
+
+                const filteredClasses = enrichedProg.classes?.filter(c => characterClassIds.has(c.classId)) || [];
+                const filteredRaces = enrichedProg.races?.filter(r => r.raceId === characterRaceId) || [];
+
+                return {
+                    ...progression,
+                    ...(filteredClasses.length > 0 ? { classes: filteredClasses } : {}),
+                    ...(filteredRaces.length > 0 ? { races: filteredRaces } : {})
+                };
+            });
+        }
+
         // Build ResolvedCharacterResult for session
         const resolvedCharacterResult: ResolvedCharacterResult = {
-            resolvedProgressions: resolutionResult.resolvedProgressions,
+            resolvedProgressions: enrichedProgressions,
             pendingChoices: resolutionResult.pendingChoices,
             classSkills,
             skillBonuses,
             grantedFeats: grantedFeats.map(f => f.appliesToId!).filter((id): id is number => id !== null),
-            availableFeats,
+            availableFeatsCount,
             availableFighterBonusFeats,
+            qualifiedFeats,
+            ...(Object.keys(spellSelection).length > 0 && { spellSelection }),
+            effectiveClassDetails: resolutionResult.effectiveClassDetails ?? null,
             warnings: resolutionResult.warnings,
             errors: resolutionResult.errors,
             sessionId: '', // Will be assigned by createSession
@@ -242,62 +382,158 @@ export async function ResumeSession(
         const sessionService = new CharacterSessionService();
         const session = sessionService.getSession(characterId, userId);
 
-        // If session exists, return it
-        if (session) {
-            // Build response from session
-            const classSkills = ResolvedFeatureService.getClassSkills(session.resolvedResult.resolvedProgressions);
-            const skillBonuses = ResolvedFeatureService.getSkillBonuses(session.resolvedResult.resolvedProgressions);
-            const grantedFeats = ResolvedFeatureService.getGrantedFeats(session.resolvedResult.resolvedProgressions);
-
-            // Calculate class levels for available feats
-            const character = await characterService.getCharacterWithAllDetails({ id: characterId });
-            const classLevels = new Map<number, number>();
-            if (character?.advancements) {
-                for (const adv of character.advancements) {
-                    const currentLevel = classLevels.get(adv.classId) ?? 0;
-                    classLevels.set(adv.classId, currentLevel + 1);
-                    if (adv.secondaryClassId) {
-                        const secondaryLevel = classLevels.get(adv.secondaryClassId) ?? 0;
-                        classLevels.set(adv.secondaryClassId, secondaryLevel + 1);
-                    }
-                }
-            }
-
-            const availableFeats = ResolvedFeatureService.getAvailableFeats(
-                session.resolvedResult.resolvedProgressions,
-                session.characterState.level,
-                classLevels
-            );
-            const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(
-                session.resolvedResult.resolvedProgressions
-            );
-
-            const result: ResolvedCharacterResult = {
-                resolvedProgressions: session.resolvedResult.resolvedProgressions,
-                pendingChoices: session.resolvedResult.pendingChoices,
-                classSkills,
-                skillBonuses,
-                grantedFeats: grantedFeats.map(f => f.appliesToId!).filter((id): id is number => id !== null),
-                availableFeats,
-                availableFighterBonusFeats,
-                warnings: session.resolvedResult.warnings,
-                errors: session.resolvedResult.errors,
-                sessionId: session.id,
-            };
-
-            res.json(result);
-            return;
-        }
-
-        // No session exists - create a new one using the same logic as InitializeSession
-        // Load character with all details
+        // Get character to check current level
         const character = await characterService.getCharacterWithAllDetails({ id: characterId });
         if (!character) {
             res.status(404).json({ error: 'Character not found' });
             return;
         }
 
-        // Verify ownership
+        const targetLevel = character.characterLevel || 1;
+
+        // If session exists, check if it needs to be re-resolved
+        // Re-resolve if cached progressions include levels above the character's current level
+        if (session) {
+            const maxCachedLevel = Math.max(...session.resolvedResult.resolvedProgressions.map(p => p.level), 0);
+            const needsReResolution = maxCachedLevel > targetLevel;
+
+            if (!needsReResolution) {
+                // Build response from session
+                const classSkills = ResolvedFeatureService.getClassSkills(session.resolvedResult.resolvedProgressions);
+                const skillBonuses = await ResolvedFeatureService.getSkillBonuses(session.resolvedResult.resolvedProgressions);
+                const grantedFeats = ResolvedFeatureService.getGrantedFeats(session.resolvedResult.resolvedProgressions);
+
+                const classLevels = new Map<number, number>();
+                if (character.advancements) {
+                    for (const adv of character.advancements) {
+                        const currentLevel = classLevels.get(adv.classId) ?? 0;
+                        classLevels.set(adv.classId, currentLevel + 1);
+                        if (adv.secondaryClassId) {
+                            const secondaryLevel = classLevels.get(adv.secondaryClassId) ?? 0;
+                            classLevels.set(adv.secondaryClassId, secondaryLevel + 1);
+                        }
+                    }
+                }
+
+                const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
+                    session.resolvedResult.resolvedProgressions,
+                    session.characterState.level,
+                    classLevels
+                );
+                const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(
+                    session.resolvedResult.resolvedProgressions
+                );
+
+                // Calculate qualified feats (list of feats the character qualifies for)
+                // Compute fresh each time since it depends on current character state
+                const allFeatsResponse = await featService.getAllFeats();
+                const raceDetails = character.raceId ? await raceService.getRaceById({ id: character.raceId }) : null;
+                const classDetails = character.advancements?.[0]?.classId
+                    ? await classService.getClassById({ id: character.advancements[0].classId })
+                    : null;
+                const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
+                    character,
+                    session.resolvedResult.resolvedProgressions,
+                    classDetails,
+                    raceDetails,
+                    allFeatsResponse.results
+                );
+
+                // Calculate spell selection data for all spellcasting classes
+                const spellSelection = await calculateSpellSelection(
+                    characterId,
+                    character,
+                    session.resolvedResult.resolvedProgressions
+                );
+
+                // Filter out invalid pending choices (those with invalid options)
+                const validPendingChoices = session.resolvedResult.pendingChoices
+                    .map(choice => ({
+                        ...choice,
+                        options: choice.options.filter(opt => opt.value > 0)
+                    }))
+                    .filter(choice => choice.options.length > 0); // Remove choices with no valid options
+
+                // Enrich progressions with filtered class/race info (only for character's classes/race)
+                let enrichedProgressions = session.resolvedResult.resolvedProgressions;
+                const progressionIds = enrichedProgressions.map(p => p.id);
+                if (progressionIds.length > 0) {
+                    const character = await characterService.getCharacterWithAllDetails({ id: characterId });
+                    if (character) {
+                        const classDetails = character.advancements?.[0]?.classId
+                            ? await classService.getClassById({ id: character.advancements[0].classId })
+                            : null;
+                        const secondaryClassDetails = character.advancements?.[0]?.secondaryClassId
+                            ? await classService.getClassById({ id: character.advancements[0].secondaryClassId })
+                            : null;
+
+                        const enriched = await featureSystemService.getFeatureProgressionsByIds(
+                            progressionIds,
+                            undefined,
+                            true // Include class/race info
+                        );
+
+                        const enrichedMap = new Map(enriched.map(p => [p.id, p]));
+
+                        // Collect all class IDs from all advancements
+                        const characterClassIds = new Set<number>();
+                        if (character.advancements) {
+                            for (const adv of character.advancements) {
+                                if (adv.classId) {
+                                    characterClassIds.add(adv.classId);
+                                }
+                                if (adv.secondaryClassId) {
+                                    characterClassIds.add(adv.secondaryClassId);
+                                }
+                            }
+                        }
+                        const characterRaceId = character.raceId;
+
+                        enrichedProgressions = enrichedProgressions.map(progression => {
+                            const enrichedProg = enrichedMap.get(progression.id);
+                            if (!enrichedProg) {
+                                return progression;
+                            }
+
+                            const filteredClasses = enrichedProg.classes?.filter(c => characterClassIds.has(c.classId)) || [];
+                            const filteredRaces = enrichedProg.races?.filter(r => r.raceId === characterRaceId) || [];
+
+                            return {
+                                ...progression,
+                                ...(filteredClasses.length > 0 ? { classes: filteredClasses } : {}),
+                                ...(filteredRaces.length > 0 ? { races: filteredRaces } : {})
+                            };
+                        });
+                    }
+                }
+
+                const result: ResolvedCharacterResult = {
+                    resolvedProgressions: enrichedProgressions,
+                    pendingChoices: validPendingChoices,
+                    classSkills,
+                    skillBonuses,
+                    grantedFeats: grantedFeats.map(f => f.appliesToId!).filter((id): id is number => id !== null),
+                    availableFeatsCount,
+                    availableFighterBonusFeats,
+                    qualifiedFeats,
+                    ...(Object.keys(spellSelection).length > 0 && { spellSelection }),
+                    effectiveClassDetails: session.resolvedResult.effectiveClassDetails ?? null,
+                    warnings: session.resolvedResult.warnings,
+                    errors: session.resolvedResult.errors,
+                    sessionId: session.id,
+                };
+
+                res.json(result);
+                return;
+            } else {
+                // Session exists but needs re-resolution - delete it and create a new one
+                sessionService.deleteSessionById(session.id);
+            }
+        }
+
+        // No session exists (or was just deleted) - create a new one using the same logic as InitializeSession
+
+        // Verify ownership (character already loaded above)
         if (character.userId !== userId) {
             res.status(403).json({ error: 'Access denied' });
             return;
@@ -312,8 +548,7 @@ export async function ResumeSession(
             ? await classService.getClassById({ id: character.advancements[0].secondaryClassId })
             : null;
 
-        // Calculate target level
-        const targetLevel = character.characterLevel || 1;
+        // targetLevel already calculated above (line 352)
         const advancement = character.advancements?.find(adv => adv.level === targetLevel);
 
         // Create initial resolution context (without user choices)
@@ -389,7 +624,7 @@ export async function ResumeSession(
 
         // Extract derived data
         const classSkills = ResolvedFeatureService.getClassSkills(resolutionResult.resolvedProgressions);
-        const skillBonuses = ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
+        const skillBonuses = await ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
         const grantedFeats = ResolvedFeatureService.getGrantedFeats(resolutionResult.resolvedProgressions);
 
         // Calculate class levels for available feats
@@ -405,12 +640,30 @@ export async function ResumeSession(
             }
         }
 
-        const availableFeats = ResolvedFeatureService.getAvailableFeats(
+        const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
             resolutionResult.resolvedProgressions,
             targetLevel,
             classLevels
         );
         const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(
+            resolutionResult.resolvedProgressions
+        );
+
+        // Calculate qualified feats (list of feats the character qualifies for)
+        // This filters all feats by prerequisites, proficiencies, owned feats, etc.
+        const allFeatsResponse = await featService.getAllFeats();
+        const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
+            character,
+            resolutionResult.resolvedProgressions,
+            classDetails,
+            raceDetails,
+            allFeatsResponse.results
+        );
+
+        // Calculate spell selection data for all spellcasting classes
+        const spellSelection = await calculateSpellSelection(
+            characterId,
+            character,
             resolutionResult.resolvedProgressions
         );
 
@@ -421,15 +674,69 @@ export async function ResumeSession(
             !!secondaryClassDetails
         );
 
+        // Filter out invalid pending choices (those with invalid options)
+        const validPendingChoices = resolutionResult.pendingChoices
+            .map(choice => ({
+                ...choice,
+                options: choice.options.filter(opt => opt.value > 0)
+            }))
+            .filter(choice => choice.options.length > 0); // Remove choices with no valid options
+
+        // Enrich progressions with filtered class/race info (only for character's classes/race)
+        let enrichedProgressions = resolutionResult.resolvedProgressions;
+        const progressionIds = enrichedProgressions.map(p => p.id);
+        if (progressionIds.length > 0) {
+            const enriched = await featureSystemService.getFeatureProgressionsByIds(
+                progressionIds,
+                undefined,
+                true // Include class/race info
+            );
+
+            const enrichedMap = new Map(enriched.map(p => [p.id, p]));
+
+            // Collect all class IDs from all advancements
+            const characterClassIds = new Set<number>();
+            if (character.advancements) {
+                for (const adv of character.advancements) {
+                    if (adv.classId) {
+                        characterClassIds.add(adv.classId);
+                    }
+                    if (adv.secondaryClassId) {
+                        characterClassIds.add(adv.secondaryClassId);
+                    }
+                }
+            }
+            const characterRaceId = character.raceId;
+
+            enrichedProgressions = enrichedProgressions.map(progression => {
+                const enrichedProg = enrichedMap.get(progression.id);
+                if (!enrichedProg) {
+                    return progression;
+                }
+
+                const filteredClasses = enrichedProg.classes?.filter(c => characterClassIds.has(c.classId)) || [];
+                const filteredRaces = enrichedProg.races?.filter(r => r.raceId === characterRaceId) || [];
+
+                return {
+                    ...progression,
+                    ...(filteredClasses.length > 0 ? { classes: filteredClasses } : {}),
+                    ...(filteredRaces.length > 0 ? { races: filteredRaces } : {})
+                };
+            });
+        }
+
         // Build ResolvedCharacterResult for session
         const resolvedCharacterResult: ResolvedCharacterResult = {
-            resolvedProgressions: resolutionResult.resolvedProgressions,
-            pendingChoices: resolutionResult.pendingChoices,
+            resolvedProgressions: enrichedProgressions,
+            pendingChoices: validPendingChoices,
             classSkills,
             skillBonuses,
             grantedFeats: grantedFeats.map(f => f.appliesToId!).filter((id): id is number => id !== null),
-            availableFeats,
+            availableFeatsCount,
             availableFighterBonusFeats,
+            qualifiedFeats,
+            ...(Object.keys(spellSelection).length > 0 && { spellSelection }),
+            effectiveClassDetails: resolutionResult.effectiveClassDetails ?? null,
             warnings: resolutionResult.warnings,
             errors: resolutionResult.errors,
             sessionId: '', // Will be assigned by createSession
@@ -535,7 +842,7 @@ export async function ApplyUpdate(
 
         // Build ResolvedCharacterResult
         const classSkills = ResolvedFeatureService.getClassSkills(resolutionResult.resolvedProgressions);
-        const skillBonuses = ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
+        const skillBonuses = await ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
         const grantedFeats = ResolvedFeatureService.getGrantedFeats(resolutionResult.resolvedProgressions);
 
         const classLevels = new Map<number, number>();
@@ -550,7 +857,7 @@ export async function ApplyUpdate(
             }
         }
 
-        const availableFeats = ResolvedFeatureService.getAvailableFeats(
+        const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
             resolutionResult.resolvedProgressions,
             updatedState.level,
             classLevels
@@ -559,14 +866,86 @@ export async function ApplyUpdate(
             resolutionResult.resolvedProgressions
         );
 
+        // Calculate qualified feats (list of feats the character qualifies for)
+        // This filters all feats by prerequisites, proficiencies, owned feats, etc.
+        const allFeatsResponse = await featService.getAllFeats();
+        const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
+            character,
+            resolutionResult.resolvedProgressions,
+            classDetails,
+            raceDetails,
+            allFeatsResponse.results
+        );
+
+        // Calculate spell selection data for all spellcasting classes
+        const spellSelection = await calculateSpellSelection(
+            characterId,
+            character,
+            resolutionResult.resolvedProgressions
+        );
+
+        // Filter out invalid pending choices (those with invalid options)
+        const validPendingChoices = resolutionResult.pendingChoices
+            .map(choice => ({
+                ...choice,
+                options: choice.options.filter(opt => opt.value > 0)
+            }))
+            .filter(choice => choice.options.length > 0); // Remove choices with no valid options
+
+        // Enrich progressions with filtered class/race info (only for character's classes/race)
+        let enrichedProgressions = resolutionResult.resolvedProgressions;
+        const progressionIds = enrichedProgressions.map(p => p.id);
+        if (progressionIds.length > 0) {
+            const enriched = await featureSystemService.getFeatureProgressionsByIds(
+                progressionIds,
+                undefined,
+                true // Include class/race info
+            );
+
+            const enrichedMap = new Map(enriched.map(p => [p.id, p]));
+
+            // Collect all class IDs from all advancements
+            const characterClassIds = new Set<number>();
+            if (character.advancements) {
+                for (const adv of character.advancements) {
+                    if (adv.classId) {
+                        characterClassIds.add(adv.classId);
+                    }
+                    if (adv.secondaryClassId) {
+                        characterClassIds.add(adv.secondaryClassId);
+                    }
+                }
+            }
+            const characterRaceId = character.raceId;
+
+            enrichedProgressions = enrichedProgressions.map(progression => {
+                const enrichedProg = enrichedMap.get(progression.id);
+                if (!enrichedProg) {
+                    return progression;
+                }
+
+                const filteredClasses = enrichedProg.classes?.filter(c => characterClassIds.has(c.classId)) || [];
+                const filteredRaces = enrichedProg.races?.filter(r => r.raceId === characterRaceId) || [];
+
+                return {
+                    ...progression,
+                    ...(filteredClasses.length > 0 ? { classes: filteredClasses } : {}),
+                    ...(filteredRaces.length > 0 ? { races: filteredRaces } : {})
+                };
+            });
+        }
+
         const resolvedCharacterResult: ResolvedCharacterResult = {
-            resolvedProgressions: resolutionResult.resolvedProgressions,
-            pendingChoices: resolutionResult.pendingChoices,
+            resolvedProgressions: enrichedProgressions,
+            pendingChoices: validPendingChoices,
             classSkills,
             skillBonuses,
             grantedFeats: grantedFeats.map(f => f.appliesToId!).filter((id): id is number => id !== null),
-            availableFeats,
+            availableFeatsCount,
             availableFighterBonusFeats,
+            qualifiedFeats,
+            ...(Object.keys(spellSelection).length > 0 && { spellSelection }),
+            effectiveClassDetails: resolutionResult.effectiveClassDetails ?? null,
             warnings: resolutionResult.warnings,
             errors: resolutionResult.errors,
             sessionId: session.id,
@@ -618,12 +997,17 @@ export async function GetCurrentState(
 
         // Build response from session (same as ResumeSession)
         const classSkills = ResolvedFeatureService.getClassSkills(session.resolvedResult.resolvedProgressions);
-        const skillBonuses = ResolvedFeatureService.getSkillBonuses(session.resolvedResult.resolvedProgressions);
+        const skillBonuses = await ResolvedFeatureService.getSkillBonuses(session.resolvedResult.resolvedProgressions);
         const grantedFeats = ResolvedFeatureService.getGrantedFeats(session.resolvedResult.resolvedProgressions);
 
         const character = await characterService.getCharacterWithAllDetails({ id: characterId });
+        if (!character) {
+            res.status(404).json({ error: 'Character not found' });
+            return;
+        }
+
         const classLevels = new Map<number, number>();
-        if (character?.advancements) {
+        if (character.advancements) {
             for (const adv of character.advancements) {
                 const currentLevel = classLevels.get(adv.classId) ?? 0;
                 classLevels.set(adv.classId, currentLevel + 1);
@@ -634,7 +1018,7 @@ export async function GetCurrentState(
             }
         }
 
-        const availableFeats = ResolvedFeatureService.getAvailableFeats(
+        const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
             session.resolvedResult.resolvedProgressions,
             session.characterState.level,
             classLevels
@@ -643,14 +1027,39 @@ export async function GetCurrentState(
             session.resolvedResult.resolvedProgressions
         );
 
+        // Calculate qualified feats (list of feats the character qualifies for)
+        // Compute fresh each time since it depends on current character state
+        const allFeatsResponse = await featService.getAllFeats();
+        const raceDetails = character.raceId ? await raceService.getRaceById({ id: character.raceId }) : null;
+        const classDetails = character.advancements?.[0]?.classId
+            ? await classService.getClassById({ id: character.advancements[0].classId })
+            : null;
+        const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
+            character,
+            session.resolvedResult.resolvedProgressions,
+            classDetails,
+            raceDetails,
+            allFeatsResponse.results
+        );
+
+        // Filter out invalid pending choices (those with invalid options)
+        const validPendingChoices = session.resolvedResult.pendingChoices
+            .map(choice => ({
+                ...choice,
+                options: choice.options.filter(opt => opt.value > 0)
+            }))
+            .filter(choice => choice.options.length > 0); // Remove choices with no valid options
+
         const result: ResolvedCharacterResult = {
             resolvedProgressions: session.resolvedResult.resolvedProgressions,
-            pendingChoices: session.resolvedResult.pendingChoices,
+            pendingChoices: validPendingChoices,
             classSkills,
             skillBonuses,
             grantedFeats: grantedFeats.map(f => f.appliesToId!).filter((id): id is number => id !== null),
-            availableFeats,
+            availableFeatsCount,
             availableFighterBonusFeats,
+            qualifiedFeats,
+            effectiveClassDetails: session.resolvedResult.effectiveClassDetails ?? null,
             warnings: session.resolvedResult.warnings,
             errors: session.resolvedResult.errors,
             sessionId: session.id,
@@ -933,8 +1342,8 @@ export async function GetAvailableFeats(
         const allFeatsResponse = await featService.getAllFeats();
         const allFeats = allFeatsResponse.results;
 
-        // Filter available feats
-        const availableFeats = await AvailableFeatService.getAvailableFeats(
+        // Filter qualified feats (feats the character qualifies for)
+        const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
             character,
             resolutionResult.resolvedProgressions,
             classDetails,
@@ -943,8 +1352,8 @@ export async function GetAvailableFeats(
         );
 
         res.json({
-            results: availableFeats,
-            total: availableFeats.length
+            results: qualifiedFeats,
+            total: qualifiedFeats.length
         });
     } catch (error) {
         console.error('Error getting available feats:', error);

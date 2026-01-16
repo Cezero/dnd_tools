@@ -30,6 +30,7 @@ import {
     MonsterCacheResponseSchema,
     ItemCacheResponseSchema,
     SourceBookCacheResponseSchema,
+    CompanionCacheResponseSchema,
 } from '@shared/schema';
 
 import { createQueryHooks } from './QueryHooksFactory';
@@ -163,6 +164,18 @@ const sourcebooksCacheConfig = createQueryHooks({
 });
 
 /**
+ * Companions cache endpoint - lightweight companion data for dropdowns and filtering
+ * Contains: id, monsterId, name (from monster), type, and minLevel (see CompanionCacheSchema)
+ */
+const companionsCacheConfig = createQueryHooks({
+    path: '/companions/cache',
+    method: 'GET',
+    responseSchema: CompanionCacheResponseSchema,
+    queryKey: 'companions-cache',
+    queryKeyBuilder: () => ['companions-cache'],
+});
+
+/**
  * Cache Query Hooks Export
  * 
  * Provides both React hooks (useXxxCache) and imperative methods (getXxxCache) for all cache endpoints.
@@ -182,6 +195,7 @@ export const CacheQueryHooks = {
     useMonstersCache: monstersCacheConfig.useQuery,
     useItemsCache: itemsCacheConfig.useQuery,
     useSourcebooksCache: sourcebooksCacheConfig.useQuery,
+    useCompanionsCache: companionsCacheConfig.useQuery,
 
     // Add imperative methods
     getClassesCache: (params?: unknown) => classesCacheConfig.fetch(params),
@@ -194,6 +208,7 @@ export const CacheQueryHooks = {
     getMonstersCache: (params?: unknown) => monstersCacheConfig.fetch(params),
     getItemsCache: (params?: unknown) => itemsCacheConfig.fetch(params),
     getSourcebooksCache: (params?: unknown) => sourcebooksCacheConfig.fetch(params),
+    getCompanionsCache: (params?: unknown) => companionsCacheConfig.fetch(params),
 
     // Expose query functions for advanced usage
     getClassesCacheQueryFn: classesCacheConfig.queryFn,
@@ -206,4 +221,5 @@ export const CacheQueryHooks = {
     getMonstersCacheQueryFn: monstersCacheConfig.queryFn,
     getItemsCacheQueryFn: itemsCacheConfig.queryFn,
     getSourcebooksCacheQueryFn: sourcebooksCacheConfig.queryFn,
+    getCompanionsCacheQueryFn: companionsCacheConfig.queryFn,
 };

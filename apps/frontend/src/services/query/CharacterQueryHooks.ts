@@ -7,6 +7,7 @@ import {
     CreateResponseSchema,
     CharacterSchema,
     GetAllCharactersResponseSchema,
+    GetAllCharactersAdminResponseSchema,
     CharacterWithAllDetailsSchema,
     CharacterSpellSelectionResponseSchema,
     CharacterSpellSelectionParamSchema,
@@ -70,7 +71,7 @@ const characterWithAllDetailsConfig = createQueryHooks({
 const getAllCharactersAdminConfig = createQueryHooks({
     path: '/characters/admin/all',
     method: 'GET',
-    responseSchema: GetAllCharactersResponseSchema,
+    responseSchema: GetAllCharactersAdminResponseSchema,
     queryKey: 'characters',
     queryKeyBuilder: () => ['characters', 'admin', 'all'],
 });
@@ -132,19 +133,24 @@ export const CharacterQueryHooks = {
     getCharacterWithAllDetailsQueryKey: (characterId: number) => characterWithAllDetailsConfig.queryKeyBuilder({ pathParams: { id: characterId } }),
 
     // Spell selection hooks
+    /**
+     * @deprecated Use spell selection data from resolved character response (ResolvedCharacterResult.spellSelection) instead.
+     * Spell selection data is now calculated during character resolution and included in the resolved character response.
+     * This hook may be removed in a future version.
+     */
     useGetCharacterSpellSelection: (characterId: number, classId: number, options?: unknown) => {
         return getCharacterSpellSelectionConfig.useQuery(
-            { pathParams: { id: characterId, classId: classId.toString() } },
+            { pathParams: { id: characterId, classId } },
             options
         );
     },
     useAddSpellKnown: addSpellKnownConfig.useMutation,
     useRemoveSpellKnown: removeSpellKnownConfig.useMutation,
 
-    getCharacterSpellSelection: (characterId: number, classId: number) => getCharacterSpellSelectionConfig.fetch({ pathParams: { id: characterId, classId: classId.toString() } }),
+    getCharacterSpellSelection: (characterId: number, classId: number) => getCharacterSpellSelectionConfig.fetch({ pathParams: { id: characterId, classId } }),
     addSpellKnown: (data: unknown, queryClient?: QueryClient) => addSpellKnownConfig.mutate({ requestData: data }, queryClient),
     removeSpellKnown: (data: unknown, queryClient?: QueryClient) => removeSpellKnownConfig.mutate({ requestData: data }, queryClient),
 
     getCharacterSpellSelectionQueryFn: getCharacterSpellSelectionConfig.queryFn,
-    getCharacterSpellSelectionQueryKey: (characterId: number, classId: number) => getCharacterSpellSelectionConfig.queryKeyBuilder({ pathParams: { id: characterId, classId: classId.toString() } }),
+    getCharacterSpellSelectionQueryKey: (characterId: number, classId: number) => getCharacterSpellSelectionConfig.queryKeyBuilder({ pathParams: { id: characterId, classId } }),
 };

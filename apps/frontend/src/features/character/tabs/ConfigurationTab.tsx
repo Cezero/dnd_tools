@@ -4,6 +4,7 @@ import { useAuthAuto } from '@/components/auth';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { useCacheFunctions } from '@/services/cache';
 import {
     EDITION_LIST,
     hasAdvancedOptions,
@@ -13,13 +14,13 @@ import {
     SourceType,
     EditionId,
 } from '@shared/static-data';
-import { GetCharacterOptionsSourceBookList, GetSourceBookSettingList, GetSourceBookTypeList } from '@shared/utils';
 
 export function ConfigurationTab({
     state,
     updateState,
 }: TabComponentProps): React.JSX.Element {
     const { user } = useAuthAuto();
+    const { getCharacterOptionsSourceBooks, getSourceBooksBySetting, getSourceBooksByType } = useCacheFunctions();
     const [disallowedSources, setDisallowedSources] = useState<number[]>([]);
     const [excludeForgottenRealms, setExcludeForgottenRealms] = useState<boolean>(false);
     const [excludeEberron, setExcludeEberron] = useState<boolean>(false);
@@ -51,8 +52,8 @@ export function ConfigurationTab({
     useEffect(() => {
         if (!state.editionId) return;
 
-        const forgottenRealmsSources = GetSourceBookSettingList(Setting.ForgottenRealms, state.editionId as EditionId);
-        const eberronSources = GetSourceBookSettingList(Setting.Eberron, state.editionId as EditionId);
+        const forgottenRealmsSources = getSourceBooksBySetting(Setting.ForgottenRealms, state.editionId as EditionId);
+        const eberronSources = getSourceBooksBySetting(Setting.Eberron, state.editionId as EditionId);
 
         const frIds = forgottenRealmsSources.map(s => s.id);
         const eberronIds = eberronSources.map(s => s.id);
@@ -64,7 +65,7 @@ export function ConfigurationTab({
         // Check if all Eberron sources are disallowed
         const allEberronDisallowed = eberronIds.length > 0 && eberronIds.every(id => disallowedSources.includes(id));
         setExcludeEberron(allEberronDisallowed);
-    }, [state.editionId, disallowedSources]);
+    }, [state.editionId, disallowedSources, getSourceBooksBySetting]);
 
     // Check if current edition has advanced options
     const showAdvancedOptions = state.editionId && hasAdvancedOptions(state.editionId);
@@ -74,11 +75,11 @@ export function ConfigurationTab({
         if (!state.editionId) return [];
 
         // Get character options sourcebooks for the edition
-        const characterOptionsSources = GetCharacterOptionsSourceBookList(state.editionId as EditionId);
+        const characterOptionsSources = getCharacterOptionsSourceBooks(state.editionId as EditionId);
 
         // Get setting-specific sourcebooks to exclude
-        const forgottenRealmsSources = GetSourceBookSettingList(Setting.ForgottenRealms, state.editionId as EditionId);
-        const eberronSources = GetSourceBookSettingList(Setting.Eberron, state.editionId as EditionId);
+        const forgottenRealmsSources = getSourceBooksBySetting(Setting.ForgottenRealms, state.editionId as EditionId);
+        const eberronSources = getSourceBooksBySetting(Setting.Eberron, state.editionId as EditionId);
 
         // Filter out excluded setting books
         let filteredSources = characterOptionsSources;
@@ -94,7 +95,7 @@ export function ConfigurationTab({
         }
 
         // Get Core book IDs for this edition
-        const coreBooks = GetSourceBookTypeList(SourceType.Core, state.editionId as EditionId);
+        const coreBooks = getSourceBooksByType(SourceType.Core, state.editionId as EditionId);
 
         // Convert to format with alwaysAvailable flag (Core books)
         return filteredSources.map(source => ({
@@ -102,7 +103,7 @@ export function ConfigurationTab({
             label: source.name,
             alwaysAvailable: coreBooks.some(book => book.id === source.id)
         }));
-    }, [state.editionId, excludeForgottenRealms, excludeEberron]);
+    }, [state.editionId, excludeForgottenRealms, excludeEberron, getCharacterOptionsSourceBooks, getSourceBooksBySetting, getSourceBooksByType]);
 
     const handleDisallowedSourceToggle = (sourceId: number) => {
         // Check if this source is always available
@@ -130,7 +131,7 @@ export function ConfigurationTab({
     const handleExclusionToggle = (setting: Setting, isExcluded: boolean) => {
         if (!state.editionId) return;
 
-        const settingSources = GetSourceBookSettingList(setting, state.editionId as EditionId);
+        const settingSources = getSourceBooksBySetting(setting, state.editionId as EditionId);
         const settingIds = settingSources.map(s => s.id);
 
         let newDisallowed: number[];

@@ -12,10 +12,13 @@ import {
     UpdateResponseSchema,
     UpdateFeatureProgressionsRequestSchema,
     GetFeatureProgressionsResponseSchema,
+    CloneClassFeaturesRequestSchema,
+    ForkProgressionRequestSchema,
+    ForkProgressionResponseSchema,
 } from '@shared/schema';
 
 /**
- * FeatureSystemService for admin-only feature management operations
+ * FeatureSystemApi for admin-only feature management operations
  * 
  * This service provides CRUD operations for the unified FeatureSystem.
  * All operations require admin privileges.
@@ -91,5 +94,20 @@ export const FeatureSystemApi = {
         method: 'POST',
         requestSchema: FeatureQuerySchema,
         responseSchema: GetFeatureListResponseSchema,
+    }),
+
+    // Clone and Fork operations (for variant class creation)
+    cloneClassFeatures: typedApi<typeof CloneClassFeaturesRequestSchema, typeof UpdateResponseSchema>({
+        path: '/features/clone-class-features',
+        method: 'POST',
+        requestSchema: CloneClassFeaturesRequestSchema,
+        responseSchema: UpdateResponseSchema,
+    }),
+
+    forkProgression: typedApi<typeof ForkProgressionRequestSchema, typeof ForkProgressionResponseSchema>({
+        path: '/features/fork-progression',
+        method: 'POST',
+        requestSchema: ForkProgressionRequestSchema,
+        responseSchema: ForkProgressionResponseSchema,
     }),
 }; 

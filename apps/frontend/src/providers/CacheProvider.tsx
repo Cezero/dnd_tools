@@ -90,6 +90,12 @@ const CachePrefetcher: React.FC<{ isAuthenticated: boolean; authLoading: boolean
                         staleTime: Infinity,
                         gcTime: Infinity,
                     }),
+                    queryClient.fetchQuery({
+                        queryKey: ['companions-cache'],
+                        queryFn: () => CacheQueryHooks.getCompanionsCacheQueryFn(),
+                        staleTime: Infinity,
+                        gcTime: Infinity,
+                    }),
                 ]);
 
                 setIsLoading(false);

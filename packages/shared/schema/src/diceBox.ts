@@ -1,9 +1,11 @@
 import { z } from 'zod';
+
+import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 
 // Base DiceBox admin configuration schema (includes id, no createdAt/updatedAt)
 export const DiceBoxAdminConfigSchema = z.object({
-    id: z.number().int().positive('Dice configuration ID must be a positive integer'),
+    id: commonValidations.positiveInt('Dice configuration ID'),
     name: z.string().default('Default Configuration'),
     isDefault: z.boolean().default(false),
     gravity: z.number().min(0).max(5).default(1),
@@ -27,7 +29,7 @@ export const DiceBoxAdminConfigSchema = z.object({
 
 // Parameter schemas
 export const DiceBoxConfigIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)), // Follow established pattern
+    id: numericParam(),
 });
 
 // Response schemas following established patterns
@@ -49,8 +51,8 @@ export type DiceBoxAdminConfig = z.infer<typeof DiceBoxAdminConfigSchema>;
 export type GetAllDiceConfigsResponse = z.infer<typeof GetAllDiceConfigsResponseSchema>;
 // User dice config override schema
 export const UserDiceConfigOverrideSchema = z.object({
-    id: z.number().int().positive('Override ID must be a positive integer'),
-    userId: z.number().int().positive('User ID must be a positive integer'),
+    id: commonValidations.positiveInt('Override ID'),
+    userId: commonValidations.positiveInt('User ID'),
     propertyName: z.string().min(1, 'Property name is required').max(50, 'Property name must be less than 50 characters').trim(),
     propertyValue: z.string().min(1, 'Property value is required').max(100, 'Property value must be less than 100 characters').trim(),
 });

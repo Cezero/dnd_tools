@@ -60,7 +60,28 @@ export function useCharacterResolution(characterId: number | null) {
     }, [characterId, reinitializeTrigger]);
 
     /**
-     * Apply an update to the resolution session
+     * Apply an update to the resolution session.
+     * 
+     * **IMPORTANT**: This method is called automatically by CharacterEdit useEffect hooks.
+     * Tab components should NOT call this method directly.
+     * 
+     * **Standardized Pattern**: 
+     * - Tabs update state via `updateState()`
+     * - CharacterEdit useEffect hooks watch state changes
+     * - CharacterEdit automatically calls this method to sync changes
+     * 
+     * **When to use manually**:
+     * - Only if you need to update the resolution session outside of the standard pattern
+     * - For operations that don't go through state (e.g., direct API calls)
+     * 
+     * **For tabs**: Use `refreshState()` if you need to manually refresh resolution state
+     * after operations that update the database directly (e.g., spell add/remove).
+     * 
+     * @param update - The character update to apply
+     * @returns Promise resolving to updated resolved character result
+     * 
+     * @see CharacterEdit component - Uses this method via useEffect hooks
+     * @see refreshState - For manual state refresh after direct API operations
      */
     const applyUpdate = useCallback(async (update: CharacterUpdate): Promise<ResolvedCharacterResult | null> => {
         if (!characterId || !sessionId) {
@@ -139,7 +160,35 @@ export function useCharacterResolution(characterId: number | null) {
     }, [characterId, sessionId]);
 
     /**
-     * Refresh current state from server
+     * Refresh resolution state from the server.
+     * 
+     * **Purpose**: Manually refresh the resolution state after operations that update the database
+     * directly (e.g., spell add/remove operations). This keeps the frontend resolution state
+     * synchronized with backend state.
+     * 
+     * **When to Use**:
+     * - After spell operations (`addSpellKnown`/`removeSpellKnown`) that update the database
+     * - After any direct database operation that should update the resolution session
+     * - When you need to manually refresh resolution state
+     * 
+     * **When NOT to Use**:
+     * - For normal character updates (use state → useEffect → applyUpdate pattern instead)
+     * - When state changes are handled by CharacterEdit useEffect hooks
+     * 
+     * **Standardized Pattern**:
+     * - Operations that update state: Use state → useEffect → applyUpdate (automatic)
+     * - Operations that update database directly: Use API call → refreshState() (manual)
+     * 
+     * @example
+     * // After adding a spell (direct database operation)
+     * await CharacterQueryHooks.addSpellKnown({...});
+     * if (resolution.sessionId) {
+     *   await resolution.refreshState();
+     * }
+     * 
+     * @see SpellSelectionTab.handleLearnSpell - Uses this after adding spells
+     * @see SpellSelectionTab.handleRemoveSpell - Uses this after removing spells
+     * @see applyUpdate - For state-based updates (called automatically by CharacterEdit)
      */
     const refreshState = useCallback(async (): Promise<void> => {
         if (!characterId || !sessionId) {
@@ -162,49 +211,6 @@ export function useCharacterResolution(characterId: number | null) {
     }, [characterId, sessionId]);
 
     /**
-     * Updates the resolved character state from an external source.
-     * 
-     * **Purpose**: Allows external operations (like spell add/remove) to update the resolution
-     * state without going through the normal `applyUpdate` flow. This keeps the frontend
-     * resolution state synchronized with backend state after direct database operations.
-     * 
-     * **Spell Operation Integration**:
-     * - Called by `SpellSelectionTab` after `addSpellKnown` or `removeSpellKnown` operations
-     * - Receives updated `ResolvedCharacterResult` from backend response
-     * - Updates local state immediately, causing `CharacterEdit` to re-render with fresh data
-     * - Updates `sessionId` if it changed in the response
-     * 
-     * **When to Use**:
-     * - After spell operations that return `resolvedCharacter` in the response
-     * - When backend operations update the character and re-resolve features
-     * - To keep frontend resolution state in sync without full re-initialization
-     * 
-     * **When NOT to Use**:
-     * - For normal character updates (use `applyUpdate` instead)
-     * - When you need to trigger validation or choice identification
-     * 
-     * @param newResolvedCharacter - The updated resolved character result from the backend.
-     *                                Should be a complete `ResolvedCharacterResult` with all fields populated.
-     * 
-     * @example
-     * // After adding a spell
-     * const response = await CharacterQueryHooks.addSpellKnown({...});
-     * if (response?.resolvedCharacter) {
-     *   resolution.updateResolvedCharacter(response.resolvedCharacter);
-     * }
-     * 
-     * @see SpellSelectionTab.handleLearnSpell - Uses this after adding spells
-     * @see SpellSelectionTab.handleRemoveSpell - Uses this after removing spells
-     */
-    const updateResolvedCharacter = useCallback((newResolvedCharacter: ResolvedCharacterResult): void => {
-        setResolvedCharacter(newResolvedCharacter);
-        // Update sessionId if it changed
-        if (newResolvedCharacter.sessionId && newResolvedCharacter.sessionId !== sessionId) {
-            setSessionId(newResolvedCharacter.sessionId);
-        }
-    }, [sessionId]);
-
-    /**
      * Cleanup on unmount - cancel session if still active
      */
     useEffect(() => {
@@ -225,16 +231,5 @@ export function useCharacterResolution(characterId: number | null) {
         saveSession,
         cancelSession,
         refreshState,
-        updateResolvedCharacter,
     };
 }
-
-
-
-
-
-
-
-
-
-

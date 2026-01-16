@@ -23,9 +23,7 @@ import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { CreateFeatureRequest, CreateFeatureSchema, UpdateFeatureRequest, UpdateFeatureSchema, GetFeatureResponse, FeatureProgression, FeaturePrerequisite, Feature } from '@shared/schema';
 import { DisplayType, FEATURE_PRE_REQ_LIST, FeaturePrerequisiteType, FeatureSourceType, ABILITY_LIST } from '@shared/static-data';
 
-import { FeatureEditFormProps } from './types';
-
-type FeatureFormData = CreateFeatureRequest | UpdateFeatureRequest;
+import type { FeatureEditFormProps, FeatureFormData, PrerequisiteDetailFormProps } from './types';
 
 export function FeatureEditForm({
     featureId = 'new',
@@ -221,7 +219,6 @@ export function FeatureEditForm({
                 raceId: null,
                 domainId: null,
                 featId: null,
-                variantOverrideId: null,
                 entities: [],
                 ...baseProgression
             } as FeatureProgression;
@@ -232,21 +229,20 @@ export function FeatureEditForm({
             sourceType: context.sourceType,
             level: 1,
             featureId: feature?.id || 0,
-            classId: null,
-            raceId: null,
+            classes: [],
+            races: [],
             domainId: null,
             featId: null,
-            variantOverrideId: null,
             entities: [],
             ...baseProgression
         } as FeatureProgression;
 
         switch (context.parentType) {
             case 'class':
-                progression.classId = context.parentId;
+                progression.classes = [{ progressionId: 0, classId: context.parentId }];
                 break;
             case 'race':
-                progression.raceId = context.parentId;
+                progression.races = [{ progressionId: 0, raceId: context.parentId }];
                 break;
             case 'domain':
                 progression.domainId = context.parentId;
@@ -779,10 +775,6 @@ export function FeatureEditForm({
     );
 }
 
-interface PrerequisiteDetailFormProps {
-    index: number;
-}
-
 function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
     const { formData } = useFormContext();
     const prerequisites = formData.prerequisites as FeaturePrerequisite[] || [];
@@ -796,7 +788,7 @@ function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
     const { data: classesCacheData } = CacheQueryHooks.useClassesCache();
     const classOptions = classesCacheData?.results || [];
 
-    const showMinValue = prerequisite.type !== FeaturePrerequisiteType.Feat;
+    const showMinValue = prerequisite.type !== FeaturePrerequisiteType.Feat && prerequisite.type !== FeaturePrerequisiteType.Proficiency;
 
     return (
         <div className="space-y-4">
@@ -874,7 +866,7 @@ function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
                             field={`prerequisites.${index}.minValue`}
                             label="Minimum Value"
                             type="number"
-                            min={1}
+                            min={0}
                             required
                             componentExtraClassName="flex items-center gap-2"
                             inputExtraClassName="w-16"

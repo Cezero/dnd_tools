@@ -1,4 +1,6 @@
 import { z } from 'zod';
+
+import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 
@@ -19,20 +21,20 @@ export const SpellComponentMapSchema = z.object({
 });
 
 export const SpellLevelMappingSchema = z.object({
-    classId: z.number().int().positive('Class ID must be a positive integer'),
-    level: z.number().int().min(0, 'Level must be non-negative').max(9, 'Level must be at most 9'),
+    classId: commonValidations.positiveInt('Class ID'),
+    level: commonValidations.nonNegativeInt('Level', 9),
 });
 
 export const SpellSchema = z.object({
-    id: z.number().int().positive('Spell ID must be a positive integer'),
-    name: z.string().min(1, 'Spell name is required').max(200, 'Spell name must be less than 200 characters').trim(),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
-    baseLevel: z.number().int().min(0, 'Base level must be non-negative').max(20, 'Base level must be at most 20'),
+    id: commonValidations.positiveInt('Spell ID'),
+    name: commonValidations.name(200),
+    editionId: commonValidations.positiveInt('Edition ID'),
+    baseLevel: commonValidations.nonNegativeInt('Base level', 20),
     summary: z.string().max(1000, 'Summary must be less than 1000 characters').nullable(),
-    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
+    description: commonValidations.description(10000).nullable(),
     castingTime: z.string().max(200, 'Casting time must be less than 200 characters').nullable(),
     range: z.string().max(200, 'Range must be less than 200 characters').nullable(),
-    rangeTypeId: z.number().int().positive('Range type ID must be a positive integer').nullable(),
+    rangeTypeId: commonValidations.positiveInt('Range type ID').nullable(),
     rangeValue: z.string().max(100, 'Range value must be less than 100 characters').nullable(),
     area: z.string().max(200, 'Area must be less than 200 characters').nullable(),
     duration: z.string().max(200, 'Duration must be less than 200 characters').nullable(),
@@ -54,12 +56,12 @@ export const GetAllSpellsResponseSchema = QueryResponseSchema.extend({
 });
 
 export const SpellIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export const ClassSpellListEntrySchema = z.object({
-    spellId: z.number().int().positive('Spell ID must be a positive integer'),
-    level: z.number().int().min(0, 'Level must be non-negative').max(9, 'Level must be at most 9'),
+    spellId: commonValidations.positiveInt('Spell ID'),
+    level: commonValidations.nonNegativeInt('Level', 9),
 });
 
 export const ClassSpellListResponseSchema = QueryResponseSchema.extend({
@@ -67,8 +69,8 @@ export const ClassSpellListResponseSchema = QueryResponseSchema.extend({
 });
 
 export const SpellClassParamSchema = z.object({
-    classId: z.string().transform((val: string) => parseInt(val)),
-    level: z.string().transform((val: string) => parseInt(val)).optional(),
+    classId: numericParam(),
+    level: numericParam().optional(),
 });
 
 export const UpdateSpellSchema = SpellSchema.omit({
@@ -124,9 +126,9 @@ export type SpellCacheEntry = z.infer<typeof SpellCacheSchema>;
 
 // Spell selection schemas
 export const CharacterSpellSelectionEntrySchema = SpellSchema.extend({
-    classSpellLevel: z.number().int().min(0, 'Class spell level must be non-negative').max(9, 'Class spell level must be at most 9').nullable(),
+    classSpellLevel: commonValidations.nonNegativeInt('Class spell level', 9).nullable(),
     isKnown: z.boolean().default(false),
-    domainId: z.number().int().positive('Domain ID must be a positive integer').nullable().optional(),
+    domainId: commonValidations.positiveInt('Domain ID').nullable().optional(),
     domainName: z.string().nullable().optional(),
     domainSpellLevel: z.number().int().min(1, 'Domain spell level must be at least 1').max(9, 'Domain spell level must be at most 9').nullable().optional(),
 });
@@ -137,10 +139,10 @@ export const CharacterSpellSelectionResponseSchema = QueryResponseSchema.extend(
 });
 
 export const AddSpellKnownRequestSchema = z.object({
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    classId: z.number().int().positive('Class ID must be a positive integer'),
-    spellId: z.number().int().positive('Spell ID must be a positive integer'),
-    advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
+    characterId: commonValidations.positiveInt('Character ID'),
+    classId: commonValidations.positiveInt('Class ID'),
+    spellId: commonValidations.positiveInt('Spell ID'),
+    advancementId: commonValidations.positiveInt('Advancement ID'),
     isFreeGrant: z.boolean().default(false).optional(),
 });
 
@@ -150,39 +152,22 @@ export const AddSpellKnownRequestSchema = z.object({
  * Includes:
  * - Operation status message
  * - Free spell counts (for spellbook classes)
- * - Updated resolved character data (if resolution session exists)
  * 
- * The resolvedCharacter field contains the complete resolution result after
- * the spell addition, allowing the frontend to keep its resolution state in sync.
+ * **Sync Pattern**: The backend automatically updates the resolution session if one exists,
+ * but does not return the resolved character in the response. The frontend should call
+ * `resolution.refreshState()` after spell operations to refresh resolution state.
  * 
- * @see ResolvedCharacterResult - For resolved character structure
+ * This follows the standardized pattern where database operations update the session,
+ * and the frontend refreshes resolution state separately.
+ * 
  * @see characterService.addSpellKnown - For implementation
+ * @see useCharacterResolution.refreshState - For frontend state refresh
  */
 export const AddSpellKnownResponseSchema = z.object({
     message: z.string(),
     freeSpellsUsed: z.number().int().nonnegative().optional(),
     availableFreeSpells: z.number().int().nonnegative().optional(),
     remainingFreeSpells: z.number().int().optional(),
-    resolvedCharacter: z.object({
-        resolvedProgressions: z.array(z.any()), // FeatureProgression[] - complex type, using any for now
-        pendingChoices: z.array(z.any()), // PendingChoice[] - complex type, using any for now
-        classSkills: z.array(z.object({
-            skillId: z.number().int().positive(),
-            skillSubId: z.number().int().nullable(),
-        })),
-        skillBonuses: z.array(z.object({
-            skillId: z.number().int().positive(),
-            skillSubId: z.number().int().nullable(),
-            bonus: z.number(),
-            source: z.string(),
-        })),
-        grantedFeats: z.array(z.number().int().positive()),
-        availableFeats: z.number().int().nonnegative(),
-        availableFighterBonusFeats: z.number().int().nonnegative(),
-        warnings: z.array(z.string()),
-        errors: z.array(z.string()),
-        sessionId: z.string().uuid(),
-    }).optional(),
 });
 
 export const RemoveSpellKnownRequestSchema = AddSpellKnownRequestSchema.omit({
@@ -195,13 +180,16 @@ export const RemoveSpellKnownRequestSchema = AddSpellKnownRequestSchema.omit({
  * Includes:
  * - Operation status message
  * - Free spell counts (for spellbook classes, if removed spell was a free grant)
- * - Updated resolved character data (if resolution session exists)
  * 
- * The resolvedCharacter field contains the complete resolution result after
- * the spell removal, allowing the frontend to keep its resolution state in sync.
+ * **Sync Pattern**: The backend automatically updates the resolution session if one exists,
+ * but does not return the resolved character in the response. The frontend should call
+ * `resolution.refreshState()` after spell operations to refresh resolution state.
  * 
- * @see ResolvedCharacterResult - For resolved character structure
+ * This follows the standardized pattern where database operations update the session,
+ * and the frontend refreshes resolution state separately.
+ * 
  * @see characterService.removeSpellKnown - For implementation
+ * @see useCharacterResolution.refreshState - For frontend state refresh
  */
 export const RemoveSpellKnownResponseSchema = AddSpellKnownResponseSchema;
 

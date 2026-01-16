@@ -118,7 +118,6 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
         if (timeUntilExpiration > refreshThreshold) {
             refreshTokenTimeoutRef.current = setTimeout(refreshTokenRef.current, (timeUntilExpiration - refreshThreshold) * 1000);
-            console.log(`Token refresh scheduled in ${(timeUntilExpiration - refreshThreshold).toFixed(0)} seconds.`);
         } else if (timeUntilExpiration > 0) {
             console.log('Token is nearing expiration, refreshing now.');
             refreshTokenRef.current();
@@ -197,7 +196,6 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     const UpdatePreferredEdition = async (editionId: number): Promise<boolean> => {
         try {
             const responseData = await UserProfileApi.updateUserProfile({ preferredEditionId: editionId });
-            console.log('Response data from updateUserProfile:', responseData);
             const token = responseData.token;
             const user = responseData.user;
 

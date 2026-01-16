@@ -40,6 +40,7 @@ import type {
     CreateCharacterRequest,
     CreateResponse,
     GetAllCharactersResponse,
+    GetAllCharactersAdminResponse,
     UpdateResponse,
     // New types for advancement and spell preparation
     CreateAdvancementRequest,
@@ -47,7 +48,7 @@ import type {
     CharacterAdvancementWithDetailsResponse,
     CreateSpellPreparationRequest,
     UpdateSpellPreparationRequest,
-    CharacterSpellPreparationWithMetamagicResponse,
+    CharacterSpellPreparationResponse,
     CreateCharacterAbilityScoreRequest,
     UpdateCharacterAbilityScoreRequest,
     CharacterAbilityScoreResponse,
@@ -65,8 +66,16 @@ import type {
     AddSpellKnownResponse,
     RemoveSpellKnownResponse,
     FeatureProgression,
+    UpdateMoneyRequest,
+    AddItemRequest,
+    UpdateWoundsRequest,
+    UpdateNotesRequest,
+    SyncItemsRequest,
+    SyncSpellPreparationsRequest,
+    SyncSpellsKnownRequest,
+    ResolvedCharacterResult,
 } from '@shared/schema';
-import { EditionId, ARMOR_CATEGORY_ENUM, EntityAppliesToType, EntityType } from '@shared/static-data';
+import { EditionId, ARMOR_CATEGORY_ENUM, EntityAppliesToType, EntityType, USES_FREQUENCY_ENUM, SpellSlotType } from '@shared/static-data';
 import {
     isGestaltCharacter,
     calculateGestaltCharacterStats,
@@ -76,15 +85,18 @@ import {
     type GestaltStats
 } from '@shared/utils';
 
+import type { CharacterService } from './types';
+import { AvailableFeatService } from '../characterResolution/availableFeatService';
 import { buildCharacterEditState } from '../characterResolution/characterEditStateBuilder';
 import { CharacterResolutionService } from '../characterResolution/characterResolutionService';
 import { CharacterSessionService } from '../characterResolution/characterSessionService';
 import { ResolvedFeatureService } from '../characterResolution/resolvedFeatureService';
 import type { ResolutionContext, UserChoices } from '../characterResolution/types';
 import { classService } from '../class/classService';
+import { featService } from '../feat/featService';
+import { featureSystemService } from '../featureSystem/featureSystemService';
 import { raceService } from '../race/raceService';
 import { spellService } from '../spell';
-import type { CharacterService } from './types';
 
 const prisma = new PrismaClient();
 
@@ -220,18 +232,12 @@ export const characterService: CharacterService = {
      * Architecture Decision: Separate admin method includes user information for
      * administrative oversight, while regular getAllCharacters only includes character data.
      * 
-     * @returns Promise resolving to GetAllCharactersResponse with all characters and user info
+     * @returns Promise resolving to GetAllCharactersAdminResponse with all characters and user info
      */
-    async getAllCharactersAdmin(): Promise<GetAllCharactersResponse> {
+    async getAllCharactersAdmin(): Promise<GetAllCharactersAdminResponse> {
         const [characters, total] = await Promise.all([
             prisma.userCharacter.findMany({
                 include: {
-                    race: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
                     user: {
                         select: {
                             id: true,
@@ -295,8 +301,11 @@ export const characterService: CharacterService = {
                 classLevelString = parts.join('/');
             }
 
+            // Exclude advancements from response (not in schema)
+            const { advancements: _advancements, ...characterBase } = character;
+
             return {
-                ...character,
+                ...characterBase,
                 characterLevel,
                 classLevelString,
             };
@@ -394,11 +403,7 @@ export const characterService: CharacterService = {
                     orderBy: { level: 'asc' },
                 },
                 abilityScores: true,
-                preparedSpells: {
-                    include: {
-                        metamagics: true,
-                    },
-                },
+                preparedSpells: true,
                 disallowedSources: true,
                 characterItems: true,
                 attackDefinitions: true,
@@ -448,9 +453,16 @@ export const characterService: CharacterService = {
             return advWithoutNested;
         });
 
+        // Cast preparedSpells slotType to match schema type
+        const preparedSpells = character.preparedSpells.map(prep => ({
+            ...prep,
+            slotType: prep.slotType as SpellSlotType,
+        }));
+
         return {
             ...character,
             advancements: advancementsWithoutNested,
+            preparedSpells,
             characterLevel,
             classLevelString,
         };
@@ -900,10 +912,17 @@ export const characterService: CharacterService = {
 
         // Auto-grant 0th level spells for spellbook classes on first level
         // Check if this class is a spellbook class by checking for FeatureProgression with SpellbookSpell entity
+        // Check if class has spellbook spell feature via many-to-many relationship
+        const classLinks = await prisma.featureProgressionClassMap.findMany({
+            where: { classId: advancementData.classId },
+            select: { progressionId: true }
+        });
+        const progressionIds = classLinks.map(link => link.progressionId);
+
         const isSpellbookClass = await prisma.featureEntity.findFirst({
             where: {
                 featureProgression: {
-                    classId: advancementData.classId,
+                    id: { in: progressionIds },
                     level: { lte: advancementData.level }
                 },
                 type: EntityType.Other,
@@ -1024,27 +1043,49 @@ export const characterService: CharacterService = {
     },
 
     // Spell preparation methods
-    async createSpellPreparation(data: CreateSpellPreparationRequest): Promise<CreateResponse> {
-        // Generate a unique prepKey
-        const prepKey = `${data.characterId}-${data.classId}-${data.spellId}-${data.spellLevel}-${Date.now()}`;
-
-        await prisma.characterSpellPreparation.create({
-            data: {
-                ...data,
-                prepKey,
+    async createSpellPreparation(characterId: number, data: CreateSpellPreparationRequest): Promise<CreateResponse> {
+        // Check if a preparation already exists with the same combination
+        const slotType = data.slotType ?? 0;
+        const existing = await prisma.characterSpellPreparation.findFirst({
+            where: {
+                characterId: characterId,
+                classId: data.classId,
+                spellId: data.spellId,
+                spellLevel: data.spellLevel,
+                slotType: slotType,
+                featId: data.featId ?? null,
             },
         });
 
-        return { id: prepKey, message: 'Spell preparation created successfully' };
+        let result;
+        if (existing) {
+            // Update existing preparation by incrementing quantity
+            result = await prisma.characterSpellPreparation.update({
+                where: { id: existing.id },
+                data: {
+                    quantity: {
+                        increment: data.quantity,
+                    },
+                },
+            });
+        } else {
+            // Create new preparation
+            result = await prisma.characterSpellPreparation.create({
+                data: {
+                    characterId: characterId,
+                    ...data,
+                    slotType: slotType,
+                },
+            });
+        }
+
+        return { id: result.id.toString(), message: 'Spell preparation created successfully' };
     },
 
-    async updateSpellPreparation(characterId: number, prepKey: string, data: UpdateSpellPreparationRequest): Promise<UpdateResponse> {
+    async updateSpellPreparation(preparationId: number, data: UpdateSpellPreparationRequest): Promise<UpdateResponse> {
         await prisma.characterSpellPreparation.update({
             where: {
-                characterId_prepKey: {
-                    characterId,
-                    prepKey,
-                }
+                id: preparationId,
             },
             data,
         });
@@ -1052,28 +1093,28 @@ export const characterService: CharacterService = {
         return { message: 'Spell preparation updated successfully' };
     },
 
-    async deleteSpellPreparation(characterId: number, prepKey: string): Promise<UpdateResponse> {
+    async deleteSpellPreparation(preparationId: number): Promise<UpdateResponse> {
         await prisma.characterSpellPreparation.delete({
             where: {
-                characterId_prepKey: {
-                    characterId,
-                    prepKey,
-                }
+                id: preparationId,
             },
         });
 
         return { message: 'Spell preparation deleted successfully' };
     },
 
-    async getCharacterSpellPreparations(characterId: number): Promise<CharacterSpellPreparationWithMetamagicResponse[]> {
+    async getCharacterSpellPreparations(characterId: number): Promise<CharacterSpellPreparationResponse[]> {
         const preparations = await prisma.characterSpellPreparation.findMany({
-            where: { characterId },
+            where: { characterId: characterId },
             include: {
-                metamagics: true,
+                feat: true,
             },
         });
 
-        return preparations as CharacterSpellPreparationWithMetamagicResponse[];
+        return preparations.map(prep => ({
+            ...prep,
+            slotType: prep.slotType as SpellSlotType,
+        })) as CharacterSpellPreparationResponse[];
     },
 
     // Character ability score methods
@@ -1188,13 +1229,14 @@ export const characterService: CharacterService = {
         return disallowedSource as CharacterDisallowedSource;
     },
 
-    async removeDisallowedSource(characterId: number, sourceBookId: number): Promise<void> {
+    async removeDisallowedSource(characterId: number, sourceBookId: number): Promise<UpdateResponse> {
         await prisma.characterDisallowedSource.deleteMany({
             where: {
                 characterId,
                 sourceBookId,
             },
         });
+        return { message: 'Disallowed source removed successfully' };
     },
 
     async getDisallowedSources(characterId: number): Promise<CharacterDisallowedSource[]> {
@@ -1637,20 +1679,26 @@ export const characterService: CharacterService = {
     },
 
     async getCharacterDomains(characterId: number, classId: number): Promise<number[]> {
-        // Get all progressions for this class (regardless of sourceType)
+        // Get all progressions for this class via many-to-many relationship
         // Domain choices can be associated with any progression for the class
+        const classLinks = await prisma.featureProgressionClassMap.findMany({
+            where: { classId },
+            select: { progressionId: true }
+        });
+        const progressionIds = classLinks.map(link => link.progressionId);
+
         const progressions = await prisma.featureProgression.findMany({
             where: {
-                classId
+                id: { in: progressionIds }
             },
             select: {
                 id: true
             }
         });
 
-        const progressionIds = progressions.map(p => p.id);
+        const finalProgressionIds = progressions.map(p => p.id);
 
-        if (progressionIds.length === 0) {
+        if (finalProgressionIds.length === 0) {
             return [];
         }
 
@@ -1738,6 +1786,12 @@ export const characterService: CharacterService = {
                     select: {
                         sourceBookId: true
                     }
+                },
+                abilityScores: {
+                    select: {
+                        abilityId: true,
+                        value: true
+                    }
                 }
             }
         });
@@ -1800,7 +1854,10 @@ export const characterService: CharacterService = {
 
         if (resolvedProgressions) {
             for (const progression of resolvedProgressions) {
-                if (progression.classId === classId && progression.entities) {
+                // Check if this progression applies to the class via many-to-many relationship
+                const appliesToClass = progression.classes && progression.classes.some(c => c.classId === classId);
+
+                if (appliesToClass && progression.entities) {
                     for (const entity of progression.entities) {
                         if (entity.type === EntityType.Choice &&
                             entity.appliesTo === EntityAppliesToType.SpellbookSpell) {
@@ -1828,39 +1885,48 @@ export const characterService: CharacterService = {
                 );
             }
         } else {
-            // If resolved progressions are not provided, check database directly
-            // Check for spellbook class (EntityType.Other + SpellbookSpell)
-            const spellbookProgression = await prisma.featureEntity.findFirst({
-                where: {
-                    featureProgression: {
-                        classId,
-                        level: { lte: characterLevel }
-                    },
-                    type: EntityType.Other,
-                    appliesTo: EntityAppliesToType.SpellbookSpell
-                }
+            // If resolved progressions are not provided, check database directly via many-to-many relationship
+            // First, find progressions linked to this class
+            const classLinks = await prisma.featureProgressionClassMap.findMany({
+                where: { classId },
+                select: { progressionId: true }
             });
+            const progressionIds = classLinks.map(link => link.progressionId);
 
-            if (spellbookProgression) {
-                isSpellbookClass = true;
-            }
+            if (progressionIds.length > 0) {
+                // Check for spellbook class (EntityType.Other + SpellbookSpell)
+                const spellbookProgression = await prisma.featureEntity.findFirst({
+                    where: {
+                        progressionId: { in: progressionIds },
+                        featureProgression: {
+                            level: { lte: characterLevel }
+                        },
+                        type: EntityType.Other,
+                        appliesTo: EntityAppliesToType.SpellbookSpell
+                    }
+                });
 
-            // Check for 0th level spell grant (EntityType.Other + SpellbookSpell + appliesToId: 0 + appliesToSubId: -1)
-            const zeroLevelGrantEntity = await prisma.featureEntity.findFirst({
-                where: {
-                    featureProgression: {
-                        classId,
-                        level: { lte: characterLevel }
-                    },
-                    type: EntityType.Other,
-                    appliesTo: EntityAppliesToType.SpellbookSpell,
-                    appliesToId: 0,
-                    appliesToSubId: -1
+                if (spellbookProgression) {
+                    isSpellbookClass = true;
                 }
-            });
 
-            if (zeroLevelGrantEntity) {
-                hasZeroLevelGrant = true;
+                // Check for 0th level spell grant (EntityType.Other + SpellbookSpell + appliesToId: 0 + appliesToSubId: -1)
+                const zeroLevelGrantEntity = await prisma.featureEntity.findFirst({
+                    where: {
+                        progressionId: { in: progressionIds },
+                        featureProgression: {
+                            level: { lte: characterLevel }
+                        },
+                        type: EntityType.Other,
+                        appliesTo: EntityAppliesToType.SpellbookSpell,
+                        appliesToId: 0,
+                        appliesToSubId: -1
+                    }
+                });
+
+                if (zeroLevelGrantEntity) {
+                    hasZeroLevelGrant = true;
+                }
             }
         }
 
@@ -2131,35 +2197,73 @@ export const characterService: CharacterService = {
      * // A 5th-level wizard can cast 3rd-level spells (returns 3)
      */
     async getMaxCastableSpellLevel(classId: number, characterLevel: number): Promise<number> {
-        const classDetails = await prisma.class.findUnique({
-            where: { id: classId },
-            include: {
-                spellcastingProgression: {
-                    where: {
-                        classLevel: { lte: characterLevel }
-                    },
-                    include: {
-                        slots: true
-                    },
-                    orderBy: {
-                        classLevel: 'desc'
-                    },
-                    take: 1
+        // Phase 3: Support both old (direct classId) and new (featureProgressionId) patterns
+        // Try new pattern first (feature-based spellcasting)
+        const featureProgressions = await featureSystemService.getFeatureProgressionsByClassId(classId);
+
+        // Extract spellcasting progression IDs from feature entities
+        const spellcastingProgressionIds: number[] = [];
+        for (const progression of featureProgressions) {
+            if (progression.entities) {
+                for (const entity of progression.entities) {
+                    if (entity.appliesTo === EntityAppliesToType.SpellcastingProgression &&
+                        entity.appliesToId !== null &&
+                        typeof entity.appliesToId === 'number') {
+                        spellcastingProgressionIds.push(entity.appliesToId);
+                    }
                 }
             }
-        });
-
-        if (!classDetails?.spellcastingProgression || classDetails.spellcastingProgression.length === 0) {
-            return 0;
         }
 
-        const progression = classDetails.spellcastingProgression[0];
-        if (!progression.slots || progression.slots.length === 0) {
-            return 0;
+        let maxSpellLevel = 0;
+
+        if (spellcastingProgressionIds.length > 0) {
+            // New pattern: Get spellcasting from FeatureProgression entities
+            const progressions = await prisma.spellcastingProgression.findMany({
+                where: {
+                    id: { in: spellcastingProgressionIds },
+                    classLevel: { lte: characterLevel }
+                },
+                include: {
+                    slots: true
+                },
+                orderBy: {
+                    classLevel: 'desc'
+                },
+                take: 1
+            });
+
+            if (progressions.length > 0 && progressions[0].slots && progressions[0].slots.length > 0) {
+                maxSpellLevel = Math.max(...progressions[0].slots.map(slot => slot.spellLevel));
+            }
+        } else {
+            // Fallback to old pattern: Direct classId link (backward compatibility)
+            const classDetails = await prisma.class.findUnique({
+                where: { id: classId },
+                include: {
+                    spellcastingProgression: {
+                        where: {
+                            classLevel: { lte: characterLevel }
+                        },
+                        include: {
+                            slots: true
+                        },
+                        orderBy: {
+                            classLevel: 'desc'
+                        },
+                        take: 1
+                    }
+                }
+            });
+
+            if (classDetails?.spellcastingProgression && classDetails.spellcastingProgression.length > 0) {
+                const progression = classDetails.spellcastingProgression[0];
+                if (progression.slots && progression.slots.length > 0) {
+                    maxSpellLevel = Math.max(...progression.slots.map(slot => slot.spellLevel));
+                }
+            }
         }
 
-        // Find the highest spell level that has slots
-        const maxSpellLevel = Math.max(...progression.slots.map(slot => slot.spellLevel));
         return maxSpellLevel;
     },
 
@@ -2427,7 +2531,7 @@ export const characterService: CharacterService = {
 
         // Check for active resolution session
         const sessionService = new CharacterSessionService();
-        let resolvedCharacterResult: import('../characterResolution/characterSessionService').ResolvedCharacterResult | undefined;
+        let resolvedCharacterResult: ResolvedCharacterResult | undefined;
 
         if (updatedCharacter.userId) {
             const session = sessionService.getSession(characterId, updatedCharacter.userId);
@@ -2501,7 +2605,7 @@ export const characterService: CharacterService = {
 
                 // Build ResolvedCharacterResult
                 const classSkills = ResolvedFeatureService.getClassSkills(resolutionResult.resolvedProgressions);
-                const skillBonuses = ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
+                const skillBonuses = await ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
                 const grantedFeats = ResolvedFeatureService.getGrantedFeats(resolutionResult.resolvedProgressions);
 
                 // Calculate class levels for available feats
@@ -2517,7 +2621,7 @@ export const characterService: CharacterService = {
                     }
                 }
 
-                const availableFeats = ResolvedFeatureService.getAvailableFeats(
+                const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
                     resolutionResult.resolvedProgressions,
                     advancement.level,
                     classLevels
@@ -2526,14 +2630,25 @@ export const characterService: CharacterService = {
                     resolutionResult.resolvedProgressions
                 );
 
-                const resolvedCharacterResultForSession: import('../characterResolution/characterSessionService').ResolvedCharacterResult = {
+                // Calculate qualified feats (list of feats the character qualifies for)
+                const allFeatsResponse = await featService.getAllFeats();
+                const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
+                    updatedCharacter,
+                    resolutionResult.resolvedProgressions,
+                    classDetails,
+                    raceDetails,
+                    allFeatsResponse.results
+                );
+
+                const resolvedCharacterResultForSession: ResolvedCharacterResult = {
                     resolvedProgressions: resolutionResult.resolvedProgressions,
                     pendingChoices: resolutionResult.pendingChoices,
                     classSkills,
                     skillBonuses,
                     grantedFeats: grantedFeats.map(f => f.appliesToId!).filter((id): id is number => id !== null),
-                    availableFeats,
+                    availableFeatsCount,
                     availableFighterBonusFeats,
+                    qualifiedFeats,
                     warnings: resolutionResult.warnings,
                     errors: resolutionResult.errors,
                     sessionId: session.id,
@@ -2547,9 +2662,10 @@ export const characterService: CharacterService = {
         }
 
         // Build response with free spell counts if this was a free grant
+        // Note: Backend updates resolution session automatically, but does not return resolvedCharacter
+        // Frontend should call resolution.refreshState() to refresh resolution state
         const response: AddSpellKnownResponse = {
-            message: 'Spell added successfully',
-            resolvedCharacter: resolvedCharacterResult
+            message: 'Spell added successfully'
         };
 
         if (isFreeGrant && characterForValidation) {
@@ -2728,7 +2844,7 @@ export const characterService: CharacterService = {
 
         // Check for active resolution session
         const sessionService = new CharacterSessionService();
-        let resolvedCharacterResult: import('../characterResolution/characterSessionService').ResolvedCharacterResult | undefined;
+        let resolvedCharacterResult: ResolvedCharacterResult | undefined;
 
         if (updatedCharacter.userId) {
             const session = sessionService.getSession(characterId, updatedCharacter.userId);
@@ -2803,7 +2919,7 @@ export const characterService: CharacterService = {
 
                 // Build ResolvedCharacterResult
                 const classSkills = ResolvedFeatureService.getClassSkills(resolutionResult.resolvedProgressions);
-                const skillBonuses = ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
+                const skillBonuses = await ResolvedFeatureService.getSkillBonuses(resolutionResult.resolvedProgressions);
                 const grantedFeats = ResolvedFeatureService.getGrantedFeats(resolutionResult.resolvedProgressions);
 
                 // Calculate class levels for available feats
@@ -2819,7 +2935,7 @@ export const characterService: CharacterService = {
                     }
                 }
 
-                const availableFeats = ResolvedFeatureService.getAvailableFeats(
+                const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
                     resolutionResult.resolvedProgressions,
                     advancement.level,
                     classLevels
@@ -2828,14 +2944,25 @@ export const characterService: CharacterService = {
                     resolutionResult.resolvedProgressions
                 );
 
-                const resolvedCharacterResultForSession: import('../characterResolution/characterSessionService').ResolvedCharacterResult = {
+                // Calculate qualified feats (list of feats the character qualifies for)
+                const allFeatsResponse = await featService.getAllFeats();
+                const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
+                    updatedCharacter,
+                    resolutionResult.resolvedProgressions,
+                    classDetails,
+                    raceDetails,
+                    allFeatsResponse.results
+                );
+
+                const resolvedCharacterResultForSession: ResolvedCharacterResult = {
                     resolvedProgressions: resolutionResult.resolvedProgressions,
                     pendingChoices: resolutionResult.pendingChoices,
                     classSkills,
                     skillBonuses,
                     grantedFeats: grantedFeats.map(f => f.appliesToId!).filter((id): id is number => id !== null),
-                    availableFeats,
+                    availableFeatsCount,
                     availableFighterBonusFeats,
+                    qualifiedFeats,
                     warnings: resolutionResult.warnings,
                     errors: resolutionResult.errors,
                     sessionId: session.id,
@@ -2849,9 +2976,10 @@ export const characterService: CharacterService = {
         }
 
         // Build response with free spell counts if this was a free grant
+        // Note: Backend updates resolution session automatically, but does not return resolvedCharacter
+        // Frontend should call resolution.refreshState() to refresh resolution state
         const response: RemoveSpellKnownResponse = {
-            message: 'Spell removed successfully',
-            resolvedCharacter: resolvedCharacterResult
+            message: 'Spell removed successfully'
         };
 
         if (wasFreeGrant && resolvedCharacterResult) {
@@ -2876,6 +3004,543 @@ export const characterService: CharacterService = {
         }
 
         return response;
+    },
+
+    // NEW: Character detail methods (uses tracking, money, items, wounds, spell cast)
+    async getCharacterUses(characterId: number) {
+        const uses = await prisma.characterFeatureUses.findMany({
+            where: { characterId },
+        });
+        return uses;
+    },
+
+    async updateFeatureUses(characterId: number, progressionId: number, entityId: number, delta: number) {
+        // Find or create the uses record
+        const existing = await prisma.characterFeatureUses.findUnique({
+            where: {
+                characterId_progressionId_featureEntityId: {
+                    characterId,
+                    progressionId,
+                    featureEntityId: entityId,
+                },
+            },
+        });
+
+        if (existing) {
+            const newCurrentUses = Math.max(0, Math.min(existing.maxUses, existing.currentUses + delta));
+            return await prisma.characterFeatureUses.update({
+                where: { id: existing.id },
+                data: { currentUses: newCurrentUses },
+            });
+        } else {
+            // Need to get maxUses and frequency from the feature entity
+            const featureEntity = await prisma.featureEntity.findUnique({
+                where: { id: entityId },
+                include: {
+                    featureProgression: true,
+                },
+            });
+
+            if (!featureEntity) {
+                throw new Error('Feature entity not found');
+            }
+
+            // Determine maxUses and frequency from the feature entity
+            // For uses per day/week, the value field typically contains the number of uses
+            // and the frequency should be determined from the feature definition
+            // For now, we'll use the value as maxUses and default to PER_DAY
+            const maxUses = featureEntity.value || 1;
+            const frequency = USES_FREQUENCY_ENUM.PER_DAY; // Default to PER_DAY - should be determined from feature definition
+
+            const newCurrentUses = Math.max(0, Math.min(maxUses, delta));
+            return await prisma.characterFeatureUses.create({
+                data: {
+                    characterId,
+                    progressionId,
+                    featureEntityId: entityId,
+                    currentUses: newCurrentUses,
+                    maxUses,
+                    frequency,
+                },
+            });
+        }
+    },
+
+    async resetDailyUses(characterId: number): Promise<UpdateResponse> {
+        await prisma.$transaction([
+            // Reset daily uses (frequency = PER_DAY)
+            prisma.characterFeatureUses.updateMany({
+                where: {
+                    characterId,
+                    frequency: USES_FREQUENCY_ENUM.PER_DAY,
+                },
+                data: {
+                    currentUses: 0,
+                },
+            }),
+        ]);
+        // Reset spell cast counts (separate call to allow independent reset)
+        await this.resetDailySpellPreparations(characterId);
+        return { message: 'Daily uses reset successfully' };
+    },
+
+    async resetAllUses(characterId: number): Promise<UpdateResponse> {
+        await prisma.characterFeatureUses.updateMany({
+            where: { characterId },
+            data: {
+                currentUses: 0,
+            },
+        });
+        return { message: 'All uses reset successfully' };
+    },
+
+    async updateMoney(characterId: number, money: UpdateMoneyRequest): Promise<UpdateResponse> {
+        const updateData: {
+            platinum?: number;
+            gold?: number;
+            silver?: number;
+            copper?: number;
+        } = {};
+
+        if (money.platinum !== undefined) {
+            updateData.platinum = money.platinum;
+        }
+        if (money.gold !== undefined) {
+            updateData.gold = money.gold;
+        }
+        if (money.silver !== undefined) {
+            updateData.silver = money.silver;
+        }
+        if (money.copper !== undefined) {
+            updateData.copper = money.copper;
+        }
+
+        await prisma.userCharacter.update({
+            where: { id: characterId },
+            data: updateData,
+        });
+        return { message: 'Money updated successfully' };
+    },
+
+    async addItem(characterId: number, item: AddItemRequest) {
+        const result = await prisma.characterItem.create({
+            data: {
+                characterId,
+                baseItemId: item.baseItemId,
+                name: item.name,
+                quantity: item.quantity,
+                location: item.location,
+            },
+        });
+        return { id: result.id.toString(), message: 'Item added successfully' };
+    },
+
+    async removeItem(characterId: number, itemId: number): Promise<UpdateResponse> {
+        await prisma.characterItem.delete({
+            where: {
+                id: itemId,
+                characterId, // Ensure the item belongs to the character
+            },
+        });
+        return { message: 'Item removed successfully' };
+    },
+
+    async updateWounds(characterId: number, wounds: UpdateWoundsRequest): Promise<UpdateResponse> {
+        // Note: wounds and nonlethal are not currently stored in the database
+        // This is a placeholder for future implementation
+        // For now, we'll need to add these fields to UserCharacter model
+        // or create a separate CharacterHealth model
+        // This method is implemented but will need database schema updates
+        throw new Error('Wounds tracking not yet implemented in database schema');
+    },
+
+    async updateNotes(characterId: number, notes: UpdateNotesRequest): Promise<UpdateResponse> {
+        const updateData: {
+            notes?: string | null;
+        } = {};
+
+        if (notes.notes !== undefined) {
+            updateData.notes = notes.notes;
+        }
+
+        await prisma.userCharacter.update({
+            where: { id: characterId },
+            data: updateData,
+        });
+        return { message: 'Notes updated successfully' };
+    },
+
+    async castSpell(characterId: number, preparationId: number): Promise<UpdateResponse> {
+        const preparation = await prisma.characterSpellPreparation.findUnique({
+            where: {
+                id: preparationId,
+            },
+        });
+
+        if (!preparation) {
+            throw new Error('Spell preparation not found');
+        }
+
+        if (preparation.characterId !== characterId) {
+            throw new Error('Spell preparation does not belong to this character');
+        }
+
+        if (preparation.timesCast >= preparation.quantity) {
+            throw new Error('All prepared spells have already been cast');
+        }
+
+        await prisma.characterSpellPreparation.update({
+            where: {
+                id: preparationId,
+            },
+            data: {
+                timesCast: {
+                    increment: 1,
+                },
+            },
+        });
+        return { message: 'Spell cast successfully' };
+    },
+
+    async uncastSpell(characterId: number, preparationId: number): Promise<UpdateResponse> {
+        const preparation = await prisma.characterSpellPreparation.findUnique({
+            where: {
+                id: preparationId,
+            },
+        });
+
+        if (!preparation) {
+            throw new Error('Spell preparation not found');
+        }
+
+        if (preparation.characterId !== characterId) {
+            throw new Error('Spell preparation does not belong to this character');
+        }
+
+        if (preparation.timesCast <= 0) {
+            throw new Error('No spells have been cast');
+        }
+
+        await prisma.characterSpellPreparation.update({
+            where: {
+                id: preparationId,
+            },
+            data: {
+                timesCast: {
+                    decrement: 1,
+                },
+            },
+        });
+        return { message: 'Spell uncast successfully' };
+    },
+
+    /**
+     * Reset daily spell preparations (set timesCast = 0 for all preparations)
+     * This is called when resetting daily uses to clear spell cast status
+     */
+    async resetDailySpellPreparations(characterId: number): Promise<UpdateResponse> {
+        await prisma.characterSpellPreparation.updateMany({
+            where: {
+                characterId,
+            },
+            data: {
+                timesCast: 0,
+            },
+        });
+        return { message: 'Daily spell preparations reset successfully' };
+    },
+
+    /**
+     * Sync items array - diffs against database and performs create/update/delete operations atomically.
+     * 
+     * Frontend sends full items array, backend determines what operations are needed.
+     * 
+     * @param characterId - Character ID
+     * @param items - Full array of items from frontend state
+     * @returns UpdateResponse
+     */
+    async syncItems(characterId: number, items: SyncItemsRequest['items']): Promise<UpdateResponse> {
+        return await prisma.$transaction(async (tx) => {
+            // Get current items from database
+            const currentItems = await tx.characterItem.findMany({
+                where: { characterId },
+            });
+
+            // Create maps for efficient lookup
+            const currentItemsMap = new Map(currentItems.map(item => [item.id, item]));
+            const incomingItemsMap = new Map<number, typeof items[0]>();
+
+            // Track items by temporary ID (for new items without database ID)
+            const incomingByTempId = new Map<number, typeof items[0]>();
+
+            for (const item of items) {
+                if (item.id && item.id > 0) {
+                    // Has database ID - use it as key
+                    incomingItemsMap.set(item.id, item);
+                } else if (item.id && item.id < 0) {
+                    // Temporary ID (negative) - track separately
+                    incomingByTempId.set(item.id, item);
+                }
+            }
+
+            // Find items to delete (in database but not in incoming array)
+            const itemsToDelete = currentItems.filter(
+                item => !incomingItemsMap.has(item.id)
+            );
+
+            // Find items to create (in incoming array but not in database, or have temp ID)
+            const itemsToCreate = items.filter(
+                item => !item.id || item.id < 0 || !currentItemsMap.has(item.id)
+            );
+
+            // Find items to update (in both arrays but different)
+            const itemsToUpdate = items.filter(item => {
+                if (!item.id || item.id < 0) return false; // Skip temp IDs
+                const current = currentItemsMap.get(item.id);
+                if (!current) return false;
+
+                // Compare relevant fields
+                return (
+                    current.baseItemId !== item.baseItemId ||
+                    current.quantity !== item.quantity ||
+                    current.location !== item.location ||
+                    current.name !== item.name
+                );
+            });
+
+            // Perform operations
+            if (itemsToDelete.length > 0) {
+                await tx.characterItem.deleteMany({
+                    where: {
+                        id: { in: itemsToDelete.map(item => item.id) },
+                        characterId,
+                    },
+                });
+            }
+
+            if (itemsToCreate.length > 0) {
+                await tx.characterItem.createMany({
+                    data: itemsToCreate.map(item => ({
+                        characterId,
+                        baseItemId: item.baseItemId,
+                        name: item.name,
+                        quantity: item.quantity ?? 1,
+                        location: item.location,
+                    })),
+                });
+            }
+
+            if (itemsToUpdate.length > 0) {
+                await Promise.all(
+                    itemsToUpdate.map(item =>
+                        tx.characterItem.update({
+                            where: {
+                                id: item.id!,
+                                characterId,
+                            },
+                            data: {
+                                baseItemId: item.baseItemId,
+                                name: item.name,
+                                quantity: item.quantity ?? 1,
+                                location: item.location,
+                            },
+                        })
+                    )
+                );
+            }
+
+            return { message: 'Items synced successfully' };
+        });
+    },
+
+    /**
+     * Sync spell preparations array - diffs against database and performs create/update/delete operations atomically.
+     * 
+     * Frontend sends full spell preparations array, backend determines what operations are needed.
+     * 
+     * @param characterId - Character ID
+     * @param spellPreparations - Full array of spell preparations from frontend state
+     * @returns UpdateResponse
+     */
+    async syncSpellPreparations(characterId: number, spellPreparations: SyncSpellPreparationsRequest['spellPreparations']): Promise<UpdateResponse> {
+        return await prisma.$transaction(async (tx) => {
+            // Get current spell preparations from database
+            const currentPreparations = await tx.characterSpellPreparation.findMany({
+                where: { characterId },
+            });
+
+            // Create maps for efficient lookup
+            const currentPreparationsMap = new Map(currentPreparations.map(prep => [prep.id, prep]));
+
+            // Create composite key map for new preparations (classId-spellId-spellLevel-slotType-featId)
+            const currentByCompositeKey = new Map<string, typeof currentPreparations[0]>();
+            for (const prep of currentPreparations) {
+                const key = `${prep.classId}-${prep.spellId}-${prep.spellLevel}-${prep.slotType}-${prep.featId ?? 'null'}`;
+                currentByCompositeKey.set(key, prep);
+            }
+
+            const incomingPreparationsMap = new Map<number, typeof spellPreparations[0]>();
+            const incomingByCompositeKey = new Map<string, typeof spellPreparations[0]>();
+
+            for (const prep of spellPreparations) {
+                if (prep.id && prep.id > 0) {
+                    // Has database ID - use it as key
+                    incomingPreparationsMap.set(prep.id, prep);
+                } else {
+                    // New preparation - use composite key
+                    const slotType = prep.slotType ?? SpellSlotType.NORMAL;
+                    const featId = prep.featId ?? null;
+                    const key = `${prep.classId}-${prep.spellId}-${prep.spellLevel}-${slotType}-${featId ?? 'null'}`;
+                    incomingByCompositeKey.set(key, prep);
+                }
+            }
+
+            // Find preparations to delete (in database but not in incoming array)
+            const preparationsToDelete = currentPreparations.filter(
+                prep => !incomingPreparationsMap.has(prep.id)
+            );
+
+            // Find preparations to create (in incoming array but not in database)
+            const preparationsToCreate = spellPreparations.filter(prep => {
+                if (prep.id && prep.id > 0) {
+                    // Has database ID - check if exists
+                    return !currentPreparationsMap.has(prep.id);
+                } else {
+                    // New preparation - check by composite key
+                    const slotType = prep.slotType ?? SpellSlotType.NORMAL;
+                    const featId = prep.featId ?? null;
+                    const key = `${prep.classId}-${prep.spellId}-${prep.spellLevel}-${slotType}-${featId ?? 'null'}`;
+                    return !currentByCompositeKey.has(key);
+                }
+            });
+
+            // Find preparations to update (in both arrays but different)
+            const preparationsToUpdate = spellPreparations.filter(prep => {
+                if (!prep.id || prep.id <= 0) return false; // Skip new preparations
+                const current = currentPreparationsMap.get(prep.id);
+                if (!current) return false;
+
+                // Compare relevant fields
+                const slotType = prep.slotType ?? SpellSlotType.NORMAL;
+                const featId = prep.featId ?? null;
+                return (
+                    current.classId !== prep.classId ||
+                    current.spellId !== prep.spellId ||
+                    current.spellLevel !== prep.spellLevel ||
+                    current.quantity !== prep.quantity ||
+                    current.slotType !== slotType ||
+                    current.featId !== featId ||
+                    current.timesCast !== (prep.timesCast ?? 0)
+                );
+            });
+
+            // Perform operations
+            if (preparationsToDelete.length > 0) {
+                await tx.characterSpellPreparation.deleteMany({
+                    where: {
+                        id: { in: preparationsToDelete.map(prep => prep.id) },
+                        characterId,
+                    },
+                });
+            }
+
+            if (preparationsToCreate.length > 0) {
+                await tx.characterSpellPreparation.createMany({
+                    data: preparationsToCreate.map(prep => ({
+                        characterId,
+                        classId: prep.classId,
+                        spellId: prep.spellId,
+                        spellLevel: prep.spellLevel,
+                        quantity: prep.quantity,
+                        timesCast: prep.timesCast ?? 0,
+                        slotType: prep.slotType ?? SpellSlotType.NORMAL,
+                        featId: prep.featId ?? null,
+                    })),
+                });
+            }
+
+            if (preparationsToUpdate.length > 0) {
+                await Promise.all(
+                    preparationsToUpdate.map(prep => {
+                        const slotType = prep.slotType ?? SpellSlotType.NORMAL;
+                        const featId = prep.featId ?? null;
+                        return tx.characterSpellPreparation.update({
+                            where: {
+                                id: prep.id!,
+                                characterId,
+                            },
+                            data: {
+                                classId: prep.classId,
+                                spellId: prep.spellId,
+                                spellLevel: prep.spellLevel,
+                                quantity: prep.quantity,
+                                timesCast: prep.timesCast ?? 0,
+                                slotType: slotType,
+                                featId: featId,
+                            },
+                        });
+                    })
+                );
+            }
+
+            return { message: 'Spell preparations synced successfully' };
+        });
+    },
+
+    async syncSpellsKnown(characterId: number, advancementId: number, spellsKnown: SyncSpellsKnownRequest['spellsKnown']): Promise<UpdateResponse> {
+        return await prisma.$transaction(async (tx) => {
+            // Get current spellsKnown from database
+            const currentSpellsKnown = await tx.advancementSpell.findMany({
+                where: { advancementId },
+            });
+
+            // Create maps for efficient lookup
+            const currentSpellsKnownMap = new Map(currentSpellsKnown.map(s => [s.spellId, s]));
+
+            // Determine what to create, update, and delete
+            const spellsKnownSet = new Set(spellsKnown.map(s => s.spellId));
+
+            // Delete spells that are no longer in the new array
+            const toDelete = currentSpellsKnown.filter(s => !spellsKnownSet.has(s.spellId));
+            if (toDelete.length > 0) {
+                await tx.advancementSpell.deleteMany({
+                    where: {
+                        advancementId,
+                        spellId: { in: toDelete.map(s => s.spellId) }
+                    }
+                });
+            }
+
+            // Create or update spells
+            for (const spell of spellsKnown) {
+                const existing = currentSpellsKnownMap.get(spell.spellId);
+                if (existing) {
+                    // Update if isFreeGrant changed
+                    if (existing.isFreeGrant !== spell.isFreeGrant) {
+                        await tx.advancementSpell.update({
+                            where: {
+                                advancementId_spellId: {
+                                    advancementId,
+                                    spellId: spell.spellId
+                                }
+                            },
+                            data: { isFreeGrant: spell.isFreeGrant }
+                        });
+                    }
+                } else {
+                    // Create new
+                    await tx.advancementSpell.create({
+                        data: {
+                            advancementId,
+                            spellId: spell.spellId,
+                            isFreeGrant: spell.isFreeGrant
+                        }
+                    });
+                }
+            }
+
+            return { message: 'Spells known synced successfully' };
+        });
     },
 
 

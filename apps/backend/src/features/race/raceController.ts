@@ -54,8 +54,16 @@ export async function GetRaceById(
  * Updates an existing race.
  */
 export async function UpdateRace(req: ValidatedParamsBodyT<RaceIdParamRequest, UpdateRaceRequest, UpdateResponse>, res: Response, _next: NextFunction) {
-    await raceService.updateRace(req.params, req.body);
-    res.json({ message: 'Race updated successfully' });
+    try {
+        await raceService.updateRace(req.params, req.body);
+        res.json({ message: 'Race updated successfully' });
+    } catch (error) {
+        console.error('Error updating race:', error);
+        res.status(500).json({
+            message: 'Failed to update race',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
 }
 
 /**

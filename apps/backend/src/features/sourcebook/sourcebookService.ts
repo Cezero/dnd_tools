@@ -37,6 +37,7 @@ export const sourceBookService: SourceBookService = {
      * consistent presentation.
      * 
      * Content Flags:
+     * - hasCore: Indicates core rulebooks (PHB, DMG) for each edition
      * - hasClasses: Indicates book contains class options
      * - hasSpells: Indicates book contains spells
      * - hasRaces: Indicates book contains race options
@@ -56,6 +57,7 @@ export const sourceBookService: SourceBookService = {
                 editionId: true,
                 isVisible: true,
                 settingId: true,
+                hasCore: true,
                 hasClasses: true,
                 hasSpells: true,
                 hasRaces: true,

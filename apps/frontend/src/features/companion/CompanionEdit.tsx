@@ -121,8 +121,7 @@ export function CompanionEdit() {
                     entities: p.entities?.map(e => ({
                         ...e,
                         conditions: e.conditions?.map(c => ({
-                            ...c,
-                            entity: c.entity ? { id: c.entity.id } : undefined
+                            ...c
                         }))
                     })),
                 }));
@@ -131,7 +130,7 @@ export function CompanionEdit() {
                 { progressions: remainingProgressions },
                 { id: progression.featureId }
             );
-            
+
             // Refetch companion to get updated features
             if (id && id !== 'new') {
                 const companionId = parseInt(id, 10);
@@ -166,9 +165,6 @@ export function CompanionEdit() {
                 companionId: companionId,
                 sourceType: FeatureSourceType.Companion,
                 level: 1,
-                classId: null,
-                raceId: null,
-                variantOverrideId: null,
                 domainId: null,
                 featId: null,
                 entities: [],
@@ -195,8 +191,7 @@ export function CompanionEdit() {
                 entities: p.entities?.map(e => ({
                     ...e,
                     conditions: e.conditions?.map(c => ({
-                        ...c,
-                        entity: c.entity ? { id: c.entity.id } : undefined
+                        ...c
                     }))
                 })),
             }));
@@ -248,8 +243,7 @@ export function CompanionEdit() {
                 entities: progression.entities?.map(e => ({
                     ...e,
                     conditions: e.conditions?.map(c => ({
-                        ...c,
-                        entity: c.entity ? { id: c.entity.id } : undefined
+                        ...c
                     }))
                 })),
             };
@@ -326,7 +320,9 @@ export function CompanionEdit() {
     }
 
     // Get monster name from companion relation (when editing) or from cache (when creating/editing)
-    const monsterNameFromCompanion = companion?.monster?.name;
+    const monsterNameFromCompanion = companion?.monsterId
+        ? monstersCache?.results?.find(m => m.id === companion.monsterId)?.name
+        : undefined;
     const monsterNameFromCache = formData.monsterId
         ? monstersCache?.results?.find(m => m.id === formData.monsterId)?.name
         : undefined;

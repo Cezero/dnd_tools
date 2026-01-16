@@ -1,11 +1,7 @@
 import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
-export type SearchableItem = {
-    id: number;
-    name: string;
-    [key: string]: unknown; // Allow additional properties
-};
+import type { SearchableItem } from './types';
 
 // Stable default function for getDisplayName
 const defaultGetDisplayName = <T extends SearchableItem>(item: T) => item.name;
@@ -68,7 +64,7 @@ export function GenericSearchInput<T extends SearchableItem>({
         }
 
         const searchTermLower = searchTerm.toLowerCase();
-        
+
         // Filter items that match the search term
         const filtered = allItems.filter(item => {
             const displayName = stableGetDisplayName(item);
@@ -80,27 +76,27 @@ export function GenericSearchInput<T extends SearchableItem>({
         filtered.sort((a, b) => {
             const nameA = stableGetDisplayName(a).toLowerCase();
             const nameB = stableGetDisplayName(b).toLowerCase();
-            
+
             // Check if items are custom options (in customOptions array)
             const isCustomA = customOptions.some(co => co.id === a.id);
             const isCustomB = customOptions.some(co => co.id === b.id);
-            
+
             // Custom options that match get highest priority
             if (isCustomA && !isCustomB) return -1;
             if (!isCustomA && isCustomB) return 1;
-            
+
             // Exact match gets second priority (after custom options)
             const exactMatchA = nameA === searchTermLower;
             const exactMatchB = nameB === searchTermLower;
             if (exactMatchA && !exactMatchB) return -1;
             if (!exactMatchA && exactMatchB) return 1;
-            
+
             // Prefix match gets third priority
             const startsWithA = nameA.startsWith(searchTermLower);
             const startsWithB = nameB.startsWith(searchTermLower);
             if (startsWithA && !startsWithB) return -1;
             if (!startsWithA && startsWithB) return 1;
-            
+
             // Otherwise, maintain alphabetical order
             return nameA.localeCompare(nameB);
         });

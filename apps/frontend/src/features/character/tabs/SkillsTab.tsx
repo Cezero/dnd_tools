@@ -6,6 +6,7 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { AnalogSkillService } from '@/features/character';
 import type { SkillRank, TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { buildFormulaParams } from '@/lib/formatters/formula-utils';
 import type { FormattedSkill } from '@/lib/formatters/types';
 import { hasSubtypes, usesCustomSubtype, hasNoMaxRanks, getSkillSubtypes, getSkillSubtypeName as getSkillSubtypeNameUtil } from '@/lib/skill-utils';
@@ -23,6 +24,16 @@ import {
     DisplayType
 } from '@shared/static-data';
 
+/**
+ * Skills tab component for managing character skill ranks.
+ * 
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * - Updates state via `updateState()` when skill ranks change
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
+ * - Do NOT call `resolution.applyUpdate()` directly from this tab
+ * 
+ * @see CharacterEdit component for sync pattern documentation
+ */
 export function SkillsTab({
     state,
     updateState,
@@ -30,10 +41,10 @@ export function SkillsTab({
     isLoading: _isLoading,
     formattedCharacter,
     sharedData,
-    handleSkillRankUpdate
+    handleSkillRankUpdate: _handleSkillRankUpdate
 }: TabComponentProps): React.JSX.Element {
     const queryClient = useQueryClient();
-    const { getClassNameFromCache, getRaceNameFromCache, getSkillNameById, getSkillSelectFull } = useCacheFunctions();
+    const { getClassNameFromCache, getRaceNameFromCache, getSkillSummaryById, getSkillSelectFull } = useCacheFunctions();
 
     // Use shared data instead of fetching
     const classDetails = useMemo(() => ({
@@ -141,16 +152,22 @@ export function SkillsTab({
 
     // Get source name from a feature progression
     const getProgressionSourceName = (progression: FeatureProgression): string => {
-        if (progression.classId) {
-            const className = sharedData.classDetailsMap.get(progression.classId)?.name || getClassNameFromCache(progression.classId);
+        // Check classes array for class progressions
+        if (progression.classes && progression.classes.length > 0) {
+            const firstClassId = progression.classes[0].classId;
+            const className = sharedData.classDetailsMap.get(firstClassId)?.name || getClassNameFromCache(firstClassId);
             if (className) {
                 return className;
             }
         }
-        if (progression.raceId && state.raceId === progression.raceId) {
-            const raceName = raceDetails?.name || (state.raceId ? getRaceNameFromCache(state.raceId) : undefined);
-            if (raceName) {
-                return raceName;
+        // Check races array for race progressions
+        if (progression.races && progression.races.length > 0) {
+            const firstRaceId = progression.races[0].raceId;
+            if (state.raceId === firstRaceId) {
+                const raceName = raceDetails?.name || (state.raceId ? getRaceNameFromCache(state.raceId) : undefined);
+                if (raceName) {
+                    return raceName;
+                }
             }
         }
         // Fallback to source type name
@@ -158,7 +175,11 @@ export function SkillsTab({
             return raceDetails?.name || (state.raceId ? getRaceNameFromCache(state.raceId) || 'Race' : 'Race');
         }
         if (progression.sourceType === FeatureSourceType.Class) {
-            return progression.classId ? (sharedData.classDetailsMap.get(progression.classId)?.name || getClassNameFromCache(progression.classId) || 'Class') : 'Class';
+            if (progression.classes && progression.classes.length > 0) {
+                const firstClassId = progression.classes[0].classId;
+                return sharedData.classDetailsMap.get(firstClassId)?.name || getClassNameFromCache(firstClassId) || 'Class';
+            }
+            return 'Class';
         }
         return 'Unknown Source';
     };
@@ -239,18 +260,30 @@ export function SkillsTab({
         const intelligenceScore = getAbilityScore(AbilityId.Intelligence);
         const intelligenceModifier = GetAbilityModifier(intelligenceScore);
 
-        // Get class skill points from actual class details
+        // Get class skill points from feature progressions
         let classSkillPoints = 2; // Default for most classes
 
         if (classId) {
             if (isGestalt && secondaryClassId) {
                 // For gestalt characters, use the higher of the two class skill points
-                const primarySkillPoints = classDetails.primary?.skillPoints || 2;
-                const secondarySkillPoints = classDetails.secondary?.skillPoints || 2;
+                const primaryId = classDetails.primary ? (classDetails.primary as { id?: number }).id : undefined;
+                const secondaryId = classDetails.secondary ? (classDetails.secondary as { id?: number }).id : undefined;
+                const primaryMechanics = classDetails.primary?.features
+                    ? extractClassMechanics(classDetails.primary.features, primaryId)
+                    : { skillPoints: null };
+                const secondaryMechanics = classDetails.secondary?.features
+                    ? extractClassMechanics(classDetails.secondary.features, secondaryId)
+                    : { skillPoints: null };
+                const primarySkillPoints = primaryMechanics.skillPoints ?? 2;
+                const secondarySkillPoints = secondaryMechanics.skillPoints ?? 2;
                 classSkillPoints = Math.max(primarySkillPoints, secondarySkillPoints);
             } else {
                 // For single class characters, use the primary class skill points
-                classSkillPoints = classDetails.primary?.skillPoints || 2;
+                const primaryId = classDetails.primary ? (classDetails.primary as { id?: number }).id : undefined;
+                const primaryMechanics = classDetails.primary?.features
+                    ? extractClassMechanics(classDetails.primary.features, primaryId)
+                    : { skillPoints: null };
+                classSkillPoints = primaryMechanics.skillPoints ?? 2;
             }
         }
 
@@ -309,7 +342,7 @@ export function SkillsTab({
 
     // Handle skill rank change
     const handleSkillChange = (skillId: number, newRanks: number, skillSubId?: number | null, customSubtype?: string | null, entryId?: string) => {
-        const skill = getSkillNameById(skillId);
+        const skill = getSkillSummaryById(skillId);
         if (!skill) return;
 
         const maxRanks = getMaxRanks(skillId, skillSubId);
@@ -349,12 +382,8 @@ export function SkillsTab({
                 payload: { skillRanks: updatedSkillRanks }
             });
 
-            // Sync to backend resolution API
-            if (handleSkillRankUpdate) {
-                handleSkillRankUpdate(skillId, skillSubId || null, customSubtype || null, pointsNeeded).catch(error => {
-                    console.error('Failed to sync skill rank update to backend:', error);
-                });
-            }
+            // Sync to backend resolution API happens automatically via CharacterEdit useEffect hook
+            // No need to call handleSkillRankUpdate directly - just update state and sync happens automatically
 
             return; // Exit early since we've handled this case
         }
@@ -414,36 +443,17 @@ export function SkillsTab({
         }
 
         // Update the form state
+        // Sync to backend resolution API happens automatically via CharacterEdit useEffect hook
+        // No need to call handleSkillRankUpdate directly - just update state and sync happens automatically
         updateState({
             type: CharacterEditStateUpdateType.SET_SKILL_RANKS,
             payload: { skillRanks: updatedSkillRanks }
         });
-
-        // Sync to backend resolution API
-        if (handleSkillRankUpdate) {
-            // Find the updated skill entry to get the pointsSpent value
-            const updatedEntry = updatedSkillRanks.find(s =>
-                s.skillId === skillId &&
-                s.skillSubId === skillSubId &&
-                s.customSubtype === customSubtype
-            );
-
-            if (updatedEntry) {
-                handleSkillRankUpdate(skillId, skillSubId || null, customSubtype || null, updatedEntry.pointsSpent).catch(error => {
-                    console.error('Failed to sync skill rank update to backend:', error);
-                });
-            } else if (newRanks === 0) {
-                // Skill was removed, sync with 0 points
-                handleSkillRankUpdate(skillId, skillSubId || null, customSubtype || null, 0).catch(error => {
-                    console.error('Failed to sync skill rank removal to backend:', error);
-                });
-            }
-        }
     };
 
     // Handle skill increment/decrement
     const handleSkillIncrement = (skillId: number, increment: boolean, skillSubId?: number | null, customSubtype?: string | null, entryId?: string) => {
-        const skill = getSkillNameById(skillId);
+        const skill = getSkillSummaryById(skillId);
         if (!skill) return;
 
         const isClassSkill = isSkillClassSkill(skillId, skillSubId);
@@ -470,7 +480,7 @@ export function SkillsTab({
 
     // Get total skill bonus (ranks + ability modifier + feature bonuses) from formatted character
     const getSkillTotal = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number | null => {
-        const skill = getSkillNameById(skillId);
+        const skill = getSkillSummaryById(skillId);
         if (!skill) return 0;
 
         // Check if this is an analog skill
@@ -518,7 +528,7 @@ export function SkillsTab({
         }
 
         // Fallback to manual calculation
-        const skill = getSkillNameById(skillId);
+        const skill = getSkillSummaryById(skillId);
         if (!skill || skill.abilityId === 0) return '';
         const abilityScore = getAbilityScore(skill.abilityId);
         return `${ABILITY_MAP[skill.abilityId]?.abbreviation} ${GetAbilityModifierString(abilityScore)}`;
@@ -620,16 +630,24 @@ export function SkillsTab({
         const intelligenceScore = getAbilityScore(AbilityId.Intelligence);
         const intModifier = GetAbilityModifier(intelligenceScore);
 
-        // Get class skill points
-        let classSkillPoints = classDetails.primary.skillPoints;
-        let className = classDetails.primary.name;
+        // Get class skill points from feature progressions
+        const primaryId = classDetails.primary ? (classDetails.primary as { id?: number }).id : undefined;
+        const primaryMechanics = classDetails.primary?.features
+            ? extractClassMechanics(classDetails.primary.features, primaryId)
+            : { skillPoints: null };
+        let classSkillPoints = primaryMechanics.skillPoints ?? 2;
+        let className = classDetails.primary?.name || 'Unknown';
 
         // Handle gestalt characters
         if (isGestalt && secondaryClassId && classDetails.secondary) {
-            const primarySkillPoints = classDetails.primary.skillPoints;
-            const secondarySkillPoints = classDetails.secondary.skillPoints;
+            const secondaryId = classDetails.secondary ? (classDetails.secondary as { id?: number }).id : undefined;
+            const secondaryMechanics = classDetails.secondary.features
+                ? extractClassMechanics(classDetails.secondary.features, secondaryId)
+                : { skillPoints: null };
+            const primarySkillPoints = primaryMechanics.skillPoints ?? 2;
+            const secondarySkillPoints = secondaryMechanics.skillPoints ?? 2;
             classSkillPoints = Math.max(primarySkillPoints, secondarySkillPoints);
-            className = `${classDetails.primary.name}/${classDetails.secondary.name}`;
+            className = `${classDetails.primary?.name || 'Unknown'}/${classDetails.secondary.name}`;
         }
 
         // Build bonus skill points string
@@ -769,7 +787,7 @@ export function SkillsTab({
             };
         }, []);
 
-        const skill = getSkillNameById(skillId);
+        const skill = getSkillSummaryById(skillId);
         if (!skill) return <></>;
 
         const isAnalogSkill = AnalogSkillService.isAnalogSkill(skillId, queryClient);

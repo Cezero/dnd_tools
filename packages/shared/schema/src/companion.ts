@@ -1,45 +1,51 @@
 import z from "zod";
+
+import { numericParam, commonValidations } from "./common";
 import { QueryResponseSchema } from "./query";
 import { TrickSchema, CharacterCompanionTrickSchema } from "./trick";
-import { FeatureProgressionSchema } from "./feature";
+import { FeatureProgressionResponseSchema } from "./feature";
 
 // Companion Schema
 export const CompanionSchema = z.object({
-    id: z.number().int().positive('Companion ID must be a positive integer'),
-    type: z.number().int().positive('Companion type must be a positive integer'),
-    monsterId: z.number().int().positive('Monster ID must be a positive integer'),
+    id: commonValidations.positiveInt('Companion ID'),
+    type: commonValidations.positiveInt('Companion type'),
+    monsterId: commonValidations.positiveInt('Monster ID'),
     minLevel: z.number().int().min(1, 'Minimum level must be at least 1').max(20, 'Minimum level must be at most 20').nullable().optional(),
 });
 
 // Character Companion Schema
 export const CharacterCompanionSchema = z.object({
-    id: z.number().int().positive('Character companion ID must be a positive integer'),
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    monsterId: z.number().int().positive('Monster ID must be a positive integer'),
-    companionId: z.number().int().positive('Companion ID must be a positive integer').nullable().optional(),
+    id: commonValidations.positiveInt('Character companion ID'),
+    characterId: commonValidations.positiveInt('Character ID'),
+    monsterId: commonValidations.positiveInt('Monster ID'),
+    companionId: commonValidations.positiveInt('Companion ID').nullable().optional(),
     levelAcquired: z.number().int().min(1, 'Level acquired must be at least 1').max(20, 'Level acquired must be at most 20').nullable().optional(),
-    hitPoints: z.number().int().positive('Hit points must be a positive integer').nullable().optional(),
-    wounds: z.number().int().nonnegative('Wounds must be non-negative').default(0),
+    hitPoints: commonValidations.positiveInt('Hit points').nullable().optional(),
+    wounds: commonValidations.nonNegativeInt('Wounds').default(0),
 });
 
 // Companion with relations schema
 // monster object removed - frontend should resolve monster names from monsters-cache using monsterId
 export const CompanionWithRelationsSchema = CompanionSchema.extend({
-    features: z.array(FeatureProgressionSchema).optional(),
+    features: z.array(FeatureProgressionResponseSchema).optional(),
 });
 
-// Character Companion with relations schema
-// monster object removed - frontend should resolve monster names from monsters-cache using monsterId
+/**
+ * Schema for character companion with related data.
+ * 
+ * This schema extends CharacterCompanionSchema with optional related entities.
+ * The companion field reuses CompanionSchema (without id) to avoid duplication.
+ * The tricks field uses CharacterCompanionTrickSchema for consistency.
+ * 
+ * Pattern: BaseSchema.extend() + optional related schemas
+ * 
+ * @see CharacterCompanionSchema - Base schema this extends
+ * @see CompanionSchema - Reused for companion field (without id)
+ * @see CharacterCompanionTrickSchema - Reused for tricks array items
+ */
 export const CharacterCompanionWithRelationsSchema = CharacterCompanionSchema.extend({
-    companion: z.object({
-        id: z.number().int().positive(),
-        type: z.number().int().positive(),
-        monsterId: z.number().int().positive(),
-        minLevel: z.number().int().nullable().optional(),
-    }).optional(),
-    tricks: z.array(z.object({
-        id: z.number().int().positive(),
-        trickId: z.number().int().positive(),
+    companion: CompanionSchema.omit({ id: true }).optional(),
+    tricks: z.array(CharacterCompanionTrickSchema.extend({
         trick: TrickSchema.optional(),
     })).optional(),
 });
@@ -54,18 +60,18 @@ export const UpdateCompanionSchema = CreateCompanionSchema.partial();
 export const CreateCharacterCompanionSchema = CharacterCompanionSchema.omit({
     id: true,
 }).extend({
-    tricks: z.array(z.number().int().positive('Trick ID must be a positive integer')).optional(),
+    tricks: z.array(commonValidations.positiveInt('Trick ID')).optional(),
 });
 
 export const UpdateCharacterCompanionSchema = CreateCharacterCompanionSchema.partial();
 
 // Parameter schemas
 export const CompanionIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export const CharacterCompanionIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 // Response schemas
@@ -77,6 +83,15 @@ export const GetCompanionResponseSchema = CompanionWithRelationsSchema;
 
 export const GetAllCharacterCompanionsResponseSchema = QueryResponseSchema.extend({
     results: z.array(CharacterCompanionWithRelationsSchema),
+});
+
+// Cache schemas
+export const CompanionCacheSchema = CompanionSchema.extend({
+    name: z.string().min(1, 'Companion name is required'),
+});
+
+export const CompanionCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(CompanionCacheSchema),
 });
 
 // Type exports
@@ -93,6 +108,8 @@ export type CharacterCompanionIdParamRequest = z.infer<typeof CharacterCompanion
 export type GetAllCompanionsResponse = z.infer<typeof GetAllCompanionsResponseSchema>;
 export type GetCompanionResponse = z.infer<typeof GetCompanionResponseSchema>;
 export type GetAllCharacterCompanionsResponse = z.infer<typeof GetAllCharacterCompanionsResponseSchema>;
+export type CompanionCacheEntry = z.infer<typeof CompanionCacheSchema>;
+export type CompanionCacheResponse = z.infer<typeof CompanionCacheResponseSchema>;
 
 // Re-export common response types
 export { CreateResponse, UpdateResponse } from './common';

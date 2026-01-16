@@ -21,10 +21,11 @@ export function AppliesToSelector({
     entityType,
     appliesTo,
     formulaId,
-    valuesRepresent
+    valuesRepresent,
+    editionId
 }: AppliesToSelectorProps) {
     const { formData, setFormData } = useFormContext();
-    const appliesToIdOptions = useAppliesToSelectOptions(appliesTo, entityType);
+    const appliesToIdOptions = useAppliesToSelectOptions(appliesTo, entityType, editionId);
 
     // Get current entity to check if we need to add current value to options
     const currentEntity = formData?.entities?.[index] as FeatureEntity | undefined;
@@ -50,11 +51,21 @@ export function AppliesToSelector({
     // Check if we should show the appliesToId field
     // Show it if appliesTo is set and either we have options or we're loading (for async types)
     // Also show for SpellbookSpell with EntityType.Other (uses CustomSelect for level)
+    // Also show for new class mechanics types (all of them use appliesToId to store the value)
     const shouldShowAppliesToId = appliesTo !== null && appliesTo !== undefined && (
         finalOptions.length > 0 ||
         (appliesTo === EntityAppliesToType.Feat || appliesTo === EntityAppliesToType.Domain || appliesTo === EntityAppliesToType.Feature) ||
         (appliesTo === EntityAppliesToType.SpellbookSpell && entityType === EntityType.Other) ||
-        (appliesTo === EntityAppliesToType.Spell && entityType !== undefined)
+        (appliesTo === EntityAppliesToType.Spell && entityType !== undefined) ||
+        (appliesTo === EntityAppliesToType.HitDice) ||
+        (appliesTo === EntityAppliesToType.Size) ||
+        (appliesTo === EntityAppliesToType.FavoredClass) ||
+        (appliesTo === EntityAppliesToType.SavingThrow) ||
+        (appliesTo === EntityAppliesToType.BaseAttackBonus) ||
+        (appliesTo === EntityAppliesToType.CastingAbility) ||
+        (appliesTo === EntityAppliesToType.CastingType) ||
+        (appliesTo === EntityAppliesToType.SpellcastingProgression)
+        // Note: SkillPoints, MovementSpeed, and LevelAdjustment use value field, not appliesToId
     );
 
     // Helper function to get the appropriate appliesTo options based on entityType
@@ -137,10 +148,25 @@ export function AppliesToSelector({
                                 placeholder="Select spell level..."
                                 componentExtraClassName="flex items-center gap-2"
                             />
+                        ) : appliesTo === EntityAppliesToType.SpellcastingProgression ? (
+                            // For SpellcastingProgression, use number input to show the progression ID
+                            <ValidatedInput
+                                key={`appliesToId-${index}-${appliesTo}`}
+                                field={`entities.${index}.appliesToId`}
+                                label="Progression ID"
+                                type="number"
+                                componentExtraClassName="flex items-center gap-2"
+                                nested
+                            />
                         ) : (
                             <CustomSelect
                                 key={`appliesToId-${index}-${appliesTo}`}
-                                value={formData?.entities?.[index]?.appliesToId || null}
+                                value={(() => {
+                                    const entity = formData?.entities?.[index] as FeatureEntity | undefined;
+                                    const appliesToIdValue = entity?.appliesToId;
+                                    // Ensure the value is a number (not null/undefined) for proper matching
+                                    return appliesToIdValue !== null && appliesToIdValue !== undefined ? appliesToIdValue : null;
+                                })()}
                                 onValueChange={(value) => {
                                     setFormData(prev => ({
                                         ...prev,
@@ -168,6 +194,10 @@ export function AppliesToSelector({
                                 label={(() => {
                                     if (appliesTo === EntityAppliesToType.Damage && entityType === EntityType.Quantity) { // Damage + Quantity
                                         return 'Dice';
+                                    }
+                                    // For BaseAttackBonus, appliesToId stores the progression type
+                                    if (appliesTo === EntityAppliesToType.BaseAttackBonus) {
+                                        return 'Progression Type';
                                     }
                                     return appliesTo !== null && appliesTo !== undefined ? ENTITY_APPLIES_TO_TYPES[appliesTo]?.name || 'Target' : 'Target';
                                 })()}

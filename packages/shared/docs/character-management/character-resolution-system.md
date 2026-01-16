@@ -78,6 +78,7 @@ Backend service for resolving character choices.
 
 **Key Methods**:
 - `identifyPendingChoices()` - Identifies choices requiring user input
+- `resolveChoiceByType()` - Centralized method that resolves choices by appliesTo type
 - `resolveDomainChoice()` - Resolves domain selection
 - `resolveFeatChoice()` - Resolves feat selection
 - `resolveFamiliarChoice()` - Resolves familiar selection and converts benefits to progressions
@@ -85,6 +86,22 @@ Backend service for resolving character choices.
 - `resolveSkillChoice()` - Resolves skill selection
 - `resolveSpellChoice()` - Resolves spell selection
 - `resolveFeatureChoice()` - Resolves feature selection
+- `addResolvedProgressions()` - Utility function for adding progressions with duplicate checking and optional entity processing
+
+**Utility Function: `addResolvedProgressions()`**
+
+Adds feature progressions to a target array, avoiding duplicates. Optionally processes entities in new progressions before adding them, which is useful for cascading feature resolution.
+
+**Parameters**:
+- `targetProgressions` - Array to add progressions to (modified in place)
+- `newProgressions` - New progressions to add (checked for duplicates)
+- `options` (optional) - Configuration options:
+  - `processEntities` - If true, processes entities in new progressions using FeatureEntityHandlers
+  - `onEntityProcessed` - Optional callback when an entity is processed (for warnings/errors)
+
+**Usage Patterns**:
+- **Simple add without entity processing**: Used in cascading resolution when entities will be processed in the next iteration
+- **Add with entity processing**: Used when progressions need immediate entity processing (e.g., in CharacterResolutionService)
 
 **Source File**: `apps/backend/src/features/characterResolution/choiceResolver.ts`
 
@@ -102,6 +119,24 @@ Service for handling cascading feature resolution.
 
 **Key Methods**:
 - `resolveCascadingFeatures()` - Main entry point for cascading resolution
+- `processGrantedFeatures()` - Processes features granted by other features (enables cascading resolution)
+- `resolveUserChoices()` - Resolves user-selected choices and their cascading effects
+
+**Method: `processGrantedFeatures()`**
+
+Processes features granted by other features, enabling multi-level cascading resolution. When a feature entity grants another feature (e.g., a feat granting domain features, or a Ranger feature granting the Track feat), this method resolves the granted feature and adds it to the progressions array.
+
+**Examples**:
+- **Ranger features** that grant feats (e.g., Track feat)
+- **Fighting Style choices** that determine other features
+- **Features that grant feats** which in turn grant more features (multi-level cascading)
+- **Ranger fighting style features** that grant feats which grant features
+
+**How It Works**:
+1. Iterates through granted entities from `EntityProcessingResult`
+2. For each entity with `appliesTo` and `appliesToId`, uses `ChoiceResolver.resolveChoiceByType()` to resolve the granted feature
+3. Adds resolved progressions using `ChoiceResolver.addResolvedProgressions()` utility
+4. Entities in granted progressions are processed in the next iteration of the cascading loop
 
 **Source File**: `apps/backend/src/features/characterResolution/cascadingResolver.ts`
 
@@ -186,8 +221,9 @@ Initialize a new resolution session.
 - `classSkills` - Array of class skills
 - `skillBonuses` - Array of skill bonuses with sources
 - `grantedFeats` - Array of granted feat IDs
-- `availableFeats` - Count of available feat slots
+- `availableFeatsCount` - Count of available feat slots (number)
 - `availableFighterBonusFeats` - Count of available fighter bonus feat slots
+- `qualifiedFeats` - List of feats the character qualifies for (array of `FeatInQueryResponse`)
 - `formattedCharacter` - Formatted character data for display
 - `warnings` - Array of warning messages
 - `errors` - Array of error messages
@@ -405,11 +441,18 @@ The frontend uses the resolution API through:
 - Since `resumeSession` always returns a session (creates one if needed), the hook no longer needs to check for null or make a second API call to `initializeSession`
 - This simplifies the frontend code and reduces API calls from two to one when no session exists
 
+**State Synchronization Pattern**:
+- All tabs follow the standardized **state → useEffect → applyUpdate** pattern
+- Tabs update state via `updateState()` - CharacterEdit automatically syncs via useEffect hooks
+- Tabs should NOT call `resolution.applyUpdate()` directly
+- This pattern ensures consistency, maintainability, and automatic sync
+
 **Spell Operations Integration**:
-- `SpellSelectionTab` uses `useCharacterResolution` hook's `updateResolvedCharacter` method
-- Spell operations (`addSpellKnown`/`removeSpellKnown`) no longer manually manipulate TanStack Query caches
-- The backend returns updated `ResolvedCharacterResult` in spell operation responses
-- Frontend syncs resolution state automatically using the response data
+- `SpellSelectionTab` uses `resolution.refreshState()` after spell operations
+- Spell operations (`addSpellKnown`/`removeSpellKnown`) update the database directly
+- Backend automatically updates resolution session if one exists
+- Frontend refreshes resolution state separately using `refreshState()`
+- Response schemas do NOT include `resolvedCharacter` - follows standardized pattern
 
 **Source Files**:
 - `apps/frontend/src/services/api/CharacterResolutionApi.ts`
@@ -458,16 +501,16 @@ Spell add/remove operations integrate with the resolution session system to main
    - Backend rebuilds complete `CharacterEditState` from updated character
    - Backend re-resolves character features with updated character state
    - Backend updates session with new resolved result and character state
-   - Backend includes updated `ResolvedCharacterResult` in response
+   - Backend does NOT return `ResolvedCharacterResult` in response (follows standardized pattern)
 6. Backend calculates and includes spell counts in response:
    - `freeSpellsUsed` - Total free grants used (if spellbook class)
    - `availableFreeSpells` - Total available free spells
    - `remainingFreeSpells` - Remaining free spells
-7. Frontend receives response with spell counts and optional `resolvedCharacter` field
+7. Frontend receives response with spell counts (no `resolvedCharacter` field)
 8. Frontend performs optimistic cache updates:
    - Updates spell data cache (`isKnown: true`)
    - Updates character cache (`advancements[].spellsKnown` array)
-9. If `resolvedCharacter` is present, frontend updates resolution hook state using `updateResolvedCharacter()`
+9. Frontend calls `resolution.refreshState()` to refresh resolution state from server
 10. CharacterEdit re-renders with fresh resolved data
 
 **Remove Spell Flow**:
@@ -482,21 +525,22 @@ Spell add/remove operations integrate with the resolution session system to main
    - Backend rebuilds complete `CharacterEditState` from updated character
    - Backend re-resolves character features with updated character state
    - Backend updates session with new resolved result and character state
-   - Backend includes updated `ResolvedCharacterResult` in response
+   - Backend does NOT return `ResolvedCharacterResult` in response (follows standardized pattern)
 6. Backend calculates and includes updated spell counts in response (if removed spell was a free grant)
-7. Frontend receives response with updated spell counts and optional `resolvedCharacter` field
+7. Frontend receives response with updated spell counts (no `resolvedCharacter` field)
 8. Frontend performs optimistic cache updates:
    - Updates spell data cache (`isKnown: false`)
    - Updates character cache (`advancements[].spellsKnown` array)
-9. If `resolvedCharacter` is present, frontend updates resolution hook state using `updateResolvedCharacter()`
+9. Frontend calls `resolution.refreshState()` to refresh resolution state from server
 10. CharacterEdit re-renders with fresh resolved data
 
 **Key Points**:
 - Spell operations are direct database operations that also update the resolution session
 - Backend validation uses resolved progressions from session when available, otherwise resolves on-demand
-- The backend returns updated resolved character data in the response when a session exists
-- The frontend uses `useCharacterResolution.updateResolvedCharacter()` to sync state
+- Backend automatically updates resolution session but does NOT return `resolvedCharacter` in response
+- Frontend uses `resolution.refreshState()` to refresh resolution state after operations
 - Frontend performs optimistic cache updates for immediate UI feedback
+- This follows the standardized pattern: database operations update session, frontend refreshes state separately
 - No manual TanStack Query cache manipulation for character details is needed
 
 **Source Files**:
@@ -570,6 +614,29 @@ Cascading resolution uses iterative processing with depth limits to:
 - Prevent infinite loops
 - Detect circular dependencies
 - Process all granted features
+
+**Resolution Flow**:
+
+The cascading resolution process follows an iterative pattern:
+
+1. **Entity Processing**: For each feature progression, process all entities using `FeatureEntityHandlers.processFeatureEntity()`
+2. **Grant Detection**: Check if entities grant other features (via `EntityProcessingResult.grants`)
+3. **Feature Resolution**: For each granted entity, use `ChoiceResolver.resolveChoiceByType()` to resolve the granted feature
+4. **Progression Addition**: Add resolved progressions using `ChoiceResolver.addResolvedProgressions()` utility
+5. **Iteration**: Process entities in newly added progressions in the next iteration
+6. **Termination**: Continue until no new features are granted or maximum depth is reached
+
+**Example Flow**:
+- Ranger feature at level 1 grants Track feat (via `EntityType.Other` + `EntityAppliesToType.Feat`)
+- Track feat is resolved and added to progressions
+- Track feat's entities are processed in the next iteration
+- If Track feat grants other features, they are resolved and added
+- Process continues until no new features are found
+
+**Depth Limits**:
+- Default maximum depth: 10 iterations
+- Prevents infinite loops from circular dependencies
+- Warning is added if maximum depth is reached
 
 ## 🔧 **Extension Points**
 
@@ -667,12 +734,23 @@ The `ResolvedCharacterResult` extends `ResolutionResult` with derived data:
 - `classSkills` - Array of class skills (for formatter)
 - `skillBonuses` - Array of skill bonuses with sources (for formatter)
 - `grantedFeats` - Array of granted feat IDs
-- `availableFeats` - Count of available feat slots
+- `availableFeatsCount` - Count of available feat slots (number)
 - `availableFighterBonusFeats` - Count of available fighter bonus feat slots
+- `qualifiedFeats` - List of feats the character qualifies for (array of `FeatInQueryResponse`)
 - `formattedCharacter` - Formatted character data for display
 - `warnings` - Array of warning messages
 - `errors` - Array of error messages
 - `sessionId` - Unique session identifier
+
+**Feat Data Distinction**:
+- `availableFeatsCount` (number): Count of feat slots/choices available to the character. Answers "How many feats can you select?"
+- `qualifiedFeats` (array): List of feats the character qualifies for, filtered by prerequisites, proficiencies, owned feats, etc. Answers "Which feats can you select from?"
+
+The `qualifiedFeats` field is computed during resolution using `AvailableFeatService.getQualifiedFeats()`, which filters all feats based on:
+- Prerequisites (ability scores, skill ranks, feats, class levels, etc.)
+- Already-owned feats (excludes feats the character already has, unless repeatable)
+- "All" proficiencies (excludes feats that provide proficiencies the character already has as "all" category)
+- Character level and class levels
 
 **Source File**: `apps/backend/src/features/characterResolution/characterSessionService.ts`
 

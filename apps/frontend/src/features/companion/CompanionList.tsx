@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { COMPANION_COLUMNS } from '@/features/companion/CompanionColumns';
+import { useCompanionColumns } from '@/features/companion/CompanionColumns';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import { CompanionWithRelations } from '@shared/schema';
 
@@ -14,6 +14,7 @@ export function CompanionList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
+    const columns = useCompanionColumns();
 
     const HandleNewCompanionClick = (): void => {
         navigate('/companions/new/edit', { state: { fromListParams: location.search } });
@@ -42,7 +43,7 @@ export function CompanionList(): React.JSX.Element {
             )}
             <GenericList<CompanionWithRelations>
                 storageKey="companions-list"
-                columns={COMPANION_COLUMNS}
+                columns={columns}
                 dataFetcher={dataFetcher}
                 itemDesc="companion"
                 routes={routes}

@@ -17,6 +17,8 @@ This documentation follows a layered approach, building from the database founda
 - **[Spellcasting System](spellcasting-system.md)** — Magic system mechanics and progression
 - **[Class Progression](class-progression.md)** — Combat and saving throw calculations
 - **[Feature Integration](feature-integration.md)** — Class feature system integration
+- **[Feature Extraction Patterns](feature-extraction-patterns.md)** — Extracting mechanics from feature progressions
+- **[Migration Guide](migration-guide.md)** — Step-by-step migration from direct fields to feature system
 - **[Variant Class System](../variant-class-system/README.md)** — Variant class system integration
 
 ## 🎯 **System Overview**
@@ -52,19 +54,32 @@ Class display components must precache entities (feats, features, spells, domain
 
 ### **Variant Class Integration**
 
-The Class System integrates with the [Variant Class System](../variant-class-system/README.md) to support Unearthed Arcana variant classes like Cloistered Cleric. The integration uses custom ID generation and override-based storage to minimize data duplication while providing full flexibility for class modifications.
+The Class System supports variant classes through reusable feature progressions. Variants are modeled as first-order classes that share progressions with their base class.
+
+**New Approach (Post-Refactoring):**
+- **First-Order Classes**: Variants are regular `Class` entries, not separate `ClassVariant` entries
+- **Reusable Progressions**: Variants share feature progressions with base class via many-to-many relationship
+- **Clone Workflow**: Use "Clone from Base Class" feature to copy progression references
+- **Fork When Needed**: Create class-specific copies of progressions when variants need different values
+- **No Resolution Logic**: Variants resolve exactly like regular classes through feature system
 
 **Integration Points**:
-- **Unified Resolution**: Variants resolve to complete DnDClass objects through the class service
-- **Custom ID Generation**: Uses `baseClassId * 100000 + variantId` for unique variant identification
-- **Override System**: Stores only differences from base classes, not complete class data
-- **Feature Integration**: Leverages the feature system for variant feature management
-- **Spell Integration**: Integrates with the spell system for variant spell list modifications
+- **FeatureProgressionClassMap**: Many-to-many relationship for shared progressions
+- **Clone Feature**: Backend API endpoint for cloning class features
+- **Fork Feature**: Backend API endpoint for forking shared progressions
+- **Unified Resolution**: Variants resolve through standard feature resolution
+
+**Migration Status**:
+- ⏳ **In Progress**: Phase 1 (FeatureProgression many-to-many support) implemented
+- ⏸️ **Pending**: Phase 2 (Variant-to-class migration) - See [Migration Guide](migration-guide.md)
+
+**Legacy Approach (Deprecated):**
+The old variant class system using `ClassVariant` model is being phased out. See [Variant Class System](../variant-class-system/README.md) for legacy documentation.
 
 **Related Documentation**:
-- [Variant Class System](../variant-class-system/README.md) - Complete variant class system overview
-- [Variant Class Database Schema](../variant-class-system/database-schema.md) - Variant class database structure
-- [Variant Class Backend Implementation](../variant-class-system/backend-implementation.md) - Variant class backend services
+- [Class and Race Feature Refactoring](../application-overview/class-race-feature-refactoring.md) - Complete refactoring overview
+- [Feature System - Reusable Progressions](../feature-system/README.md#reusable-feature-progressions) - Reusable progression documentation
+- [Variant Class System](../variant-class-system/README.md) - Legacy variant system (being migrated)
 
 ### **Layered Implementation**
 

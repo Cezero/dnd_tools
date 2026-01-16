@@ -26,8 +26,6 @@ export const SpellProgressionEditor: React.FC<SpellProgressionEditorProps> = ({
     editorId = 'default',
     originalProgression
 }) => {
-    console.log('SpellProgressionEditor received progression:', progression);
-
     // Convert from database format to editor format
     const editorData = useMemo(() => {
         const data: CreateSpellcastingProgressionRequest[] = [];

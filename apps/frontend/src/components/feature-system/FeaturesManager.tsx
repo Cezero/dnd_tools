@@ -165,7 +165,7 @@ export function FeaturesManager({
             onAddFeature({
                 id: feature.id,
                 name: feature.name,
-                description: feature.description,
+                description: feature.description ?? '',
                 slug: feature.slug
             });
         }
@@ -254,7 +254,7 @@ export function FeaturesManager({
                 transformSelectedItems={(features) => features.map(f => ({
                     id: f.id,
                     name: f.name,
-                    description: f.description,
+                    description: f.description ?? '',
                     slug: f.slug
                 }))}
                 dialogTitle="Select Features"

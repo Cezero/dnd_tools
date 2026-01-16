@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import {
     ValidatedInput,
@@ -8,6 +8,7 @@ import {
 } from '@/components/forms';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
+import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsExtractor';
 import {
     RPG_DICE_LIST,
     EDITION_LIST,
@@ -18,23 +19,50 @@ import {
     SAVE_PROGRESSION_LIST,
 } from '@shared/static-data';
 
+import { findClassMechanicsProgression, updateClassMechanicsEntity } from '../classMechanicsHelpers';
 import type { ClassTabProps } from './types';
 
 export function BasicInfoTab({
     formData,
     setFormData,
     isLoading: _isLoading = false,
-    isVariant,
-    setIsVariant,
-    baseClassId,
-    setBaseClassId,
-    availableBaseClasses
+    featureProgressions = [],
+    setFeatureProgressions,
+    classId
 }: ClassTabProps): React.JSX.Element {
+    // Extract mechanics from progressions
+    const mechanics = useMemo(() => {
+        if (!classId) {
+            return {
+                hitDie: null,
+                skillPoints: null,
+                babProgression: null,
+                fortProgression: null,
+                refProgression: null,
+                willProgression: null,
+            };
+        }
+        return extractClassMechanics(featureProgressions, classId);
+    }, [featureProgressions, classId]);
+
+    // Helper to update progressions directly
+    const handleMechanicsFieldChange = (
+        field: 'hitDie' | 'skillPoints' | 'babProgression' | 'fortProgression' | 'refProgression' | 'willProgression',
+        value: number | null
+    ) => {
+        // Update progressions if available
+        if (setFeatureProgressions && classId && value !== null) {
+            const mechanicsProgression = findClassMechanicsProgression(featureProgressions, classId);
+            if (mechanicsProgression) {
+                updateClassMechanicsEntity(mechanicsProgression, field, value, featureProgressions, setFeatureProgressions);
+            }
+        }
+    };
     const progressionConfig = {
-        babProgression: formData.babProgression,
-        fortProgression: formData.fortProgression,
-        refProgression: formData.refProgression,
-        willProgression: formData.willProgression,
+        babProgression: mechanics.babProgression ?? 0,
+        fortProgression: mechanics.fortProgression ?? 0,
+        refProgression: mechanics.refProgression ?? 0,
+        willProgression: mechanics.willProgression ?? 0,
     };
     const progression = generateClassProgression(progressionConfig);
 
@@ -70,22 +98,26 @@ export function BasicInfoTab({
                             labelExtraClassName="w-45"
                             itemExtraClassName="w-32"
                             itemTextExtraClassName="w-32"
-                            value={formData.hitDie}
-                            onValueChange={(value) => setFormData({ ...formData, hitDie: value as number })}
+                            value={mechanics.hitDie ?? undefined}
+                            onValueChange={(value) => handleMechanicsFieldChange('hitDie', value as number)}
                             options={RPG_DICE_LIST.map(die => ({ id: die.id, name: die.name }))}
                             useAbbreviation={false}
                             placeholder="Select hit die"
                         />
-                        <ValidatedInput
-                            field="skillPoints"
-                            label="Skill Point Base"
-                            type="number"
-                            min={0}
-                            max={10}
-                            step={1}
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-45"
-                        />
+                        <div className="flex items-center gap-2">
+                            <label className={`block font-medium w-45 ${mechanics.skillPoints === null ? 'text-gray-400' : ''}`}>
+                                Skill Point Base
+                            </label>
+                            <input
+                                type="number"
+                                min={0}
+                                max={10}
+                                step={1}
+                                value={mechanics.skillPoints ?? ''}
+                                onChange={(e) => handleMechanicsFieldChange('skillPoints', e.target.value ? parseInt(e.target.value, 10) : null)}
+                                className="w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                        </div>
                         <CustomSelect
                             label="Base Attack Bonus"
                             required
@@ -93,8 +125,8 @@ export function BasicInfoTab({
                             labelExtraClassName="w-45"
                             itemExtraClassName="w-32"
                             itemTextExtraClassName="w-32"
-                            value={formData.babProgression}
-                            onValueChange={(value) => setFormData({ ...formData, babProgression: value as ProgressionType })}
+                            value={mechanics.babProgression ?? undefined}
+                            onValueChange={(value) => handleMechanicsFieldChange('babProgression', value as number)}
                             options={BAB_PROGRESSION_LIST}
                             useAbbreviation={false}
                             placeholder="Select BAB progression"
@@ -106,8 +138,8 @@ export function BasicInfoTab({
                             labelExtraClassName="w-45"
                             itemExtraClassName="w-32"
                             itemTextExtraClassName="w-32"
-                            value={formData.fortProgression}
-                            onValueChange={(value) => setFormData({ ...formData, fortProgression: value as ProgressionType })}
+                            value={mechanics.fortProgression ?? undefined}
+                            onValueChange={(value) => handleMechanicsFieldChange('fortProgression', value as number)}
                             options={SAVE_PROGRESSION_LIST}
                             useAbbreviation={false}
                             placeholder="Select Fortitude progression"
@@ -119,8 +151,8 @@ export function BasicInfoTab({
                             labelExtraClassName="w-45"
                             itemExtraClassName="w-32"
                             itemTextExtraClassName="w-32"
-                            value={formData.refProgression}
-                            onValueChange={(value) => setFormData({ ...formData, refProgression: value as ProgressionType })}
+                            value={mechanics.refProgression ?? undefined}
+                            onValueChange={(value) => handleMechanicsFieldChange('refProgression', value as number)}
                             options={SAVE_PROGRESSION_LIST}
                             useAbbreviation={false}
                             placeholder="Select Reflex progression"
@@ -132,8 +164,8 @@ export function BasicInfoTab({
                             labelExtraClassName="w-45"
                             itemExtraClassName="w-32"
                             itemTextExtraClassName="w-32"
-                            value={formData.willProgression}
-                            onValueChange={(value) => setFormData({ ...formData, willProgression: value as ProgressionType })}
+                            value={mechanics.willProgression ?? undefined}
+                            onValueChange={(value) => handleMechanicsFieldChange('willProgression', value as number)}
                             options={SAVE_PROGRESSION_LIST}
                             useAbbreviation={false}
                             placeholder="Select Will progression"
@@ -162,41 +194,6 @@ export function BasicInfoTab({
                             checked={formData.isPrestige as boolean}
                             onCheckedChange={(checked) => setFormData({ ...formData, isPrestige: checked })}
                         />
-                        {/* Variant Toggle - only show for new classes and 3.5E edition */}
-                        {formData.editionId === EditionId.DND_3_5E && (
-                            <CustomCheckbox
-                                label="This is a variant class"
-                                checked={isVariant || false}
-                                onCheckedChange={(checked) => setIsVariant?.(checked)}
-                            />
-                        )}
-                        {/* Base Class Selector - only show when creating a variant */}
-                        {isVariant && availableBaseClasses && setBaseClassId && (
-                            <div className="space-y-2">
-                                <label htmlFor="baseClassId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Base Class *
-                                </label>
-                                <select
-                                    id="baseClassId"
-                                    value={baseClassId || 0}
-                                    onChange={(e) => setBaseClassId(parseInt(e.target.value))}
-                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                    required
-                                >
-                                    <option value={0}>Select a base class...</option>
-                                    {availableBaseClasses.map((baseClass) => (
-                                        <option key={baseClass.id} value={baseClass.id}>
-                                            {baseClass.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {baseClassId === 0 && (
-                                    <p className="text-sm text-red-600 dark:text-red-400">
-                                        Please select a base class for the variant
-                                    </p>
-                                )}
-                            </div>
-                        )}
                         <CustomCheckbox
                             label="Visible in Lists"
                             checked={formData.isVisible as boolean}

@@ -207,6 +207,36 @@ Different classes have different patterns of spell access.
 
 ## 🔗 **Feature Integration**
 
+### **Feature-Based Spellcasting**
+
+Spellcasting is integrated with the feature system, enabling unified resolution for gestalt and multiclass characters.
+
+**FeatureProgression Links:**
+- `SpellcastingProgression` linked to classes via `FeatureProgression` entities
+- Feature entities with `EntityAppliesToType.SpellcastingProgression` reference spellcasting progressions
+- Casting ability and type also stored as feature entities
+- Enables automatic resolution through feature system
+
+**Benefits:**
+- **Unified Resolution**: Spellcasting resolved through feature system like other mechanics
+- **Gestalt Support**: Multiple spellcasting progressions automatically resolved (Wizard + Cleric)
+- **Multiclass Support**: Each class's spellcasting tracked independently
+- **Variant Support**: Variants can share or fork spellcasting progressions
+
+**Migration:**
+- Existing `SpellcastingProgression.classId` links being migrated to `FeatureProgression` links
+- Both patterns supported during transition period
+- See [Migration Guide](migration-guide.md) for details
+
+**Source Files:**
+- Database: `apps/backend/prisma/schema.prisma` (SpellcastingProgression, SpellcastingLink models)
+- Backend: `apps/backend/src/features/featureSystem/featureSystemService.ts`
+- Backend: `apps/backend/src/features/class/classService.ts`
+
+**Related Documentation:**
+- [Feature System - Spellcasting Integration](../feature-system/README.md#spellcasting-integration) - Feature system integration
+- [Class and Race Feature Refactoring](../application-overview/class-race-feature-refactoring.md) - Complete refactoring overview
+
 ### **Spellcasting Features**
 
 Class features that modify or enhance spellcasting abilities.
@@ -238,6 +268,31 @@ Classes can inherit spellcasting from other classes or sources.
 - **Source Tracking**: Track the source of inherited abilities
 - **Integration Interface**: Interface for managing inherited abilities
 - **Conflict Resolution**: Handle conflicts between different spellcasting sources
+
+### **Future Enhancements**
+
+**TODO: Future Enhancement - FeatureEntity Formulas for Spellcasting**
+
+**Status**: Deferred to future phase after Approach 1 (FeatureProgression links) is validated and stable.
+
+**Approach 2: FeatureEntity Formulas**
+- Replace `SpellcastingProgression`/`SpellcastingSlot` models entirely with `FeatureEntity` formulas
+- Complete unification through feature system
+- Maximum flexibility for complex casting patterns
+
+**Considerations:**
+- Requires formula system extensions
+- More complex migration
+- Performance implications (formula calculations vs. table lookups)
+- UI complexity for formula editing
+
+**When to Consider:**
+- After Phase 4 is complete and stable
+- If maximum flexibility is needed
+- If formula system is extended to support spellcasting patterns
+- If performance with formula caching is acceptable
+
+**See**: [Class and Race Feature Refactoring - Spellcasting Analysis](../application-overview/class-race-feature-refactoring.md#spellcasting-system-analysis) for detailed comparison of approaches.
 
 ## 🎯 **User Workflows**
 

@@ -1,5 +1,6 @@
 import type {
     GetAllCharactersResponse,
+    GetAllCharactersAdminResponse,
     Character,
     CreateCharacterRequest,
     CharacterIdParamRequest,
@@ -11,7 +12,7 @@ import type {
     CharacterAdvancementWithDetailsResponse,
     CreateSpellPreparationRequest,
     UpdateSpellPreparationRequest,
-    CharacterSpellPreparationWithMetamagicResponse,
+    CharacterSpellPreparationResponse,
     CreateCharacterAbilityScoreRequest,
     UpdateCharacterAbilityScoreRequest,
     CharacterAbilityScoreResponse,
@@ -26,13 +27,25 @@ import type {
     CharacterAttackDefinition,
     // NEW: Spell types
     Spell,
+    FeatureProgression,
+    // NEW: Character detail request types
+    UpdateNotesRequest,
+    CharacterFeatureUses,
+    UpdateMoneyRequest,
+    AddItemRequest,
+    UpdateWoundsRequest,
+    SyncItemsRequest,
+    SyncSpellPreparationsRequest,
+    SyncSpellsKnownRequest,
+    AddSpellKnownResponse,
+    RemoveSpellKnownResponse,
 } from '@shared/schema';
 import type { GestaltStats } from '@shared/utils';
 
 // Service interface
 export interface CharacterService {
     getAllCharacters: (userId: number) => Promise<GetAllCharactersResponse>;
-    getAllCharactersAdmin: () => Promise<GetAllCharactersResponse>;
+    getAllCharactersAdmin: () => Promise<GetAllCharactersAdminResponse>;
     getCharacterById: (query: CharacterIdParamRequest) => Promise<Character | null>;
     getCharacterWithAllDetails: (query: CharacterIdParamRequest) => Promise<CharacterWithAllDetailsResponse | null>;
     createCharacter: (data: CreateCharacterRequest) => Promise<CreateResponse>;
@@ -47,10 +60,10 @@ export interface CharacterService {
     getCharacterAdvancements: (characterId: number) => Promise<CharacterAdvancementWithDetailsResponse[]>;
 
     // Spell preparation methods
-    createSpellPreparation: (data: CreateSpellPreparationRequest) => Promise<CreateResponse>;
-    updateSpellPreparation: (characterId: number, prepKey: string, data: UpdateSpellPreparationRequest) => Promise<UpdateResponse>;
-    deleteSpellPreparation: (characterId: number, prepKey: string) => Promise<UpdateResponse>;
-    getCharacterSpellPreparations: (characterId: number) => Promise<CharacterSpellPreparationWithMetamagicResponse[]>;
+    createSpellPreparation: (characterId: number, data: CreateSpellPreparationRequest) => Promise<CreateResponse>;
+    updateSpellPreparation: (preparationId: number, data: UpdateSpellPreparationRequest) => Promise<UpdateResponse>;
+    deleteSpellPreparation: (preparationId: number) => Promise<UpdateResponse>;
+    getCharacterSpellPreparations: (characterId: number) => Promise<CharacterSpellPreparationResponse[]>;
 
     // Character ability score methods
     createCharacterAbilityScore: (data: CreateCharacterAbilityScoreRequest) => Promise<CreateResponse>;
@@ -61,7 +74,7 @@ export interface CharacterService {
 
     // NEW: Character disallowed sources methods
     addDisallowedSource: (data: CreateCharacterDisallowedSourceRequest) => Promise<CharacterDisallowedSource>;
-    removeDisallowedSource: (characterId: number, sourceBookId: number) => Promise<void>;
+    removeDisallowedSource: (characterId: number, sourceBookId: number) => Promise<UpdateResponse>;
     getDisallowedSources: (characterId: number) => Promise<CharacterDisallowedSource[]>;
 
     // NEW: Character attack definition methods
@@ -85,15 +98,32 @@ export interface CharacterService {
 
     // NEW: Spell selection methods
     getCharacterDomains: (characterId: number, classId: number) => Promise<number[]>;
-    getAvailableSpellsForClass: (characterId: number, classId: number, resolvedProgressions?: import('@shared/schema').FeatureProgression[]) => Promise<{
+    getAvailableSpellsForClass: (characterId: number, classId: number, resolvedProgressions?: FeatureProgression[]) => Promise<{
         spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean; isFreeGrant?: boolean }>;
         domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }>;
         availableFreeSpells?: number;
     }>;
-    addSpellKnown: (characterId: number, classId: number, spellId: number, advancementId: number, isFreeGrant?: boolean, resolvedProgressions?: import('@shared/schema').FeatureProgression[]) => Promise<import('@shared/schema').AddSpellKnownResponse>;
-    removeSpellKnown: (characterId: number, spellId: number, advancementId: number) => Promise<import('@shared/schema').RemoveSpellKnownResponse>;
+    addSpellKnown: (characterId: number, classId: number, spellId: number, advancementId: number, isFreeGrant?: boolean, resolvedProgressions?: FeatureProgression[]) => Promise<AddSpellKnownResponse>;
+    removeSpellKnown: (characterId: number, spellId: number, advancementId: number) => Promise<RemoveSpellKnownResponse>;
     getMaxCastableSpellLevel: (classId: number, characterLevel: number) => Promise<number>;
     validateSpellLevelForAdvancement: (classId: number, advancementLevel: number, spellLevel: number) => Promise<boolean>;
     countFreeGrantsForAdvancement: (advancementId: number) => Promise<number>;
+
+    // NEW: Character detail methods (uses tracking, money, items, wounds, spell cast)
+    getCharacterUses: (characterId: number) => Promise<CharacterFeatureUses[]>;
+    updateFeatureUses: (characterId: number, progressionId: number, entityId: number, delta: number) => Promise<CharacterFeatureUses>;
+    resetDailyUses: (characterId: number) => Promise<UpdateResponse>;
+    resetAllUses: (characterId: number) => Promise<UpdateResponse>;
+    resetDailySpellPreparations: (characterId: number) => Promise<UpdateResponse>;
+    updateMoney: (characterId: number, money: UpdateMoneyRequest) => Promise<UpdateResponse>;
+    addItem: (characterId: number, item: AddItemRequest) => Promise<CreateResponse>;
+    removeItem: (characterId: number, itemId: number) => Promise<UpdateResponse>;
+    updateWounds: (characterId: number, wounds: UpdateWoundsRequest) => Promise<UpdateResponse>;
+    updateNotes: (characterId: number, notes: UpdateNotesRequest) => Promise<UpdateResponse>;
+    castSpell: (characterId: number, preparationId: number) => Promise<UpdateResponse>;
+    uncastSpell: (characterId: number, preparationId: number) => Promise<UpdateResponse>;
+    syncItems: (characterId: number, items: SyncItemsRequest['items']) => Promise<UpdateResponse>;
+    syncSpellPreparations: (characterId: number, spellPreparations: SyncSpellPreparationsRequest['spellPreparations']) => Promise<UpdateResponse>;
+    syncSpellsKnown: (characterId: number, advancementId: number, spellsKnown: SyncSpellsKnownRequest['spellsKnown']) => Promise<UpdateResponse>;
 
 } 

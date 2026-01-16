@@ -1,9 +1,8 @@
+import { getFeatByIdFromCache } from '@/services/cache/featCache';
 import type {
     CharacterWithAllDetailsResponse,
     CharacterFeatureChoice,
-    Feat,
     FeatureProgression,
-    FeatureEntity,
 } from '@shared/schema';
 import { AttackBonusAppliesTo, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
@@ -55,7 +54,6 @@ export function resolveFeatBenefits(
     character: CharacterWithAllDetailsResponse,
     appliesTo: EntityAppliesToType,
     context?: FeatBenefitContext,
-    featsMap?: Map<number, Feat>,
     resolvedProgressions?: FeatureProgression[]
 ): FeatBenefit[] {
     const benefits: FeatBenefit[] = [];
@@ -76,13 +74,13 @@ export function resolveFeatBenefits(
                 continue;
             }
 
-            // Get feat details from map if provided
-            const feat = featsMap?.get(characterFeat.featId);
+            // Get feat details from cache
+            const feat = getFeatByIdFromCache(characterFeat.featId);
 
             // Find entities that match the appliesTo type
             for (const entity of progression.entities) {
                 if (entity.appliesTo !== appliesTo) continue;
-                
+
                 // For proficiency, check entity type and appliesTo
                 if (appliesTo === EntityAppliesToType.Proficiency && (entity.type !== EntityType.Other || entity.appliesTo !== EntityAppliesToType.Proficiency)) {
                     continue;
@@ -176,7 +174,6 @@ export function resolveFeatBenefits(
 export function resolveFeatFormulaModifications(
     character: CharacterWithAllDetailsResponse,
     context?: FeatBenefitContext,
-    featsMap?: Map<number, Feat>,
     resolvedProgressions?: FeatureProgression[]
 ): FormulaModification[] {
     const modifications: FormulaModification[] = [];
@@ -197,34 +194,18 @@ export function resolveFeatFormulaModifications(
                 continue;
             }
 
-            // Get feat details from map if provided
-            const feat = featsMap?.get(characterFeat.featId);
-
-            // Check entities for ability replacement (Weapon Finesse)
-            // This would be represented as a special entity type or condition
-            // For now, check by feat name if available
-            if (feat?.name === 'Weapon Finesse' || progression.feature?.name === 'Weapon Finesse') {
-                        // Check if weapon type matches (light weapon, rapier, whip, or spiked chain)
-                        // This would need weapon type checking from context
-                        if (context?.weaponType) {
-                            // TODO: Check if weapon type is light, rapier, whip, or spiked chain
-                            modifications.push({
-                                type: 'ability_replacement',
-                                context: {
-                                    weaponType: context.weaponType ? [context.weaponType] : undefined,
-                                },
-                                parameters: {
-                                    fromAbility: 1, // Strength
-                                    toAbility: 2, // Dexterity
-                                },
-                                source: {
-                                    type: 'feat',
-                                    id: characterFeat.featId,
-                            name: feat?.name || progression.feature?.name || 'Unknown Feat',
-                                },
-                            });
-                }
-            }
+            // TODO: Formula modifications (like ability_replacement for Weapon Finesse) should be provided
+            // through FeatureEntity entities with appropriate entity types or formula modification entities,
+            // not by matching on feat/feature names. This is a temporary workaround that should be removed
+            // once the proper FeatureEntity-based formula modification system is implemented.
+            // 
+            // The proper implementation should:
+            // 1. Check progression.entities for entities that represent formula modifications
+            // 2. Extract ability_replacement parameters from entity data (fromAbility, toAbility)
+            // 3. Extract weapon type conditions from entity conditions or appliesToSubId
+            // 4. Build FormulaModification objects from entity data, not hardcoded name checks
+            //
+            // Remove this entire block once FeatureEntity-based formula modifications are implemented.
         }
     }
 

@@ -4,7 +4,6 @@ import type {
     ItemWithDetails,
     CharacterItem,
     DnDClass,
-    Feat,
 } from '@shared/schema';
 import { AbilityId, WEAPON_TYPE_ENUM, ABILITY_MAP, EntityAppliesToType } from '@shared/static-data';
 
@@ -76,8 +75,7 @@ export function getCombatValues(
     character: CharacterWithAllDetailsResponse,
     resolvedProgressions: FeatureProgression[],
     context: CombatCalculationContext,
-    classDetailsMap: Map<number, DnDClass>,
-    featsMap?: Map<number, Feat>
+    classDetailsMap: Map<number, DnDClass>
 ): CombatValuesResult[] {
     const { mainHandItem, offHandItem } = context;
 
@@ -89,8 +87,7 @@ export function getCombatValues(
             mainHandItem,
             null,
             false,
-            classDetailsMap,
-            featsMap
+            classDetailsMap
         )];
     }
 
@@ -105,8 +102,7 @@ export function getCombatValues(
             mainHandItem,
             offHandItem,
             false,
-            classDetailsMap,
-            featsMap
+            classDetailsMap
         );
         const offHandResult = calculateSingleWeaponAttack(
             character,
@@ -114,8 +110,7 @@ export function getCombatValues(
             offHandItem,
             mainHandItem,
             true,
-            classDetailsMap,
-            featsMap
+            classDetailsMap
         );
         return [mainHandResult, offHandResult];
     }
@@ -130,8 +125,7 @@ export function getCombatValues(
         mainHandItem,
         offHandItem,
         false,
-        classDetailsMap,
-        featsMap
+        classDetailsMap
     )];
 }
 
@@ -145,15 +139,14 @@ function calculateSingleWeaponAttack(
     weaponItem: ItemWithDetails | CharacterItem | null,
     otherItem: ItemWithDetails | CharacterItem | null | undefined,
     isOffHand: boolean,
-    classDetailsMap: Map<number, DnDClass>,
-    featsMap?: Map<number, Feat>
+    classDetailsMap: Map<number, DnDClass>
 ): CombatValuesResult {
-    const bab = getCharacterBAB(character, classDetailsMap);
+    const bab = getCharacterBAB(character, classDetailsMap, resolvedProgressions);
     const characterLevel = character.advancements.length;
 
     // Handle unarmed strike (no weapon item or unarmed weapon)
     if (!weaponItem || isUnarmedWeapon(weaponItem)) {
-        return calculateUnarmedStrike(character, resolvedProgressions, classDetailsMap, featsMap);
+        return calculateUnarmedStrike(character, resolvedProgressions, classDetailsMap);
     }
 
     // Must have weapon property for weapon attacks
@@ -172,7 +165,7 @@ function calculateSingleWeaponAttack(
 
     // Determine ability modifier (using adjusted score with racial modifiers)
     let baseAbilityId = isRanged ? AbilityId.Dexterity : AbilityId.Strength;
-    let abilityMod = getAbilityModifierWithBonuses(character, baseAbilityId, resolvedProgressions, featsMap);
+    let abilityMod = getAbilityModifierWithBonuses(character, baseAbilityId, resolvedProgressions);
 
     // Check for formula modifications (Weapon Finesse)
     const formulaModifications = resolveFeatFormulaModifications(
@@ -181,7 +174,6 @@ function calculateSingleWeaponAttack(
             weaponType: weaponProps.weaponType,
             itemId: weaponProps.itemId,
         },
-        featsMap,
         resolvedProgressions
     );
     const modifiedAbilityId = applyAbilityModification(
@@ -195,7 +187,7 @@ function calculateSingleWeaponAttack(
 
     // If ability was modified, get the new modifier (using adjusted score with racial modifiers)
     if (modifiedAbilityId !== baseAbilityId) {
-        abilityMod = getAbilityModifierWithBonuses(character, modifiedAbilityId, resolvedProgressions, featsMap);
+        abilityMod = getAbilityModifierWithBonuses(character, modifiedAbilityId, resolvedProgressions);
     }
 
     // Calculate attack bonus penalties and bonuses
@@ -224,7 +216,6 @@ function calculateSingleWeaponAttack(
             isOffHand,
             isLightWeapon: otherItem && hasWeapon(otherItem) && otherItem.weapon.type === WEAPON_TYPE_ENUM.LightMeleeWeapon,
         },
-        featsMap,
         resolvedProgressions
     );
     const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
@@ -288,7 +279,6 @@ function calculateSingleWeaponAttack(
         {
             itemId: weaponProps.itemId,
         },
-        featsMap,
         resolvedProgressions
     );
     const damageFeatBonus = damageFeatBenefits.reduce((sum, b) => sum + b.amount, 0);
@@ -367,11 +357,10 @@ function calculateSingleWeaponAttack(
 function calculateUnarmedStrike(
     character: CharacterWithAllDetailsResponse,
     resolvedProgressions: FeatureProgression[],
-    classDetailsMap: Map<number, DnDClass>,
-    featsMap?: Map<number, Feat>
+    classDetailsMap: Map<number, DnDClass>
 ): CombatValuesResult {
-    const bab = getCharacterBAB(character, classDetailsMap);
-    const strMod = getAbilityModifierWithBonuses(character, AbilityId.Strength, resolvedProgressions, featsMap);
+    const bab = getCharacterBAB(character, classDetailsMap, resolvedProgressions);
+    const strMod = getAbilityModifierWithBonuses(character, AbilityId.Strength, resolvedProgressions);
     const characterLevel = character.advancements.length;
     const characterSizeId = getCharacterSizeId(character);
 
@@ -383,7 +372,6 @@ function calculateUnarmedStrike(
         character,
         EntityAppliesToType.UnarmedDamage,
         { isUnarmed: true },
-        featsMap,
         resolvedProgressions
     );
     const unarmedLethalBonus = unarmedLethalBenefits.reduce((sum, b) => sum + b.amount, 0);

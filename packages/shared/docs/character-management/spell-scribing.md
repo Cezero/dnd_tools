@@ -368,6 +368,54 @@ The frontend uses `useCharacterResolution.updateResolvedCharacter()` to sync res
 - Frontend: `apps/frontend/src/features/character/useCharacterResolution.ts` (`updateResolvedCharacter`)
 - Frontend: `apps/frontend/src/features/character/tabs/SpellSelectionTab.tsx` (`handleLearnSpell`, `handleRemoveSpell`)
 
+### **Spell Selection Data Display**
+
+The `SpellSelectionTab` component displays spell information using data from the spell selection API endpoint, with cache lookups for sourcebook abbreviations.
+
+**API Endpoint**: `/characters/:id/spell-selection/:classId`
+
+**Response Structure**:
+- Returns `CharacterSpellSelectionResponse` with full `SpellSchema` objects
+- Each spell entry includes:
+  - `schoolIds`: Array of `{ schoolId: number }` - Spell school IDs
+  - `subSchoolIds`: Array of `{ subSchoolId: number }` - Spell subschool IDs
+  - `sourceBookInfo`: Array of `{ sourceBookId: number, pageNumber: number | null }` - Source references (no nested `sourceBook` object)
+  - `summary`: Spell description/summary text
+  - `classSpellLevel`: Spell level for the selected class
+  - `isKnown`: Whether the spell is already known
+  - `isFreeGrant`: Whether the spell was granted for free (if known)
+
+**Table Column Data Sources**:
+- **Spell Name**: Uses `spell.name` from API response
+- **School/Subschool**: Uses `schoolIds` and `subSchoolIds` from API response, with static maps (`SPELL_SCHOOL_MAP`, `SPELL_SUBSCHOOL_MAP`) for ID-to-name conversion
+- **Description**: Uses `spell.summary` from API response
+- **Source**: Uses `sourceBookInfo[].sourceBookId` from API response, with `getSourceBookFromCache()` for abbreviation lookup
+
+**Important**: Table columns use API data directly - **no individual `getSpellById` calls are made for table display**. All spell information needed for the table is included in the single API response.
+
+**Tooltip Fetching**:
+- `EntityLink` components use `SpellTooltip` for detailed spell previews
+- Tooltip fetching is **lazy-loaded** (`enabled: isOpen`) - only fetches when tooltip opens on hover
+- Tooltips are separate from table display and use `getSpellById` for full spell details
+- This is acceptable behavior as tooltips are for detailed previews, not table rendering
+
+**Cache Lookup Patterns**:
+- Sourcebook abbreviations are resolved using `getSourceBookFromCache(sourceBookId)` from the sourcebooks-cache
+- Cache is pre-populated on app startup via `CacheProvider`
+- Memoized helper functions (`getSourceDisplay`, `formatSchoolSubschool`) optimize cache lookups and formatting
+
+**Memoization Strategy**:
+- `getSourceDisplay`: Memoized function for sourcebook abbreviation lookup and formatting
+- `formatSchoolSubschool`: Memoized function for school/subschool name formatting
+- Both functions are dependencies of the `spellColumns` memo to ensure proper recalculation
+
+**Source Files**:
+- API Endpoint: `apps/backend/src/features/character/characterController.ts` (`GetCharacterSpellSelection`)
+- Backend Service: `apps/backend/src/features/character/characterService.ts` (`getAvailableSpellsForClass`)
+- Frontend Component: `apps/frontend/src/features/character/tabs/SpellSelectionTab.tsx`
+- Cache Functions: `apps/frontend/src/services/cache/CacheFunctions.ts` (`getSourceBookFromCache`)
+- Tooltip Component: `apps/frontend/src/components/entity-tooltip/SpellTooltip.tsx`
+
 ## 📊 **Data Flow**
 
 ### **Add Spell Flow**

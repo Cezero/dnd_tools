@@ -63,14 +63,17 @@ export const AnalogSkillService = {
                         entity.appliesToId === skillId
                     ) {
                         // This progression grants the analog skill
-                        // Get the class ID from the progression
-                        if (progression.classId) {
-                            const currentLevel = classLevelsMap.get(progression.classId) || 0;
-                            classLevelsMap.set(progression.classId, currentLevel + 1);
+                        // Get the class IDs from the progression (many-to-many relationship)
+                        if (progression.classes && progression.classes.length > 0) {
+                            for (const classLink of progression.classes) {
+                                const classId = classLink.classId;
+                                const currentLevel = classLevelsMap.get(classId) || 0;
+                                classLevelsMap.set(classId, currentLevel + 1);
 
-                            const className = getClassNameFromCache(progression.classId);
-                            if (className && !grantedByClasses.includes(className)) {
-                                grantedByClasses.push(className);
+                                const className = getClassNameFromCache(classId);
+                                if (className && !grantedByClasses.includes(className)) {
+                                    grantedByClasses.push(className);
+                                }
                             }
                         }
                     }

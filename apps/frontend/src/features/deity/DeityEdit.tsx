@@ -12,10 +12,9 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { SourceEditor } from '@/components/forms/SourceEditor';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { useCacheFunctions } from '@/services/cache';
-import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import { DeityQueryHooks } from '@/services/query/DeityQueryHooks';
-import { CreateDeityRequest, UpdateDeityRequest, UpdateDeitySchema, CreateDeitySchema } from '@shared/schema';
-import { EDITION_LIST, ALIGNMENT_LIST, AlignmentId, EditionId, SourceType, PANTHEON_LIST, ITEM_TYPE_ENUM, CoreComponent } from '@shared/static-data';
+import { CreateDeityRequest, UpdateDeityRequest, UpdateDeitySchema, CreateDeitySchema, Deity } from '@shared/schema';
+import { EDITION_LIST, ALIGNMENT_LIST, AlignmentId, EditionId, SourceType, PANTHEON_LIST, CoreComponent } from '@shared/static-data';
 
 // TODO check if the Domain and Weapon queries should be using the cached GetDomainSelectByEdition and GetWeaponSelectByEdition functions
 
@@ -23,7 +22,7 @@ import { EDITION_LIST, ALIGNMENT_LIST, AlignmentId, EditionId, SourceType, PANTH
 type DeityFormData = CreateDeityRequest | UpdateDeityRequest;
 
 export function DeityEdit() {
-    const { getClassNameById, getBaseClassSelectByEdition, getRaceNameById, getRaceSelectByEdition, getDomainNameById, getDomainSelectByEdition } = useCacheFunctions();
+    const { getClassSummaryById, getBaseClassSelectByEdition, getRaceSummaryById, getRaceSelectByEdition, getDomainSummaryById, getDomainSelectByEdition, getAllWeapons, transformItemCacheEntriesToItemWithDetails, transformItemCacheEntriesToCoreComponents } = useCacheFunctions();
     const queryClient = useQueryClient();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -41,7 +40,7 @@ export function DeityEdit() {
     const [domainNames, setDomainNames] = useState<Record<number, string>>({});
 
     // Use imperative API for data fetching and mutations
-    const [deityData, setDeityData] = useState<unknown | null>(null);
+    const [deityData, setDeityData] = useState<Deity | null>(null);
     const [isLoadingDeity, setIsLoadingDeity] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -111,45 +110,20 @@ export function DeityEdit() {
         }
     );
 
-    // Load weapons data with imperative API
+    // Load weapons data from cache (synchronous, cache is always loaded)
     useEffect(() => {
-        const fetchWeapons = async () => {
-            try {
-                const cacheData = await CacheQueryHooks.getItemsCache();
-                if (cacheData?.results) {
-                    const weapons = cacheData.results.filter(item => 
-                        item.typeId === ITEM_TYPE_ENUM.Weapon
-                    );
-                    // Transform items to match expected format
-                    const weaponsResponse = {
-                        results: weapons.map(w => ({
-                            id: w.id,
-                            name: w.name,
-                            typeId: w.typeId,
-                            weapon: w.weaponCategory ? { category: w.weaponCategory } : null,
-                            armor: null,
-                        })),
-                        total: weapons.length,
-                    };
-                    setWeaponsData(weaponsResponse);
-                    // Transform items to CoreComponent format
-                    const weaponComponents: CoreComponent[] = weapons.map(item => ({
-                        id: item.id,
-                        name: item.name,
-                        abbreviation: item.name // Use name as abbreviation if needed
-                    }));
-                    setWeapons(weaponComponents);
-                } else {
-                    console.warn('No weapons found in cache');
-                    setWeapons([]);
-                }
-            } catch (error) {
-                console.error('Failed to fetch weapons:', error);
-                setWeapons([]);
-            }
+        const weapons = getAllWeapons();
+        // Transform items to match expected format
+        const transformedWeapons = transformItemCacheEntriesToItemWithDetails(weapons);
+        const weaponsResponse = {
+            results: transformedWeapons,
+            total: transformedWeapons.length,
         };
-        fetchWeapons();
-    }, []);
+        setWeaponsData(weaponsResponse);
+        // Transform items to CoreComponent format
+        const weaponComponents = transformItemCacheEntriesToCoreComponents(weapons);
+        setWeapons(weaponComponents);
+    }, [getAllWeapons, transformItemCacheEntriesToItemWithDetails, transformItemCacheEntriesToCoreComponents]);
 
     // Load available classes when edition changes
     useEffect(() => {
@@ -168,29 +142,29 @@ export function DeityEdit() {
 
     // Track previous worshipper IDs to avoid unnecessary reloads
     const prevWorshipperIdsRef = useRef<string>('');
-    
+
     // Load worshipper names (classes and races) asynchronously
     useEffect(() => {
         const currentClassIds = JSON.stringify((formData.classIds || []).sort());
         const currentRaceIds = JSON.stringify((formData.raceIds || []).sort());
         const currentIds = `${currentClassIds}|${currentRaceIds}`;
-        
+
         // Only reload if the IDs actually changed
         if (prevWorshipperIdsRef.current === currentIds) {
             return;
         }
-        
+
         prevWorshipperIdsRef.current = currentIds;
-        
+
         const loadWorshipperNames = async () => {
             const names: Record<number, { name: string; type: 'class' | 'race' }> = {};
-            
+
             // Load class names
             if (formData.classIds && formData.classIds.length > 0) {
                 await Promise.all(
                     formData.classIds.map(async (classId) => {
                         try {
-                            const classInfo = getClassNameById(classId);
+                            const classInfo = getClassSummaryById(classId);
                             names[classId] = { name: classInfo?.name || 'Unknown Class', type: 'class' };
                         } catch {
                             names[classId] = { name: 'Unknown Class', type: 'class' };
@@ -204,7 +178,7 @@ export function DeityEdit() {
                 await Promise.all(
                     formData.raceIds.map(async (raceId) => {
                         try {
-                            const raceInfo = getRaceNameById(raceId);
+                            const raceInfo = getRaceSummaryById(raceId);
                             names[raceId] = { name: raceInfo?.name || 'Unknown Race', type: 'race' };
                         } catch {
                             names[raceId] = { name: 'Unknown Race', type: 'race' };
@@ -222,26 +196,26 @@ export function DeityEdit() {
 
     // Track previous domain IDs to avoid unnecessary reloads
     const prevDomainIdsRef = useRef<string>('');
-    
+
     // Load domain names asynchronously
     useEffect(() => {
         const currentDomainIds = JSON.stringify((formData.domainIds || []).sort());
-        
+
         // Only reload if the IDs actually changed
         if (prevDomainIdsRef.current === currentDomainIds) {
             return;
         }
-        
+
         prevDomainIdsRef.current = currentDomainIds;
-        
+
         const loadDomainNames = async () => {
             const names: Record<number, string> = {};
-            
+
             if (formData.domainIds && formData.domainIds.length > 0) {
                 await Promise.all(
                     formData.domainIds.map(async (domainId) => {
                         try {
-                            const domainInfo = getDomainNameById(domainId);
+                            const domainInfo = getDomainSummaryById(domainId);
                             names[domainId] = domainInfo?.name || 'Unknown Domain';
                         } catch {
                             names[domainId] = 'Unknown Domain';
@@ -269,15 +243,7 @@ export function DeityEdit() {
                 setDeityError(null);
                 const fetchedDeity = await DeityQueryHooks.getDeityById(parseInt(id!));
                 setDeityData(fetchedDeity);
-
-                // Transform the deity data for the form (convert domains/favoredWeapons to IDs)
-                const { domains, favoredWeapons, ...deityWithoutRelations } = fetchedDeity;
-                const transformedData = {
-                    ...deityWithoutRelations,
-                    domainIds: domains?.map(d => d.id) || [],
-                    favoredWeaponIds: favoredWeapons?.map(fw => fw.id) || [],
-                };
-                setFormData(transformedData);
+                setFormData(fetchedDeity);
             } catch (err) {
                 const error = err instanceof Error ? err : new Error('Failed to fetch deity');
                 setDeityError(error);
@@ -316,7 +282,7 @@ export function DeityEdit() {
                 // Invalidate queries to refresh the list and updated item
                 await queryClient.invalidateQueries({ queryKey: ['deities'] });
                 // Specifically invalidate the individual deity query
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: DeityQueryHooks.getDeityByIdQueryKey(parseInt(id))
                 });
                 // Invalidate the deities cache used by cache functions
@@ -431,15 +397,15 @@ export function DeityEdit() {
                                 {/* Display combined list of classes and races */}
                                 {(() => {
                                     const allWorshippers = [
-                                        ...(formData.classIds || []).map(id => ({ 
-                                            id, 
-                                            name: worshipperNames[id]?.name || 'Loading...', 
-                                            type: 'class' as const 
+                                        ...(formData.classIds || []).map(id => ({
+                                            id,
+                                            name: worshipperNames[id]?.name || 'Loading...',
+                                            type: 'class' as const
                                         })),
-                                        ...(formData.raceIds || []).map(id => ({ 
-                                            id, 
-                                            name: worshipperNames[id]?.name || 'Loading...', 
-                                            type: 'race' as const 
+                                        ...(formData.raceIds || []).map(id => ({
+                                            id,
+                                            name: worshipperNames[id]?.name || 'Loading...',
+                                            type: 'race' as const
                                         }))
                                     ].sort((a, b) => a.name.localeCompare(b.name));
 

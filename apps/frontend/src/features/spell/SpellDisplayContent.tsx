@@ -1,8 +1,9 @@
 import React from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { SpellSchoolNameList, SpellSubschoolNameList, SpellDescriptorNameList, SpellComponentAbbrList, EDITION_MAP } from '@shared/static-data';
-import { GetSourceDisplay } from '@shared/utils';
+import { formatSpellSchool, formatSpellComponents, formatSpellDescriptors } from '@/lib/formatters';
+import { getSourceDisplay } from '@/services/cache';
+import { EDITION_MAP } from '@shared/static-data';
 
 import type { SpellDisplayContentProps } from './types';
 
@@ -19,24 +20,20 @@ export function SpellDisplayContent({ spell, showHeader = false, classLevelDispl
                     <div className="text-right">
                         <p><strong>Edition:</strong> {EDITION_MAP[spell.editionId]?.abbreviation}</p>
                         {spell.sourceBookInfo && spell.sourceBookInfo.length > 0 && (
-                            <p><strong>Source:</strong> {GetSourceDisplay(spell.sourceBookInfo, true)}</p>
+                            <p><strong>Source:</strong> {getSourceDisplay(spell.sourceBookInfo, true)}</p>
                         )}
                     </div>
                 </div>
             )}
             <p>
-                {spell.schoolIds && SpellSchoolNameList(spell.schoolIds.map(s => s.schoolId))}
-                {spell.subSchoolIds && (() => {
-                    const subSchoolNames = SpellSubschoolNameList(spell.subSchoolIds.map(s => s.subSchoolId));
-                    return subSchoolNames.length > 0 ? ` (${subSchoolNames})` : '';
-                })()}
+                {formatSpellSchool(spell, { useAbbreviation: false, includeBrackets: false })}
                 {spell.descriptorIds && (() => {
-                    const descriptorNames = SpellDescriptorNameList(spell.descriptorIds.map(d => d.descriptorId));
+                    const descriptorNames = formatSpellDescriptors(spell);
                     return descriptorNames.length > 0 ? ` [${descriptorNames}]` : '';
                 })()}
             </p>
             <p><strong>Level:</strong> {spell.baseLevel}</p>
-            {spell.componentIds && <p><strong>Components:</strong> {SpellComponentAbbrList(spell.componentIds.map(c => c.componentId))}</p>}
+            {spell.componentIds && <p><strong>Components:</strong> {formatSpellComponents(spell)}</p>}
             {spell.castingTime && <p><strong>Casting Time:</strong> {spell.castingTime}</p>}
             {spell.effect && <p><strong>Effect:</strong> {spell.effect}</p>}
             {spell.area && <p><strong>Area:</strong> {spell.area}</p>}

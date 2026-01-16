@@ -1,22 +1,23 @@
 import { z } from 'zod';
+import { commonValidations } from './common.js';
 
 export const SpellcastingProgressionSchema = z.object({
-    id: z.number().int().positive('Progression ID must be a positive integer'),
-    classId: z.number().int().positive('Class ID must be a positive integer'),
+    id: commonValidations.positiveInt('Progression ID'),
+    classId: commonValidations.positiveInt('Class ID'),
     classLevel: z.number().int().min(1, 'Class level must be at least 1').max(20, 'Class level must be at most 20'),
 });
 
 export const SpellcastingSlotSchema = z.object({
-    id: z.number().int().positive('Slot ID must be a positive integer'),
-    progressionId: z.number().int().positive('Progression ID must be a positive integer'),
-    spellLevel: z.number().int().min(0, 'Spell level must be at least 0').max(9, 'Spell level must be at most 9'),
-    slotsPerDay: z.number().int().min(0, 'Slots per day must be at least 0').max(10, 'Slots per day must be at most 10'),
+    id: commonValidations.positiveInt('Slot ID'),
+    progressionId: commonValidations.positiveInt('Progression ID'),
+    spellLevel: commonValidations.nonNegativeInt('Spell level', 9),
+    slotsPerDay: commonValidations.nonNegativeInt('Slots per day', 10),
 });
 
 export const SpellcastingLinkSchema = z.object({
-    id: z.number().int().positive('Link ID must be a positive integer'),
-    featureProgressionId: z.number().int().positive('Feature progression ID must be a positive integer'),
-    progressionId: z.number().int().positive('Progression ID must be a positive integer'),
+    id: commonValidations.positiveInt('Link ID'),
+    featureProgressionId: commonValidations.positiveInt('Feature progression ID'),
+    progressionId: commonValidations.positiveInt('Progression ID'),
     inheritedFrom: z.string().nullable(),
     levelOffset: z.number().int().nullable(),
 });

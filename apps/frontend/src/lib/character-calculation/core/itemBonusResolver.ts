@@ -4,6 +4,18 @@ import { WEAPON_TYPE_ENUM } from '@shared/static-data';
 import type { ItemBonus } from '../types';
 
 /**
+ * Type guard to check if item has weapon property
+ * Only ItemWithDetails has a weapon property; CharacterItem does not
+ */
+function hasWeapon(item: ItemWithDetails | CharacterItem | undefined): item is ItemWithDetails {
+    if (item === undefined) {
+        return false;
+    }
+    // Check if item has weapon property (only ItemWithDetails has this)
+    return 'weapon' in item && (item as ItemWithDetails).weapon !== null && (item as ItemWithDetails).weapon !== undefined;
+}
+
+/**
  * Resolve bonuses from item objects
  */
 export function resolveItemBonuses(
@@ -12,10 +24,10 @@ export function resolveItemBonuses(
     const bonuses: ItemBonus = {
         attack: 0,
         damage: 0,
-        critical: item?.weapon?.critical ?? undefined,
+        critical: hasWeapon(item) ? (item.weapon.critical ?? undefined) : undefined,
     };
 
-    if (!item?.weapon) {
+    if (!hasWeapon(item)) {
         return bonuses;
     }
 
@@ -46,7 +58,7 @@ export function extractWeaponProperties(
     critical: string | null;
     range: string | null;
 } {
-    if (!item?.weapon) {
+    if (!hasWeapon(item)) {
         return {
             itemId: item?.id,
             weaponType: undefined,

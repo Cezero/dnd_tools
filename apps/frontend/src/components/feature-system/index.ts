@@ -2,7 +2,6 @@ export { FeatureDetail } from './FeatureDetail';
 export { FeatureEdit } from './FeatureEdit';
 export { FeatureEditForm } from './FeatureEditForm';
 export { FeatureProgressionDetailEdit } from './FeatureProgressionDetailEdit';
-export { FeatureSystemService } from './FeatureSystemService';
 export { FeatureSystemApi } from './FeatureSystemApi';
 export { FeaturesManager } from './FeaturesManager';
 export { routes } from './FeatureConfig';

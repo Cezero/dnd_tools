@@ -1,4 +1,4 @@
-import { Feat, Prisma, PrismaClient } from '@shared/prisma-client';
+import { Prisma, PrismaClient } from '@shared/prisma-client';
 import {
     FeatIdParamRequest,
     CreateFeatRequest,
@@ -10,9 +10,9 @@ import {
     FeatQueryRequest,
     GetFeatListResponse,
     FeatCacheResponse,
-    GetAllFeatsWithFeatureInfoResponse
+    GetAllFeatsWithFeatureInfoResponse,
+    GetFeatByIdResponse,
 } from '@shared/schema';
-import { FeatureSourceType, EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import type { FeatService } from './types';
 import { featureSystemService } from '../featureSystem/index';
@@ -160,7 +160,7 @@ export const featService: FeatService = {
         return feats;
     },
 
-    async getFeatById(query: FeatIdParamRequest): Promise<Feat | null> {
+    async getFeatById(query: FeatIdParamRequest): Promise<GetFeatByIdResponse | null> {
         const feat = await prisma.feat.findUnique({
             where: { id: query.id },
             include: {
@@ -184,7 +184,7 @@ export const featService: FeatService = {
         return {
             ...feat,
             featureProgressions: progressions,
-        } as Feat;
+        } as GetFeatByIdResponse;
     },
 
     async createFeat(data: CreateFeatRequest): Promise<CreateResponse> {

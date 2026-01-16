@@ -55,14 +55,14 @@ The Reference Data Documentation System covers the management of source books, r
 **Findings**: 
 - **CRITICAL ISSUE**: No static-data.md file exists - this is a required documentation file
 - **CRITICAL ISSUE**: README.md contains no static data information
-- **ACCURACY**: Actual static data exists in shared/static-data/src/SourceData.ts
-- **ACCURACY**: SOURCE_BOOK_MAP contains comprehensive source book data with proper structure
-- **ACCURACY**: Source book data includes all required fields (id, name, abbreviation, editionId, hasSpells, hasClasses)
-- **ACCURACY**: Static data is properly exported and accessible through the shared/static-data module
-- **ACCURACY**: Source book data covers major D&D publications and supplements
-- **MINOR ISSUE**: Static data is not documented anywhere in the reference-data documentation
-- **MINOR ISSUE**: No explanation of how static data integrates with database models
-- **MINOR ISSUE**: No documentation of static data usage patterns or access methods
+- **ACCURACY**: Source book static data has been migrated to cache-based system
+- **ACCURACY**: Only SourceType enum remains in shared/static-data/src/SourceData.ts
+- **ACCURACY**: Source book filtering now uses database flags (hasCore, hasClasses, hasSpells, hasRaces, hasDomains, hasDeities, hasItems) and settingId
+- **ACCURACY**: Source book data is accessed through frontend cache system (sourcebooks-cache)
+- **ACCURACY**: Cache utility functions in CacheFunctions.ts provide filtering by content type and setting
+- **MINOR ISSUE**: Static data migration is not documented anywhere in the reference-data documentation
+- **MINOR ISSUE**: No explanation of how SourceType enum integrates with cache-based filtering
+- **MINOR ISSUE**: No documentation of cache-based source book usage patterns
 
 #### 5. Backend Implementation Analysis
 **Status**: Completed

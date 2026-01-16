@@ -27,6 +27,16 @@ import {
     CoreComponent
 } from '@shared/static-data';
 
+/**
+ * Abilities and race tab component for managing character ability scores and race selection.
+ * 
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * - Updates state via `updateState()` when abilities or race change
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
+ * - Do NOT call `resolution.applyUpdate()` directly from this tab
+ * 
+ * @see CharacterEdit component for sync pattern documentation
+ */
 export function AbilitiesRaceTab({
     state,
     updateState,
@@ -239,8 +249,6 @@ export function AbilitiesRaceTab({
     // Set up roll complete callback
     useEffect(() => {
         const unsubscribe = onRollComplete((result) => {
-            console.log('Roll complete:', result);
-
             // Handle both single result and array of results
             const results = Array.isArray(result) ? result : [result];
 
@@ -252,7 +260,6 @@ export function AbilitiesRaceTab({
                 results.forEach(result => {
                     const ability = ABILITY_LIST.find(ability => ability.name === result.group);
                     if (ability) {
-                        console.log('Assigning', result.value, 'to', ability.name);
                         const existingIndex = newAbilityScores.findIndex(attr => attr.abilityId === ability.id);
                         if (existingIndex >= 0) {
                             newAbilityScores[existingIndex] = {
@@ -299,7 +306,6 @@ export function AbilitiesRaceTab({
                     // Check if the group is an ability name (for individual rolls)
                     const abilityId = ABILITY_NAME_MAP[result.group];
                     if (abilityId !== undefined) {
-                        console.log('Manual roll - assigning', result.value, 'to ability', result.group, result);
                         handleAbilityChange(abilityId, result.value);
                     }
                 });

@@ -4,10 +4,9 @@ import { Link } from 'react-router-dom';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { useCacheFunctions } from '@/services/cache';
+import { useCacheFunctions , getSourceDisplay } from '@/services/cache';
 import { Domain } from '@shared/schema';
 import { EDITION_MAP, DisplayType } from '@shared/static-data';
-import { GetSourceDisplay } from '@shared/utils';
 
 interface DomainDisplayProps {
     domain: Domain;
@@ -50,7 +49,7 @@ export function DomainDisplay({
                                 <div className="text-right">
                                     <p><strong>Edition:</strong> {EDITION_MAP[domain.editionId]?.abbreviation || domain.editionId}</p>
                                     {domain.sourceBookInfo && domain.sourceBookInfo.length > 0 && (
-                                        <p><strong>Source:</strong> {GetSourceDisplay(domain.sourceBookInfo, true)}</p>
+                                        <p><strong>Source:</strong> {getSourceDisplay(domain.sourceBookInfo, true)}</p>
                                     )}
                                 </div>
                             </div>

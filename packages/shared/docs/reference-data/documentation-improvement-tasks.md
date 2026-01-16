@@ -40,12 +40,13 @@ The Reference Data Documentation System analysis revealed critical compliance is
 - **Priority**: Critical
 - **Description**: Create static-data.md file documenting static data structures
 - **Requirements**:
-  - Document SOURCE_BOOK_MAP from `shared/static-data/src/SourceData.ts`
-  - Explain integration with database models
-  - Add cross-references to application-overview static data patterns
+  - Document SourceType enum from `shared/static-data/src/SourceData.ts`
+  - Explain that source book data has been migrated to cache-based system
+  - Document that source book filtering now uses database flags (hasCore, hasClasses, etc.) and settingId
+  - Add cross-references to application-overview static data patterns and cache-based-id-maps
   - Include source file links to actual static data files
-- **Source Files**: `shared/static-data/src/SourceData.ts`
-- **Reference**: [Static Data Patterns](../application-overview/static-data.md)
+- **Source Files**: `shared/static-data/src/SourceData.ts` (SourceType enum only)
+- **Reference**: [Static Data Patterns](../application-overview/static-data.md), [Cache-Based ID Maps](../application-overview/cache-based-id-maps.md)
 
 **Task**: Create backend-implementation.md
 - **Priority**: Critical

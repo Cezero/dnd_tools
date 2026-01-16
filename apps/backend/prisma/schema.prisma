@@ -13,46 +13,40 @@ datasource db {
 // =================
 
 model Class {
-  id               Int     @id @default(autoincrement())
-  name             String
-  abbreviation     String
-  editionId        Int
-  isPrestige       Boolean @default(false)
-  isVisible        Boolean @default(true)
-  canCastSpells    Boolean @default(false)
-  spellsKnown      Boolean @default(false)
-  isDivine         Boolean @default(false)
-  hitDie           Int     @default(1)
-  description      String? @db.Text
-  skillPoints      Int
-  castingAbilityId Int?
-  castingType      Int?
+  id            Int     @id @default(autoincrement())
+  name          String
+  abbreviation  String
+  editionId     Int
+  isPrestige    Boolean @default(false)
+  isVisible     Boolean @default(true)
+  canCastSpells Boolean @default(false)
+  spellsKnown   Boolean @default(false)
+  isDivine      Boolean @default(false)
+  description   String? @db.Text
 
-  babProgression  Int
-  fortProgression Int
-  refProgression  Int
-  willProgression Int
-
-  features                FeatureProgression[]
-  sourceBookInfo          ClassSourceMap[]
-  spellLevels             SpellLevelMap[]
-  charAdvancements        CharacterAdvancement[]
-  charAdvSecondary        CharacterAdvancement[]      @relation("SecondaryClass")
-  charSpellPrep           CharacterSpellPreparation[]
-  spellcastingProgression SpellcastingProgression[]
-  classSpellsKnown        SpellcastingProgression[]   @relation("classSpellsKnown")
-  variants                ClassVariant[]
-  deityClasses            DeityClassMap[]
+  sharedFeatureProgressions FeatureProgressionClassMap[] // NEW: Many-to-many relationship for reusable progressions
+  sourceBookInfo            ClassSourceMap[]
+  spellLevels               SpellLevelMap[]
+  charAdvancements          CharacterAdvancement[]
+  charAdvSecondary          CharacterAdvancement[]       @relation("SecondaryClass")
+  charSpellPrep             CharacterSpellPreparation[]
+  spellcastingProgression   SpellcastingProgression[]
+  classSpellsKnown          SpellcastingProgression[]    @relation("classSpellsKnown")
+  deityClasses              DeityClassMap[]
 }
 
 model SpellcastingProgression {
   id                 Int  @id @default(autoincrement())
-  classId            Int
+  classId            Int? // KEEP: For backward compatibility during migration, make nullable
   classLevel         Int
-  classSpellsKnownId Int?
+  classSpellsKnownId Int? // KEEP: For backward compatibility during migration
 
-  class            Class              @relation(fields: [classId], references: [id])
-  classSpellsKnown Class?             @relation("classSpellsKnown", fields: [classSpellsKnownId], references: [id])
+  // NEW: Link via FeatureProgression
+  featureProgressionId Int? @unique // NEW: Links to FeatureProgression that grants this casting
+  spellcastingType     Int? // NEW: Enum: SpellsPerDay (1), SpellsKnown (2)
+
+  class            Class?             @relation(fields: [classId], references: [id]) // KEEP: Backward compat
+  classSpellsKnown Class?             @relation("classSpellsKnown", fields: [classSpellsKnownId], references: [id]) // KEEP: Backward compat
   slots            SpellcastingSlot[]
   spellcastingLink SpellcastingLink[]
 }
@@ -101,76 +95,6 @@ model SpellLevelMap {
 }
 
 // =================
-// Class Variant related
-// =================
-
-model ClassVariant {
-  id           Int     @id // Custom ID: baseClassId * 100000 + variantId
-  name         String
-  abbreviation String
-  baseClassId  Int
-  description  String? @db.Text
-
-  // Override fields for class properties
-  hitDie          Int?
-  skillPoints     Int?
-  babProgression  Int?
-  fortProgression Int?
-  refProgression  Int?
-  willProgression Int?
-
-  baseClass                   Class                                    @relation(fields: [baseClassId], references: [id])
-  featureProgressionOverrides ClassVariantFeatureProgressionOverride[]
-  spellOverrides              ClassVariantSpellOverride[]
-  sourceBookInfo              ClassVariantSourceMap[]
-
-  @@unique([name, baseClassId])
-}
-
-model ClassVariantFeatureProgressionOverride {
-  id                            Int                                             @id @default(autoincrement())
-  variantId                     Int
-  originalFeatureProgressionId  Int?
-  replacementFeatureProgression FeatureProgression[]
-  removeEntities                ClassVariantFeatureProgressionRemoveEntityMap[]
-
-  variant                    ClassVariant        @relation(fields: [variantId], references: [id])
-  originalFeatureProgression FeatureProgression? @relation("OriginalFeature", fields: [originalFeatureProgressionId], references: [id])
-}
-
-model ClassVariantFeatureProgressionRemoveEntityMap {
-  classVariantFeatureProgressionOverrideId Int
-  featureEntityId                          Int
-
-  classVariantFeatureProgressionOverride ClassVariantFeatureProgressionOverride @relation(fields: [classVariantFeatureProgressionOverrideId], references: [id])
-
-  @@id([classVariantFeatureProgressionOverrideId, featureEntityId])
-}
-
-model ClassVariantSpellOverride {
-  id        Int @id @default(autoincrement())
-  variantId Int
-  spellId   Int
-  level     Int
-
-  variant ClassVariant @relation(fields: [variantId], references: [id])
-  spell   Spell        @relation(fields: [spellId], references: [id])
-
-  @@unique([variantId, spellId, level])
-}
-
-model ClassVariantSourceMap {
-  variantId    Int
-  pageNumber   Int?
-  sourceBookId Int
-
-  variant    ClassVariant @relation(fields: [variantId], references: [id])
-  sourceBook SourceBook?  @relation(fields: [sourceBookId], references: [id])
-
-  @@id([variantId, sourceBookId])
-}
-
-// =================
 // Feature related
 // =================
 
@@ -192,29 +116,55 @@ model FeatureProgression {
   sourceType        Int
   level             Int
   featureId         Int
-  classId           Int?
-  raceId            Int?
-  variantOverrideId Int?
-  domainId          Int? // NEW: Reference to domain for domain-granted features
-  featId            Int? // NEW: Reference to Feat (same pattern as classId/raceId/domainId)
-  companionId       Int? // NEW: Reference to Companion for companion-granted features
+  domainId          Int? // Reference to domain for domain-granted features
+  featId            Int? // Reference to Feat (same pattern as domainId)
+  companionId       Int? // Reference to Companion for companion-granted features
+  editionId         Int? // Reference to edition for edition-granted features
 
-  class                Class?                                  @relation(fields: [classId], references: [id])
-  race                 Race?                                   @relation(fields: [raceId], references: [id])
-  classVariantOverride ClassVariantFeatureProgressionOverride? @relation(fields: [variantOverrideId], references: [id])
-  domain               Domain?                                 @relation(fields: [domainId], references: [id]) // NEW: Domain relationship
-  feat                 Feat?                                   @relation(fields: [featId], references: [id]) // NEW: Feat relationship
-  companion            Companion?                              @relation(fields: [companionId], references: [id]) // NEW: Companion relationship
+  domain               Domain?                                 @relation(fields: [domainId], references: [id]) // Domain relationship
+  feat                 Feat?                                   @relation(fields: [featId], references: [id]) // Feat relationship
+  companion            Companion?                              @relation(fields: [companionId], references: [id]) // Companion relationship
+
+  // Many-to-many relationship for reusable progressions
+  classes FeatureProgressionClassMap[]
+  races   FeatureProgressionRaceMap[] // Many-to-many relationship for reusable race progressions
 
   feature                Feature                                  @relation(fields: [featureId], references: [id])
   spellcasting           SpellcastingLink?
   characterFeatureChoice CharacterFeatureChoice[]
   entities               FeatureEntity[]
-  originalOverrides      ClassVariantFeatureProgressionOverride[] @relation("OriginalFeature")
   displayConditions      FeatureProgressionCondition[]
+  characterFeatureUses   CharacterFeatureUses[]
 
   @@index([featId])
   @@index([companionId])
+  @@index([editionId])
+}
+
+// NEW: Junction table for many-to-many class-progression relationship
+model FeatureProgressionClassMap {
+  progressionId Int
+  classId       Int
+
+  progression FeatureProgression @relation(fields: [progressionId], references: [id], onDelete: Cascade)
+  class       Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([progressionId, classId])
+  @@index([classId])
+  @@index([progressionId])
+}
+
+// NEW: Junction table for many-to-many race-progression relationship
+model FeatureProgressionRaceMap {
+  progressionId Int
+  raceId        Int
+
+  progression FeatureProgression @relation(fields: [progressionId], references: [id], onDelete: Cascade)
+  race        Race               @relation(fields: [raceId], references: [id], onDelete: Cascade)
+
+  @@id([progressionId, raceId])
+  @@index([raceId])
+  @@index([progressionId])
 }
 
 model FeatureEntity {
@@ -235,6 +185,7 @@ model FeatureEntity {
   conditions             FeatureEntityCondition[]
   formulaParams          FeatureFormulaParams?    @relation(fields: [formulaParamsId], references: [id])
   characterFeatureChoice CharacterFeatureChoice[]
+  characterFeatureUses   CharacterFeatureUses[]
 }
 
 model FeatureFormulaParams {
@@ -315,7 +266,6 @@ model Spell {
   componentIds     SpellComponentMap[]
   advSpells        AdvancementSpell[]
   charSpellPrep    CharacterSpellPreparation[]
-  variantOverrides ClassVariantSpellOverride[]
   domainSpells     DomainSpell[] // NEW: Domain spell associations
   monsterSpells    MonsterSpell[]
 }
@@ -370,28 +320,28 @@ model SpellComponentMap {
 // =================
 
 model Skill {
-  id                Int                  @id @default(autoincrement())
-  name              String
-  abilityId         Int                  @default(1)
-  checkDescription  String?              @db.Text
-  actionDescription String?              @db.Text
-  retryTypeId       Int?
-  retryDescription  String?              @db.Text
-  specialNotes      String?              @db.Text
-  synergyNotes      String?              @db.Text
-  untrainedNotes    String?              @db.Text
-  affectedByArmor   Boolean              @default(false)
-  description       String?              @db.Text
-  restrictionNotes  String?              @db.Text
-  trainedOnly       Boolean?
-  isAnalog          Boolean              @default(false)
-  isVisible         Boolean              @default(true)
-  editionId         Int
-  hasSubtypes       Boolean              @default(false)  // true for Craft, Knowledge
-  usesCustomSubtype Boolean              @default(false)   // true for Perform, Profession
-  hasNoMaxRanks     Boolean              @default(false)   // true for Speak Language (no max rank limit)
-  doubleArmorPenalty Boolean             @default(false)   // true for Swim (double armor check penalty)
-  sourceBookInfo    SkillSourceBookMap[]
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  abilityId          Int                  @default(1)
+  checkDescription   String?              @db.Text
+  actionDescription  String?              @db.Text
+  retryTypeId        Int?
+  retryDescription   String?              @db.Text
+  specialNotes       String?              @db.Text
+  synergyNotes       String?              @db.Text
+  untrainedNotes     String?              @db.Text
+  affectedByArmor    Boolean              @default(false)
+  description        String?              @db.Text
+  restrictionNotes   String?              @db.Text
+  trainedOnly        Boolean?
+  isAnalog           Boolean              @default(false)
+  isVisible          Boolean              @default(true)
+  editionId          Int
+  hasSubtypes        Boolean              @default(false) // true for Craft, Knowledge
+  usesCustomSubtype  Boolean              @default(false) // true for Perform, Profession
+  hasNoMaxRanks      Boolean              @default(false) // true for Speak Language (no max rank limit)
+  doubleArmorPenalty Boolean              @default(false) // true for Swim (double armor check penalty)
+  sourceBookInfo     SkillSourceBookMap[]
 
   advSkills AdvancementSkill[]
   monsters  MonsterSkillMap[]
@@ -410,8 +360,8 @@ model SkillSourceBookMap {
 }
 
 model SkillSubtype {
-  id        Int    @id @default(autoincrement())
-  skillId   Int    // References Skill.id
+  id        Int     @id @default(autoincrement())
+  skillId   Int // References Skill.id
   name      String
   editionId Int
   isVisible Boolean @default(true)
@@ -439,9 +389,9 @@ model Feat {
 
   advFeat AdvancementFeat[]
 
-  spellPrepMetamagic  SpellPreparationMetamagic[]
-  monsters            MonsterFeatMap[]
-  featureProgressions FeatureProgression[]
+  monsters                   MonsterFeatMap[]
+  featureProgressions        FeatureProgression[]
+  characterSpellPreparations CharacterSpellPreparation[]
 }
 
 model FeatSourceBookMap {
@@ -460,20 +410,16 @@ model FeatSourceBookMap {
 // =================
 
 model Race {
-  id              Int     @id @default(autoincrement())
-  name            String
-  editionId       Int
-  isVisible       Boolean @default(true)
-  description     String? @db.Text
-  sizeId          Int     @default(5)
-  speed           Int     @default(30)
-  favoredClassId  Int     @default(0)
-  levelAdjustment Int     @default(0)
+  id          Int     @id @default(autoincrement())
+  name        String
+  editionId   Int
+  isVisible   Boolean @default(true)
+  description String? @db.Text
 
-  sourceBookInfo     RaceSourceMap[]
-  userCharacter      UserCharacter[]
-  featureProgression FeatureProgression[]
-  deityRaces         DeityRaceMap[]
+  sourceBookInfo            RaceSourceMap[]
+  userCharacter             UserCharacter[]
+  sharedFeatureProgressions FeatureProgressionRaceMap[] // NEW: Many-to-many relationship for reusable progressions
+  deityRaces                DeityRaceMap[]
 }
 
 model RaceSourceMap {
@@ -668,7 +614,8 @@ model SourceBook {
   editionId    Int
   description  String?   @db.Text
   isVisible    Boolean   @default(false)
-  settingId    Int?      // Reference to Setting enum (nullable for books not tied to a setting)
+  settingId    Int? // Reference to Setting enum (nullable for books not tied to a setting)
+  hasCore      Boolean   @default(false) // Flag indicating core rulebooks (PHB, DMG) for each edition
   hasClasses   Boolean   @default(false) // Flag indicating book contains class options
   hasSpells    Boolean   @default(false) // Flag indicating book contains spells
   hasRaces     Boolean   @default(false) // Flag indicating book contains race options
@@ -679,7 +626,6 @@ model SourceBook {
   classes                    ClassSourceMap[]
   races                      RaceSourceMap[]
   spells                     SpellSourceMap[]
-  classVariants              ClassVariantSourceMap[]
   domains                    DomainSourceMap[] // NEW: Domain source references
   deities                    DeitySourceMap[] // NEW: Deity source references
   tricks                     TrickSourceMap[] // NEW: Trick source references
@@ -787,6 +733,7 @@ model UserCharacter {
   preparedSpells     CharacterSpellPreparation[]
   disallowedSources  CharacterDisallowedSource[] // NEW: Disallowed sources relationship
   characterLanguages CharacterLanguageMap[]
+  featureUses        CharacterFeatureUses[] // NEW: Feature uses tracking
 
   race  Race   @relation(fields: [raceId], references: [id])
   deity Deity? @relation(fields: [deityId], references: [id])
@@ -893,34 +840,39 @@ model CharacterFeatureChoice {
 }
 
 model CharacterSpellPreparation {
-  characterId   Int
-  classId       Int // The class whose slot was used
-  spellId       Int
-  spellLevel    Int // Actual slot level used (post-metamagic)
-  quantity      Int
-  prepKey       String // Unique identifier for this exact combination
-  slotType      Int     @default(1)
-  isDomainSpell Boolean @default(false) // NEW: Is this a domain spell?
-  domainId      Int? // NEW: Which domain (if domain spell)
+  id          Int  @id @default(autoincrement())
+  characterId Int
+  classId     Int // The class whose slot was used
+  spellId     Int
+  spellLevel  Int // Actual slot level used (post-metamagic)
+  quantity    Int // How many times this spell is prepared
+  timesCast   Int  @default(0) // How many of the prepared spells have been cast
+  slotType    Int  @default(0) // Type of spell slot (0=NORMAL, 1=BONUS, 2=DOMAIN)
+  featId      Int? // Metamagic feat applied (if any)
 
-  character  UserCharacter               @relation(fields: [characterId], references: [id])
-  class      Class                       @relation(fields: [classId], references: [id])
-  spell      Spell                       @relation(fields: [spellId], references: [id])
-  domain     Domain?                     @relation(fields: [domainId], references: [id]) // NEW: Domain relationship
-  metamagics SpellPreparationMetamagic[]
+  character UserCharacter @relation(fields: [characterId], references: [id])
+  class     Class         @relation(fields: [classId], references: [id])
+  spell     Spell         @relation(fields: [spellId], references: [id])
+  feat      Feat?         @relation(fields: [featId], references: [id])
 
-  @@id([characterId, prepKey])
+  @@index([characterId])
 }
 
-model SpellPreparationMetamagic {
-  characterId Int
-  prepKey     String
-  featId      Int
+model CharacterFeatureUses {
+  id              Int @id @default(autoincrement())
+  characterId     Int
+  progressionId   Int
+  featureEntityId Int
+  currentUses     Int @default(0)
+  maxUses         Int
+  frequency       Int // USES_FREQUENCY_ENUM (PER_DAY, PER_WEEK, PER_LEVEL, PER_ENCOUNTER)
 
-  feat        Feat                      @relation(fields: [featId], references: [id])
-  preparation CharacterSpellPreparation @relation(fields: [characterId, prepKey], references: [characterId, prepKey])
+  character     UserCharacter      @relation(fields: [characterId], references: [id])
+  progression   FeatureProgression @relation(fields: [progressionId], references: [id])
+  featureEntity FeatureEntity      @relation(fields: [featureEntityId], references: [id])
 
-  @@id([characterId, prepKey, featId])
+  @@unique([characterId, progressionId, featureEntityId])
+  @@index([characterId])
 }
 
 // =================
@@ -1008,12 +960,11 @@ model Domain {
   editionId Int
   isVisible Boolean @default(true)
 
-  domainSpells               DomainSpell[]
-  deityDomains               DeityDomain[]
-  featureProgressions        FeatureProgression[]
-  sourceBookInfo             DomainSourceMap[]
-  characterSpellPreparations CharacterSpellPreparation[]
-  monsters                   MonsterDomainMap[]
+  domainSpells        DomainSpell[]
+  deityDomains        DeityDomain[]
+  featureProgressions FeatureProgression[]
+  sourceBookInfo      DomainSourceMap[]
+  monsters            MonsterDomainMap[]
 }
 
 model DomainSpell {

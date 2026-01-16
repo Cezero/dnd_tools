@@ -34,7 +34,6 @@ export function DiceConfigurationPage(): React.JSX.Element {
         // Check initial state
         const container = document.querySelector('[data-dice-box]');
         const canvas = document.getElementById('dice-canvas');
-        console.log('Initial state - Container:', !!container, 'Canvas:', !!canvas);
 
         try {
             // Force reinitialize the DiceBox

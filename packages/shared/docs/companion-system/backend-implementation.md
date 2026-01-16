@@ -75,6 +75,31 @@ The central service for all companion management operations, providing comprehen
 
 **Source File**: `apps/backend/src/features/companion/companionService.ts`
 
+#### **getCompanionCache**
+
+**Purpose**: Retrieves companion cache data with monster names for frontend use.
+
+**Architecture Decision**: Cache Endpoint Pattern - Returns lightweight companion data optimized for dropdowns and select components, including monster name directly in response to reduce frontend complexity.
+
+**Returns**: CompanionCacheResponse with total count and results array containing companion cache entries with id, monsterId, name (from monster), type, and minLevel
+
+**Business Logic**:
+1. Queries all companion definitions with monster join to get monster names
+2. Transforms results to include monster name directly in companion cache entry
+3. Orders by type (ascending) then monster name (ascending) for consistent presentation
+4. Returns cache response with total count and transformed results
+
+**Design Decision**: Cache Endpoint Pattern
+- Includes monster name directly in response (populated from monster join)
+- Reduces frontend complexity by eliminating need for separate monster cache lookup
+- Optimized for dropdowns and select components
+
+**Source File**: `apps/backend/src/features/companion/companionService.ts`
+
+**Related Documentation**:
+- [Query Hooks and Caching Architecture](../application-overview/query-hooks-and-caching.md)
+- [Cache-Based ID Maps](../application-overview/cache-based-id-maps.md)
+
 #### **getCompanionById**
 
 **Purpose**: Retrieves a specific companion definition by ID with complete details including feature progressions.
@@ -250,6 +275,18 @@ The companion controllers follow the shared [Controller Layer Pattern](../applic
 
 **Authentication**: Public (no authentication required)
 
+#### **GetCompanionCache**
+
+**Purpose**: Handles requests for cached companion data.
+
+**Request**: No parameters
+
+**Response**: CompanionCacheResponse with cached companion data including monster names
+
+**Authentication**: Public (no authentication required)
+
+**Source File**: `apps/backend/src/features/companion/companionController.ts`
+
 #### **GetCompanionById**
 
 **Purpose**: Handles requests for specific companion definition by ID.
@@ -367,6 +404,7 @@ The companion routes follow the shared [RESTful API Structure](../application-ov
 
 **Companion Definition Routes**:
 - **`GET /api/companions`**: Get all companion definitions (public)
+- **`GET /api/companions/cache`**: Get cached companion data with monster names (public)
 - **`GET /api/companions/:id`**: Get specific companion definition (public)
 - **`POST /api/companions`**: Create companion definition (admin only)
 - **`PUT /api/companions/:id`**: Update companion definition (admin only)

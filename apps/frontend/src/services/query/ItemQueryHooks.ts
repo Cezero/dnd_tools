@@ -213,8 +213,8 @@ const deleteItemConfig = createQueryHooks({
  * Provides React hooks and imperative methods for item-related operations.
  * 
  * **Note**: The itemQueryConfig and related methods were removed. All filtering operations
- * now use client-side filtering of the items-cache endpoint. See FeatureSystemService
- * for examples of client-side filtering patterns.
+ * now use client-side filtering of the items-cache endpoint. See getItemsByProficiencyType
+ * in @/services/cache/itemCache for examples of client-side filtering patterns.
  * 
  * **React Hooks**: Use in React components (useGetItems, useGetItemById, etc.)
  * **Imperative Methods**: Use in event handlers or async functions (getItems, getItemById, etc.)

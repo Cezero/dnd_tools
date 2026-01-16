@@ -170,7 +170,7 @@ The feat system controllers follow the shared [Controller Layer Pattern](../appl
 - **Authentication**: User authentication required (must own character)
 - **Parameters**: Character ID in URL path
 - **Response**: Array of available feats (filtered by prerequisites, owned feats, and proficiency conflicts)
-- **Business Logic**: Uses `AvailableFeatService.getAvailableFeats()` to filter feats based on character state
+- **Business Logic**: Uses `AvailableFeatService.getQualifiedFeats()` to filter feats based on character state
 - **Usage**: Called by frontend character feat selection UI to display only eligible feats
 
 **Source File**: `src/features/characterResolution/characterResolutionController.ts`

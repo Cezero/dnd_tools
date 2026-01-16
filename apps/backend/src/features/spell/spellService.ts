@@ -1,6 +1,5 @@
 import { PrismaClient } from '@shared/prisma-client';
 import type { SpellIdParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse, ClassSpellListEntry, SpellCacheResponse, Spell } from '@shared/schema';
-import { isVariantId, extractBaseClassId } from '@shared/utils';
 
 import type { SpellService } from './types';
 
@@ -150,18 +149,7 @@ export const spellService: SpellService = {
     },
 
     async getSpellsForClass(classId: number, level?: number): Promise<ClassSpellListResponse> {
-        // Check if classId is a variant (custom ID > 100000)
-        if (isVariantId(classId)) {
-            // Resolve variant spell list
-            const baseClassId = extractBaseClassId(classId);
-            const baseClassSpells = await this.getBaseClassSpells(baseClassId, level);
-            const variantOverrides = await this.getVariantSpellOverrides(classId);
-            const resolvedSpells = this.applySpellOverrides(baseClassSpells.results, variantOverrides);
-            return { results: resolvedSpells, total: resolvedSpells.length };
-        } else {
-            // Return base class spells
-            return this.getBaseClassSpells(classId, level);
-        }
+        return this.getBaseClassSpells(classId, level);
     },
 
     async getBaseClassSpells(classId: number, level?: number): Promise<ClassSpellListResponse> {
@@ -189,49 +177,6 @@ export const spellService: SpellService = {
         };
     },
 
-    async getVariantSpellOverrides(variantId: number): Promise<ClassSpellListEntry[]> {
-        const overrides = await prisma.classVariantSpellOverride.findMany({
-            where: { variantId },
-            select: {
-                spellId: true,
-                level: true
-            }
-        });
-
-        return overrides.map(override => ({
-            spellId: override.spellId,
-            level: override.level
-        }));
-    },
-
-    applySpellOverrides(baseSpells: ClassSpellListEntry[], overrides: ClassSpellListEntry[]): ClassSpellListEntry[] {
-        // Start with base class spell list
-        let result = [...baseSpells];
-
-        // Apply additions (level > 0)
-        const additions = overrides.filter(override => override.level > 0);
-        additions.forEach(addition => {
-            // Check if spell already exists at this level
-            const existingIndex = result.findIndex(spell =>
-                spell.spellId === addition.spellId && spell.level === addition.level
-            );
-
-            if (existingIndex === -1) {
-                // Add new spell entry
-                result.push({
-                    spellId: addition.spellId,
-                    level: addition.level
-                });
-            }
-        });
-
-        // Apply removals (level = -1)
-        const removals = overrides.filter(override => override.level === -1);
-        const removalSpellIds = removals.map(r => r.spellId);
-        result = result.filter(spell => !removalSpellIds.includes(spell.spellId));
-
-        return result;
-    },
 
     async getSpellCache(): Promise<SpellCacheResponse> {
         const spells = await prisma.spell.findMany({

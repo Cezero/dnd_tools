@@ -1,5 +1,4 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
-import { useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import ordinal from 'ordinal';
 import React, { useMemo, useState, useCallback } from 'react';
@@ -7,95 +6,59 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { EntityLink } from '@/components/entity-link';
 import { ScrollableCategorizedList } from '@/components/scrollable-categorized-list';
 import type { ScrollableCategorizedListProps } from '@/components/scrollable-categorized-list/types';
-import type { TabComponentProps } from '@/features/character/types';
-import { useCharacterResolution } from '@/features/character/useCharacterResolution';
-import { hasSpellbook, getAvailableSpellbookSpells, getMaxCastableSpellLevel, canScribeSpellAtLevel, getFreeSpellsUsed, getRemainingFreeSpells, hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
-import type { ResolvedCharacterResult } from '@/services/api/CharacterResolutionApi';
-import { useCacheFunctions } from '@/services/cache';
-import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
-import type { CharacterSpellSelectionEntry, DnDClass, CharacterAdvancementWithDetailsResponse, CharacterSpellSelectionResponse, CharacterWithAllDetailsResponse, AddSpellKnownResponse, RemoveSpellKnownResponse } from '@shared/schema';
-import { SPELL_SCHOOL_MAP, SPELL_SUBSCHOOL_MAP } from '@shared/static-data';
+import { CharacterEditStateUpdateType, type TabComponentProps } from '@/features/character/types';
+import { hasSpellbook } from '@/features/character/utils/spellbookUtils';
+import { getSpellcastingClasses } from '@/features/character/utils/spellcastingUtils';
+import { formatSpellSchool } from '@/lib/formatters';
+import { useCacheFunctions, formatSourceReference } from '@/services/cache';
 
-type SpellSelectionEntry = CharacterSpellSelectionEntry & {
-    level: number; // Spell level from SpellLevelMap for grouping
-    domainName?: string | null; // Domain name if this is a domain spell
-};
+import type { SpellSelectionEntry } from './types';
 
+/**
+ * Spell selection tab component for managing character spells (known spells, spellbook, etc.).
+ * 
+ * **State Management Pattern**: This tab follows the standardized state → useEffect → API + refreshState pattern.
+ * - Updates state via `updateState()` when spellsKnown changes
+ * - CharacterEdit component automatically syncs state changes to backend via `syncSpellsKnown` API
+ * - Do NOT call APIs directly for state management - use `updateState()` instead
+ * 
+ * **Spell Selection Data**: Uses spell selection data from resolved character response (architecturally correct).
+ * - Spell selection data (spells list, domain spells, availableFreeSpells) is calculated during
+ *   character resolution using resolved progressions
+ * - Data is accessed via `resolvedData.spellSelection?.[classId]`
+ * - This is architecturally correct since spell selection data depends on resolved progressions,
+ *   class choices, domain choices, and feat choices - all part of the resolved character
+ * 
+ * **Backend Validation**: Spell level validation is handled by the backend in `syncSpellsKnown()`.
+ * The UI allows optimistic selection and the backend validates and rejects invalid spells.
+ * 
+ * @see CharacterEdit component for sync pattern documentation
+ * @see ResolvedCharacterResultSchema - Schema for resolved character including spell selection data
+ */
 export function SpellSelectionTab({
     state,
+    updateState,
     character,
     resolvedData,
     sharedData,
+    isLoading,
     spellbookMode = 'level-up'
 }: TabComponentProps & { spellbookMode?: 'level-up' | 'scribing' }): React.JSX.Element {
-    const resolution = useCharacterResolution(character?.id || null);
-    const queryClient = useQueryClient();
     const { getClassNameFromCache } = useCacheFunctions();
     const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
-    const [cacheUpdateTrigger, setCacheUpdateTrigger] = useState(0);
 
     // Get all spellcasting classes the character has using classDetailsMap from sharedData
     const spellcastingClasses = useMemo(() => {
         if (!character?.advancements || !sharedData?.classDetailsMap) {
-            console.log('SpellSelectionTab: No spellcasting classes - missing data', {
-                hasCharacter: !!character,
-                hasAdvancements: !!character?.advancements,
-                hasSharedData: !!sharedData,
-                hasClassDetailsMap: !!sharedData?.classDetailsMap,
-                classDetailsMapSize: sharedData?.classDetailsMap?.size ?? 0
-            });
             return [];
         }
 
-        const classMap = new Map<number, { classId: number; class: DnDClass; level: number }>();
-
-        for (const advancement of character.advancements) {
-            const classData = sharedData.classDetailsMap.get(advancement.classId);
-
-            if (classData?.canCastSpells) {
-                const existing = classMap.get(advancement.classId);
-                if (existing) {
-                    existing.level += 1;
-                } else {
-                    classMap.set(advancement.classId, {
-                        classId: advancement.classId,
-                        class: classData,
-                        level: 1
-                    });
-                }
-            }
-
-            if (advancement.secondaryClassId) {
-                const secondaryClassData = sharedData.classDetailsMap.get(advancement.secondaryClassId);
-
-                if (secondaryClassData?.canCastSpells) {
-                    const existing = classMap.get(advancement.secondaryClassId);
-                    if (existing) {
-                        existing.level += 1;
-                    } else {
-                        classMap.set(advancement.secondaryClassId, {
-                            classId: advancement.secondaryClassId,
-                            class: secondaryClassData,
-                            level: 1
-                        });
-                    }
-                }
-            }
-        }
-
-        const result = Array.from(classMap.values());
-        console.log('SpellSelectionTab: Found spellcasting classes', result.map(sc => ({ 
-            id: sc.classId, 
-            name: sc.class?.name || getClassNameFromCache(sc.classId) || 'Unknown Class', 
-            level: sc.level 
-        })));
-        return result;
+        return getSpellcastingClasses(character.advancements, sharedData.classDetailsMap);
     }, [character?.advancements, sharedData?.classDetailsMap]);
 
     // Auto-select first class if none selected
     React.useEffect(() => {
         if (!selectedClassId && spellcastingClasses.length > 0) {
-            console.log('SpellSelectionTab: Auto-selecting first class', spellcastingClasses[0].classId);
             setSelectedClassId(spellcastingClasses[0].classId);
         }
     }, [selectedClassId, spellcastingClasses]);
@@ -126,17 +89,23 @@ export function SpellSelectionTab({
             .sort((a, b) => b.level - a.level)[0] ?? null;
     }, [character?.advancements, selectedClassId]);
 
-    // Calculate available free spells for spellbook classes
+    // Get spell selection data from resolved character (architecturally correct - data depends on resolved progressions)
+    // Access spellSelection if it exists, regardless of isLoading (isLoading can be true during updates while data exists)
+    const classSpellSelection = useMemo(() => {
+        if (!selectedClassId) return undefined;
+        // Check if spellSelection exists (could be empty object {} if no spells for any class)
+        if (!resolvedData?.spellSelection) {
+            return undefined;
+        }
+        const classKey = selectedClassId.toString();
+        return resolvedData.spellSelection[classKey];
+    }, [selectedClassId, resolvedData?.spellSelection]);
+
+    // Get available free spells from resolved character data (for spellbook classes)
     const availableFreeSpells = useMemo(() => {
-        if (!isSpellbookClass || !character || !selectedClassId || !resolvedData?.progressions) return undefined;
-        const characterLevel = character.advancements.length;
-        return getAvailableSpellbookSpells(
-            resolvedData.progressions,
-            characterLevel,
-            selectedClassId,
-            character
-        );
-    }, [isSpellbookClass, character, selectedClassId, resolvedData?.progressions]);
+        if (!isSpellbookClass || !classSpellSelection) return undefined;
+        return classSpellSelection.availableFreeSpells;
+    }, [isSpellbookClass, classSpellSelection]);
 
     /**
      * Count free spells used for current advancement.
@@ -155,22 +124,10 @@ export function SpellSelectionTab({
      * - `character`, `selectedClassId`, `isSpellbookClass`: Used to find the correct advancement
      */
     const freeSpellsUsed = useMemo(() => {
-        if (!character?.id || !selectedClassId || !isSpellbookClass) return 0;
-
-        // Get cached character data to ensure we have the latest spellsKnown array
-        const characterQueryKey = CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(character.id);
-        const cachedCharacter = queryClient.getQueryData<CharacterWithAllDetailsResponse>(characterQueryKey);
-        const characterToUse = cachedCharacter || character;
-
-        // Find current advancement from cached character data
-        const cachedCurrentAdvancement = characterToUse.advancements
-            ?.filter(a => a.classId === selectedClassId || a.secondaryClassId === selectedClassId)
-            .sort((a, b) => b.level - a.level)[0] ?? null;
-
-        if (!cachedCurrentAdvancement) return 0;
-
-        return getFreeSpellsUsed(cachedCurrentAdvancement);
-    }, [character, selectedClassId, isSpellbookClass, queryClient, cacheUpdateTrigger]);
+        if (!isSpellbookClass) return 0;
+        // Count free grant spells from state
+        return state.spellsKnown.filter(s => s.isFreeGrant === true).length;
+    }, [isSpellbookClass, state.spellsKnown]);
 
     // Calculate remaining free spells
     const remainingFreeSpells = useMemo(() => {
@@ -178,27 +135,16 @@ export function SpellSelectionTab({
         return Math.max(0, availableFreeSpells - freeSpellsUsed);
     }, [availableFreeSpells, freeSpellsUsed]);
 
-    // Fetch spell selection data
-    const isQueryEnabled = !!character?.id && !!selectedClassId;
-    const { data: spellData, isLoading: isLoadingSpells, error: spellError } = CharacterQueryHooks.useGetCharacterSpellSelection(
-        character?.id ?? 0,
-        selectedClassId ?? 0,
-        {
-            enabled: isQueryEnabled,
-            staleTime: 5 * 60 * 1000,
-            gcTime: 10 * 60 * 1000,
-        }
-    );
-
-
-    // Debug logging
-    React.useEffect(() => {
-        if (isQueryEnabled) {
-            console.log('SpellSelectionTab: Query enabled', { characterId: character?.id, selectedClassId, isLoadingSpells, hasData: !!spellData, error: spellError });
-        } else {
-            console.log('SpellSelectionTab: Query disabled', { characterId: character?.id, selectedClassId, hasCharacter: !!character, hasSelectedClass: !!selectedClassId });
-        }
-    }, [isQueryEnabled, character?.id, selectedClassId, isLoadingSpells, spellData, spellError]);
+    // Get spell data from resolved character (spell selection data is now part of resolved character response)
+    const spellData = useMemo(() => {
+        if (!classSpellSelection) return undefined;
+        // Resolved character format uses 'spells' (ClassSpellSelection format)
+        return {
+            results: classSpellSelection.spells ?? [],
+            domainSpells: classSpellSelection.domainSpells ?? [],
+            total: (classSpellSelection.spells?.length ?? 0) + (classSpellSelection.domainSpells?.length ?? 0),
+        };
+    }, [classSpellSelection]);
 
     // Get list of known free grant spells for the current advancement
     // Uses spellData which is optimistically updated, and filters by isKnown and isFreeGrant
@@ -206,15 +152,14 @@ export function SpellSelectionTab({
     /**
      * Get list of known free grant spells for the current advancement.
      * 
-     * Derives the list of currently known free grant spells from `spellData` (which is
-     * optimistically updated) and the cached `character` data. This list is displayed
-     * in the "Free spells" notification section with remove buttons.
+     * Derives the list of currently known free grant spells from `spellData` (from resolved character)
+     * and the `state.spellsKnown` array. This list is displayed in the "Free spells" notification
+     * section with remove buttons.
      * 
-     * **Cache Synchronization**:
-     * - Reads from cached character data to ensure we have the latest `spellsKnown` array
-     * - Filters by `isFreeGrant: true` to only show free grant spells
+     * **Data Source**:
+     * - Uses spell selection data from resolved character (architecturally correct)
+     * - Reads from `state.spellsKnown` to identify free grant spells
      * - Matches against `spellData` to get spell names and levels
-     * - Recalculates when `cacheUpdateTrigger` changes (after optimistic updates)
      * 
      * **Purpose**:
      * - Display known free grant spells in the UI
@@ -222,23 +167,11 @@ export function SpellSelectionTab({
      * - Update immediately after spell add/remove operations
      */
     const knownFreeGrantSpells = useMemo(() => {
-        if (!character?.id || !selectedClassId || !spellData?.results || !isSpellbookClass) return [];
+        if (!spellData?.results || !isSpellbookClass) return [];
 
-        // Get cached character data to ensure we have the latest spellsKnown array
-        const characterQueryKey = CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(character.id);
-        const cachedCharacter = queryClient.getQueryData<CharacterWithAllDetailsResponse>(characterQueryKey);
-        const characterToUse = cachedCharacter || character;
-
-        // Find current advancement from cached character data
-        const cachedCurrentAdvancement = characterToUse.advancements
-            ?.filter(a => a.classId === selectedClassId || a.secondaryClassId === selectedClassId)
-            .sort((a, b) => b.level - a.level)[0] ?? null;
-
-        if (!cachedCurrentAdvancement) return [];
-
-        // Get spell IDs that are free grants from the current advancement
+        // Get spell IDs that are free grants from state
         const freeGrantSpellIds = new Set(
-            (cachedCurrentAdvancement.spellsKnown || [])
+            state.spellsKnown
                 .filter(s => s.isFreeGrant)
                 .map(s => s.spellId)
         );
@@ -260,7 +193,7 @@ export function SpellSelectionTab({
             if (a.level !== b.level) return a.level - b.level;
             return a.name.localeCompare(b.name);
         });
-    }, [character, selectedClassId, spellData, isSpellbookClass, queryClient, cacheUpdateTrigger]);
+    }, [state.spellsKnown, spellData, isSpellbookClass]);
 
     // 0th level spells for spellbook classes are granted via feature system
     // (EntityType.Other + EntityAppliesToType.SpellbookSpell with appliesToId: 0, appliesToSubId: -1)
@@ -268,21 +201,19 @@ export function SpellSelectionTab({
 
     // Get spells known for this class to calculate max spells per level
     const spellsKnownByLevel = useMemo(() => {
-        if (!character?.advancements || !selectedClassId) return new Map<number, number>();
+        if (!selectedClassId || !spellData) return new Map<number, number>();
 
         const counts = new Map<number, number>();
-        for (const advancement of character.advancements) {
-            if (advancement.classId === selectedClassId || advancement.secondaryClassId === selectedClassId) {
-                for (const spell of advancement.spellsKnown || []) {
-                    // Get spell level from SpellLevelMap for this class
-                    const spellEntry = spellData?.results.find(s => s.id === spell.spellId);
-                    const level = spellEntry?.classSpellLevel ?? 0;
-                    counts.set(level, (counts.get(level) ?? 0) + 1);
-                }
+        for (const spell of state.spellsKnown) {
+            // Get spell level from SpellLevelMap for this class
+            const spellEntry = spellData.results.find(s => s.id === spell.spellId);
+            if (spellEntry) {
+                const level = spellEntry.classSpellLevel ?? 0;
+                counts.set(level, (counts.get(level) ?? 0) + 1);
             }
         }
         return counts;
-    }, [character?.advancements, selectedClassId, spellData]);
+    }, [state.spellsKnown, selectedClassId, spellData]);
 
     // Get max spells per level from spellcasting progression
     const maxSpellsPerLevel = useMemo(() => {
@@ -370,199 +301,35 @@ export function SpellSelectionTab({
     const handleLearnSpell = useCallback(async (spell: SpellSelectionEntry) => {
         if (!character?.id || !selectedClassId) return;
 
-        // Find the most recent advancement for this class
-        const advancement = character.advancements
-            .filter(a => a.classId === selectedClassId || a.secondaryClassId === selectedClassId)
-            .sort((a, b) => b.level - a.level)[0];
-
-        if (!advancement) return;
-
         // Determine if this is a free grant (for spellbook classes in level-up mode)
         const isFreeGrant = isSpellbookClass && spellbookMode === 'level-up';
 
-        try {
-            /**
-             * Handles adding a spell to the character's spellbook or known spells.
-             * 
-             * **Integration with Character Resolution**:
-             * - Calls the backend API to add the spell (which validates and updates the database)
-             * - If the response includes `resolvedCharacter`, updates the resolution session state
-             *   using `useCharacterResolution.updateResolvedCharacter()` to keep frontend resolution
-             *   state synchronized with backend changes
-             * 
-             * **Optimistic Cache Updates**:
-             * - Updates spell data cache (`isKnown: true`) for immediate UI feedback
-             * - Updates character cache (`advancements[].spellsKnown` array) to keep `currentAdvancement` in sync
-             * - Triggers `cacheUpdateTrigger` to force memo recalculation (e.g., `knownFreeGrantSpells`)
-             * 
-             * **State Management**:
-             * - Does not manually manipulate TanStack Query caches for character details
-             * - Relies on `useCharacterResolution` hook for resolution state synchronization
-             * - Free spells count is calculated from cached character data (not local state)
-             * 
-             * @param spell - The spell to add
-             * 
-             * @see useCharacterResolution.updateResolvedCharacter - For resolution state updates
-             * @see CharacterQueryHooks.addSpellKnown - For API call
-             */
-            const response = await CharacterQueryHooks.addSpellKnown({
-                characterId: character.id,
-                classId: selectedClassId,
-                spellId: spell.id,
-                advancementId: advancement.id,
-                isFreeGrant
-            }) as AddSpellKnownResponse;
+        // Check if spell is already known
+        const isAlreadyKnown = state.spellsKnown.some(s => s.spellId === spell.id);
+        if (isAlreadyKnown) return;
 
-            // Update resolution session state if response includes resolved character data
-            if (response?.resolvedCharacter) {
-                resolution.updateResolvedCharacter(response.resolvedCharacter as ResolvedCharacterResult);
+        // Update state - CharacterEdit will sync to backend automatically
+        updateState({
+            type: CharacterEditStateUpdateType.SET_SPELLS_KNOWN,
+            payload: {
+                spellsKnown: [
+                    ...state.spellsKnown,
+                    { spellId: spell.id, isFreeGrant }
+                ]
             }
-
-            // Optimistically update the spell's isKnown flag in the cached query data
-            if (character?.id && selectedClassId) {
-                const queryKey = CharacterQueryHooks.getCharacterSpellSelectionQueryKey(character.id, selectedClassId);
-                queryClient.setQueryData(queryKey, (oldData: CharacterSpellSelectionResponse | undefined) => {
-                    if (!oldData) return oldData;
-                    return {
-                        ...oldData,
-                        results: oldData.results.map((s) =>
-                            s.id === spell.id ? { ...s, isKnown: true } : s
-                        )
-                    };
-                });
-
-                // Also update character cache to add spell to advancement's spellsKnown array
-                const characterQueryKey = CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(character.id);
-                queryClient.setQueryData(characterQueryKey, (oldCharacter: CharacterWithAllDetailsResponse | undefined) => {
-                    if (!oldCharacter || !oldCharacter.advancements) return oldCharacter;
-                    return {
-                        ...oldCharacter,
-                        advancements: oldCharacter.advancements.map((adv) => {
-                            if (adv.id === advancement.id) {
-                                // Check if spell is already in the array
-                                const hasSpell = adv.spellsKnown?.some(s => s.spellId === spell.id);
-                                if (!hasSpell) {
-                                    return {
-                                        ...adv,
-                                        spellsKnown: [
-                                            ...(adv.spellsKnown || []),
-                                            {
-                                                spellId: spell.id,
-                                                isFreeGrant: isFreeGrant
-                                            }
-                                        ]
-                                    };
-                                }
-                            }
-                            return adv;
-                        })
-                    };
-                });
-
-                // Trigger memo recalculation
-                setCacheUpdateTrigger(prev => prev + 1);
-            }
-
-            // No need to update local state - freeSpellsUsed is now calculated from cached character data
-        } catch (error) {
-            console.error('Failed to learn spell:', error);
-        }
-    }, [character, selectedClassId, isSpellbookClass, spellbookMode, resolution, queryClient]);
+        });
+    }, [character, selectedClassId, isSpellbookClass, spellbookMode, state.spellsKnown, updateState]);
 
     // Handle remove spell
     const handleRemoveSpell = useCallback(async (spell: SpellSelectionEntry) => {
-        if (!character?.id || !selectedClassId) return;
-
-        // Use current advancement directly - spells are always added to the most recent advancement for the class
-        // If spell is known in spellData, it should be in currentAdvancement (even if prop hasn't updated yet)
-        if (!currentAdvancement) {
-            console.warn('Could not find current advancement for spell removal:', spell.id);
-            return;
-        }
-
-        const advancement = currentAdvancement;
-
-        // Check if this was a free grant BEFORE removing
-        const spellRecord = advancement.spellsKnown?.find(s => s.spellId === spell.id);
-        const wasFreeGrant = spellRecord?.isFreeGrant ?? false;
-        const isFreeGrantRemoval = isSpellbookClass && spellbookMode === 'level-up' && wasFreeGrant;
-
-        try {
-            /**
-             * Handles removing a spell from the character's spellbook or known spells.
-             * 
-             * **Integration with Character Resolution**:
-             * - Calls the backend API to remove the spell (which validates and updates the database)
-             * - If the response includes `resolvedCharacter`, updates the resolution session state
-             *   using `useCharacterResolution.updateResolvedCharacter()` to keep frontend resolution
-             *   state synchronized with backend changes
-             * 
-             * **Optimistic Cache Updates**:
-             * - Updates spell data cache (`isKnown: false`) for immediate UI feedback
-             * - Updates character cache (`advancements[].spellsKnown` array) to keep `currentAdvancement` in sync
-             * - Triggers `cacheUpdateTrigger` to force memo recalculation (e.g., `knownFreeGrantSpells`)
-             * 
-             * **State Management**:
-             * - Does not manually manipulate TanStack Query caches for character details
-             * - Relies on `useCharacterResolution` hook for resolution state synchronization
-             * - Free spells count is calculated from cached character data (not local state)
-             * 
-             * @param spell - The spell to remove
-             * 
-             * @see useCharacterResolution.updateResolvedCharacter - For resolution state updates
-             * @see CharacterQueryHooks.removeSpellKnown - For API call
-             */
-            const response = await CharacterQueryHooks.removeSpellKnown({
-                characterId: character.id,
-                spellId: spell.id,
-                advancementId: advancement.id
-            }) as RemoveSpellKnownResponse;
-
-            // Update resolution session state if response includes resolved character data
-            if (response?.resolvedCharacter) {
-                resolution.updateResolvedCharacter(response.resolvedCharacter as ResolvedCharacterResult);
+        // Update state - CharacterEdit will sync to backend automatically
+        updateState({
+            type: CharacterEditStateUpdateType.SET_SPELLS_KNOWN,
+            payload: {
+                spellsKnown: state.spellsKnown.filter(s => s.spellId !== spell.id)
             }
-
-            // Optimistically update the spell's isKnown flag in the cached query data
-            if (character?.id && selectedClassId) {
-                const queryKey = CharacterQueryHooks.getCharacterSpellSelectionQueryKey(character.id, selectedClassId);
-                queryClient.setQueryData(queryKey, (oldData: CharacterSpellSelectionResponse | undefined) => {
-                    if (!oldData) return oldData;
-                    return {
-                        ...oldData,
-                        results: oldData.results.map((s) =>
-                            s.id === spell.id ? { ...s, isKnown: false } : s
-                        )
-                    };
-                });
-
-                // Also update character cache to remove spell from advancement's spellsKnown array
-                const characterQueryKey = CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(character.id);
-                queryClient.setQueryData(characterQueryKey, (oldCharacter: CharacterWithAllDetailsResponse | undefined) => {
-                    if (!oldCharacter || !oldCharacter.advancements) return oldCharacter;
-                    return {
-                        ...oldCharacter,
-                        advancements: oldCharacter.advancements.map((adv) => {
-                            if (adv.id === advancement.id && adv.spellsKnown) {
-                                return {
-                                    ...adv,
-                                    spellsKnown: adv.spellsKnown.filter(s => s.spellId !== spell.id)
-                                };
-                            }
-                            return adv;
-                        })
-                    };
-                });
-
-                // Trigger memo recalculation
-                setCacheUpdateTrigger(prev => prev + 1);
-            }
-
-            // No need to update local state - freeSpellsUsed is now calculated from cached character data
-        } catch (error) {
-            console.error('Failed to remove spell:', error);
-        }
-    }, [character, selectedClassId, currentAdvancement, isSpellbookClass, spellbookMode, resolution, queryClient]);
+        });
+    }, [state.spellsKnown, updateState]);
 
     // Check if spell is known
     const isSpellKnown = useCallback((spell: SpellSelectionEntry): boolean => {
@@ -577,22 +344,13 @@ export function SpellSelectionTab({
         return max > 0 && current >= max;
     }, [selectedClass, spellsKnownByLevel, maxSpellsPerLevel]);
 
-    // Check if spell level is valid for current advancement level
-    const isSpellLevelValid = useCallback((spell: SpellSelectionEntry): boolean => {
-        if (!selectedClass || !currentAdvancement) return false;
+    // Note: Spell level validation is handled by the backend in syncSpellsKnown().
+    // The UI allows optimistic selection and the backend will validate and reject invalid spells.
 
-        // For spellbook classes, validate spell level against max castable at advancement level
-        if (isSpellbookClass && selectedClass.spellcastingProgression) {
-            return canScribeSpellAtLevel(
-                currentAdvancement,
-                spell.level,
-                selectedClass.spellcastingProgression
-            );
-        }
-
-        // For other classes, allow all spells
-        return true;
-    }, [selectedClass, currentAdvancement, isSpellbookClass]);
+    // Memoized helper function for school/subschool formatting
+    const formatSchoolSubschool = useCallback((schoolIds: Array<{ schoolId: number }> | null | undefined, subSchoolIds: Array<{ subSchoolId: number }> | null | undefined): string => {
+        return formatSpellSchool(schoolIds, subSchoolIds, { useAbbreviation: false });
+    }, []);
 
     // Check if action should be disabled
     const isActionDisabled = useCallback((spell: SpellSelectionEntry): boolean => {
@@ -608,10 +366,8 @@ export function SpellSelectionTab({
             return true;
         }
 
-        // For spellbook classes, check spell level validity (always enforced)
-        if (isSpellbookClass && !isSpellLevelValid(spell)) {
-            return true;
-        }
+        // Note: Spell level validation for spellbook classes is handled by the backend.
+        // The UI allows selection and the backend validates in syncSpellsKnown().
 
         // For spellbook classes in level-up mode, check free spell limit
         if (isSpellbookClass && spellbookMode === 'level-up') {
@@ -623,7 +379,7 @@ export function SpellSelectionTab({
         }
 
         return false;
-    }, [selectedClass, isMaxSpellsReached, isSpellbookClass, spellbookMode, isSpellLevelValid, availableFreeSpells, remainingFreeSpells]);
+    }, [selectedClass, isMaxSpellsReached, isSpellbookClass, spellbookMode, availableFreeSpells, remainingFreeSpells]);
 
     // Define columns for spell display
     const spellColumns: ColumnDef<SpellSelectionEntry, unknown>[] = useMemo(() => [
@@ -649,18 +405,7 @@ export function SpellSelectionTab({
             header: 'School',
             size: 75,
             cell: ({ row }) => {
-                const schools = row.original.schoolIds?.map(s => {
-                    const school = SPELL_SCHOOL_MAP[s.schoolId as keyof typeof SPELL_SCHOOL_MAP];
-                    return school?.name ?? '';
-                }).filter(Boolean).join(', ') ?? '';
-                const subschools = row.original.subSchoolIds?.map(s => {
-                    const subschool = SPELL_SUBSCHOOL_MAP[s.subSchoolId as keyof typeof SPELL_SUBSCHOOL_MAP];
-                    return subschool?.name ?? '';
-                }).filter(Boolean);
-                if (subschools && subschools.length > 0) {
-                    return `${schools} [${subschools.join(', ')}]`;
-                }
-                return schools;
+                return formatSchoolSubschool(row.original.schoolIds, row.original.subSchoolIds);
             }
         },
         {
@@ -675,16 +420,10 @@ export function SpellSelectionTab({
             cell: ({ row }) => {
                 const sourceInfo = row.original.sourceBookInfo?.[0];
                 if (!sourceInfo) return '';
-                // Type assertion needed until schema package is rebuilt
-                const sourceBook = (sourceInfo as { sourceBook?: { abbreviation: string } | null }).sourceBook;
-                const abbrev = sourceBook?.abbreviation ?? '';
-                const page = sourceInfo.pageNumber;
-                if (!abbrev && !page) return '';
-                if (!page) return abbrev;
-                return `${abbrev} ${page}`;
+                return formatSourceReference({ sourceBookId: sourceInfo.sourceBookId, pageNumber: sourceInfo.pageNumber });
             }
         }
-    ], []);
+    ], [formatSchoolSubschool]);
 
     // Determine if the selected class is divine or arcane
     const isDivineCaster = useMemo(() => {
@@ -771,22 +510,21 @@ export function SpellSelectionTab({
                 </select>
             </div>
 
-            {!isQueryEnabled ? (
+            {!character?.id ? (
                 <div className="p-6">
                     <p className="text-gray-600 dark:text-gray-400">
-                        {!character?.id
-                            ? 'Please save the character first to view and select spells.'
-                            : 'Please select a spellcasting class.'}
+                        Please save the character first to view and select spells.
                     </p>
                 </div>
-            ) : isLoadingSpells ? (
+            ) : !selectedClassId ? (
+                <div className="p-6">
+                    <p className="text-gray-600 dark:text-gray-400">Please select a spellcasting class.</p>
+                </div>
+            ) : isLoading && !resolvedData?.spellSelection ? (
                 <div className="p-6">
                     <p className="text-gray-600 dark:text-gray-400">Loading spells...</p>
-                    {spellError && (
-                        <p className="text-red-600 dark:text-red-400 mt-2">Error: {String(spellError)}</p>
-                    )}
                 </div>
-            ) : transformedSpells.length === 0 ? (
+            ) : !spellData || spellData.results.length === 0 ? (
                 <div className="p-6">
                     <p className="text-gray-600 dark:text-gray-400">No spells available for this class.</p>
                 </div>

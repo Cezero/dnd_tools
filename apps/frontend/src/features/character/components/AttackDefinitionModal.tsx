@@ -1,19 +1,9 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 
-import type { AttackDefinition } from '@/features/character/types';
-import type { CharacterItem as CharacterItemSchema, ItemWithDetails , CharacterWithAllDetailsResponse } from '@shared/schema';
 import { ARMOR_CATEGORY_ENUM } from '@shared/static-data';
 
-interface AttackDefinitionModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSave: (definition: Omit<AttackDefinition, 'id'>) => void;
-    attackDefinition?: AttackDefinition | null;
-    character: CharacterWithAllDetailsResponse;
-    characterItems: CharacterItemSchema[];
-    items?: ItemWithDetails[]; // Optional: base items to check if offhand is a shield
-}
+import type { AttackDefinitionModalProps } from './types';
 
 export function AttackDefinitionModal({
     isOpen,

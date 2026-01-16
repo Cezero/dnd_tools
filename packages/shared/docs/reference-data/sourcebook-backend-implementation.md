@@ -4,7 +4,9 @@
 
 ## 📋 **Overview**
 
-The sourcebook system backend implementation provides a lightweight cache endpoint for source book data, optimized for frontend performance. The system provides selective field loading with content flags (hasClasses, hasSpells, hasRaces, etc.) to enable efficient filtering and display in the frontend.
+The sourcebook system backend implementation provides a lightweight cache endpoint for source book data, optimized for frontend performance. The system provides selective field loading with content flags (hasCore, hasClasses, hasSpells, hasRaces, etc.) and settingId to enable efficient filtering and display in the frontend.
+
+**Migration Note**: Source book data has been migrated from static data maps (SOURCE_BOOK_MAP, SOURCE_BOOK_FILTER_MAP, SOURCE_BOOK_SETTING_MAP) to a cache-based system. Filtering is now performed using database flags (hasCore, hasClasses, hasSpells, hasRaces, hasDomains, hasDeities, hasItems) and settingId rather than static maps. The frontend uses cache utility functions in `CacheFunctions.ts` to filter source books by content type and setting.
 
 The backend implementation follows the shared [Backend Implementation Patterns](../application-overview/backend-implementation.md) with sourcebook-specific business logic and integration patterns.
 
@@ -68,11 +70,12 @@ The central service for all source book cache operations.
 2. Selects only essential fields:
    - Basic identification: id, name, abbreviation
    - Metadata: editionId, isVisible, settingId
-   - Content flags: hasClasses, hasSpells, hasRaces, hasDomains, hasDeities, hasItems
+   - Content flags: hasCore, hasClasses, hasSpells, hasRaces, hasDomains, hasDeities, hasItems
 3. Orders by name (ascending)
 4. Returns cache response with total count and results
 
 **Content Flags**:
+- **hasCore**: Indicates core rulebooks (PHB, DMG) for each edition
 - **hasClasses**: Indicates book contains class options
 - **hasSpells**: Indicates book contains spells
 - **hasRaces**: Indicates book contains race options

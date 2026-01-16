@@ -1,4 +1,4 @@
-import { Feature, FeatureProgression } from '@shared/schema';
+import { Feature, FeatureProgression, CreateFeatureRequest, UpdateFeatureRequest } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
 export interface FeatureEditContext {
@@ -17,4 +17,16 @@ export interface FeatureEditFormProps {
     context?: FeatureEditContext;
     initialProgressions?: FeatureProgression[];
     showHeader?: boolean;
+}
+
+/**
+ * Form data type for feature edit form
+ */
+export type FeatureFormData = CreateFeatureRequest | UpdateFeatureRequest;
+
+/**
+ * Props for PrerequisiteDetailForm component
+ */
+export interface PrerequisiteDetailFormProps {
+    index: number;
 }

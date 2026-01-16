@@ -1,6 +1,8 @@
 import type { DiceRollResult } from '@3d-dice/dice-roller-parser';
 
+import type { DiceType } from '@/assets/icons';
 import type { UpdateUserDiceConfigRequest, DiceBoxAdminConfig } from '@shared/schema';
+
 
 /**
  * Color configuration for dice elements
@@ -93,6 +95,19 @@ export interface DiceBoxContextType {
     getCurrentConfig: () => UpdateUserDiceConfigRequest | null;
     getCurrentIconColor: () => string;
     setTestingMode: (isTesting: boolean) => void;
-} 
+}
 
 export type { DieRoll } from '@3d-dice/dice-roller-parser';
+
+/**
+ * Props for DiceButton component
+ */
+export interface DiceButtonProps {
+    diceType: DiceType;
+    rollNotation?: string;
+    className?: string;
+    disabled?: boolean;
+    onClick?: () => void;
+    colors?: DiceColor;
+    group?: string; // Title/group name for the dice roll (e.g., "Fort Saving Throw", "Strength Check")
+}

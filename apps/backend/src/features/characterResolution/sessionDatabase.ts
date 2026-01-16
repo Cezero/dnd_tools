@@ -1,8 +1,9 @@
 import Database from 'better-sqlite3';
+import type { Database as DatabaseType } from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 
-const SESSION_DB_PATH = process.env.SESSION_DATABASE_URL || 
+const SESSION_DB_PATH = process.env.SESSION_DATABASE_URL ||
   path.join(process.cwd(), 'data', 'sessions.db');
 
 // Ensure data directory exists
@@ -16,12 +17,12 @@ if (!fs.existsSync(dataDir)) {
  * Creates the database file and table schema if they don't exist
  * Enables WAL mode for better concurrency
  */
-export function initializeSessionDatabase(): Database {
+export function initializeSessionDatabase(): DatabaseType {
   const db = new Database(SESSION_DB_PATH);
-  
+
   // Enable WAL mode for better concurrency
   db.pragma('journal_mode = WAL');
-  
+
   // Create sessions table if it doesn't exist
   db.exec(`
     CREATE TABLE IF NOT EXISTS character_edit_sessions (
@@ -40,7 +41,7 @@ export function initializeSessionDatabase(): Database {
     CREATE INDEX IF NOT EXISTS idx_expires_at ON character_edit_sessions(expires_at);
     CREATE INDEX IF NOT EXISTS idx_character_user ON character_edit_sessions(character_id, user_id);
   `);
-  
+
   return db;
 }
 
@@ -48,9 +49,9 @@ export function initializeSessionDatabase(): Database {
  * Get or initialize the session database
  * Returns a singleton database instance
  */
-let sessionDbInstance: Database | null = null;
+let sessionDbInstance: DatabaseType | null = null;
 
-export function getSessionDatabase(): Database {
+export function getSessionDatabase(): DatabaseType {
   if (!sessionDbInstance) {
     sessionDbInstance = initializeSessionDatabase();
   }

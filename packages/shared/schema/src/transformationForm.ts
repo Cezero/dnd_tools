@@ -1,11 +1,13 @@
 import z from "zod";
+
+import { numericParam, commonValidations } from "./common";
 import { QueryResponseSchema } from "./query";
 
 // Transformation Form Eligibility Schema
 export const TransformationFormEligibilitySchema = z.object({
-    id: z.number().int().positive('Transformation form eligibility ID must be a positive integer'),
-    featureId: z.number().int().positive('Feature ID must be a positive integer'),
-    monsterId: z.number().int().positive('Monster ID must be a positive integer'),
+    id: commonValidations.positiveInt('Transformation form eligibility ID'),
+    featureId: commonValidations.positiveInt('Feature ID'),
+    monsterId: commonValidations.positiveInt('Monster ID'),
     minLevel: z.number().int().min(1, 'Minimum level must be at least 1').max(20, 'Minimum level must be at most 20').nullable().optional(),
     notes: z.string().max(10000, 'Notes must be less than 10000 characters').nullable().optional(),
 });
@@ -13,12 +15,12 @@ export const TransformationFormEligibilitySchema = z.object({
 // Transformation Form Eligibility with relations schema
 export const TransformationFormEligibilityWithRelationsSchema = TransformationFormEligibilitySchema.extend({
     feature: z.object({
-        id: z.number().int().positive(),
+        id: commonValidations.positiveInt(),
         name: z.string(),
         slug: z.string(),
     }).optional(),
     monster: z.object({
-        id: z.number().int().positive(),
+        id: commonValidations.positiveInt(),
         name: z.string(),
         sizeId: z.number().int().nullable(),
     }).optional(),
@@ -37,11 +39,11 @@ export const UpdateTransformationFormRequestSchema = UpdateTransformationFormSch
 
 // Parameter schemas
 export const TransformationFormIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export const FeatureIdForTransformationFormsParamSchema = z.object({
-    featureId: z.string().transform((val: string) => parseInt(val)),
+    featureId: numericParam(),
 });
 
 // Response schemas

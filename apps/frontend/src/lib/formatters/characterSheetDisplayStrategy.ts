@@ -1,14 +1,15 @@
 import { isClassSkill } from '@/features/character/featureProgressionUtils';
 import { CharacterCalculationService } from '@/lib/character-calculation';
-import type { CombatValuesResult } from '@/lib/character-calculation/calculations/combatValues';
+import type { CombatValuesResult, CombatValuesBreakdownMap, DamageComponents } from '@/lib/character-calculation/calculations/combatValues';
 import { SaveType } from '@/lib/character-calculation/calculations/savingThrows';
 import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
-import type { BreakdownMap } from '@/lib/character-calculation/types';
+import type { BreakdownMap, BreakdownComponent as CalculationBreakdownComponent } from '@/lib/character-calculation/types';
 import { canUseTwoHanded, isTwoHandedWeapon } from '@/lib/character-calculation/utils/weaponHelpers';
+import { extractBABProgression } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
-import { getSkillNameById, getSkillSelectFull } from '@/services/cache';
+import { getSkillSummaryById, getSkillSelectFull } from '@/services/cache';
 import type { FeatureProgression, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
-import { EntityAppliesToType, EntityType, AbilityId, SpecialFeatureId, BreakdownComponentType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
+import { FeatureSourceType , EntityAppliesToType, EntityType, AbilityId, SpecialFeatureId, CalculationMethodType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
 
 import { conditionLabelerRegistry } from './condition-labeler-registry';
@@ -129,7 +130,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      * Extract structured data from formatted item
      * TODO: what is the poiunt of this function? when is it called?
      */
-    private extractStructuredData(item: FormattedItemWithLevel, context?: DisplayContext): FormattedEntityResult['structuredData'] {
+    private extractStructuredData(item: FormattedItemWithLevel, _context?: DisplayContext): FormattedEntityResult['structuredData'] {
         const entity = item.entity;
 
         // For bonuses
@@ -138,7 +139,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             return {
                 type: 'bonus',
                 value: value,
-                target: this.getTargetName(entity, context)
+                target: this.getTargetName(entity)
             };
         }
 
@@ -157,7 +158,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             return {
                 type: 'proficiency',
                 value: 1, // Proficiency is binary
-                target: this.getTargetName(entity, context)
+                target: this.getTargetName(entity)
             };
         }
 
@@ -167,7 +168,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     /**
      * Get target name for structured data
      */
-    private getTargetName(entity: CalculatedEntity, context?: DisplayContext): string | undefined {
+    private getTargetName(entity: CalculatedEntity): string | undefined {
         if (entity.item?.name) {
             return entity.item.name;
         }
@@ -295,6 +296,159 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     }
 
     /**
+     * Convert CombatValuesBreakdownMap to CalculationBreakdown format
+     */
+    private convertAttackBreakdown(breakdown: CombatValuesBreakdownMap): CalculationBreakdown {
+        const components: BreakdownComponent[] = [];
+
+        // Helper to map sourceType string to CalculationMethodType
+        const mapSourceType = (sourceType: string | null): CalculationMethodType => {
+            switch (sourceType) {
+                case 'base':
+                    return CalculationMethodType.base;
+                case 'ability':
+                case 'formula_modification':
+                    return CalculationMethodType.formula;
+                case 'feat':
+                    return CalculationMethodType.choice;
+                case 'feature':
+                    return CalculationMethodType.choice;
+                case 'item':
+                    return CalculationMethodType.choice;
+                case 'penalty':
+                    return CalculationMethodType.base;
+                default:
+                    return CalculationMethodType.base;
+            }
+        };
+
+        // Helper to map sourceType string to EntityAppliesToType
+        const mapEntityAppliesToType = (sourceType: string | null, _component: CalculationBreakdownComponent): number | undefined => {
+            switch (sourceType) {
+                case 'ability':
+                    return EntityAppliesToType.Ability;
+                case 'feat':
+                    return EntityAppliesToType.Feat;
+                case 'feature':
+                    return EntityAppliesToType.Feature;
+                default:
+                    return undefined;
+            }
+        };
+
+        // Convert each breakdown component
+        if (breakdown.bab.value !== 0) {
+            components.push({
+                source: breakdown.bab.source || 'BAB',
+                value: breakdown.bab.value,
+                type: mapSourceType(breakdown.bab.sourceType),
+                sourceType: mapEntityAppliesToType(breakdown.bab.sourceType, breakdown.bab),
+                sourceId: breakdown.bab.context?.abilityId,
+            });
+        }
+
+        if (breakdown.ability.value !== 0) {
+            components.push({
+                source: breakdown.ability.source || 'Ability modifier',
+                value: breakdown.ability.value,
+                type: mapSourceType(breakdown.ability.sourceType),
+                sourceType: mapEntityAppliesToType(breakdown.ability.sourceType, breakdown.ability),
+                sourceId: breakdown.ability.context?.abilityId || breakdown.ability.sourceId,
+            });
+        }
+
+        if (breakdown.proficiency.value !== 0) {
+            components.push({
+                source: breakdown.proficiency.source || 'Proficiency',
+                value: breakdown.proficiency.value,
+                type: mapSourceType(breakdown.proficiency.sourceType),
+            });
+        }
+
+        if (breakdown.penalty.value !== 0) {
+            components.push({
+                source: breakdown.penalty.source || 'Penalty',
+                value: breakdown.penalty.value,
+                type: mapSourceType(breakdown.penalty.sourceType),
+            });
+        }
+
+        if (breakdown.feat.value !== 0) {
+            components.push({
+                source: breakdown.feat.source || 'Feat bonus',
+                value: breakdown.feat.value,
+                type: mapSourceType(breakdown.feat.sourceType),
+                sourceType: mapEntityAppliesToType(breakdown.feat.sourceType, breakdown.feat),
+                sourceId: breakdown.feat.sourceId,
+            });
+        }
+
+        if (breakdown.feature.value !== 0) {
+            components.push({
+                source: breakdown.feature.source || 'Feature bonus',
+                value: breakdown.feature.value,
+                type: mapSourceType(breakdown.feature.sourceType),
+                sourceType: mapEntityAppliesToType(breakdown.feature.sourceType, breakdown.feature),
+                sourceId: breakdown.feature.sourceId,
+            });
+        }
+
+        if (breakdown.item.value !== 0) {
+            components.push({
+                source: breakdown.item.source || 'Item bonus',
+                value: breakdown.item.value,
+                type: mapSourceType(breakdown.item.sourceType),
+                sourceType: mapEntityAppliesToType(breakdown.item.sourceType, breakdown.item),
+                sourceId: breakdown.item.context?.itemId || breakdown.item.sourceId,
+            });
+        }
+
+        return {
+            components,
+        };
+    }
+
+    /**
+     * Create damage breakdown from damage components
+     */
+    private createDamageBreakdown(damage: DamageComponents): CalculationBreakdown {
+        const components: BreakdownComponent[] = [];
+
+        // Base damage dice
+        if (damage.baseDamage) {
+            components.push({
+                source: 'Base damage',
+                value: damage.baseDamage,
+                type: CalculationMethodType.base,
+            });
+        }
+
+        // Ability modifier
+        if (damage.abilityModifier !== 0) {
+            components.push({
+                source: 'Ability modifier',
+                value: damage.abilityModifier,
+                type: CalculationMethodType.formula,
+                sourceType: EntityAppliesToType.Ability,
+            });
+        }
+
+        // Feat bonus
+        if (damage.featBonus !== 0) {
+            components.push({
+                source: 'Feat bonus',
+                value: damage.featBonus,
+                type: CalculationMethodType.choice,
+                sourceType: EntityAppliesToType.Feat,
+            });
+        }
+
+        return {
+            components,
+        };
+    }
+
+    /**
      * Format attack result for character sheet display
      */
     formatAttack(
@@ -409,6 +563,10 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             weaponName = weaponNameLabeler(weaponName, weaponNameContext);
         }
 
+        // Convert breakdown data
+        const attackBreakdown = this.convertAttackBreakdown(attackResult.breakdown);
+        const damageBreakdown = this.createDamageBreakdown(attackResult.damage);
+
         return {
             attackBonus,
             damage,
@@ -418,6 +576,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             type,
             size,
             weaponName,
+            attackBreakdown,
+            damageBreakdown,
         };
     }
 
@@ -495,7 +655,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         const initiative = this._formatInitiative(character, resolvedProgressions, context);
 
         // 10. Format base attack bonus
-        const baseAttackBonus = this._formatBaseAttackBonus(character, classDetailsMap);
+        const baseAttackBonus = this._formatBaseAttackBonus(character, resolvedProgressions, classDetailsMap);
 
         // 11. Format grapple
         const grapple = this._formatGrapple(character, resolvedProgressions, classDetailsMap, context);
@@ -536,7 +696,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         items: ItemWithDetails[],
         characterItems: CharacterItem[],
         classDetailsMap: Map<number, DnDClass>,
-        context?: DisplayContext
+        _context?: DisplayContext
     ): FormattedAttackResult[] {
         const attacks: FormattedAttackResult[] = [];
 
@@ -579,8 +739,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     character,
                     resolvedProgressions,
                     combatContext,
-                    classDetailsMap,
-                    context?.featsMap
+                    classDetailsMap
                 );
 
                 // Format each result
@@ -647,7 +806,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         const abilityScores = character.abilityScores.map(a => ({
             abilityId: a.abilityId,
             score: a.value,
-            modifier: CharacterCalculationService.getAbilityModifier(character, a.abilityId, resolvedProgressions, _context?.featsMap)
+            modifier: CharacterCalculationService.getAbilityModifier(character, a.abilityId, resolvedProgressions)
         }));
 
         // Collect all unique skill entries
@@ -777,7 +936,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         // Convert to formatted skills
         for (const entry of skillEntryMap.values()) {
-            const skillData = getSkillNameById(entry.skillId);
+            const skillData = getSkillSummaryById(entry.skillId);
             if (!skillData) continue;
 
             const abilityScore = abilityScores.find(a => a.abilityId === skillData.abilityId);
@@ -834,15 +993,22 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 isClassSkill: isClassSkillValue,
                 breakdown: {
                     components: [
-                        { source: 'Ability Modifier', value: abilityMod, type: BreakdownComponentType.base },
-                        { source: 'Ranks', value: ranks, type: BreakdownComponentType.base },
-                        { source: 'Misc Bonus', value: entry.miscBonus, type: BreakdownComponentType.base }
+                        { source: 'Ranks', value: ranks, type: CalculationMethodType.base },
+                        {
+                            source: ABILITY_MAP[skillData.abilityId].name,
+                            value: abilityMod,
+                            type: CalculationMethodType.base,
+                            sourceType: EntityAppliesToType.Ability,
+                            sourceId: skillData.abilityId
+                        },
+                        { source: 'Misc Bonus', value: entry.miscBonus, type: CalculationMethodType.base }
                     ]
                 }
             });
         }
 
         // Add skills with 0 ranks that don't have entries
+        // (Skills with bonuses already have entries created above)
         for (const skillData of allocatableSkills) {
             const needsSubtype = hasSubtypes(skillData.id) || usesCustomSubtype(skillData.id);
 
@@ -852,21 +1018,30 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     const abilityScore = abilityScores.find(a => a.abilityId === skillData.abilityId);
                     const abilityMod = abilityScore?.modifier ?? 0;
 
-                    let isClassSkill = false;
-                    for (const [classId] of classLevelCounts.entries()) {
-                        const classDetails = classDetailsMap.get(classId);
-                        if (classDetails?.features) {
-                            const hasClassSkill = classDetails.features.some(prog =>
-                                prog.featureId === SpecialFeatureId.ClassSkill &&
-                                prog.entities?.some(entity =>
-                                    entity.appliesTo === EntityAppliesToType.Skill &&
-                                    entity.appliesToId === skillData.id &&
-                                    (entity.appliesToSubId === -1 || entity.appliesToSubId === null)
-                                )
-                            );
-                            if (hasClassSkill) {
-                                isClassSkill = true;
-                                break;
+                    // Check if this is a class skill - use backend-provided classSkills if available
+                    let isClassSkillValue = false;
+                    if (_context?.classSkills) {
+                        isClassSkillValue = _context.classSkills.some(cs =>
+                            cs.skillId === skillData.id &&
+                            (cs.skillSubId === null)
+                        );
+                    } else {
+                        // Fallback to checking resolved progressions
+                        for (const [classId] of classLevelCounts.entries()) {
+                            const classDetails = classDetailsMap.get(classId);
+                            if (classDetails?.features) {
+                                const hasClassSkill = classDetails.features.some(prog =>
+                                    prog.featureId === SpecialFeatureId.ClassSkill &&
+                                    prog.entities?.some(entity =>
+                                        entity.appliesTo === EntityAppliesToType.Skill &&
+                                        entity.appliesToId === skillData.id &&
+                                        (entity.appliesToSubId === -1 || entity.appliesToSubId === null)
+                                    )
+                                );
+                                if (hasClassSkill) {
+                                    isClassSkillValue = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -886,10 +1061,17 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                         abilityMod: abilityModString,
                         ranks: '0',
                         misc: this.formatBreakdownComponent(0),
-                        isClassSkill: isClassSkill,
+                        isClassSkill: isClassSkillValue,
                         breakdown: {
                             components: [
-                                { source: 'Ability Modifier', value: abilityMod, type: BreakdownComponentType.base }
+                                { source: 'Ranks', value: 0, type: CalculationMethodType.base },
+                                {
+                                    source: ABILITY_MAP[skillData.abilityId].name,
+                                    value: abilityMod,
+                                    type: CalculationMethodType.base,
+                                    sourceType: EntityAppliesToType.Ability,
+                                    sourceId: skillData.abilityId
+                                }
                             ]
                         }
                     });
@@ -909,11 +1091,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         resolvedProgressions: FeatureProgression[],
         _items: ItemWithDetails[],
         classDetailsMap: Map<number, DnDClass>,
-        context?: DisplayContext
+        _context?: DisplayContext
     ): { fortitude: FormattedSavingThrow; reflex: FormattedSavingThrow; will: FormattedSavingThrow } {
-        const fortResult = CharacterCalculationService.getSavingThrow(character, SaveType.Fortitude, resolvedProgressions, classDetailsMap, context?.featsMap);
-        const refResult = CharacterCalculationService.getSavingThrow(character, SaveType.Reflex, resolvedProgressions, classDetailsMap, context?.featsMap);
-        const willResult = CharacterCalculationService.getSavingThrow(character, SaveType.Will, resolvedProgressions, classDetailsMap, context?.featsMap);
+        const fortResult = CharacterCalculationService.getSavingThrow(character, SaveType.Fortitude, resolvedProgressions, classDetailsMap);
+        const refResult = CharacterCalculationService.getSavingThrow(character, SaveType.Reflex, resolvedProgressions, classDetailsMap);
+        const willResult = CharacterCalculationService.getSavingThrow(character, SaveType.Will, resolvedProgressions, classDetailsMap);
 
         return {
             fortitude: {
@@ -923,9 +1105,15 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 misc: this.formatBreakdownComponent(fortResult.breakdown.feat.value + fortResult.breakdown.feature.value + fortResult.breakdown.item.value),
                 breakdown: {
                     components: [
-                        { source: 'Base', value: fortResult.breakdown.base.value, type: BreakdownComponentType.base },
-                        { source: 'Ability Modifier', value: fortResult.breakdown.abilityMod.value, type: BreakdownComponentType.base },
-                        { source: 'Misc', value: fortResult.breakdown.feat.value + fortResult.breakdown.feature.value + fortResult.breakdown.item.value, type: BreakdownComponentType.base }
+                        { source: 'Base', value: fortResult.breakdown.base.value, type: CalculationMethodType.base },
+                        {
+                            source: ABILITY_MAP[AbilityId.Constitution].name,
+                            value: fortResult.breakdown.abilityMod.value,
+                            type: CalculationMethodType.base,
+                            sourceType: EntityAppliesToType.Ability,
+                            sourceId: AbilityId.Constitution
+                        },
+                        { source: 'Misc', value: fortResult.breakdown.feat.value + fortResult.breakdown.feature.value + fortResult.breakdown.item.value, type: CalculationMethodType.base }
                     ]
                 }
             },
@@ -936,9 +1124,15 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 misc: this.formatBreakdownComponent(refResult.breakdown.feat.value + refResult.breakdown.feature.value + refResult.breakdown.item.value),
                 breakdown: {
                     components: [
-                        { source: 'Base', value: refResult.breakdown.base.value, type: BreakdownComponentType.base },
-                        { source: 'Ability Modifier', value: refResult.breakdown.abilityMod.value, type: BreakdownComponentType.base },
-                        { source: 'Misc', value: refResult.breakdown.feat.value + refResult.breakdown.feature.value + refResult.breakdown.item.value, type: BreakdownComponentType.base }
+                        { source: 'Base', value: refResult.breakdown.base.value, type: CalculationMethodType.base },
+                        {
+                            source: ABILITY_MAP[AbilityId.Dexterity].name,
+                            value: refResult.breakdown.abilityMod.value,
+                            type: CalculationMethodType.base,
+                            sourceType: EntityAppliesToType.Ability,
+                            sourceId: AbilityId.Dexterity
+                        },
+                        { source: 'Misc', value: refResult.breakdown.feat.value + refResult.breakdown.feature.value + refResult.breakdown.item.value, type: CalculationMethodType.base }
                     ]
                 }
             },
@@ -949,9 +1143,15 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 misc: this.formatBreakdownComponent(willResult.breakdown.feat.value + willResult.breakdown.feature.value + willResult.breakdown.item.value),
                 breakdown: {
                     components: [
-                        { source: 'Base', value: willResult.breakdown.base.value, type: BreakdownComponentType.base },
-                        { source: 'Ability Modifier', value: willResult.breakdown.abilityMod.value, type: BreakdownComponentType.base },
-                        { source: 'Misc', value: willResult.breakdown.feat.value + willResult.breakdown.feature.value + willResult.breakdown.item.value, type: BreakdownComponentType.base }
+                        { source: 'Base', value: willResult.breakdown.base.value, type: CalculationMethodType.base },
+                        {
+                            source: ABILITY_MAP[AbilityId.Wisdom].name,
+                            value: willResult.breakdown.abilityMod.value,
+                            type: CalculationMethodType.base,
+                            sourceType: EntityAppliesToType.Ability,
+                            sourceId: AbilityId.Wisdom
+                        },
+                        { source: 'Misc', value: willResult.breakdown.feat.value + willResult.breakdown.feature.value + willResult.breakdown.item.value, type: CalculationMethodType.base }
                     ]
                 }
             }
@@ -966,7 +1166,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         resolvedProgressions: FeatureProgression[],
         items: ItemWithDetails[],
         characterItems: CharacterItem[],
-        context?: DisplayContext
+        _context?: DisplayContext
     ): FormattedArmorClass {
         // Convert items to format expected by getAC
         const acItems = items.filter(item => {
@@ -981,9 +1181,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             weapon: item.weapon
         }));
 
-        const acResult = CharacterCalculationService.getAC(character, resolvedProgressions, acItems, context?.featsMap);
-        const touchAC = CharacterCalculationService.getTouchAC(character, resolvedProgressions, acItems, context?.featsMap);
-        const flatFootedAC = CharacterCalculationService.getFlatFootedAC(character, resolvedProgressions, acItems, context?.featsMap);
+        const acResult = CharacterCalculationService.getAC(character, resolvedProgressions, acItems);
+        const touchAC = CharacterCalculationService.getTouchAC(character, resolvedProgressions, acItems);
+        const flatFootedAC = CharacterCalculationService.getFlatFootedAC(character, resolvedProgressions, acItems);
 
         return {
             total: acResult.value.toString(),
@@ -999,14 +1199,14 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             flatFootedAC: flatFootedAC.toString(),
             breakdown: {
                 components: [
-                    { source: 'Base', value: acResult.breakdown.base.value, type: BreakdownComponentType.base },
-                    { source: 'Armor', value: acResult.breakdown.armor.value, type: BreakdownComponentType.base },
-                    { source: 'Shield', value: acResult.breakdown.shield.value, type: BreakdownComponentType.base },
-                    { source: 'Dex Modifier', value: acResult.breakdown.dex.value, type: BreakdownComponentType.base },
-                    { source: 'Size Modifier', value: acResult.breakdown.size.value, type: BreakdownComponentType.base },
-                    { source: 'Natural Armor', value: acResult.breakdown.natural.value, type: BreakdownComponentType.base },
-                    { source: 'Deflection', value: acResult.breakdown.deflection.value, type: BreakdownComponentType.base },
-                    { source: 'Misc', value: acResult.breakdown.misc.value, type: BreakdownComponentType.base }
+                    { source: 'Base', value: acResult.breakdown.base.value, type: CalculationMethodType.base },
+                    { source: 'Armor', value: acResult.breakdown.armor.value, type: CalculationMethodType.base },
+                    { source: 'Shield', value: acResult.breakdown.shield.value, type: CalculationMethodType.base },
+                    { source: 'Dex Modifier', value: acResult.breakdown.dex.value, type: CalculationMethodType.base },
+                    { source: 'Size Modifier', value: acResult.breakdown.size.value, type: CalculationMethodType.base },
+                    { source: 'Natural Armor', value: acResult.breakdown.natural.value, type: CalculationMethodType.base },
+                    { source: 'Deflection', value: acResult.breakdown.deflection.value, type: CalculationMethodType.base },
+                    { source: 'Misc', value: acResult.breakdown.misc.value, type: CalculationMethodType.base }
                 ]
             }
         };
@@ -1077,7 +1277,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 formattedValue,
                 breakdown: {
                     components: [
-                        { source: sourceName, value: 1, type: BreakdownComponentType.base }
+                        { source: sourceName, value: 1, type: CalculationMethodType.base }
                     ]
                 },
                 level
@@ -1108,7 +1308,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                         formattedValue,
                         breakdown: {
                             components: [
-                                { source: progression.feature?.name || 'Feature', value: 1, type: BreakdownComponentType.base }
+                                { source: progression.feature?.name || 'Feature', value: 1, type: CalculationMethodType.base }
                             ]
                         },
                         level: progression.level
@@ -1260,7 +1460,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 {
                     source: sourceDescription,
                     value: choice.appliesToId || 0,
-                    type: BreakdownComponentType.choice,
+                    type: CalculationMethodType.choice,
                     description: resolvedName
                 }
             ]
@@ -1324,24 +1524,10 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
 
             case EntityAppliesToType.Feat: {
-                // Check if feat data is available in context
-                if (context?.featsMap) {
-                    const feat = context.featsMap.get(choice.appliesToId);
-                    if (feat) {
-                        return feat.name;
-                    }
-                }
-                // Check if feat data is in resolved progressions
-                for (const prog of resolvedProgressions) {
-                    if (prog.entities) {
-                        for (const ent of prog.entities) {
-                            if (ent.appliesTo === EntityAppliesToType.Feat &&
-                                ent.feat &&
-                                ent.feat.id === choice.appliesToId) {
-                                return ent.feat.name;
-                            }
-                        }
-                    }
+                // Use cache helper for feat name
+                const featName = getFeatNameFromCache(choice.appliesToId);
+                if (featName) {
+                    return featName;
                 }
                 return null;
             }
@@ -1367,7 +1553,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
             case EntityAppliesToType.Skill: {
                 // Use cache to get skill name
-                const skill = getSkillNameById(choice.appliesToId);
+                const skill = getSkillSummaryById(choice.appliesToId);
                 if (skill) {
                     return skill.name;
                 }
@@ -1444,9 +1630,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             if (!Object.prototype.hasOwnProperty.call(map, key)) continue;
             const component = map[key];
             if (component && typeof component === 'object' && 'value' in component) {
-                // Map sourceType to BreakdownComponentType
-                // Calculation service uses string sourceType, formatter uses enum BreakdownComponentType
-                let type: BreakdownComponentType = BreakdownComponentType.base;
+                // Map sourceType to CalculationMethodType
+                // Calculation service uses string sourceType, formatter uses enum CalculationMethodType
+                let type: CalculationMethodType = CalculationMethodType.base;
                 // Most calculation service breakdowns are base values, so default to base
 
                 components.push({
@@ -1466,13 +1652,13 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     private _formatAbilities(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
-        context?: DisplayContext
+        _context?: DisplayContext
     ): FormattedAbilityScore[] {
         const abilities: FormattedAbilityScore[] = [];
 
         for (const abilityId of [AbilityId.Strength, AbilityId.Dexterity, AbilityId.Constitution, AbilityId.Intelligence, AbilityId.Wisdom, AbilityId.Charisma]) {
-            const result = CharacterCalculationService.getAbilityScore(character, abilityId, resolvedProgressions, context?.featsMap);
-            const modifier = CharacterCalculationService.getAbilityModifier(character, abilityId, resolvedProgressions, context?.featsMap);
+            const result = CharacterCalculationService.getAbilityScore(character, abilityId, resolvedProgressions);
+            const modifier = CharacterCalculationService.getAbilityModifier(character, abilityId, resolvedProgressions);
 
             abilities.push({
                 abilityId,
@@ -1491,9 +1677,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     private _formatInitiative(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
-        context?: DisplayContext
+        _context?: DisplayContext
     ): FormattedInitiative {
-        const result = CharacterCalculationService.getInitiative(character, resolvedProgressions, context?.featsMap);
+        const result = CharacterCalculationService.getInitiative(character, resolvedProgressions);
 
         return {
             total: this.formatModifier(result.value),
@@ -1505,27 +1691,61 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
     /**
      * Format base attack bonus
+     * 
+     * For gestalt characters, uses the best BAB progression (already filtered by backend).
+     * For non-gestalt multiclass, sums BAB from all classes.
      */
     private _formatBaseAttackBonus(
         character: CharacterWithAllDetailsResponse,
+        resolvedProgressions: FeatureProgression[],
         classDetailsMap: Map<number, DnDClass>
     ): string {
-        // Calculate class levels
-        const classLevelCounts = new Map<number, number>();
-        for (const advancement of character.advancements) {
-            const currentLevel = classLevelCounts.get(advancement.classId) ?? 0;
-            classLevelCounts.set(advancement.classId, currentLevel + 1);
-        }
+        // Check if character is gestalt
+        const isGestalt = character.isGestalt || character.advancements.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
 
-        // Calculate total BAB
         let totalBAB = 0;
-        for (const [classId, level] of classLevelCounts.entries()) {
-            const classDetails = classDetailsMap.get(classId);
-            if (classDetails?.babProgression !== undefined) {
-                const babString = getBABProgression(level, classDetails.babProgression);
-                const match = babString.match(/\+(\d+)/);
-                if (match) {
-                    totalBAB += parseInt(match[1], 10);
+
+        if (isGestalt) {
+            // For gestalt, backend has already filtered to include only the best BAB progression
+            // Use total character level with the best progression from resolved progressions
+            const totalLevel = character.advancements.length;
+            
+            if (resolvedProgressions && resolvedProgressions.length > 0) {
+                // Find the best BAB progression from resolved progressions
+                const classMechanicsProgressions = resolvedProgressions.filter(p =>
+                    p.feature?.slug === 'class-mechanics' &&
+                    p.sourceType === FeatureSourceType.Class
+                );
+                
+                if (classMechanicsProgressions.length > 0) {
+                    const babProgression = extractBABProgression(classMechanicsProgressions);
+                    if (babProgression !== null && babProgression !== undefined) {
+                        const babString = getBABProgression(totalLevel, babProgression);
+                        const match = babString.match(/\+(\d+)/);
+                        if (match) {
+                            totalBAB = parseInt(match[1], 10);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Non-gestalt multiclass: sum BAB from all classes
+            const classLevelCounts = new Map<number, number>();
+            for (const advancement of character.advancements) {
+                const currentLevel = classLevelCounts.get(advancement.classId) ?? 0;
+                classLevelCounts.set(advancement.classId, currentLevel + 1);
+            }
+
+            // Calculate total BAB by summing contributions from each class
+            for (const [classId, level] of classLevelCounts.entries()) {
+                // Extract BAB progression from resolved progressions
+                const babProgression = extractBABProgression(resolvedProgressions, classId);
+                if (babProgression !== null && babProgression !== undefined) {
+                    const babString = getBABProgression(level, babProgression);
+                    const match = babString.match(/\+(\d+)/);
+                    if (match) {
+                        totalBAB += parseInt(match[1], 10);
+                    }
                 }
             }
         }
@@ -1548,7 +1768,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
         classDetailsMap: Map<number, DnDClass>,
-        context?: DisplayContext
+        _context?: DisplayContext
     ): FormattedGrapple {
         // Calculate BAB
         const classLevelCounts = new Map<number, number>();
@@ -1559,9 +1779,10 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         let totalBAB = 0;
         for (const [classId, level] of classLevelCounts.entries()) {
-            const classDetails = classDetailsMap.get(classId);
-            if (classDetails?.babProgression !== undefined) {
-                const babString = getBABProgression(level, classDetails.babProgression);
+            // Extract BAB progression from resolved progressions
+            const babProgression = extractBABProgression(resolvedProgressions, classId);
+            if (babProgression !== null && babProgression !== undefined) {
+                const babString = getBABProgression(level, babProgression);
                 const match = babString.match(/\+(\d+)/);
                 if (match) {
                     totalBAB += parseInt(match[1], 10);
@@ -1570,7 +1791,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         }
 
         // Get Str modifier
-        const strMod = CharacterCalculationService.getAbilityModifier(character, AbilityId.Strength, resolvedProgressions, context?.featsMap);
+        const strMod = CharacterCalculationService.getAbilityModifier(character, AbilityId.Strength, resolvedProgressions);
 
         // Get size modifier (from race or default to Medium = 0)
         const sizeMod = 0; // TODO: Get from race sizeId
@@ -1586,9 +1807,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             misc: this.formatBreakdownComponent(0), // TODO: Add misc bonuses from features/feats
             breakdown: {
                 components: [
-                    { source: 'BAB', value: totalBAB, type: BreakdownComponentType.base },
-                    { source: 'Str Modifier', value: strMod, type: BreakdownComponentType.base },
-                    { source: 'Size Modifier', value: sizeMod, type: BreakdownComponentType.base }
+                    { source: 'BAB', value: totalBAB, type: CalculationMethodType.base },
+                    { source: 'Str Modifier', value: strMod, type: CalculationMethodType.base },
+                    { source: 'Size Modifier', value: sizeMod, type: CalculationMethodType.base }
                 ]
             }
         };

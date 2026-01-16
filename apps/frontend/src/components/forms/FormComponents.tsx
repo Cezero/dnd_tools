@@ -6,6 +6,8 @@ import React, { useState, useRef, useEffect } from 'react';
 
 import { CoreComponent } from '@shared/static-data';
 
+import type { CustomSelectProps, CustomCheckboxProps } from './types';
+
 export interface CustomSelectMultiProps<C extends CoreComponent> {
     selectedValues?: number[];
     onSelectedValuesChange?: (values: number[]) => void;
@@ -145,26 +147,6 @@ export function CustomSelectMulti<C extends CoreComponent>({
     );
 }
 
-export interface CustomSelectProps<C extends CoreComponent> {
-    value?: number | null;
-    onValueChange: (value: number) => void;
-    options: C[];
-    useAbbreviation?: boolean;
-    placeholder?: string;
-    label?: string;
-    required?: boolean;
-    disabled?: boolean;
-    getOptionDisabled?: (option: C) => boolean;
-    componentExtraClassName?: string;
-    triggerExtraClassName?: string;
-    popupExtraClassName?: string;
-    itemExtraClassName?: string;
-    itemTextExtraClassName?: string;
-    icon?: React.ReactNode;
-    displayValue?: (value: number | null) => string;
-    labelExtraClassName?: string;
-}
-
 export function CustomSelect<C extends CoreComponent>({
     value,
     onValueChange,
@@ -246,19 +228,6 @@ export function CustomSelect<C extends CoreComponent>({
             </Select.Root>
         </div>
     );
-}
-
-export interface CustomCheckboxProps {
-    checked?: boolean;
-    onCheckedChange: (checked: boolean) => void;
-    label?: string;
-    disabled?: boolean;
-    componentExtraClassName?: string;
-    checkboxClassName?: string;
-    labelClassName?: string;
-    required?: boolean;
-    id?: string;
-    labelPosition?: 'left' | 'right';
 }
 
 export function CustomCheckbox({

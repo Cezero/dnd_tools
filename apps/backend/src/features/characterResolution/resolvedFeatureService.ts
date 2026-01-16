@@ -1,5 +1,8 @@
+import { PrismaClient } from '@shared/prisma-client';
 import type { FeatureProgression, FeatureEntity, CharacterWithAllDetailsResponse, FormulaParamsData } from '@shared/schema';
-import { EntityType, EntityAppliesToType, SpecialFeatureId, FORMULA_MAP, FormulaId, GetAbilityModifier } from '@shared/static-data';
+import { EntityType, EntityAppliesToType, SpecialFeatureId, FORMULA_MAP, FormulaId, GetAbilityModifier, FeatureSourceType } from '@shared/static-data';
+
+const prisma = new PrismaClient();
 
 /**
  * Parameters for formula calculation
@@ -105,7 +108,7 @@ export class ResolvedFeatureService {
      * Includes bonuses from EntityType.Bonus and EntityType.Other entities that have values.
      * Excludes entities with conditions (those are conditional modifiers handled separately).
      */
-    static getSkillBonuses(resolvedProgressions: FeatureProgression[]): Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }> {
+    static async getSkillBonuses(resolvedProgressions: FeatureProgression[]): Promise<Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }>> {
         const skillBonuses: Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }> = [];
 
         for (const progression of resolvedProgressions) {
@@ -127,7 +130,7 @@ export class ResolvedFeatureService {
                         // (racial skill bonuses and familiar benefits may be stored as Other type)
                         if (entity.type === EntityType.Bonus ||
                             (entity.type === EntityType.Other && entity.value !== 0)) {
-                            const source = this.getSourceName(progression);
+                            const source = await this.getSourceName(progression);
                             skillBonuses.push({
                                 skillId: entity.appliesToId,
                                 skillSubId: entity.appliesToSubId ?? null,
@@ -166,20 +169,14 @@ export class ResolvedFeatureService {
 
     /**
      * Get available feats count from resolved features
+     * 
+     * Counts feat choices from all resolved progressions, including edition-specific features.
+     * Edition features provide feat choices at appropriate levels (e.g., 1st, 3rd, 6th, etc.).
      */
-    static getAvailableFeats(resolvedProgressions: FeatureProgression[], level: number, classLevels: Map<number, number>): number {
+    static getAvailableFeatsCount(resolvedProgressions: FeatureProgression[], level: number, classLevels: Map<number, number>): number {
         let availableFeats = 0;
 
-        // Base feat at level 1, then every 3 levels (3, 6, 9, 12, 15, 18)
-        if (level >= 1) availableFeats++;
-        if (level >= 3) availableFeats++;
-        if (level >= 6) availableFeats++;
-        if (level >= 9) availableFeats++;
-        if (level >= 12) availableFeats++;
-        if (level >= 15) availableFeats++;
-        if (level >= 18) availableFeats++;
-
-        // Check for bonus feats from progressions
+        // Check for feat choices from all progressions (including edition features)
         for (const progression of resolvedProgressions) {
             if (progression.entities) {
                 for (const entity of progression.entities) {
@@ -188,9 +185,13 @@ export class ResolvedFeatureService {
                         // Check if this feat choice is available at current level
                         if (progression.level <= level) {
                             // Check class level if it's class-specific
-                            if (progression.classId) {
-                                const classLevel = classLevels.get(progression.classId) ?? 0;
-                                if (progression.level <= classLevel) {
+                            if (progression.classes && progression.classes.length > 0) {
+                                // Check if any linked class has sufficient level
+                                const hasValidLevel = progression.classes.some(c => {
+                                    const classLevel = classLevels.get(c.classId) ?? 0;
+                                    return progression.level <= classLevel;
+                                });
+                                if (hasValidLevel) {
                                     availableFeats += entity.value || 1;
                                 }
                             } else {
@@ -203,6 +204,33 @@ export class ResolvedFeatureService {
         }
 
         return availableFeats;
+    }
+
+    /**
+     * Get available ability score increases count from resolved features
+     * 
+     * Counts ability score increase choices from all resolved progressions, including edition-specific features.
+     * Edition features provide ability score increase choices at appropriate levels (e.g., 4th, 8th, 12th, etc.).
+     */
+    static getAvailableAbilityScoreIncreases(resolvedProgressions: FeatureProgression[], level: number): number {
+        let availableIncreases = 0;
+
+        // Check for ability score increase choices from all progressions (including edition features)
+        for (const progression of resolvedProgressions) {
+            if (progression.entities) {
+                for (const entity of progression.entities) {
+                    if (entity.type === EntityType.Choice &&
+                        entity.appliesTo === EntityAppliesToType.Ability) {
+                        // Check if this ability score increase choice is available at current level
+                        if (progression.level <= level) {
+                            availableIncreases += entity.value || 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        return availableIncreases;
     }
 
     /**
@@ -239,14 +267,37 @@ export class ResolvedFeatureService {
     /**
      * Get source name for display
      */
-    private static getSourceName(progression: FeatureProgression): string {
-        if (progression.class?.name) {
-            return progression.class.name;
+    private static async getSourceName(progression: FeatureProgression): Promise<string> {
+        // Check for class name via many-to-many relationship
+        if (progression.classes && progression.classes.length > 0) {
+            const firstClassId = progression.classes[0].classId;
+            const classData = await prisma.class.findUnique({
+                where: { id: firstClassId },
+                select: { name: true }
+            });
+            if (classData?.name) {
+                return classData.name;
+            }
         }
+
+        // Check for race name via many-to-many relationship
+        if (progression.races && progression.races.length > 0) {
+            const firstRaceId = progression.races[0].raceId;
+            const raceData = await prisma.race.findUnique({
+                where: { id: firstRaceId },
+                select: { name: true }
+            });
+            if (raceData?.name) {
+                return raceData.name;
+            }
+        }
+
+        // Fallback to feature name
         if (progression.feature?.name) {
             return progression.feature.name;
         }
-        // Fallback to source type if no class or feature name available
+
+        // Fallback to source type if no class, race, or feature name available
         if (progression.sourceType === 0) { // FeatureSourceType.Race
             return 'Race';
         }
@@ -307,9 +358,16 @@ export class ResolvedFeatureService {
                 continue;
             }
 
-            // Filter by classId if progression is class-specific
-            if (progression.classId !== null && progression.classId !== classId) {
-                continue;
+            // Filter by classId if progression is class-specific (check many-to-many relationship)
+            if (progression.sourceType === FeatureSourceType.Class) {
+                // For class progressions, must be linked via many-to-many relationship
+                if (!progression.classes || progression.classes.length === 0) {
+                    continue; // No classes linked, skip
+                }
+                const appliesToClass = progression.classes.some(c => c.classId === classId);
+                if (!appliesToClass) {
+                    continue; // Not linked to this class, skip
+                }
             }
 
             if (!progression.entities) {
@@ -342,7 +400,7 @@ export class ResolvedFeatureService {
                                 context: {
                                     character: {
                                         abilityScores: Object.fromEntries(
-                                            character.abilityScores.map(a => [a.abilityId, a.value])
+                                            (character.abilityScores || []).map(a => [a.abilityId, a.value])
                                         )
                                     }
                                 }
@@ -407,9 +465,16 @@ export class ResolvedFeatureService {
         classId: number
     ): boolean {
         for (const progression of resolvedProgressions) {
-            // Filter by classId if progression is class-specific
-            if (progression.classId !== null && progression.classId !== classId) {
-                continue;
+            // Filter by classId if progression is class-specific (check many-to-many relationship)
+            if (progression.sourceType === FeatureSourceType.Class) {
+                // For class progressions, must be linked via many-to-many relationship
+                if (!progression.classes || progression.classes.length === 0) {
+                    continue; // No classes linked, skip
+                }
+                const appliesToClass = progression.classes.some(c => c.classId === classId);
+                if (!appliesToClass) {
+                    continue; // Not linked to this class, skip
+                }
             }
 
             if (!progression.entities) {

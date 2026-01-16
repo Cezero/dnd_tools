@@ -2,6 +2,7 @@ import { PrismaClient } from '@shared/prisma-client';
 import type { FeatureProgression, FeatureEntity, FeatInQueryResponse } from '@shared/schema';
 import { EntityType, EntityAppliesToType, FeatureFeatChoiceFilter, FeatureSourceType, CompanionType, SpecialFeatureId } from '@shared/static-data';
 
+import { FeatureEntityHandlers, type EntityProcessingResult } from './featureEntityHandlers';
 import type { PendingChoice } from './types';
 import { companionService } from '../companion/companionService';
 import { domainService } from '../domain/domainService';
@@ -59,9 +60,13 @@ export class ChoiceResolver {
         // Filter progressions by level before processing
         const filteredProgressions = progressions.filter(progression => {
             // For class progressions, check if the progression level is <= the character's class level
-            if (progression.classId && progression.sourceType === FeatureSourceType.Class && classLevels) {
-                const classLevel = classLevels.get(progression.classId) ?? 0;
-                return progression.level <= classLevel;
+            if (progression.sourceType === FeatureSourceType.Class && classLevels && progression.classes) {
+                // Check all classes linked to this progression
+                const hasValidLevel = progression.classes.some(c => {
+                    const classLevel = classLevels.get(c.classId) ?? 0;
+                    return progression.level <= classLevel;
+                });
+                if (hasValidLevel) return true;
             }
 
             // For non-class progressions, check against character level if provided
@@ -157,7 +162,7 @@ export class ChoiceResolver {
             try {
                 // Use featureSystemService to get feat progressions
                 // Note: This may need to be implemented if not already available
-                const featProgressions = await featureSystemService.getFeatureProgressionsByIds([], []);
+                const _featProgressions = await featureSystemService.getFeatureProgressionsByIds([], []);
                 // For now, return empty - feat features should be in sourceProgressions
             } catch (error) {
                 console.error(`Error fetching feat ${featId}:`, error);
@@ -294,6 +299,62 @@ export class ChoiceResolver {
     }
 
     /**
+     * Adds feature progressions to a target array, avoiding duplicates.
+     * 
+     * Optionally processes entities in new progressions before adding them.
+     * This is useful when progressions need their entities processed for
+     * cascading feature resolution.
+     * 
+     * @param targetProgressions - Array to add progressions to (modified in place)
+     * @param newProgressions - New progressions to add (checked for duplicates)
+     * @param options - Configuration options
+     * @param options.processEntities - If true, processes entities in new progressions using FeatureEntityHandlers
+     * @param options.onEntityProcessed - Optional callback when an entity is processed (for warnings/errors)
+     * 
+     * @example
+     * ```typescript
+     * // Simple add without entity processing
+     * ChoiceResolver.addResolvedProgressions(progressions, grantedProgressions);
+     * 
+     * // Add with entity processing
+     * ChoiceResolver.addResolvedProgressions(progressions, grantedProgressions, {
+     *     processEntities: true,
+     *     onEntityProcessed: (result, progression) => {
+     *         if (result.warnings) warnings.push(...result.warnings);
+     *     }
+     * });
+     * ```
+     */
+    static addResolvedProgressions(
+        targetProgressions: FeatureProgression[],
+        newProgressions: FeatureProgression[],
+        options?: {
+            processEntities?: boolean;
+            onEntityProcessed?: (result: EntityProcessingResult, progression: FeatureProgression) => void;
+        }
+    ): void {
+        for (const progression of newProgressions) {
+            // Check if this progression already exists to avoid duplicates
+            const existingProgression = targetProgressions.find(p => p.id === progression.id);
+            if (existingProgression) {
+                continue;
+            }
+
+            // Optionally process entities if requested
+            if (options?.processEntities && progression.entities) {
+                for (const entity of progression.entities) {
+                    const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
+                    if (options.onEntityProcessed) {
+                        options.onEntityProcessed(result, progression);
+                    }
+                }
+            }
+
+            targetProgressions.push(progression);
+        }
+    }
+
+    /**
      * Resolves a familiar choice and converts companion benefits to feature progressions.
      * 
      * First checks if familiar progressions already exist. If not, fetches the companion
@@ -322,12 +383,12 @@ export class ChoiceResolver {
             try {
                 // Query feature progressions for this companion
                 const companionProgressions = await featureSystemService.getFeatureProgressionsByCompanionId(companionId);
-                
+
                 // Filter for CompanionBenefit feature progressions
                 const benefitProgressions = companionProgressions.filter(
                     p => p.featureId === SpecialFeatureId.CompanionBenefit && p.sourceType === FeatureSourceType.Companion
                 );
-                
+
                 grantedProgressions.push(...benefitProgressions);
             } catch (error) {
                 console.error(`Error fetching companion feature progressions for ${companionId}:`, error);
@@ -359,7 +420,7 @@ export class ChoiceResolver {
             return null;
         }
 
-        const source = this.getSourceName(progression);
+        const source = await this.getSourceName(progression);
 
         // Create a descriptive name based on the choice type
         let choiceName = '';
@@ -383,6 +444,15 @@ export class ChoiceResolver {
             choiceName = `${source}: Make a Choice`;
         }
 
+        const options = await this.getChoiceOptions(entity, progression, editionId, allFeats);
+        // Filter out invalid options (value must be > 0 per Zod schema)
+        const validOptions = options.filter(opt => opt.value > 0);
+
+        // Don't return a pending choice if there are no valid options
+        if (validOptions.length === 0) {
+            return null;
+        }
+
         return {
             id: `${progression.id}-${entity.id}`,
             name: choiceName,
@@ -391,7 +461,7 @@ export class ChoiceResolver {
             source,
             level: progression.level,
             required: true,
-            options: await this.getChoiceOptions(entity, progression, editionId, allFeats),
+            options: validOptions,
             maxSelections: entity.value || 1,
             minSelections: 1,
         };
@@ -412,13 +482,16 @@ export class ChoiceResolver {
             case EntityAppliesToType.Domain:
                 if (entity.domain) {
                     // Specific domain choice
-                    options.push({
-                        id: `domain-${entity.domain.id}`,
-                        name: entity.domain.name,
-                        description: `Domain: ${entity.domain.name}`,
-                        value: entity.domain.id,
-                        prerequisites: []
-                    });
+                    // Only add if ID is valid (> 0)
+                    if (entity.domain.id > 0) {
+                        options.push({
+                            id: `domain-${entity.domain.id}`,
+                            name: entity.domain.name,
+                            description: `Domain: ${entity.domain.name}`,
+                            value: entity.domain.id,
+                            prerequisites: []
+                        });
+                    }
                 } else {
                     // General domain choice - fetch all domains for edition
                     if (editionId) {
@@ -426,23 +499,27 @@ export class ChoiceResolver {
                             const domainsResponse = await domainService.getAllDomains();
                             const domains = domainsResponse.results.filter(d => d.editionId === editionId);
                             domains.forEach(domain => {
-                                options.push({
-                                    id: `domain-${domain.id}`,
-                                    name: domain.name,
-                                    description: `Domain: ${domain.name}`,
-                                    value: domain.id,
-                                    prerequisites: []
-                                });
+                                // Only add domain if ID is valid (> 0)
+                                if (domain.id > 0) {
+                                    options.push({
+                                        id: `domain-${domain.id}`,
+                                        name: domain.name,
+                                        description: `Domain: ${domain.name}`,
+                                        value: domain.id,
+                                        prerequisites: []
+                                    });
+                                }
                             });
                         } catch (error) {
                             console.error('Error fetching domains:', error);
-                            options.push({
-                                id: 'domain-error',
-                                name: 'Error loading domains',
-                                description: 'Could not load domain options',
-                                value: 0,
-                                prerequisites: []
-                            });
+                            // Don't add error placeholder - return empty options instead to avoid Zod validation error
+                            // options.push({
+                            //     id: 'domain-error',
+                            //     name: 'Error loading domains',
+                            //     description: 'Could not load domain options',
+                            //     value: 0,
+                            //     prerequisites: []
+                            // });
                         }
                     }
                 }
@@ -453,35 +530,35 @@ export class ChoiceResolver {
                     // Specific feat choice - fetch feat data
                     try {
                         const featResponse = await featService.getFeatById({ id: entity.appliesToId });
-                        if (featResponse && featResponse.id) {
+                        if (featResponse && featResponse.id && featResponse.id > 0) {
                             const feat = featResponse;
                             // Get feature description for description field
                             const featureDescription = feat.featureProgressions?.[0]?.feature?.description || null;
-                    options.push({
+                            options.push({
                                 id: `feat-${feat.id}`,
                                 name: feat.name,
                                 description: featureDescription || `Feat: ${feat.name}`,
                                 value: feat.id,
                                 prerequisites: feat.featureProgressions?.[0]?.feature?.prerequisites?.map(p => p.type.toString()) || []
-                    });
+                            });
                         }
                     } catch (error) {
                         console.error(`Error fetching feat ${entity.appliesToId}:`, error);
                         // Fall through to general feat choice
                     }
                 }
-                
+
                 if (options.length === 0) {
                     // General feat choice
-                    // General feat choice
                     if (!allFeats || allFeats.length === 0) {
-                        options.push({
-                            id: 'feat-no-data',
-                            name: 'No feats available',
-                            description: 'Feats data not provided',
-                            value: 0,
-                            prerequisites: []
-                        });
+                        // Don't add error placeholder - return empty options instead to avoid Zod validation error
+                        // options.push({
+                        //     id: 'feat-no-data',
+                        //     name: 'No feats available',
+                        //     description: 'Feats data not provided',
+                        //     value: 0,
+                        //     prerequisites: []
+                        // });
                     } else {
                         let availableFeats = allFeats;
 
@@ -491,22 +568,24 @@ export class ChoiceResolver {
                         }
 
                         availableFeats.forEach(feat => {
-                            // Get feature description from progression if available
-                            const featureDescription = feat.featureProgressions?.[0]?.feature?.description || null;
-                            options.push({
-                                id: `feat-${feat.id}`,
-                                name: feat.name,
-                                description: featureDescription || `Feat: ${feat.name}`,
-                                value: feat.id,
-                                prerequisites: [] // Prerequisites are now handled through Feature system
-                            });
+                            // Only add feat if ID is valid (> 0)
+                            if (feat.id > 0) {
+                                // FeatInQueryResponse doesn't include featureProgressions, so use name as description
+                                options.push({
+                                    id: `feat-${feat.id}`,
+                                    name: feat.name,
+                                    description: `Feat: ${feat.name}`,
+                                    value: feat.id,
+                                    prerequisites: [] // Prerequisites are now handled through Feature system
+                                });
+                            }
                         });
                     }
                 }
                 break;
 
             case EntityAppliesToType.Spell:
-                if (entity.spell) {
+                if (entity.spell && entity.spell.id > 0) {
                     options.push({
                         id: `spell-${entity.spell.id}`,
                         name: entity.spell.name,
@@ -518,7 +597,7 @@ export class ChoiceResolver {
                 break;
 
             case EntityAppliesToType.Feature:
-                if (entity.feature) {
+                if (entity.feature && entity.feature.id > 0) {
                     options.push({
                         id: `feature-${entity.feature.id}`,
                         name: entity.feature.name,
@@ -531,7 +610,7 @@ export class ChoiceResolver {
 
             case EntityAppliesToType.AnimalCompanion:
             case EntityAppliesToType.Familiar:
-                if (entity.companion) {
+                if (entity.companion && entity.companion.id > 0) {
                     // Specific companion choice
                     const companionName = entity.companion.name || `Companion ${entity.companion.id}`;
                     const companionTypeName = entity.appliesTo === EntityAppliesToType.Familiar ? 'Familiar' : 'Animal Companion';
@@ -546,13 +625,13 @@ export class ChoiceResolver {
                     // General companion choice - fetch all companions
                     try {
                         const companionsResponse = await companionService.getAllCompanions();
-                        const typeFilter = entity.appliesTo === EntityAppliesToType.Familiar 
-                            ? CompanionType.Familiar 
+                        const typeFilter = entity.appliesTo === EntityAppliesToType.Familiar
+                            ? CompanionType.Familiar
                             : CompanionType.AnimalCompanion;
                         const companions = companionsResponse.results.filter(
                             companion => companion.type === typeFilter
                         );
-                        
+
                         // Fetch monster names for all companions in batch
                         const monsterIds = companions.map(c => c.monsterId);
                         const monsters = await prisma.monster.findMany({
@@ -560,29 +639,33 @@ export class ChoiceResolver {
                             select: { id: true, name: true }
                         });
                         const monsterMap = new Map(monsters.map(m => [m.id, m.name]));
-                        
+
                         companions.forEach(companion => {
-                            const monsterName = monsterMap.get(companion.monsterId) || `Monster ${companion.monsterId}`;
-                            const companionTypeName = companion.type === CompanionType.Familiar
-                                ? 'Familiar'
-                                : 'Animal Companion';
-                            options.push({
-                                id: `companion-${companion.id}`,
-                                name: monsterName,
-                                description: `${companionTypeName}: ${monsterName}`,
-                                value: companion.id,
-                                prerequisites: []
-                            });
+                            // Only add companion if ID is valid (> 0)
+                            if (companion.id > 0) {
+                                const monsterName = monsterMap.get(companion.monsterId) || `Monster ${companion.monsterId}`;
+                                const companionTypeName = companion.type === CompanionType.Familiar
+                                    ? 'Familiar'
+                                    : 'Animal Companion';
+                                options.push({
+                                    id: `companion-${companion.id}`,
+                                    name: monsterName,
+                                    description: `${companionTypeName}: ${monsterName}`,
+                                    value: companion.id,
+                                    prerequisites: []
+                                });
+                            }
                         });
                     } catch (error) {
                         console.error('Error fetching companions:', error);
-                        options.push({
-                            id: 'companion-error',
-                            name: 'Error loading companions',
-                            description: 'Could not load companion options',
-                            value: 0,
-                            prerequisites: []
-                        });
+                        // Don't add error placeholder - return empty options instead to avoid Zod validation error
+                        // options.push({
+                        //     id: 'companion-error',
+                        //     name: 'Error loading companions',
+                        //     description: 'Could not load companion options',
+                        //     value: 0,
+                        //     prerequisites: []
+                        // });
                     }
                 }
                 break;
@@ -594,14 +677,37 @@ export class ChoiceResolver {
     /**
      * Get source name for display
      */
-    private static getSourceName(progression: FeatureProgression): string {
-        if (progression.class?.name) {
-            return progression.class.name;
+    private static async getSourceName(progression: FeatureProgression): Promise<string> {
+        // Check for class name via many-to-many relationship
+        if (progression.classes && progression.classes.length > 0) {
+            const firstClassId = progression.classes[0].classId;
+            const classData = await prisma.class.findUnique({
+                where: { id: firstClassId },
+                select: { name: true }
+            });
+            if (classData?.name) {
+                return classData.name;
+            }
         }
+
+        // Check for race name via many-to-many relationship
+        if (progression.races && progression.races.length > 0) {
+            const firstRaceId = progression.races[0].raceId;
+            const raceData = await prisma.race.findUnique({
+                where: { id: firstRaceId },
+                select: { name: true }
+            });
+            if (raceData?.name) {
+                return raceData.name;
+            }
+        }
+
+        // Fallback to feature name
         if (progression.feature?.name) {
             return progression.feature.name;
         }
-        // Fallback to source type if no class or feature name available
+
+        // Fallback to source type if no class, race, or feature name available
         if (progression.sourceType === FeatureSourceType.Class) {
             return 'Class';
         }

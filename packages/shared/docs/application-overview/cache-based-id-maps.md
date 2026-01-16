@@ -44,7 +44,7 @@ All entity cache schemas follow a consistent pattern to minimize bundle size and
 - **Domains**: `id`, `name`, `editionId`, `isVisible`
 - **Deities**: `id`, `name`, `editionId`, `isVisible`, `pantheonId`
 - **Items**: `id`, `name`, `abbreviation`, `editionId`, `isVisible`, `typeId`
-- **Source Books**: `id`, `name`, `abbreviation`, `editionId`, `isVisible`, `settingId`, `hasClasses`, `hasSpells`, `hasRaces`, `hasDomains`, `hasDeities`, `hasItems`
+- **Source Books**: `id`, `name`, `abbreviation`, `editionId`, `isVisible`, `settingId`, `hasCore`, `hasClasses`, `hasSpells`, `hasRaces`, `hasDomains`, `hasDeities`, `hasItems`
 
 ## Consolidated Cache Population
 
@@ -141,6 +141,14 @@ The unified interface provides consistent helper functions for all entity types:
 - `getDeitySelectByEdition(editionId: number): Promise<DeityCacheEntry[]>`
 - `getDomainSelectByEdition(editionId: number): Promise<DomainCacheEntry[]>`
 
+#### Item Selection Functions
+
+- `getItemSelectFull()`: Returns all items from cache
+- `getAllWeapons()`: Returns all weapons (filtered by typeId)
+- `getAllWeaponsByCategory(categoryId: number)`: Returns weapons filtered by weaponCategory
+- `getAllArmor()`: Returns all armor (filtered by typeId)
+- `getAllArmorByCategory(categoryId: number)`: Returns armor filtered by armorCategory
+
 ### Behavior
 
 - **Case-Insensitive Matching**: All name lookups use case-insensitive matching (convert to lowercase)
@@ -189,6 +197,28 @@ function createEntityLink(type: string, rawValue: string) {
 
 export function formatSkillName(skillId: number): string {
   return getSkillNameFromCache(skillId) || 'Unknown Skill';
+}
+```
+
+### Item Selection Example
+
+Item selection functions provide convenient access to weapons and armor from the cache:
+
+```tsx
+import { useCacheFunctions } from '@/services/cache';
+import { WEAPON_CATEGORY_ENUM } from '@shared/static-data';
+
+function WeaponSelector() {
+  const { getAllWeapons, getAllWeaponsByCategory } = useCacheFunctions();
+  
+  // Get all weapons
+  const allWeapons = getAllWeapons();
+  
+  // Get weapons by category
+  const simpleWeapons = getAllWeaponsByCategory(WEAPON_CATEGORY_ENUM.Simple);
+  const martialWeapons = getAllWeaponsByCategory(WEAPON_CATEGORY_ENUM.Martial);
+  
+  // Use weapons in component...
 }
 ```
 

@@ -11,6 +11,7 @@ import {
     CreateCharacterCompanionRequest,
     UpdateCharacterCompanionRequest,
     GetAllCharacterCompanionsResponse,
+    CompanionCacheResponse,
 } from '@shared/schema';
 
 import { companionService } from './companionService.js';
@@ -22,6 +23,21 @@ const prisma = new PrismaClient();
  */
 export async function GetAllCompanions(req: ValidatedNoInput<GetAllCompanionsResponse>, res: Response) {
     const companions = await companionService.getAllCompanions();
+    res.json(companions);
+}
+
+/**
+ * Handles requests for cached companion data.
+ * 
+ * Returns lightweight companion data optimized for dropdowns and select components,
+ * including companion ID, type, monster ID, minimum level, and monster name.
+ * 
+ * Request: No parameters
+ * Response: CompanionCacheResponse with cached companion data
+ * Authentication: Public (no authentication required)
+ */
+export async function GetCompanionCache(req: ValidatedNoInput<CompanionCacheResponse>, res: Response) {
+    const companions = await companionService.getCompanionCache();
     res.json(companions);
 }
 

@@ -9,7 +9,7 @@ interface AsyncClassDisplayProps {
 }
 
 export function AsyncClassDisplay({ mappings, baseLevel }: AsyncClassDisplayProps): React.JSX.Element {
-    const { getClassNameById } = useCacheFunctions();
+    const { getClassSummaryById } = useCacheFunctions();
     const [display, setDisplay] = useState<string>('');
 
     useEffect(() => {
@@ -21,7 +21,7 @@ export function AsyncClassDisplay({ mappings, baseLevel }: AsyncClassDisplayProp
         const loadClassDisplay = async () => {
             try {
                 const formattedClasses = await Promise.all(mappings.map(async cls => {
-                    const classItem = getClassNameById(cls.classId);
+                    const classItem = getClassSummaryById(cls.classId);
                     if (classItem) {
                         if (cls.level !== baseLevel) {
                             return `${classItem.abbreviation} ${cls.level}`;
@@ -39,7 +39,7 @@ export function AsyncClassDisplay({ mappings, baseLevel }: AsyncClassDisplayProp
         };
 
         loadClassDisplay();
-    }, [mappings, baseLevel, getClassNameById]);
+    }, [mappings, baseLevel, getClassSummaryById]);
 
     return <span>{display}</span>;
 }

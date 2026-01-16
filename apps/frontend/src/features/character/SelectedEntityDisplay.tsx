@@ -1,24 +1,19 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect } from 'react';
-import { z } from 'zod';
 
 import { EntityLink } from '@/components/entity-link';
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import { DomainDisplay } from '@/features/domain/DomainDisplay';
+import { useCacheFunctions } from '@/services/cache';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
-import type { Domain, GetSpellResponse, GetFeatureResponse, GetCompanionResponse, FeatureProgression } from '@shared/schema';
-import { FeatSchema } from '@shared/schema';
+import type { Domain, GetSpellResponse, GetFeatureResponse, GetCompanionResponse, GetFeatByIdResponse } from '@shared/schema';
 import { EntityAppliesToType, COMPANION_TYPE_MAP, SpecialFeatureId, FeatureSourceType } from '@shared/static-data';
 
-interface SelectedEntityDisplayProps {
-    choiceType: EntityAppliesToType;
-    selectedValue: number;
-    showHeader?: boolean;
-}
+import type { SelectedEntityDisplayProps } from './components/types';
 
 export function SelectedEntityDisplay({
     choiceType,
@@ -112,7 +107,7 @@ function DomainDisplayWrapper({ domainId, showHeader }: { domainId: number; show
 // Feat Display Wrapper
 function FeatDisplayWrapper({ featId, showHeader: _showHeader }: { featId: number; showHeader: boolean }): React.JSX.Element | null {
     const queryClient = useQueryClient();
-    const [feat, setFeat] = useState<z.infer<typeof FeatSchema> | null>(null);
+    const [feat, setFeat] = useState<GetFeatByIdResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
 
@@ -159,11 +154,16 @@ function FeatDisplayWrapper({ featId, showHeader: _showHeader }: { featId: numbe
         );
     }
 
+    // Extract description/summary from feature progressions
+    const featDescription = feat.featureProgressions?.[0]?.feature?.description || null;
+    const featSummary = feat.featureProgressions?.[0]?.feature?.summary || null;
+    const displayText = featSummary || featDescription;
+
     return (
         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
             <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">{feat.name}</h4>
-            {feat.description && (
-                <p className="text-blue-600 dark:text-blue-300 text-sm">{feat.description}</p>
+            {displayText && (
+                <p className="text-blue-600 dark:text-blue-300 text-sm">{displayText}</p>
             )}
         </div>
     );
@@ -297,8 +297,9 @@ function FeatureDisplayWrapper({ featureId, showHeader: _showHeader }: { feature
 }
 
 // Companion Display Wrapper
-function CompanionDisplayWrapper({ companionId, choiceType, showHeader: _showHeader }: { companionId: number; choiceType: EntityAppliesToType.Familiar | EntityAppliesToType.AnimalCompanion; showHeader: boolean }): React.JSX.Element | null {
+function CompanionDisplayWrapper({ companionId, choiceType, showHeader: _showHeader }: { companionId: number; choiceType: number; showHeader: boolean }): React.JSX.Element | null {
     const queryClient = useQueryClient();
+    const { getCompanionNameFromCache } = useCacheFunctions();
     const [companion, setCompanion] = useState<GetCompanionResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
@@ -346,9 +347,12 @@ function CompanionDisplayWrapper({ companionId, choiceType, showHeader: _showHea
         );
     }
 
-    const companionName = companion.monster?.name || `Companion ${companion.id}`;
+    // Get companion name from cache using monsterId
+    const companionName = companion.monsterId
+        ? (getCompanionNameFromCache(companion.id) || `Companion ${companion.id}`)
+        : `Companion ${companion.id}`;
     const companionTypeName = COMPANION_TYPE_MAP[companion.type]?.name || (choiceType === EntityAppliesToType.Familiar ? 'Familiar' : 'Animal Companion');
-    
+
     // Find the companion benefit progression from the companion's features
     const benefitProgression = companion.features?.find(
         p => p.featureId === SpecialFeatureId.CompanionBenefit && p.sourceType === FeatureSourceType.Companion
@@ -358,7 +362,7 @@ function CompanionDisplayWrapper({ companionId, choiceType, showHeader: _showHea
         <div className="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
             <h4 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-2">{companionTypeName}</h4>
             <p className="text-indigo-600 dark:text-indigo-300 mb-2">
-                {companion.monsterId && companion.monster ? (
+                {companion.monsterId ? (
                     <EntityLink
                         entityType="monster"
                         entityId={companion.monsterId}

@@ -14,7 +14,8 @@ import {
 } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
 
-import { classService } from '../class/classService';
+import { extractBABProgression } from '../../utils/classMechanicsExtractor';
+import { extractSizeId } from '../../utils/raceMechanicsExtractor';
 import { featService } from '../feat/featService';
 
 type FeatWithProgressions = Feat & {
@@ -26,12 +27,14 @@ type FeatWithProgressions = Feat & {
  */
 export class AvailableFeatService {
     /**
-     * Get all available feats for a character, filtered by:
+     * Get all qualified feats for a character, filtered by:
      * - Prerequisites
      * - Already-owned feats
      * - "All" proficiencies (feats that provide proficiencies the character already has)
+     * 
+     * Returns the list of feats the character qualifies for based on all prerequisites and restrictions.
      */
-    static async getAvailableFeats(
+    static async getQualifiedFeats(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
         classDetails: DnDClass | null,
@@ -262,7 +265,7 @@ export class AvailableFeatService {
                         meetsPrereq = true;
                         break;
                     }
-                    const bab = await this.getCharacterBAB(character);
+                    const bab = await this.getCharacterBAB(character, resolvedProgressions);
                     meetsPrereq = bab >= prereq.minValue;
                     break;
                 }
@@ -365,11 +368,17 @@ export class AvailableFeatService {
                 }
 
                 case FeaturePrerequisiteType.Size: {
-                    if (!prereq.appliesToId || !raceDetails?.sizeId) {
+                    if (!prereq.appliesToId) {
                         meetsPrereq = true;
                         break;
                     }
-                    const characterSizeId = raceDetails.sizeId;
+                    // Extract sizeId from resolved progressions
+                    const raceId = character.raceId ?? undefined;
+                    const characterSizeId = extractSizeId(resolvedProgressions, raceId);
+                    if (!characterSizeId) {
+                        meetsPrereq = false;
+                        break;
+                    }
                     const requiredSizeId = prereq.appliesToId;
 
                     // minValue: 0 = exact, 1 = or larger, 2 = or smaller
@@ -405,7 +414,8 @@ export class AvailableFeatService {
      * For multiclass characters, calculates BAB for each class separately and returns the highest
      */
     private static async getCharacterBAB(
-        character: CharacterWithAllDetailsResponse
+        character: CharacterWithAllDetailsResponse,
+        resolvedProgressions: FeatureProgression[]
     ): Promise<number> {
         if (!character.advancements || character.advancements.length === 0) {
             return 0;
@@ -421,12 +431,13 @@ export class AvailableFeatService {
         // Calculate BAB for each class and find the highest
         let maxBAB = 0;
         for (const [classId, level] of classLevels) {
-            const classDetails = await classService.getClassById({ id: classId });
-            if (!classDetails) {
+            // Extract BAB progression from resolved progressions
+            const babProgression = extractBABProgression(resolvedProgressions, classId);
+            if (!babProgression) {
                 continue;
             }
 
-            const babString = getBABProgression(level, classDetails.babProgression);
+            const babString = getBABProgression(level, babProgression);
             // Extract the first BAB value from the string (e.g., "+1" -> 1, "+0" -> 0)
             const match = babString.match(/\+(\d+)/);
             const bab = match ? parseInt(match[1], 10) : 0;

@@ -1,5 +1,0 @@
----
-description: When defining types using Zod
-alwaysApply: true
----
-All Zod schema definitions should be created in the @shared/schema package

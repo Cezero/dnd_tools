@@ -70,6 +70,7 @@ export interface ResolutionResult {
     pendingChoices: PendingChoice[];
     warnings: string[];
     errors: string[];
+    effectiveClassDetails?: DnDClass | null;
 }
 
 /**

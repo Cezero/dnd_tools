@@ -9,7 +9,7 @@ import {
     FeatQueryRequest,
     FeatQueryResponse,
     GetFeatListResponse,
-    Feat,
+    GetFeatByIdResponse,
     FeatCacheResponse,
     GetAllFeatsWithFeatureInfoResponse,
 } from '@shared/schema';
@@ -40,7 +40,7 @@ export async function GetFeatList(req: ValidatedQueryT<FeatQueryRequest, GetFeat
 /**
  * Fetches a single feat by its ID.
  */
-export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, Feat>, res: Response) {
+export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, GetFeatByIdResponse>, res: Response) {
     const feat = await featService.getFeatById(req.params);
 
     if (!feat) {

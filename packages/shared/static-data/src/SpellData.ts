@@ -1,4 +1,4 @@
-import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap, Spell, NameToIdMap, CoreComponent } from './types';
+import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap, Spell, NameToIdMap, CoreComponent, BaseMap } from './types';
 
 export const SpellComponent = {
     Verbal: 0,
@@ -11,6 +11,14 @@ export const SpellComponent = {
 
 export type SpellComponent = (typeof SpellComponent)[keyof typeof SpellComponent];
 
+export const SpellSlotType = {
+    NORMAL: 0, // Regular spell slot
+    BONUS: 1,  // Specialist wizard bonus slot (must be specialty school)
+    DOMAIN: 2  // Domain spell slot (one per level)
+} as const;
+
+export type SpellSlotType = (typeof SpellSlotType)[keyof typeof SpellSlotType];
+
 export const SPELL_COMPONENT_MAP: SpellComponentMap = {
     [SpellComponent.Verbal]: { id: SpellComponent.Verbal, abbreviation: 'V', name: 'Verbal' },
     [SpellComponent.Somatic]: { id: SpellComponent.Somatic, abbreviation: 'S', name: 'Somatic' },
@@ -21,13 +29,6 @@ export const SPELL_COMPONENT_MAP: SpellComponentMap = {
 }
 
 export const SPELL_COMPONENT_LIST = Object.values(SPELL_COMPONENT_MAP);
-
-export const SpellComponentAbbrList = (components: number[]): string => {
-    return components
-        .map(component => SPELL_COMPONENT_MAP[component]?.abbreviation)
-        .filter((abbr): abbr is string => abbr !== undefined)
-        .join(', ');
-}
 
 export const SPELL_DESCRIPTOR_MAP: SpellDescriptorMap = {
     1: { id: 1, name: 'Acid' },
@@ -55,14 +56,6 @@ export const SPELL_DESCRIPTOR_MAP: SpellDescriptorMap = {
 }
 
 export const SPELL_DESCRIPTOR_LIST = Object.values(SPELL_DESCRIPTOR_MAP);
-
-
-export const SpellDescriptorNameList = (descriptors: number[]): string => {
-    return descriptors
-        .map(descriptor => SPELL_DESCRIPTOR_MAP[descriptor]?.name)
-        .filter((name): name is string => name !== undefined)
-        .join(', ');
-}
 
 export const SPELL_RANGE_MAP: SpellRangeMap = {
     1: { id: 1, name: 'Touch', abbreviation: 'tch' },
@@ -107,13 +100,6 @@ export const SPELL_SCHOOL_MAP: SpellSchoolMap = {
 }
 
 export const SPELL_SCHOOL_LIST = Object.values(SPELL_SCHOOL_MAP);
-
-export const SpellSchoolNameList = (schools: number[]): string => {
-    return schools
-        .map(school => SPELL_SCHOOL_MAP[school]?.name)
-        .filter((name): name is string => name !== undefined)
-        .join(', ');
-}
 
 export const SpellSubschool = {
     Calling: 1,
@@ -172,14 +158,6 @@ export const SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP: { [K in SpellSchool]: SpellSubsch
     [SpellSchool.Invocation]: [SpellSubschool.Least, SpellSubschool.Lesser, SpellSubschool.Greater, SpellSubschool.Dark]
 } as const;
 
-
-export const SpellSubschoolNameList = (subschools: number[]): string => {
-    return subschools
-        .map(subschool => SPELL_SUBSCHOOL_MAP[subschool]?.name)
-        .filter((name): name is string => name !== undefined)
-        .join(', ');
-}
-
 // SPELL_ID_MAP has been removed - use cache-based lookups instead
 // This large object (2778+ lines) is no longer needed as all spell data is now in the database
 // Use @/services/cache/IdMapHelpers for lookups
@@ -195,3 +173,11 @@ export const SpellSubschoolNameList = (subschools: number[]): string => {
 // - getSpellNameFromCache(queryClient, id) for ID-to-name lookups
 // - CacheQueryHooks.useSpellsCache() for full spell cache access
 */
+
+export const SPELL_SLOT_TYPE_MAP: BaseMap<CoreComponent> = {
+    [SpellSlotType.NORMAL]: { id: SpellSlotType.NORMAL, name: 'Normal' },
+    [SpellSlotType.BONUS]: { id: SpellSlotType.BONUS, name: 'Bonus' },
+    [SpellSlotType.DOMAIN]: { id: SpellSlotType.DOMAIN, name: 'Domain' }
+};
+
+export const SPELL_SLOT_TYPE_LIST = Object.values(SPELL_SLOT_TYPE_MAP);

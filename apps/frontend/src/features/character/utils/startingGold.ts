@@ -3,28 +3,18 @@ import React, { useCallback, useRef } from 'react';
 import { useDiceBox } from '@/components/dice-box';
 import type { LocalDiceRollResult } from '@/components/dice-box/types';
 import { useCacheFunctions } from '@/services/cache';
-import { CurrencyId, CURRENCY } from '@shared/static-data';
+import { STARTING_GOLD_TABLE } from '@shared/static-data';
 
-/**
- * Starting gold dice notation mapping by class name
- * Based on D&D 3.5e Player's Handbook Table 4-1: Starting Gold
- */
-const STARTING_GOLD_TABLE: Record<string, string> = {
-    'barbarian': '4d4 × 10',
-    'paladin': '6d4 × 10',
-    'bard': '4d4 × 10',
-    'ranger': '6d4 × 10',
-    'cleric': '5d4 × 10',
-    'rogue': '5d4 × 10',
-    'druid': '2d4 × 10',
-    'sorcerer': '3d4 × 10',
-    'fighter': '6d4 × 10',
-    'wizard': '3d4 × 10',
-    'monk': '5d4', // Note: no × 10 multiplier
-};
+import { convertGpToMoney } from './moneyUtils';
 
 /**
  * Normalize class name for lookup (lowercase, trim)
+ * 
+ * Helper function used by the useStartingGold hook to match class names
+ * against the STARTING_GOLD_TABLE keys.
+ * 
+ * @param name - The class name to normalize
+ * @returns Normalized class name (lowercase, trimmed)
  */
 function normalizeClassName(name: string): string {
     return name.toLowerCase().trim();
@@ -32,29 +22,46 @@ function normalizeClassName(name: string): string {
 
 /**
  * Parse dice notation with optional multiplier
+ * 
+ * Parses dice notation strings from STARTING_GOLD_TABLE into dice and multiplier components.
  * Examples: "4d4 × 10" -> { dice: "4d4", multiplier: 10 }
  *          "5d4" -> { dice: "5d4", multiplier: 1 }
+ * 
+ * @param notation - The dice notation string to parse
+ * @returns Object with dice string and multiplier number
  */
 function parseDiceNotation(notation: string): { dice: string; multiplier: number } {
     const trimmed = notation.trim();
     const multiplierMatch = trimmed.match(/×\s*(\d+)$/);
-    
+
     if (multiplierMatch) {
         const multiplier = parseInt(multiplierMatch[1], 10);
         const dice = trimmed.substring(0, multiplierMatch.index).trim();
         return { dice, multiplier };
     }
-    
+
     return { dice: trimmed, multiplier: 1 };
 }
 
 /**
- * Hook to generate random starting gold for a character based on their class
- * Uses dice utilities to roll the dice and returns the result in gold pieces
+ * Hook to generate random starting gold for a character based on their class.
+ * 
+ * Uses dice utilities to roll the dice and returns the result in gold pieces.
+ * The starting gold table is defined in @shared/static-data (STARTING_GOLD_TABLE).
+ * 
+ * **Frontend-only utility**: This hook is used only in the frontend for generating
+ * starting gold when creating new characters.
+ * 
+ * @returns Object with:
+ * - `generateRandomGold`: Function to generate random gold for a class
+ * - `convertGpToMoney`: Helper to convert gold pieces to Money object
+ * - `isReady`: Boolean indicating if dice box is ready
+ * 
+ * @see STARTING_GOLD_TABLE - Starting gold table in @shared/static-data
  */
 export function useStartingGold() {
     const { rollDice, onRollComplete, isReady } = useDiceBox();
-    const { getClassNameById } = useCacheFunctions();
+    const { getClassSummaryById } = useCacheFunctions();
     const isRollPendingRef = useRef(false);
     const resolveRef = useRef<((value: number) => void) | null>(null);
     const rejectRef = useRef<((error: Error) => void) | null>(null);
@@ -78,7 +85,7 @@ export function useStartingGold() {
                 const resolve = resolveRef.current;
                 const reject = rejectRef.current;
                 const multiplier = multiplierRef.current;
-                
+
                 // Clear refs
                 resolveRef.current = null;
                 rejectRef.current = null;
@@ -87,7 +94,6 @@ export function useStartingGold() {
                 if (resolve) {
                     // Apply multiplier to the dice result
                     const finalValue = goldResult.value * multiplier;
-                    console.log(`Starting gold: rolled ${goldResult.value}, multiplier: ${multiplier}, final: ${finalValue}`);
                     resolve(finalValue);
                 }
             }
@@ -113,7 +119,7 @@ export function useStartingGold() {
         }
 
         // Get class name
-        const classData = getClassNameById(classId);
+        const classData = getClassSummaryById(classId);
         if (!classData?.name) {
             throw new Error(`Class with ID ${classId} not found`);
         }
@@ -127,10 +133,10 @@ export function useStartingGold() {
 
         // Parse notation
         const { dice, multiplier } = parseDiceNotation(notation);
-        
+
         // Store multiplier for use in callback
         multiplierRef.current = multiplier;
-        
+
         // Roll just the dice part (dice box doesn't handle multiplication in notation)
         const groupName = `starting-gold: ${classData.name}`;
 
@@ -151,23 +157,7 @@ export function useStartingGold() {
                 reject(error instanceof Error ? error : new Error('Failed to roll dice'));
             }
         });
-    }, [isReady, getClassNameById, rollDice]);
-
-    /**
-     * Convert gold pieces to Money object
-     * Does NOT upconvert to platinum - keeps gold as gold
-     */
-    const convertGpToMoney = useCallback((gp: number): { platinum: number; gold: number; silver: number; copper: number } => {
-        // Keep gold as gold, don't convert to platinum
-        const gold = Math.floor(gp);
-        const goldDecimal = gp - gold;
-
-        // Convert decimal part to silver and copper
-        const silver = Math.floor(goldDecimal * 10);
-        const copper = Math.round((goldDecimal * 10 - silver) * 10);
-
-        return { platinum: 0, gold, silver, copper };
-    }, []);
+    }, [isReady, getClassSummaryById, rollDice]);
 
     return {
         generateRandomGold,

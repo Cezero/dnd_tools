@@ -10,6 +10,7 @@ import {
     CreateCharacterCompanionRequest,
     UpdateCharacterCompanionRequest,
     GetAllCharacterCompanionsResponse,
+    CompanionCacheResponse,
 } from '@shared/schema';
 
 import type { CompanionService } from './types';
@@ -308,6 +309,49 @@ export const companionService: CompanionService = {
         });
 
         return { message: 'Character companion deleted successfully' };
+    },
+
+    /**
+     * Retrieves companion cache data with monster names for frontend use.
+     * 
+     * Design Decision: Cache Endpoint Pattern
+     * - Returns lightweight companion data optimized for dropdowns and select components
+     * - Includes monster name directly in response (populated from monster join)
+     * - Reduces frontend complexity by eliminating need for separate monster cache lookup
+     * - Orders by type and name for consistent presentation
+     * 
+     * @returns Promise resolving to CompanionCacheResponse with total count and results array
+     * 
+     * @see [Query Hooks and Caching Architecture](../../../../shared/docs/application-overview/query-hooks-and-caching.md)
+     * @see [Cache-Based ID Maps](../../../../shared/docs/application-overview/cache-based-id-maps.md)
+     */
+    async getCompanionCache(): Promise<CompanionCacheResponse> {
+        const companions = await prisma.companion.findMany({
+            include: {
+                monster: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+            orderBy: [
+                { type: 'asc' },
+                { monster: { name: 'asc' } },
+            ],
+        });
+
+        const transformedCompanions = companions.map(companion => ({
+            id: companion.id,
+            type: companion.type,
+            monsterId: companion.monsterId,
+            minLevel: companion.minLevel,
+            name: companion.monster.name,
+        }));
+
+        return {
+            total: transformedCompanions.length,
+            results: transformedCompanions,
+        };
     },
 };
 

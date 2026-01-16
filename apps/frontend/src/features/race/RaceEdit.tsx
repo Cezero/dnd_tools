@@ -15,10 +15,9 @@ import {
     useValidatedForm
 } from '@/components/forms';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, CreateRaceRequest, UpdateRaceRequest } from '@shared/schema';
+import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, CreateRaceRequest, UpdateRaceRequest, Feature } from '@shared/schema';
 import { EntityAppliesToType, SpecialFeatureId, EntityType, FeatureSourceType } from '@shared/static-data';
 
-import { RaceApi } from './RaceApi';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
 import {
     BasicInfoTab,
@@ -50,7 +49,7 @@ export function RaceEdit() {
     const [isFeatureAssocOpen, setIsFeatureAssocOpen] = useState(false);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
-    const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<Feature | undefined>(undefined);
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
     const fromListParams = location.state?.fromListParams || '';
 
@@ -63,10 +62,6 @@ export function RaceEdit() {
         editionId: 1,
         isVisible: true,
         description: null,
-        sizeId: 5, // Default to Medium
-        speed: 30, // Default to 30
-        favoredClassId: -1,
-        levelAdjustment: 0, // Default to 0
         sources: null,
         features: null,
     }), []);
@@ -172,9 +167,7 @@ export function RaceEdit() {
                 // Create new language progression
                 languageProgression = {
                     id: Date.now() + Math.random(),
-                    raceId: parseInt(id || '0'),
                     level: 1,
-                    classId: null,
                     domainId: null, // Set domainId to null for race-based progressions
                     featureId: featureId,
                     sourceType: FeatureSourceType.Race,
@@ -183,6 +176,7 @@ export function RaceEdit() {
                         name: isAutomatic ? 'Automatic Language' : 'Bonus Language',
                         description: isAutomatic ? 'Automatic language feature' : 'Bonus language feature',
                         slug: isAutomatic ? 'automatic-language' : 'bonus-language',
+                        displayInCharacterSheet: true,
                     },
                     entities: []
                 };
@@ -240,8 +234,6 @@ export function RaceEdit() {
             const newProgression: FeatureProgression = {
                 id: Date.now() + Math.random(), // Temporary ID for frontend
                 sourceType: FeatureSourceType.Race,
-                classId: null,
-                raceId: parseInt(id || '0'),
                 domainId: null, // Set domainId to null for race-based progressions
                 level: 1, // Default to level 1
                 featureId: feature.id,
@@ -250,6 +242,7 @@ export function RaceEdit() {
                     name: feature.name,
                     description: feature.description,
                     slug: feature.slug,
+                    displayInCharacterSheet: sourceProgression?.feature?.displayInCharacterSheet ?? true,
                     prerequisites: sourceProgression?.feature?.prerequisites || []
                 },
                 entities: entitiesToCopy.map(entity => ({
@@ -266,8 +259,6 @@ export function RaceEdit() {
             const newProgression: FeatureProgression = {
                 id: Date.now() + Math.random(),
                 sourceType: FeatureSourceType.Race,
-                classId: null,
-                raceId: parseInt(id || '0'),
                 domainId: null, // Set domainId to null for race-based progressions
                 level: 1,
                 featureId: feature.id,
@@ -276,6 +267,7 @@ export function RaceEdit() {
                     name: feature.name,
                     description: feature.description,
                     slug: feature.slug,
+                    displayInCharacterSheet: true,
                 },
                 entities: []
             };
@@ -417,8 +409,6 @@ export function RaceEdit() {
                 // Create new ability adjustment feature with this modifier
                 const newAbilityFeature = {
                     id: Date.now() + Math.random(),
-                    raceId: parseInt(id || '0'),
-                    classId: null,
                     domainId: null, // Set domainId to null for race-based progressions
                     level: 1,
                     featureId: SpecialFeatureId.AbilityAdjustment,
@@ -429,6 +419,7 @@ export function RaceEdit() {
                         slug: 'ability-adjustment',
                         name: 'Ability Adjustment',
                         description: 'Racial ability score adjustments',
+                        displayInCharacterSheet: true,
                     },
                     entities: [{
                         id: Date.now() + Math.random(),
@@ -468,11 +459,11 @@ export function RaceEdit() {
             const raceData = {
                 ...formData,
                 features: featureProgressions.length > 0 ? featureProgressions.map(prog => {
-                    const { id: _, ...progressionData } = prog;
+                    const { id: _, classes: _classes, races: _races, ...progressionData } = prog;
                     return {
                         ...progressionData,
                         entities: prog.entities?.map(entity => {
-                            const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                            const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
                             return entityData;
                         }) || [],
                     };
@@ -483,7 +474,7 @@ export function RaceEdit() {
                 const newRace = await RaceQueryHooks.createRace(raceData as CreateRaceRequest);
                 setMessage('Race created successfully!');
                 // Invalidate race caches
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: ['races'],
                     exact: false
                 });
@@ -493,10 +484,10 @@ export function RaceEdit() {
                 await RaceQueryHooks.updateRace(numericId, raceData as UpdateRaceRequest);
                 setMessage('Race updated successfully!');
                 // Invalidate race caches
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: RaceQueryHooks.getRaceByIdQueryKey(numericId)
                 });
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: ['races'],
                     exact: false
                 });
@@ -595,6 +586,7 @@ export function RaceEdit() {
                                 isLoading={isLoading}
                                 featureProgressions={featureProgressions}
                                 setFeatureProgressions={setFeatureProgressions}
+                                raceId={id !== 'new' ? parseInt(id) : undefined}
                                 isFeatureAssocOpen={isFeatureAssocOpen}
                                 setIsFeatureAssocOpen={setIsFeatureAssocOpen}
                                 onAddLanguage={handleAddLanguage}
@@ -603,7 +595,6 @@ export function RaceEdit() {
                                 onAddFeature={handleAddFeature}
                                 onRemoveProgression={handleRemoveProgression}
                                 onEditProgression={handleEditProgression}
-                                raceId={id !== 'new' ? parseInt(id) : undefined}
                             />
                         )}
                     </div>
@@ -658,6 +649,7 @@ export function RaceEdit() {
                 }}
                 preSelectedFeature={preSelectedFeature}
                 showSourceTypeSelector={false}
+                editionId={formData.editionId}
             />
         </div>
     );

@@ -3,25 +3,13 @@ import { useMemo } from 'react';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import type { SpellCacheEntry } from '@shared/schema';
 
-import { GenericSearchInput, type SearchableItem } from './GenericSearchInput';
+import { GenericSearchInput } from './GenericSearchInput';
+import type { SearchableItem, SpellSearchInputProps } from './types';
 
 type SpellListItem = SearchableItem & {
     editionId: number;
     baseLevel?: number; // Spell level for filtering
 };
-
-export interface SpellSearchInputProps {
-    value: number | null;
-    onValueChange: (spellId: number | null) => void;
-    label?: string;
-    placeholder?: string;
-    disabled?: boolean;
-    componentExtraClassName?: string;
-    labelExtraClassName?: string;
-    spellList?: SpellListItem[]; // Optional prop for pre-loaded spells
-    customOptions?: SpellListItem[]; // Custom options to prepend (e.g., "All" option with id: -1)
-    filter?: (spell: SpellListItem) => boolean; // Filter function for spells (e.g., by level)
-}
 
 export function SpellSearchInput({
     value,

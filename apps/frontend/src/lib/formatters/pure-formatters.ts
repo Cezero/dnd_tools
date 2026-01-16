@@ -18,6 +18,10 @@ import {
     ABILITY_MAP,
     SIZE_LIST,
     PROFICIENCY_TYPE_LIST,
+    BAB_PROGRESSION_LIST,
+    SAVING_THROW_MAP,
+    SAVE_PROGRESSION_LIST,
+    CASTING_TYPE_MAP,
 } from '@shared/static-data';
 
 import type { BaseFormatter, CalculatedEntity, DisplayContext } from './types';
@@ -305,6 +309,8 @@ export class FeatureEntityFormatter implements BaseFormatter {
                 return this.getAnimalCompanionName(choice);
             case EntityAppliesToType.Familiar:
                 return this.getFamiliarName(choice);
+            case EntityAppliesToType.Ability:
+                return this.getAbilityName(choice);
             default:
                 // Fallback for unknown appliesTo types
                 return `Choice (${choice.appliesTo})`;
@@ -428,6 +434,16 @@ export class FeatureEntityFormatter implements BaseFormatter {
         return 'Familiar';
     }
 
+    private getAbilityName(choice: CalculatedEntity): string {
+        // Priority 1: Use included entity data (specific ability selected)
+        if (choice.appliesToId && ABILITY_MAP[choice.appliesToId]) {
+            return ABILITY_MAP[choice.appliesToId].name;
+        }
+
+        // Priority 2: Fall back to "Select an Ability Increase" when no ability is selected
+        return 'Select an Ability Increase';
+    }
+
     private getBaseChoiceName(choice: CalculatedEntity, context?: DisplayContext): string {
         switch (choice.appliesTo) {
             case EntityAppliesToType.Feat:
@@ -440,6 +456,8 @@ export class FeatureEntityFormatter implements BaseFormatter {
                 return this.getBaseCreatureTypeName(choice);
             case EntityAppliesToType.AnimalCompanion:
                 return this.getAnimalCompanionName(choice);
+            case EntityAppliesToType.Ability:
+                return this.getAbilityName(choice);
             default:
                 return `Choice (${choice.appliesTo})`;
         }
@@ -826,5 +844,134 @@ export class PrerequisiteFormatter implements BaseFormatter {
                 console.warn('Unknown prerequisite type:', prereqType, 'for prerequisite:', prereq);
                 return `Requirement: ${minValue !== null && minValue !== undefined ? minValue : ''}`;
         }
+    }
+}
+
+/**
+ * Formatter for Base Attack Bonus progression type
+ * Formats the progression type (good/average/poor) from appliesToId
+ */
+export class BaseAttackBonusFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+        const progressionTypeId = modifier.appliesToId;
+        if (progressionTypeId !== null && progressionTypeId !== undefined) {
+            const progression = BAB_PROGRESSION_LIST.find(p => p.id === progressionTypeId);
+            if (progression) {
+                return progression.name;
+            }
+        }
+        return `BAB Progression ID: ${progressionTypeId}`;
+    }
+}
+
+/**
+ * Formatter for Saving Throw progression
+ * Formats the saving throw type (Fortitude/Reflex/Will) and progression type (good/poor)
+ */
+export class SavingThrowProgressionFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+        const savingThrowId = modifier.appliesToId;
+        const progressionTypeId = modifier.appliesToSubId;
+
+        const savingThrow = savingThrowId !== null && savingThrowId !== undefined
+            ? SAVING_THROW_MAP[savingThrowId]
+            : null;
+        const progression = progressionTypeId !== null && progressionTypeId !== undefined
+            ? SAVE_PROGRESSION_LIST.find(p => p.id === progressionTypeId)
+            : null;
+
+        if (savingThrow && progression) {
+            return `${savingThrow.name} (${progression.name})`;
+        } else if (savingThrow) {
+            return savingThrow.name;
+        } else if (progression) {
+            return progression.name;
+        }
+        return `Saving Throw ID: ${savingThrowId}, Progression ID: ${progressionTypeId}`;
+    }
+}
+
+/**
+ * Formatter for Speed value
+ * Formats the speed value without the "+" prefix (unlike MovementSpeedFormatter)
+ */
+export class SpeedFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+        const value = modifier.value;
+        return `${value} ft.`;
+    }
+}
+
+/**
+ * Formatter for Favored Class
+ * Formats the class name from appliesToId
+ */
+export class FavoredClassFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+        const classId = modifier.appliesToId;
+        if (classId) {
+            const cachedName = getClassNameFromCache(classId);
+            if (cachedName) {
+                return cachedName;
+            }
+        }
+        return `Class ID: ${classId || modifier.value}`;
+    }
+}
+
+/**
+ * Formatter for Level Adjustment
+ * Formats the LA value with "+" prefix if positive
+ */
+export class LevelAdjustmentFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+        const value = modifier.value;
+        const numValue = typeof value === 'string' ? parseFloat(value) : value;
+        if (numValue > 0) {
+            return `+${numValue}`;
+        }
+        return numValue.toString();
+    }
+}
+
+/**
+ * Formatter for Casting Ability
+ * Formats the ability abbreviation from appliesToId
+ */
+export class CastingAbilityFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+        const abilityId = modifier.appliesToId;
+        if (abilityId !== null && abilityId !== undefined && ABILITY_MAP[abilityId]) {
+            return ABILITY_MAP[abilityId].abbreviation;
+        }
+        return `Ability ID: ${abilityId || modifier.value}`;
+    }
+}
+
+/**
+ * Formatter for Casting Type
+ * Formats the casting type name from appliesToId
+ */
+export class CastingTypeFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+        const castingTypeId = modifier.appliesToId;
+        if (castingTypeId !== null && castingTypeId !== undefined && CASTING_TYPE_MAP[castingTypeId]) {
+            return CASTING_TYPE_MAP[castingTypeId].name;
+        }
+        return `Casting Type ID: ${castingTypeId || modifier.value}`;
+    }
+}
+
+/**
+ * Formatter for Spellcasting Progression
+ * Formats the progression ID from appliesToId
+ */
+export class SpellcastingProgressionFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+        const progressionId = modifier.appliesToId;
+        if (progressionId !== null && progressionId !== undefined) {
+            return `Progression ${progressionId}`;
+        }
+        return `Progression ID: ${progressionId || modifier.value}`;
     }
 }

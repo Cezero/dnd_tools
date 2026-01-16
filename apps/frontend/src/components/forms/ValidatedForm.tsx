@@ -1,28 +1,15 @@
 import React, { forwardRef } from 'react';
 
-import { type ValidationState } from '@/hooks/useZodValidation';
 import { CoreComponent } from '@shared/static-data';
 
 import { CustomSelect, CustomCheckbox } from './FormComponents';
+import type {
+    ValidatedInputProps,
+    ValidatedCustomCheckboxProps,
+    ValidatedCustomSelectProps,
+    ValidatedFormProps,
+} from './types';
 import { FormContext, useFormContext } from './ValidatedFormHooks';
-
-// Validated Input Component
-export interface ValidatedInputProps {
-    field: string;
-    label: string;
-    type?: 'text' | 'email' | 'password' | 'number' | 'textarea';
-    required?: boolean;
-    placeholder?: string;
-    componentExtraClassName?: string;
-    labelExtraClassName?: string;
-    inputExtraClassName?: string;
-    disabled?: boolean;
-    min?: number;
-    max?: number;
-    step?: number;
-    rows?: number;
-    nested?: boolean;
-}
 
 export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement, ValidatedInputProps>(
     ({
@@ -145,20 +132,6 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
 
 ValidatedInput.displayName = 'ValidatedInput';
 
-// Validated Custom Checkbox Component
-export interface ValidatedCustomCheckboxProps {
-    field: string;
-    label?: string;
-    required?: boolean;
-    componentExtraClassName?: string;
-    checkboxClassName?: string;
-    labelClassName?: string;
-    disabled?: boolean;
-    id?: string;
-    labelPosition?: 'left' | 'right';
-    nested?: boolean;
-}
-
 export const ValidatedCustomCheckbox = forwardRef<HTMLButtonElement, ValidatedCustomCheckboxProps>(
     ({
         field,
@@ -231,25 +204,6 @@ export const ValidatedCustomCheckbox = forwardRef<HTMLButtonElement, ValidatedCu
 );
 
 ValidatedCustomCheckbox.displayName = 'ValidatedCustomCheckbox';
-
-// Validated Custom Select Component
-export interface ValidatedCustomSelectProps<T extends CoreComponent> {
-    field: string;
-    options: T[];
-    label?: string;
-    required?: boolean;
-    placeholder?: string;
-    disabled?: boolean;
-    componentExtraClassName?: string;
-    triggerExtraClassName?: string;
-    popupExtraClassName?: string;
-    itemExtraClassName?: string;
-    itemTextExtraClassName?: string;
-    icon?: React.ReactNode;
-    displayValue?: (value: number | null) => string;
-    labelExtraClassName?: string;
-    nested?: boolean;
-}
 
 export const ValidatedCustomSelect = <T extends CoreComponent = CoreComponent>({
     field,
@@ -325,19 +279,6 @@ export const ValidatedCustomSelect = <T extends CoreComponent = CoreComponent>({
         />
     );
 };
-
-
-// Form Container Component
-export interface ValidatedFormProps {
-    children: React.ReactNode;
-    onSubmit: (e: React.FormEvent) => void;
-    validationState?: ValidationState;
-    isLoading?: boolean;
-    className?: string;
-    formData: Record<string, unknown>;
-    setFormData: (data: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) => void;
-    validation: ReturnType<typeof import('@/hooks/useZodValidation').useZodValidation>;
-}
 
 export const ValidatedForm: React.FC<ValidatedFormProps> = ({
     children,

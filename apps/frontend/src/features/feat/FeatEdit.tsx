@@ -122,21 +122,17 @@ export function FeatEdit() {
         if (isProgressionDialogOpen && !editingProgression && preSelectedFeature) {
             // Generate temporary ID for new feats, use actual ID for existing feats
             const featIdValue = id === 'new' ? Date.now() + Math.random() : parseInt(id || '0');
-            
+
             const newProgression: FeatureProgression = {
                 id: 0,
                 sourceType: FeatureSourceType.Feat,
-                classId: null,
-                raceId: null,
                 domainId: null,
                 featId: featIdValue,
                 companionId: null,
-                variantOverrideId: null,
                 level: 1,
                 featureId: preSelectedFeature.id,
                 feature: preSelectedFeature,
-                entities: [],
-                prerequisites: []
+                entities: []
             };
             setEditingProgression(newProgression);
         }
@@ -167,7 +163,7 @@ export function FeatEdit() {
                 // Update or add to unsaved progressions
                 if (editingProgression && editingProgression.id !== 0) {
                     // Update existing progression
-                    setUnsavedProgressions(prev => 
+                    setUnsavedProgressions(prev =>
                         prev.map(p => p.id === editingProgression.id ? progressionData : p)
                     );
                 } else {
@@ -206,13 +202,8 @@ export function FeatEdit() {
                 entities: progression.entities?.map(e => ({
                     ...e,
                     conditions: e.conditions?.map(c => ({
-                        ...c,
-                        entity: c.entity ? { id: c.entity.id } : undefined
+                        ...c
                     }))
-                })),
-                prerequisites: progression.prerequisites?.map(p => ({
-                    ...p,
-                    feature: p.feature ? { id: p.feature.id } : undefined
                 }))
             };
 
@@ -277,7 +268,30 @@ export function FeatEdit() {
                 return;
             }
 
-            await FeatureSystemApi.deleteFeatureProgression(progressionId);
+            // Delete progression by updating with empty array for that feature
+            const progression = (featWithProgressions?.featureProgressions || []).find(p => p.id === progressionId);
+            if (progression) {
+                const remainingProgressions = (featWithProgressions?.featureProgressions || [])
+                    .filter(p => p.id !== progressionId && p.featureId === progression.featureId)
+                    .map(p => ({
+                        ...p,
+                        feature: p.feature ? {
+                            id: p.feature.id,
+                            name: p.feature.name,
+                            slug: p.feature.slug
+                        } : undefined,
+                        entities: p.entities?.map(e => ({
+                            ...e,
+                            conditions: e.conditions?.map(c => ({
+                                ...c
+                            }))
+                        }))
+                    }));
+                await FeatureSystemApi.updateFeatureProgressions(
+                    { progressions: remainingProgressions },
+                    { id: progression.featureId }
+                );
+            }
             // Refetch feat to update progressions
             const refetchedFeat = await FeatQueryHooks.getFeatById(parseInt(id || '0'));
             if (refetchedFeat) {
@@ -325,7 +339,6 @@ export function FeatEdit() {
                 sourceType: FeatureSourceType.Feat,
                 level: 1,
                 entities: [],
-                prerequisites: [],
                 feature: {
                     id: feature.id,
                     name: feature.name,
@@ -337,7 +350,26 @@ export function FeatEdit() {
                 }
             };
 
-            await FeatureSystemApi.createFeatureProgression(newProgression);
+            // Get existing progressions for this feature and add the new one
+            const existingProgressions = await FeatureSystemApi.getFeatureProgressions(undefined, { id: feature.id });
+            const updatedProgressions = [...existingProgressions, newProgression].map(p => ({
+                ...p,
+                feature: p.feature ? {
+                    id: p.feature.id,
+                    name: p.feature.name,
+                    slug: p.feature.slug
+                } : undefined,
+                entities: p.entities?.map(e => ({
+                    ...e,
+                    conditions: e.conditions?.map(c => ({
+                        ...c
+                    }))
+                }))
+            }));
+            await FeatureSystemApi.updateFeatureProgressions(
+                { progressions: updatedProgressions },
+                { id: feature.id }
+            );
 
             // Refetch feat to update progressions
             const refetchedFeat = await FeatQueryHooks.getFeatById(featIdNum);
@@ -358,19 +390,19 @@ export function FeatEdit() {
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Prevent form submission if we're saving a progression or dialog is open
         if (isSavingProgression || isProgressionDialogOpen) {
             return;
         }
-        
+
         // Additional check: if the event originated from within a dialog, block it
         const target = e.target as HTMLElement;
         const dialogElement = target.closest('[role="dialog"]') || target.closest('[data-dialog]') || document.querySelector('[role="dialog"]:not([hidden])');
         if (dialogElement && dialogElement.contains(target)) {
             return;
         }
-        
+
         setMessage('');
         setError(null);
 
@@ -390,23 +422,13 @@ export function FeatEdit() {
                         // Remove nested objects that shouldn't be sent
                         feature: undefined,
                         entities: progressionData.entities?.map(e => {
-                            const { id: _eId, progressionId: _pId, item, feat, feature: _feat, spell, domain, ...entityData } = e;
+                            const { id: _eId, progressionId: _pId, item, feature: _feat, spell, domain, ...entityData } = e;
                             return {
                                 ...entityData,
                                 conditions: entityData.conditions?.map(c => {
-                                    const { id: _cId, featureEntityId: _feId, entity, ...conditionData } = c;
-                                    return {
-                                        ...conditionData,
-                                        entity: undefined
-                                    };
+                                    const { id: _cId, featureEntityId: _feId, ...conditionData } = c;
+                                    return conditionData;
                                 })
-                            };
-                        }),
-                        prerequisites: progressionData.prerequisites?.map(pr => {
-                            const { id: _prId, featureId: _fId, feature, ...prereqData } = pr;
-                            return {
-                                ...prereqData,
-                                feature: undefined
                             };
                         })
                     };
@@ -648,6 +670,7 @@ export function FeatEdit() {
                     onSave={handleSaveProgression}
                     preSelectedFeature={preSelectedFeature || undefined}
                     showSourceTypeSelector={false}
+                    editionId={formData.editionId}
                 />
             )}
         </div>

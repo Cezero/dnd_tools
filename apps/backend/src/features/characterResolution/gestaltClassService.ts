@@ -1,5 +1,7 @@
 import type { DnDClass, FeatureProgression } from '@shared/schema';
 
+import { GestaltFeatureFilter } from './gestaltFeatureFilter';
+
 /**
  * Service for handling gestalt character class merging according to D&D 3.5 gestalt rules
  * Ported from frontend GestaltClassService
@@ -18,22 +20,15 @@ export class GestaltClassService {
             isVisible: primaryClass.isVisible,
             canCastSpells: primaryClass.canCastSpells || secondaryClass.canCastSpells,
             spellsKnown: primaryClass.spellsKnown || secondaryClass.spellsKnown,
+            isDivine: primaryClass.isDivine || secondaryClass.isDivine,
             description: primaryClass.description,
             sourceBookInfo: primaryClass.sourceBookInfo,
 
-            // Gestalt rules - choose the better aspects
-            hitDie: Math.max(primaryClass.hitDie, secondaryClass.hitDie),
-            skillPoints: Math.max(primaryClass.skillPoints, secondaryClass.skillPoints),
-            babProgression: Math.min(primaryClass.babProgression, secondaryClass.babProgression) as 0 | 1 | 2,
-            fortProgression: Math.min(primaryClass.fortProgression, secondaryClass.fortProgression) as 0 | 1 | 2,
-            refProgression: Math.min(primaryClass.refProgression, secondaryClass.refProgression) as 0 | 1 | 2,
-            willProgression: Math.min(primaryClass.willProgression, secondaryClass.willProgression) as 0 | 1 | 2,
+            // Note: All mechanics (hitDie, skillPoints, BAB, saving throws, casting ability/type)
+            // are now stored in feature entities, not on the class model
+            // They will be resolved from the merged features
 
-            // Casting ability - use primary class, but could be enhanced for gestalt
-            castingAbilityId: primaryClass.castingAbilityId,
-            castingType: primaryClass.castingType,
-
-            // Merged features with source tracking
+            // Merged features with source tracking and filtering of overlapping mechanics
             features: this.mergeFeatures(primaryClass.features || [], secondaryClass.features || [], primaryClass.name, secondaryClass.name),
 
             // Merged spellcasting progressions
@@ -49,7 +44,10 @@ export class GestaltClassService {
     }
 
     /**
-     * Merge features from both classes with source tracking
+     * Merge features from both classes with source tracking and filtering of overlapping mechanics.
+     * 
+     * For gestalt characters, overlapping class-mechanics features (BAB, saves, hit die, skill points)
+     * are filtered to keep only the best progression according to gestalt rules.
      */
     private static mergeFeatures(
         primaryFeatures: FeatureProgression[],
@@ -57,10 +55,19 @@ export class GestaltClassService {
         primaryClassName: string,
         secondaryClassName: string
     ): (FeatureProgression & { sourceClassName?: string })[] {
-        return [
-            ...primaryFeatures.map(f => ({ ...f, sourceClassName: primaryClassName })),
-            ...secondaryFeatures.map(f => ({ ...f, sourceClassName: secondaryClassName }))
-        ];
+        // Filter overlapping mechanics to keep only the best progression
+        const filteredFeatures = GestaltFeatureFilter.filterOverlappingMechanics(
+            primaryFeatures,
+            secondaryFeatures
+        );
+
+        // Add source tracking to filtered features
+        return filteredFeatures.map(f => {
+            // Determine source class name based on which class the feature came from
+            const isFromPrimary = primaryFeatures.some(pf => pf.id === f.id);
+            const sourceClassName = isFromPrimary ? primaryClassName : secondaryClassName;
+            return { ...f, sourceClassName };
+        });
     }
 }
 

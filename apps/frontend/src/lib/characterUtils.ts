@@ -1,10 +1,13 @@
+import { extractBABProgression } from '@/lib/feature-extraction/classMechanicsExtractor';
+import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import type {
     CharacterWithAllDetailsResponse,
     DnDClass,
     Race,
     Feat,
     GetAllFeatsResponse,
-    FeaturePrerequisite
+    FeaturePrerequisite,
+    FeatureProgression
 } from '@shared/schema';
 import { FeaturePrerequisiteType } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
@@ -15,7 +18,8 @@ export function meetsPrerequisites(
     selectedClassDetails: DnDClass | null,
     selectedRaceDetails: Race | null,
     _allFeats: GetAllFeatsResponse,
-    featurePrerequisites: FeaturePrerequisite[]
+    featurePrerequisites: FeaturePrerequisite[],
+    resolvedProgressions?: FeatureProgression[]
 ): boolean {
     // Use FeaturePrerequisite - required parameter
     const prerequisites = featurePrerequisites || [];
@@ -52,7 +56,7 @@ export function meetsPrerequisites(
 
             case FeaturePrerequisiteType.BaseAttackBonus: {
                 if (!prereq.minValue) return true;
-                const characterBAB = getCharacterBAB(character, selectedClassDetails);
+                const characterBAB = getCharacterBAB(character, selectedClassDetails, resolvedProgressions);
                 return characterBAB >= prereq.minValue;
             }
 
@@ -81,10 +85,15 @@ export function meetsPrerequisites(
             }
 
             case FeaturePrerequisiteType.Size: {
-                if (!prereq.appliesToId || !selectedRaceDetails?.sizeId) return true;
-                const characterSizeId = selectedRaceDetails.sizeId;
+                if (!prereq.appliesToId) return true;
+                // Extract sizeId from resolved progressions
+                const raceMechanics = resolvedProgressions && character.raceId
+                    ? extractRaceMechanics(resolvedProgressions, character.raceId)
+                    : null;
+                const characterSizeId = raceMechanics?.sizeId;
+                if (!characterSizeId) return false;
                 const requiredSizeId = prereq.appliesToId;
-                
+
                 // minValue: 0 = exact, 1 = or larger, 2 = or smaller
                 if (prereq.minValue === 0) {
                     return characterSizeId === requiredSizeId;
@@ -106,21 +115,33 @@ export function meetsPrerequisites(
 
 export function getCharacterBAB(
     character: CharacterWithAllDetailsResponse,
-    selectedClassDetails: DnDClass | null
+    selectedClassDetails: DnDClass | null,
+    resolvedProgressions?: FeatureProgression[]
 ): number {
-    if (!selectedClassDetails || selectedClassDetails.babProgression === undefined) return 0;
+    if (!selectedClassDetails) return 0;
 
     try {
         const level = character.advancements.length;
 
+        // Extract BAB progression from resolved progressions
+        const classId = (selectedClassDetails as { id?: number }).id;
+        let babProgression: number | null = null;
+        if (resolvedProgressions && classId) {
+            babProgression = extractBABProgression(resolvedProgressions, classId);
+        }
+
+        if (babProgression === null || babProgression === undefined) {
+            return 0;
+        }
+
         // Use the existing BAB calculation utility
-        const babString = getBABProgression(level, selectedClassDetails.babProgression);
+        const babString = getBABProgression(level, babProgression as 0 | 1 | 2);
 
         // Extract the first BAB value from the string (e.g., "+1" -> 1, "+0" -> 0)
         const match = babString.match(/\+(\d+)/);
         return match ? parseInt(match[1], 10) : 0;
     } catch (error) {
-        console.warn('Error calculating BAB for class:', selectedClassDetails.name, 'with progression:', selectedClassDetails.babProgression, error);
+        console.warn('Error calculating BAB for class:', selectedClassDetails.name, error);
         return 0;
     }
 }

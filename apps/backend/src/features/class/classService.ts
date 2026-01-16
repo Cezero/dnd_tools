@@ -39,20 +39,20 @@ import {
     CreateSpellcastingProgressionRequest,
     CreateSpellcastingSlotRequest,
     ClassCacheResponse,
+    CreateFeatureProgressionRequest,
+    UpdateFeatureProgression,
 } from '@shared/schema';
-import { buildEditionWhereClause, isVariantId } from '@shared/utils';
+import { FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
+import { buildEditionWhereClause } from '@shared/utils';
 
 import type { ClassService } from './types';
-import { VariantClassService } from './variantClassService.js';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 import type { FeatureProgressionContext } from '../featureSystem/types';
 
 const prisma = new PrismaClient();
-const variantClassService = new VariantClassService(prisma);
 
 export const classService: ClassService = {
     async getAllClasses(query?: GetAllClassesQuery): Promise<GetAllClassesResponse> {
-        const baseClassesOnly = query?.baseClassesOnly || false;
 
         // Build where clause for base classes
         const whereClause: Omit<Partial<GetAllClassesQuery>, 'editionId'> & { editionId?: number | { in: number[] } } = {};
@@ -73,7 +73,7 @@ export const classService: ClassService = {
             whereClause.editionId = { in: query.editionIds };
         }
 
-        const classesPromise = prisma.class.findMany({
+        const classes = await prisma.class.findMany({
             where: whereClause,
             orderBy: { name: 'asc' },
             include: {
@@ -86,54 +86,9 @@ export const classService: ClassService = {
             }
         });
 
-        const variantsPromise = baseClassesOnly
-            ? Promise.resolve([])
-            : prisma.classVariant.findMany({
-                orderBy: { name: 'asc' },
-                include: {
-                    baseClass: {
-                        include: {
-                            sourceBookInfo: {
-                                select: {
-                                    sourceBookId: true,
-                                    pageNumber: true
-                                }
-                            },
-                        }
-                    }
-                }
-            });
-
-        const [classes, variants] = await Promise.all([classesPromise, variantsPromise]);
-
-        // Combine classes and variants into a single list
-        const allItems = [
-            // Base classes (unchanged)
-            ...classes,
-            // Variants with resolved class data and custom IDs
-            ...variants.map(variant => {
-                return {
-                    ...variant.baseClass,
-                    id: variant.id, // Use the custom ID that was calculated during creation
-                    name: variant.name, // Use variant name
-                    description: variant.description || variant.baseClass.description,
-                    // Apply variant overrides to summary fields
-                    hitDie: variant.hitDie ?? variant.baseClass.hitDie,
-                    skillPoints: variant.skillPoints ?? variant.baseClass.skillPoints,
-                    babProgression: variant.babProgression ?? variant.baseClass.babProgression,
-                    fortProgression: variant.fortProgression ?? variant.baseClass.fortProgression,
-                    refProgression: variant.refProgression ?? variant.baseClass.refProgression,
-                    willProgression: variant.willProgression ?? variant.baseClass.willProgression,
-                };
-            })
-        ];
-
-        // Sort combined list by name
-        allItems.sort((a, b) => a.name.localeCompare(b.name));
-
         return {
-            total: allItems.length,
-            results: allItems as GetAllClassesResponse['results'],
+            total: classes.length,
+            results: classes as GetAllClassesResponse['results'],
         };
     },
 
@@ -141,16 +96,6 @@ export const classService: ClassService = {
         query: ClassIdParamRequest,
         characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
     ): Promise<DnDClass | null> {
-        const id = query.id;
-
-        // Check if this is a custom variant ID
-        if (isVariantId(id)) {
-            // For variant IDs, we need to look up the variant directly by its custom ID
-            // The resolveClassWithVariantById method will handle the base class lookup
-            return await variantClassService.resolveClassWithVariantById(id);
-        }
-
-        // Otherwise, return base class as normal
         const classData = await prisma.class.findUnique({
             where: { id: query.id },
             include: {
@@ -187,9 +132,6 @@ export const classService: ClassService = {
             features,
             spellcastingProgression: classData.spellcastingProgression ?? null,
             spellsKnownProgression: classData.classSpellsKnown ?? null,
-            baseClassId: null,
-            variantId: null,
-            isVariant: false,
         };
 
         return transformedClassData as DnDClass;
@@ -219,15 +161,17 @@ export const classService: ClassService = {
             }
 
             // Create spellcasting progression (spell slots)
+            // Phase 3: Also create FeatureProgression entries that link to SpellcastingProgression
             if (spellcastingProgression && spellcastingProgression.length > 0) {
                 for (const progression of spellcastingProgression as CreateSpellcastingProgressionRequest[]) {
                     const { slots, ...progressionData } = progression;
 
-                    // Create the spellcasting progression
+                    // Create the spellcasting progression (keep classId for backward compatibility)
                     const createdSpellcastingProgression = await tx.spellcastingProgression.create({
                         data: {
                             ...progressionData,
-                            classId: classResult.id,
+                            classId: classResult.id, // Keep for backward compatibility
+                            spellcastingType: classResult.spellsKnown ? 2 : 1, // 1 = SpellsPerDay, 2 = SpellsKnown
                         },
                     });
 
@@ -240,20 +184,84 @@ export const classService: ClassService = {
                             })),
                         });
                     }
+
+                    // Phase 3: Create FeatureProgression that links to this SpellcastingProgression
+                    // Find or create spellcasting feature
+                    let spellcastingFeature = await tx.feature.findFirst({
+                        where: {
+                            slug: `spellcasting-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`
+                        }
+                    });
+
+                    if (!spellcastingFeature) {
+                        spellcastingFeature = await tx.feature.create({
+                            data: {
+                                slug: `spellcasting-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`,
+                                name: `${classResult.name} Spellcasting`,
+                                description: `Spellcasting ability for ${classResult.name}`,
+                                displayInCharacterSheet: false
+                            }
+                        });
+                    }
+
+                    // Create FeatureProgression for spellcasting
+                    const featureProgression = await tx.featureProgression.create({
+                        data: {
+                            sourceType: FeatureSourceType.Class,
+                            level: 1,
+                            featureId: spellcastingFeature.id
+                        }
+                    });
+
+                    // Link to class via many-to-many relationship
+                    await tx.featureProgressionClassMap.create({
+                        data: {
+                            progressionId: featureProgression.id,
+                            classId: classResult.id
+                        }
+                    });
+
+                    // Create FeatureEntity for SpellcastingProgression reference
+                    await tx.featureEntity.create({
+                        data: {
+                            progressionId: featureProgression.id,
+                            type: EntityType.Other,
+                            appliesTo: EntityAppliesToType.SpellcastingProgression,
+                            appliesToId: null,
+                            appliesToSubId: null,
+                            value: createdSpellcastingProgression.id,
+                            bonusType: null,
+                            groupingId: 0,
+                            displayInDetail: true
+                        }
+                    });
+
+                    // Note: Casting ability and type should be added via feature progressions
+                    // They are no longer stored directly on the Class model
+
+                    // Link SpellcastingProgression to FeatureProgression
+                    await tx.spellcastingProgression.update({
+                        where: { id: createdSpellcastingProgression.id },
+                        data: {
+                            featureProgressionId: featureProgression.id
+                        }
+                    });
                 }
             }
 
             // Create spells known progression
+            // Phase 3: Also create FeatureProgression entries that link to SpellcastingProgression
             if (spellsKnownProgression && spellsKnownProgression.length > 0) {
                 for (const progression of spellsKnownProgression as CreateSpellcastingProgressionRequest[]) {
                     const { slots, ...progressionData } = progression;
 
-                    // Create the spells known progression
+                    // Create the spells known progression (keep classId for backward compatibility)
                     const createdSpellsKnownProgression = await tx.spellcastingProgression.create({
                         data: {
                             ...progressionData,
-                            classId: classResult.id, // Required field
+                            classId: classResult.id, // Keep for backward compatibility
                             classSpellsKnownId: classResult.id, // Link to the class via spells known relation
+                            spellcastingType: 2, // 2 = SpellsKnown
                         },
                     });
 
@@ -266,6 +274,66 @@ export const classService: ClassService = {
                             })),
                         });
                     }
+
+                    // Phase 3: Create FeatureProgression that links to this SpellcastingProgression
+                    // Note: Since featureProgressionId is unique, spells-known gets its own FeatureProgression
+                    // Find or create spellcasting feature for spells-known
+                    let spellsKnownFeature = await tx.feature.findFirst({
+                        where: {
+                            slug: `spellcasting-spells-known-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`
+                        }
+                    });
+
+                    if (!spellsKnownFeature) {
+                        spellsKnownFeature = await tx.feature.create({
+                            data: {
+                                slug: `spellcasting-spells-known-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`,
+                                name: `${classResult.name} Spells Known`,
+                                description: `Spells known progression for ${classResult.name}`,
+                                displayInCharacterSheet: false
+                            }
+                        });
+                    }
+
+                    // Create FeatureProgression for spells-known
+                    const spellsKnownFeatureProgression = await tx.featureProgression.create({
+                        data: {
+                            sourceType: FeatureSourceType.Class,
+                            level: 1,
+                            featureId: spellsKnownFeature.id
+                        }
+                    });
+
+                    // Link to class via many-to-many relationship
+                    await tx.featureProgressionClassMap.create({
+                        data: {
+                            progressionId: spellsKnownFeatureProgression.id,
+                            classId: classResult.id
+                        }
+                    });
+
+                    // Create FeatureEntity for SpellsKnown SpellcastingProgression reference
+                    await tx.featureEntity.create({
+                        data: {
+                            progressionId: spellsKnownFeatureProgression.id,
+                            type: EntityType.Other,
+                            appliesTo: EntityAppliesToType.SpellcastingProgression,
+                            appliesToId: null,
+                            appliesToSubId: null,
+                            value: createdSpellsKnownProgression.id,
+                            bonusType: null,
+                            groupingId: 0,
+                            displayInDetail: true
+                        }
+                    });
+
+                    // Link SpellcastingProgression to FeatureProgression
+                    await tx.spellcastingProgression.update({
+                        where: { id: createdSpellsKnownProgression.id },
+                        data: {
+                            featureProgressionId: spellsKnownFeatureProgression.id
+                        }
+                    });
                 }
             }
 
@@ -279,10 +347,6 @@ export const classService: ClassService = {
         await prisma.$transaction(async (tx) => {
             // Delete existing source book mappings
             await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
-
-            // Delete existing feature progressions using consolidated feature system service
-            const deleteContext: FeatureProgressionContext = { classId: query.id };
-            await featureSystemService.deleteFeatureProgressionsForContext(deleteContext, tx);
 
             // Delete existing spellcasting progression and slots
             const existingSpellcastingProgressions = await tx.spellcastingProgression.findMany({
@@ -326,11 +390,14 @@ export const classService: ClassService = {
 
             const { features, spellcastingProgression, spellsKnownProgression, ...classData } = data;
 
+            // Remove deprecated fields that are now stored in feature progressions
+            const { hitDie: _hitDie, skillPoints: _skillPoints, babProgression: _babProgression, fortProgression: _fortProgression, refProgression: _refProgression, willProgression: _willProgression, ...validClassData } = classData as Record<string, unknown>;
+
             // Update the class
             await tx.class.update({
                 where: { id: query.id },
                 data: {
-                    ...classData,
+                    ...validClassData,
                     sourceBookInfo: {
                         create: data.sourceBookInfo?.map(sourceBookInfo => ({
                             sourceBookId: sourceBookInfo.sourceBookId,
@@ -340,22 +407,125 @@ export const classService: ClassService = {
                 },
             });
 
-            // Create new feature progressions using consolidated feature system service
+            // Update/create feature progressions using new upsert logic
             if (features && features.length > 0) {
-                const createContext: FeatureProgressionContext = { classId: query.id };
-                await featureSystemService.createMultipleFeatureProgressions(features, createContext, tx);
+                // Type guard for progressions with id (update requests)
+                // UpdateClassRequest uses CreateFeatureProgressionRequest but in practice may include id
+                type ProgressionWithId = CreateFeatureProgressionRequest & { id: number };
+                const hasId = (p: CreateFeatureProgressionRequest): p is ProgressionWithId => {
+                    return 'id' in p && typeof (p as { id?: number }).id === 'number';
+                };
+
+                // Get featureIds for existing progressions (those with IDs)
+                const progressionIds = features
+                    .filter(hasId)
+                    .map(p => p.id);
+
+                const existingProgressions = progressionIds.length > 0
+                    ? await tx.featureProgression.findMany({
+                        where: { id: { in: progressionIds } },
+                        select: { id: true, featureId: true }
+                    })
+                    : [];
+
+                // Group progressions by featureId
+                // Cast to UpdateFeatureProgression[] since updateFeatureProgressions expects that type
+                const progressionsByFeatureId = new Map<number, UpdateFeatureProgression[]>();
+
+                // For existing progressions, group by their featureId
+                for (const progression of features) {
+                    if (hasId(progression)) {
+                        const existing = existingProgressions.find(p => p.id === progression.id);
+                        if (existing) {
+                            const featureId = existing.featureId;
+                            if (!progressionsByFeatureId.has(featureId)) {
+                                progressionsByFeatureId.set(featureId, []);
+                            }
+                            // Cast to UpdateFeatureProgression since it has id
+                            progressionsByFeatureId.get(featureId)!.push(progression as UpdateFeatureProgression);
+                        }
+                    } else if (progression.featureId !== undefined && progression.featureId !== null) {
+                        // New progression - need featureId from progression data
+                        // For new progressions in class updates, they should have featureId
+                        const featureId = progression.featureId;
+                        if (!progressionsByFeatureId.has(featureId)) {
+                            progressionsByFeatureId.set(featureId, []);
+                        }
+                        // Cast to UpdateFeatureProgression (id will be undefined, which is valid)
+                        progressionsByFeatureId.get(featureId)!.push(progression as UpdateFeatureProgression);
+                    }
+                }
+
+                // Update progressions for each feature
+                for (const [featureId, progressions] of progressionsByFeatureId) {
+                    await featureSystemService.updateFeatureProgressions(featureId, progressions);
+                }
+
+                // After updating, find all progression IDs that match the incoming progressions
+                // For existing progressions, we have their IDs
+                // For new progressions, we need to find them by matching characteristics
+                const finalProgressionIds: number[] = [];
+
+                // Add existing progression IDs
+                finalProgressionIds.push(...progressionIds);
+
+                // For new progressions (those without IDs), find them by matching characteristics
+                const newProgressions = features.filter(p => !hasId(p));
+                for (const newProgression of newProgressions) {
+                    if (newProgression.featureId !== undefined && newProgression.featureId !== null) {
+                        const featureId = newProgression.featureId;
+                        // Find matching progression by level, sourceType, and other characteristics
+                        const matching = await tx.featureProgression.findFirst({
+                            where: {
+                                featureId,
+                                level: newProgression.level ?? 1,
+                                sourceType: newProgression.sourceType ?? 0,
+                                domainId: newProgression.domainId ?? null,
+                                featId: newProgression.featId ?? null,
+                                companionId: newProgression.companionId ?? null,
+                                editionId: newProgression.editionId ?? null,
+                            },
+                            orderBy: { id: 'desc' }, // Get the most recently created
+                            select: { id: true }
+                        });
+                        if (matching) {
+                            finalProgressionIds.push(matching.id);
+                        }
+                    }
+                }
+
+                // Sync FeatureProgressionClassMap entries for this class
+                await featureSystemService.syncClassFeatureProgressions(query.id, finalProgressionIds, tx);
+            } else {
+                // No features provided - sync to empty list (removes all links for this class)
+                await featureSystemService.syncClassFeatureProgressions(query.id, [], tx);
             }
 
             // Create new spellcasting progression (spell slots)
+            // Phase 3: Also create FeatureProgression entries that link to SpellcastingProgression
             if (spellcastingProgression && spellcastingProgression.length > 0) {
+                // Get updated class data for spellcasting info
+                const updatedClass = await tx.class.findUnique({
+                    where: { id: query.id },
+                    select: {
+                        name: true,
+                        spellsKnown: true
+                    }
+                });
+
+                if (!updatedClass) {
+                    throw new Error('Class not found');
+                }
+
                 for (const progression of spellcastingProgression as CreateSpellcastingProgressionRequest[]) {
                     const { slots, ...progressionData } = progression;
 
-                    // Create the spellcasting progression
+                    // Create the spellcasting progression (keep classId for backward compatibility)
                     const createdSpellcastingProgression = await tx.spellcastingProgression.create({
                         data: {
                             ...progressionData,
-                            classId: query.id,
+                            classId: query.id, // Keep for backward compatibility
+                            spellcastingType: updatedClass.spellsKnown ? 2 : 1, // 1 = SpellsPerDay, 2 = SpellsKnown
                         },
                     });
 
@@ -368,20 +538,97 @@ export const classService: ClassService = {
                             })),
                         });
                     }
+
+                    // Phase 3: Create FeatureProgression that links to this SpellcastingProgression
+                    // Find or create spellcasting feature
+                    let spellcastingFeature = await tx.feature.findFirst({
+                        where: {
+                            slug: `spellcasting-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`
+                        }
+                    });
+
+                    if (!spellcastingFeature) {
+                        spellcastingFeature = await tx.feature.create({
+                            data: {
+                                slug: `spellcasting-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`,
+                                name: `${updatedClass.name} Spellcasting`,
+                                description: `Spellcasting ability for ${updatedClass.name}`,
+                                displayInCharacterSheet: false
+                            }
+                        });
+                    }
+
+                    // Create FeatureProgression for spellcasting
+                    const featureProgression = await tx.featureProgression.create({
+                        data: {
+                            sourceType: FeatureSourceType.Class,
+                            level: 1,
+                            featureId: spellcastingFeature.id
+                        }
+                    });
+
+                    // Link to class via many-to-many relationship
+                    await tx.featureProgressionClassMap.create({
+                        data: {
+                            progressionId: featureProgression.id,
+                            classId: query.id
+                        }
+                    });
+
+                    // Create FeatureEntity for SpellcastingProgression reference
+                    await tx.featureEntity.create({
+                        data: {
+                            progressionId: featureProgression.id,
+                            type: EntityType.Other,
+                            appliesTo: EntityAppliesToType.SpellcastingProgression,
+                            appliesToId: null,
+                            appliesToSubId: null,
+                            value: createdSpellcastingProgression.id,
+                            bonusType: null,
+                            groupingId: 0,
+                            displayInDetail: true
+                        }
+                    });
+
+                    // Note: Casting ability and type should be added via feature progressions
+                    // They are no longer stored directly on the Class model
+
+                    // Link SpellcastingProgression to FeatureProgression
+                    await tx.spellcastingProgression.update({
+                        where: { id: createdSpellcastingProgression.id },
+                        data: {
+                            featureProgressionId: featureProgression.id
+                        }
+                    });
                 }
             }
 
             // Create new spells known progression
+            // Phase 3: Also create FeatureProgression entries that link to SpellcastingProgression
             if (spellsKnownProgression && spellsKnownProgression.length > 0) {
+                // Get updated class data for spellcasting info
+                const updatedClass = await tx.class.findUnique({
+                    where: { id: query.id },
+                    select: {
+                        name: true,
+                        spellsKnown: true
+                    }
+                });
+
+                if (!updatedClass) {
+                    throw new Error('Class not found');
+                }
+
                 for (const progression of spellsKnownProgression as CreateSpellcastingProgressionRequest[]) {
                     const { slots, ...progressionData } = progression;
 
-                    // Create the spells known progression
+                    // Create the spells known progression (keep classId for backward compatibility)
                     const createdSpellsKnownProgression = await tx.spellcastingProgression.create({
                         data: {
                             ...progressionData,
-                            classId: query.id, // Required field
+                            classId: query.id, // Keep for backward compatibility
                             classSpellsKnownId: query.id, // Link to the class via spells known relation
+                            spellcastingType: 2, // 2 = SpellsKnown
                         },
                     });
 
@@ -394,6 +641,66 @@ export const classService: ClassService = {
                             })),
                         });
                     }
+
+                    // Phase 3: Create FeatureProgression that links to this SpellcastingProgression
+                    // Note: Since featureProgressionId is unique, spells-known gets its own FeatureProgression
+                    // Find or create spellcasting feature for spells-known
+                    let spellsKnownFeature = await tx.feature.findFirst({
+                        where: {
+                            slug: `spellcasting-spells-known-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`
+                        }
+                    });
+
+                    if (!spellsKnownFeature) {
+                        spellsKnownFeature = await tx.feature.create({
+                            data: {
+                                slug: `spellcasting-spells-known-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`,
+                                name: `${updatedClass.name} Spells Known`,
+                                description: `Spells known progression for ${updatedClass.name}`,
+                                displayInCharacterSheet: false
+                            }
+                        });
+                    }
+
+                    // Create FeatureProgression for spells-known
+                    const spellsKnownFeatureProgression = await tx.featureProgression.create({
+                        data: {
+                            sourceType: FeatureSourceType.Class,
+                            level: 1,
+                            featureId: spellsKnownFeature.id
+                        }
+                    });
+
+                    // Link to class via many-to-many relationship
+                    await tx.featureProgressionClassMap.create({
+                        data: {
+                            progressionId: spellsKnownFeatureProgression.id,
+                            classId: query.id
+                        }
+                    });
+
+                    // Create FeatureEntity for SpellsKnown SpellcastingProgression reference
+                    await tx.featureEntity.create({
+                        data: {
+                            progressionId: spellsKnownFeatureProgression.id,
+                            type: EntityType.Other,
+                            appliesTo: EntityAppliesToType.SpellcastingProgression,
+                            appliesToId: null,
+                            appliesToSubId: null,
+                            value: createdSpellsKnownProgression.id,
+                            bonusType: null,
+                            groupingId: 0,
+                            displayInDetail: true
+                        }
+                    });
+
+                    // Link SpellcastingProgression to FeatureProgression
+                    await tx.spellcastingProgression.update({
+                        where: { id: createdSpellsKnownProgression.id },
+                        data: {
+                            featureProgressionId: spellsKnownFeatureProgression.id
+                        }
+                    });
                 }
             }
         });
@@ -410,7 +717,7 @@ export const classService: ClassService = {
     },
 
     async getClassCache(): Promise<ClassCacheResponse> {
-        const classesPromise = prisma.class.findMany({
+        const classes = await prisma.class.findMany({
             orderBy: { name: 'asc' },
             select: {
                 id: true,
@@ -420,50 +727,13 @@ export const classService: ClassService = {
                 isPrestige: true,
                 isVisible: true,
                 canCastSpells: true,
+                isDivine: true,
             }
         });
-
-        const variantsPromise = prisma.classVariant.findMany({
-            orderBy: { name: 'asc' },
-            include: {
-                baseClass: {
-                    select: {
-                        editionId: true,
-                        isPrestige: true,
-                        isVisible: true,
-                        canCastSpells: true,
-                    }
-                }
-            }
-        });
-
-        const [classes, variants] = await Promise.all([classesPromise, variantsPromise]);
-
-        // Combine classes and variants into a single list
-        const allItems = [
-            // Base classes (unchanged)
-            ...classes,
-            // Variants with inherited properties from base class
-            ...variants.map(variant => {
-                return {
-                    id: variant.id, // Use the custom variant ID
-                    name: variant.name, // Use variant name
-                    abbreviation: variant.abbreviation, // Use variant abbreviation
-                    // Inherit from base class
-                    editionId: variant.baseClass.editionId,
-                    isPrestige: variant.baseClass.isPrestige,
-                    isVisible: variant.baseClass.isVisible,
-                    canCastSpells: variant.baseClass.canCastSpells,
-                };
-            })
-        ];
-
-        // Sort combined list by name
-        allItems.sort((a, b) => a.name.localeCompare(b.name));
 
         return {
-            total: allItems.length,
-            results: allItems,
+            total: classes.length,
+            results: classes,
         };
     },
 

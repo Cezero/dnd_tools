@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
@@ -13,7 +12,7 @@ import {
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
-import { CreateDomainRequest, UpdateDomainRequest, UpdateDomainSchema, CreateDomainSchema, FeatureProgression, Feature, CreateFeatureProgressionRequest } from '@shared/schema';
+import { CreateDomainRequest, UpdateDomainRequest, UpdateDomainSchema, CreateDomainSchema, FeatureProgression, Feature, CreateFeatureProgressionRequest, Domain } from '@shared/schema';
 import { EDITION_LIST, SourceType, FeatureSourceType } from '@shared/static-data';
 
 // Type definitions for the form state
@@ -28,22 +27,18 @@ export function DomainEdit() {
     const [error, setError] = useState<string | null>(null);
 
     // Use imperative API for data fetching and mutations
-    const [domain, setDomain] = useState<unknown | null>(null);
+    const [domain, setDomain] = useState<Domain | null>(null);
     const [isLoadingDomain, setIsLoadingDomain] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
-    const [domainError, setDomainError] = useState<Error | null>(null);
-
 
     // Feature management state (separate from form data)
-    const [features, setFeatures] = useState<Feature[]>([]);
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
-    const queryClient = useQueryClient();
 
     // Progression dialog state
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
-    const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<Feature | null | undefined>(undefined);
 
     const fromListParams = location.state?.fromListParams || '';
 
@@ -76,7 +71,7 @@ export function DomainEdit() {
 
     // FeatureProgression management handlers
     const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
-        // Add new feature to features list
+        // Create a new feature object
         const newFeature: Feature = {
             id: feature.id,
             name: feature.name,
@@ -85,28 +80,19 @@ export function DomainEdit() {
             displayInCharacterSheet: true,
             prerequisites: []
         };
-        setFeatures(prev => [...prev, newFeature]);
 
         // Create a default progression for the new feature
         const defaultProgression: FeatureProgression = {
             id: Date.now() + Math.random(),
             sourceType: FeatureSourceType.Domain,
-            classId: null,
-            raceId: null,
             domainId: id === 'new' ? 0 : parseInt(id as string),
             level: 1,
             featureId: feature.id,
-            variantOverrideId: null,
             entities: [],
             feature: newFeature
         };
         setFeatureProgressions(prev => [...prev, defaultProgression]);
     }, [id]);
-
-    const handleRemoveFeature = useCallback((featureId: number) => {
-        setFeatures(prev => prev.filter(f => f.id !== featureId));
-        setFeatureProgressions(prev => prev.filter(p => p.featureId !== featureId));
-    }, []);
 
     const handleEditProgression = useCallback((progression: FeatureProgression) => {
         setEditingProgression(progression);
@@ -116,34 +102,6 @@ export function DomainEdit() {
     const handleRemoveProgression = useCallback((progressionId: number) => {
         setFeatureProgressions(prev => prev.filter(p => p.id !== progressionId));
     }, []);
-
-    const handleAddProgression = useCallback((featureId: number) => {
-        const newProgression: FeatureProgression = {
-            id: Date.now() + Math.random(), // Temporary ID for frontend
-            sourceType: FeatureSourceType.Domain,
-            classId: null,
-            raceId: null,
-            domainId: id === 'new' ? 0 : parseInt(id as string),
-            level: 1,
-            featureId: featureId,
-            variantOverrideId: null,
-            entities: []
-        };
-
-        // Find the feature to set as pre-selected
-        const feature = features.find(f => f.id === featureId);
-        if (feature) {
-            setPreSelectedFeature({
-                id: feature.id,
-                name: feature.name,
-                description: feature.description,
-                slug: feature.slug
-            });
-        }
-
-        setEditingProgression(newProgression);
-        setIsProgressionDialogOpen(true);
-    }, [id, features]);
 
     const handleSaveProgression = useCallback((progression: FeatureProgression) => {
         if (editingProgression) {
@@ -169,7 +127,6 @@ export function DomainEdit() {
 
             try {
                 setIsLoadingDomain(true);
-                setDomainError(null);
                 const fetchedDomain = await DomainQueryHooks.getDomainById(parseInt(id!));
 
                 // Transform the domain data for the form
@@ -187,23 +144,10 @@ export function DomainEdit() {
                 setFormData(formDomainData);
                 setDomain(fetchedDomain);
 
-                // Set separate features state for feature management
-                const domainFeatures = fetchedDomain.features?.map(progression => {
-                    if (!progression.feature) {
-                        throw new Error('Feature progression must have a feature');
-                    }
-                    return {
-                        ...progression.feature,
-                        prerequisites: progression.feature.prerequisites || []
-                    };
-                }) || [];
-                setFeatures(domainFeatures);
-
                 // Set feature progressions for display
                 setFeatureProgressions(fetchedDomain.features || []);
             } catch (err) {
                 const error = err instanceof Error ? err : new Error('Failed to fetch domain');
-                setDomainError(error);
                 setError(error.message);
             } finally {
                 setIsLoadingDomain(false);
@@ -230,7 +174,7 @@ export function DomainEdit() {
                 return {
                     ...progressionData,
                     entities: progression.entities?.map(entity => {
-                        const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                        const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
                         return entityData;
                     }) || []
                 };
@@ -398,7 +342,7 @@ export function DomainEdit() {
                         title="Domain Features"
                         emptyMessage="No features added. Click 'Add Feature' to add domain-granted features."
                         setEditingProgression={setEditingProgression}
-                        setPreSelectedFeature={setPreSelectedFeature}
+                        setPreSelectedFeature={(feature) => setPreSelectedFeature(feature ?? null)}
                         setIsProgressionDialogOpen={setIsProgressionDialogOpen}
                     />
                 </div>

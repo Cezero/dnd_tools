@@ -1,7 +1,7 @@
+import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { FeatureTemplateResolver } from '@/lib/formatters/FeatureTemplateResolver';
-import type { DisplayContext } from '@/lib/formatters/types';
-import { getRaceSizeIdFromCache } from '@/services/cache';
+import type { DisplayContext, FormattedItemWithLevel, CharacterSheetDisplayResult } from '@/lib/formatters/types';
 import type {
     FeatureProgression,
     Feature,
@@ -29,7 +29,8 @@ export class DynamicFeatureSummaryService {
         companions: CharacterCompanion[],
         deity: Deity | null | undefined,
         domains: Domain[],
-        transformationForms: Map<number, Monster[]>
+        transformationForms: Map<number, Monster[]>,
+        resolvedProgressions?: FeatureProgression[]
     ): DisplayContext {
         // Group choices by choiceGroupId
         const choicesMap = new Map<string, CharacterFeatureChoice>();
@@ -46,12 +47,17 @@ export class DynamicFeatureSummaryService {
             choicesMap
         );
 
+        // Extract sizeId from resolved progressions
+        const raceMechanics = character.raceId && resolvedProgressions
+            ? extractRaceMechanics(resolvedProgressions, character.raceId)
+            : null;
+
         return {
             character: {
                 abilityScores: this.getAbilityScoresMap(character),
                 classLevels: this.getClassLevelsMap(character),
                 raceId: character.raceId,
-                sizeId: character.raceId ? getRaceSizeIdFromCache(character.raceId) : undefined,
+                sizeId: raceMechanics?.sizeId ?? undefined,
             },
             currentLevel: this.getCharacterLevel(character),
             choices: choicesMap,
@@ -73,17 +79,17 @@ export class DynamicFeatureSummaryService {
         context: DisplayContext,
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions?: FeatureProgression[],
-        formattedItems?: import('@/lib/formatters/types').FormattedItemWithLevel[],
-        formattedCharacterResult?: import('@/lib/formatters/types').CharacterSheetDisplayResult
+        formattedItems?: FormattedItemWithLevel[],
+        formattedCharacterResult?: CharacterSheetDisplayResult
     ): string | null {
-        const summary = feature.summary || feature.summaryTemplate;
+        const summary = feature.summary;
         if (!summary) {
             return null;
         }
 
         // Check if summary contains template placeholders
         const hasPlaceholders = /\{\{([^}]+)\}\}/.test(summary);
-        
+
         if (hasPlaceholders) {
             // Parse as template
             return FeatureTemplateResolver.resolveTemplate(

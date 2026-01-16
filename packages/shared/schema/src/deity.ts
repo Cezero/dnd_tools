@@ -1,10 +1,12 @@
 import { z } from 'zod';
+
+import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 import { AlignmentId } from '@shared/static-data';
 
 export const DeityIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 // FavoredWeaponSchema and LocalDomainSummarySchema removed - use domainIds and favoredWeaponIds instead
@@ -19,19 +21,19 @@ export const BaseDeitySchema = z.object({
         .max(200, 'Deity title must be less than 200 characters')
         .nullable(),
     alignmentId: z.enum(AlignmentId),
-    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    description: commonValidations.description(10000).nullable(),
+    editionId: commonValidations.positiveInt('Edition ID'),
     isVisible: z.boolean().default(true),
-    pantheonId: z.number().int().positive('Pantheon ID must be a positive integer').nullable(),
+    pantheonId: commonValidations.positiveInt('Pantheon ID').nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    classIds: z.array(z.number().int().positive()).nullable(),
-    raceIds: z.array(z.number().int().positive()).nullable(),
-    domainIds: z.array(z.number().int().positive()).nullable(),
-    favoredWeaponIds: z.array(z.number().int().positive()).nullable(),
+    classIds: z.array(commonValidations.positiveInt()).nullable(),
+    raceIds: z.array(commonValidations.positiveInt()).nullable(),
+    domainIds: z.array(commonValidations.positiveInt()).nullable(),
+    favoredWeaponIds: z.array(commonValidations.positiveInt()).nullable(),
 });
 
 export const DeitySchema = BaseDeitySchema.extend({
-    id: z.number().int().positive('Deity ID must be a positive integer'),
+    id: commonValidations.positiveInt('Deity ID'),
 });
 
 export const DeitySummarySchema = DeitySchema.omit({

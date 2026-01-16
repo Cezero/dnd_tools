@@ -1,20 +1,26 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
-import { AbilityId, GetAbilityModifier, EntityAppliesToType } from '@shared/static-data';
+import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
+import { AbilityId, GetAbilityModifier, EntityAppliesToType, EntityType } from '@shared/static-data';
 
-import { resolveFeatBenefits } from '../core/featBenefitResolver';
-import { resolveFeatureBonuses } from '../core/featureBonusResolver';
-import type { CalculationResult, BreakdownMap, TypedBreakdownComponent } from '../types';
-import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
+import type { CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
+import { createBreakdownComponent, createFeatBreakdownComponent, createFeatureBreakdownComponent, createItemBreakdownComponent } from '../utils/breakdownBuilder';
+import { resolveStandardBonuses, buildCalculationResult } from '../utils/calculationHelpers';
 
 /**
- * Breakdown map for ability score
+ * Breakdown map for ability score calculation.
+ * 
+ * Follows the standard breakdown component architecture pattern:
+ * - Extends BreakdownMap to ensure compatibility with breakdown utilities
+ * - Uses BreakdownComponent for all fields (not custom inline types or TypedBreakdownComponent)
+ * 
+ * @see {@link BreakdownComponent} for the standard breakdown component structure
+ * @see {@link BreakdownMap} for the base breakdown map interface
  */
 export interface AbilityScoreBreakdownMap extends BreakdownMap {
-    base: TypedBreakdownComponent<'base'>;
-    advancement: TypedBreakdownComponent<'advancement'>;
-    feat: TypedBreakdownComponent<'feat'>;
-    feature: TypedBreakdownComponent<'feature'>;
-    item: TypedBreakdownComponent<'item'>;
+    base: BreakdownComponent;
+    advancement: BreakdownComponent;
+    feat: BreakdownComponent;
+    feature: BreakdownComponent;
+    item: BreakdownComponent;
 }
 
 /**
@@ -23,40 +29,52 @@ export interface AbilityScoreBreakdownMap extends BreakdownMap {
 export function getAbilityScore(
     character: CharacterWithAllDetailsResponse,
     abilityId: number,
-    resolvedProgressions: FeatureProgression[],
-    featsMap?: Map<number, Feat>
+    resolvedProgressions: FeatureProgression[]
 ): CalculationResult<AbilityScoreBreakdownMap> {
     // Get base ability score
     const abilityScore = character.abilityScores.find(a => a.abilityId === abilityId);
     const baseValue = abilityScore?.value ?? 10;
 
-    // Sum advancement bonuses (ability score improvements)
+    // Sum advancement bonuses (ability score improvements from feature choices)
+    // Count feature choices where appliesTo = Ability and appliesToId = abilityId
     let advancementBonus = 0;
     for (const advancement of character.advancements) {
+        if (advancement.featureChoices) {
+            for (const choice of advancement.featureChoices) {
+                // Check if this is an ability score increase choice for this ability
+                if (choice.appliesToId === abilityId) {
+                    // Verify this choice is for an ability score increase entity
+                    // by checking resolved progressions for matching entity
+                    const matchingProgression = resolvedProgressions.find(
+                        p => p.id === choice.progressionId
+                    );
+                    if (matchingProgression?.entities) {
+                        const matchingEntity = matchingProgression.entities.find(
+                            e => e.id === choice.featureEntityId &&
+                                e.type === EntityType.Choice &&
+                                e.appliesTo === EntityAppliesToType.Ability
+                        );
+                        if (matchingEntity) {
+                            advancementBonus += 1; // Each ability score increase adds +1
+                        }
+                    }
+                }
+            }
+        }
+        // Legacy support: also check abilityId field for backward compatibility
+        // This can be removed once all characters are migrated to feature choices
         if (advancement.abilityId === abilityId) {
-            advancementBonus += 1; // Each advancement adds +1
+            advancementBonus += 1;
         }
     }
 
-    // Get feat benefits
-    const featBenefits = resolveFeatBenefits(
+    // Get standard bonuses (feat and feature)
+    const { featBonus, featureBonus, featBenefits, featureBonuses } = resolveStandardBonuses(
         character,
         EntityAppliesToType.Ability,
-        { abilityId },
-        featsMap,
-        resolvedProgressions
-    );
-    const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
-
-    // Get feature bonuses
-    const featureBonuses = resolveFeatureBonuses(
         resolvedProgressions,
-        EntityAppliesToType.Ability,
-        character,
-        character.advancements.length,
         { abilityId }
     );
-    const featureBonus = featureBonuses.reduce((sum, b) => sum + b.value, 0);
 
     // Item bonuses (would come from equipped items)
     const itemBonus = 0; // TODO: Implement item bonus resolution
@@ -66,34 +84,18 @@ export function getAbilityScore(
 
     // Build breakdown
     const breakdown: AbilityScoreBreakdownMap = {
-        base: createBreakdownComponent(baseValue, 'base', 'base') as TypedBreakdownComponent<'base'>,
+        base: createBreakdownComponent(baseValue, 'base', 'base'),
         advancement: createBreakdownComponent(
             advancementBonus,
             advancementBonus > 0 ? 'ability score improvements' : null,
             'advancement'
-        ) as TypedBreakdownComponent<'advancement'>,
-        feat: createBreakdownComponent(
-            featBonus,
-            featBonus > 0 ? `Feat: ${featBenefits.map(b => b.source.name).join(', ')}` : null,
-            featBonus > 0 ? 'feat' : null,
-            featBenefits[0]?.source.id
-        ) as TypedBreakdownComponent<'feat'>,
-        feature: createBreakdownComponent(
-            featureBonus,
-            featureBonus > 0 ? `Feature: ${featureBonuses.map(b => b.source.name).join(', ')}` : null,
-            featureBonus > 0 ? 'feature' : null,
-            featureBonuses[0]?.source.id
-        ) as TypedBreakdownComponent<'feature'>,
-        item: createBreakdownComponent(itemBonus, itemBonus > 0 ? 'item' : null, itemBonus > 0 ? 'item' : null) as TypedBreakdownComponent<'item'>,
+        ),
+        feat: createFeatBreakdownComponent(featBonus, featBenefits),
+        feature: createFeatureBreakdownComponent(featureBonus, featureBonuses),
+        item: createItemBreakdownComponent(itemBonus),
     };
 
-    const breakdownString = buildBreakdownString(breakdown);
-
-    return {
-        value: total,
-        breakdownString: `Ability Score: ${breakdownString}`,
-        breakdown,
-    };
+    return buildCalculationResult(total, breakdown, 'Ability Score');
 }
 
 /**
@@ -102,10 +104,9 @@ export function getAbilityScore(
 export function getAbilityModifierWithBonuses(
     character: CharacterWithAllDetailsResponse,
     abilityId: number,
-    resolvedProgressions: FeatureProgression[],
-    featsMap?: Map<number, Feat>
+    resolvedProgressions: FeatureProgression[]
 ): number {
-    const result = getAbilityScore(character, abilityId, resolvedProgressions, featsMap);
+    const result = getAbilityScore(character, abilityId, resolvedProgressions);
     return GetAbilityModifier(result.value);
 }
 

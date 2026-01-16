@@ -10,6 +10,7 @@ import {
     CreateCharacterRequest,
     Character,
     GetAllCharactersResponse,
+    GetAllCharactersAdminResponse,
     CharacterWithAllDetailsResponse,
     // New types for advancement and spell preparation
     CreateAdvancementRequest,
@@ -17,7 +18,7 @@ import {
     CharacterAdvancementWithDetailsResponse,
     CreateSpellPreparationRequest,
     UpdateSpellPreparationRequest,
-    CharacterSpellPreparationWithMetamagicResponse,
+    CharacterSpellPreparationResponse,
     CreateCharacterAbilityScoreRequest,
     UpdateCharacterAbilityScoreRequest,
     CharacterAbilityScoreResponse,
@@ -38,6 +39,18 @@ import {
     AddSpellKnownRequest,
     RemoveSpellKnownRequest,
     CharacterSpellSelectionParamRequest,
+    // NEW: Character detail types
+    CharacterFeatureUses,
+    UpdateFeatureUsesRequest,
+    UpdateMoneyRequest,
+    AddItemRequest,
+    UpdateWoundsRequest,
+    UpdateNotesRequest,
+    SyncItemsRequest,
+    SyncSpellPreparationsRequest,
+    SyncSpellsKnownRequest,
+    SyncSpellsKnownParamRequest,
+    SpellCastParamRequest,
 } from '@shared/schema';
 
 import { characterService } from './characterService';
@@ -56,7 +69,7 @@ export async function GetAllCharacters(req: ValidatedNoInput<GetAllCharactersRes
     res.json(result);
 }
 
-export async function GetAllCharactersAdmin(req: ValidatedNoInput<GetAllCharactersResponse>, res: Response, _next: NextFunction) {
+export async function GetAllCharactersAdmin(req: ValidatedNoInput<GetAllCharactersAdminResponse>, res: Response, _next: NextFunction) {
     const result = await characterService.getAllCharactersAdmin();
     res.json(result);
 }
@@ -169,22 +182,22 @@ export async function GetCharacterAdvancements(req: ValidatedParamsT<CharacterId
 }
 
 // Spell preparation methods
-export async function CreateSpellPreparation(req: ValidatedBodyT<CreateSpellPreparationRequest>, res: Response, _next: NextFunction) {
-    const result = await characterService.createSpellPreparation(req.body);
+export async function CreateSpellPreparation(req: ValidatedParamsBodyT<CharacterIdParamRequest, CreateSpellPreparationRequest>, res: Response, _next: NextFunction) {
+    const result = await characterService.createSpellPreparation(req.params.id, req.body);
     res.status(201).json(result);
 }
 
 export async function UpdateSpellPreparation(req: ValidatedParamsBodyT<SpellPreparationParamRequest, UpdateSpellPreparationRequest>, res: Response, _next: NextFunction) {
-    await characterService.updateSpellPreparation(req.params.id, req.params.prepKey, req.body);
+    await characterService.updateSpellPreparation(req.params.preparationId, req.body);
     res.json({ message: 'Spell preparation updated successfully' });
 }
 
 export async function DeleteSpellPreparation(req: ValidatedParamsT<SpellPreparationParamRequest>, res: Response, _next: NextFunction) {
-    await characterService.deleteSpellPreparation(req.params.id, req.params.prepKey);
+    await characterService.deleteSpellPreparation(req.params.preparationId);
     res.json({ message: 'Spell preparation deleted successfully' });
 }
 
-export async function GetCharacterSpellPreparations(req: ValidatedParamsT<CharacterIdParamRequest, CharacterSpellPreparationWithMetamagicResponse[]>, res: Response, _next: NextFunction) {
+export async function GetCharacterSpellPreparations(req: ValidatedParamsT<CharacterIdParamRequest, CharacterSpellPreparationResponse[]>, res: Response, _next: NextFunction) {
     const preparations = await characterService.getCharacterSpellPreparations(req.params.id);
     res.json(preparations);
 }
@@ -310,21 +323,24 @@ export async function ReorderCharacterAttackDefinitions(req: ValidatedParamsBody
     }
 }
 
+/**
+ * Get character spell selection data for a specific class.
+ * 
+ * **DEPRECATED**: This endpoint is deprecated. Spell selection data is now included in the
+ * resolved character response (ResolvedCharacterResult) as part of character resolution.
+ * 
+ * Spell selection data depends on resolved progressions, class choices, domain choices, and
+ * feat choices - all of which are part of the resolved character. Using the resolved character
+ * response is architecturally correct and eliminates the need for this separate API call.
+ * 
+ * @deprecated Use resolved character response (ResolvedCharacterResult.spellSelection) instead.
+ * This endpoint may be removed in a future version.
+ */
 export async function GetCharacterSpellSelection(req: ValidatedParamsT<CharacterSpellSelectionParamRequest, CharacterSpellSelectionResponse>, res: Response, _next: NextFunction) {
     try {
-        const classId = parseInt(req.params.classId, 10);
-        if (isNaN(classId)) {
-            res.status(400).json({ error: 'Invalid class ID' });
-            return;
-        }
-
-        if (!req.params.id) {
-            res.status(400).json({ error: 'Character ID is required' });
-            return;
-        }
-
-        // TODO: Fetch resolved progressions if needed for spellbook class detection
-        // For now, pass undefined - frontend can provide resolved progressions if available
+        const classId = req.params.classId;
+        // Note: This endpoint is deprecated. Spell selection data should come from resolved character response.
+        // Passing undefined for resolved progressions - this endpoint should not be used for new code.
         const result = await characterService.getAvailableSpellsForClass(req.params.id, classId, undefined);
 
         // Transform to response format
@@ -399,3 +415,79 @@ export async function RemoveSpellKnown(req: ValidatedBodyT<RemoveSpellKnownReque
     }
 }
 
+// Character detail methods (uses tracking, money, items, wounds, spell cast)
+export async function GetCharacterUses(req: ValidatedParamsT<CharacterIdParamRequest, CharacterFeatureUses[]>, res: Response, _next: NextFunction) {
+    const uses = await characterService.getCharacterUses(req.params.id);
+    res.json(uses);
+}
+
+export async function UpdateFeatureUses(req: ValidatedParamsBodyT<CharacterIdParamRequest & { progressionId: number; entityId: number }, UpdateFeatureUsesRequest>, res: Response, _next: NextFunction) {
+    const result = await characterService.updateFeatureUses(req.params.id, req.params.progressionId, req.params.entityId, req.body.delta);
+    res.json(result);
+}
+
+export async function ResetDailyUses(req: ValidatedParamsT<CharacterIdParamRequest>, res: Response, _next: NextFunction) {
+    await characterService.resetDailySpellPreparations(req.params.id);
+    await characterService.resetDailyUses(req.params.id);
+    res.json({ message: 'Daily uses reset successfully' });
+}
+
+export async function ResetAllUses(req: ValidatedParamsT<CharacterIdParamRequest>, res: Response, _next: NextFunction) {
+    await characterService.resetAllUses(req.params.id);
+    res.json({ message: 'All uses reset successfully' });
+}
+
+export async function UpdateMoney(req: ValidatedParamsBodyT<CharacterIdParamRequest, UpdateMoneyRequest>, res: Response, _next: NextFunction) {
+    await characterService.updateMoney(req.params.id, req.body);
+    res.json({ message: 'Money updated successfully' });
+}
+
+export async function AddItem(req: ValidatedParamsBodyT<CharacterIdParamRequest, AddItemRequest>, res: Response, _next: NextFunction) {
+    const result = await characterService.addItem(req.params.id, req.body);
+    res.status(201).json(result);
+}
+
+export async function RemoveItem(req: ValidatedParamsT<CharacterIdParamRequest & { itemId: number }>, res: Response, _next: NextFunction) {
+    const result = await characterService.removeItem(req.params.id, req.params.itemId);
+    res.json(result);
+}
+
+export async function UpdateWounds(req: ValidatedParamsBodyT<CharacterIdParamRequest, UpdateWoundsRequest>, res: Response, _next: NextFunction) {
+    await characterService.updateWounds(req.params.id, req.body);
+    res.json({ message: 'Wounds updated successfully' });
+}
+
+export async function UpdateNotes(req: ValidatedParamsBodyT<CharacterIdParamRequest, UpdateNotesRequest>, res: Response, _next: NextFunction) {
+    await characterService.updateNotes(req.params.id, req.body);
+    res.json({ message: 'Notes updated successfully' });
+}
+
+export async function SyncItems(req: ValidatedParamsBodyT<CharacterIdParamRequest, SyncItemsRequest>, res: Response, _next: NextFunction) {
+    await characterService.syncItems(req.params.id, req.body.items);
+    res.json({ message: 'Items synced successfully' });
+}
+
+export async function SyncSpellPreparations(req: ValidatedParamsBodyT<CharacterIdParamRequest, SyncSpellPreparationsRequest>, res: Response, _next: NextFunction) {
+    await characterService.syncSpellPreparations(req.params.id, req.body.spellPreparations);
+    res.json({ message: 'Spell preparations synced successfully' });
+}
+
+export async function SyncSpellsKnown(req: ValidatedParamsBodyT<SyncSpellsKnownParamRequest, SyncSpellsKnownRequest>, res: Response, _next: NextFunction) {
+    await characterService.syncSpellsKnown(req.params.id, req.params.advancementId, req.body.spellsKnown);
+    res.json({ message: 'Spells known synced successfully' });
+}
+
+export async function CastSpell(req: ValidatedParamsT<SpellCastParamRequest>, res: Response, _next: NextFunction) {
+    await characterService.castSpell(req.params.id, req.params.preparationId);
+    res.json({ message: 'Spell cast successfully' });
+}
+
+export async function UncastSpell(req: ValidatedParamsT<SpellCastParamRequest>, res: Response, _next: NextFunction) {
+    await characterService.uncastSpell(req.params.id, req.params.preparationId);
+    res.json({ message: 'Spell uncast successfully' });
+}
+
+export async function ResetDailySpellPreparations(req: ValidatedParamsT<CharacterIdParamRequest>, res: Response, _next: NextFunction) {
+    await characterService.resetDailySpellPreparations(req.params.id);
+    res.json({ message: 'Daily spell preparations reset successfully' });
+}

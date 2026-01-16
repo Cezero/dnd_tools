@@ -1,9 +1,8 @@
 import React from 'react';
 
-import { CustomSelect, CustomCheckbox } from '@/components/forms';
+import { CustomCheckbox } from '@/components/forms';
 import { SpellProgressionEditor } from '@/components/spell-progression';
 import type { CreateSpellcastingProgressionRequest } from '@shared/schema';
-import { ABILITY_LIST, CASTING_TYPE_LIST, CastingType } from '@shared/static-data';
 
 import type { ClassTabProps } from './types';
 
@@ -23,31 +22,11 @@ export function SpellcastingTab({
             <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Casting Configuration</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="max-w-md">
-                        <CustomSelect
-                            label="Casting Ability"
-                            required
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-32"
-                            value={formData.castingAbilityId}
-                            onValueChange={(value) => setFormData({ ...formData, castingAbilityId: value as number | null })}
-                            options={ABILITY_LIST}
-                            placeholder="Select casting ability"
-                        />
-                    </div>
-
-                    <div className="max-w-md">
-                        <CustomSelect
-                            label="Casting Type"
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-32"
-                            value={formData.castingType}
-                            onValueChange={(value) => setFormData({ ...formData, castingType: value as CastingType | null })}
-                            options={CASTING_TYPE_LIST}
-                            placeholder="Select casting type"
-                        />
-                    </div>
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                        <strong>Note:</strong> Casting Ability and Casting Type are now managed through the Feature Progression system.
+                        Use the Features tab to add or modify these values via the class-mechanics feature progression.
+                    </p>
                 </div>
 
                 <div className="max-w-md">

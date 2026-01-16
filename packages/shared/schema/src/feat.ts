@@ -1,4 +1,6 @@
 import { z } from 'zod';
+
+import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 
@@ -7,7 +9,7 @@ export const FeatQuerySchema = z.object({
 });
 
 export const FeatIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export const BaseFeatSchema = z.object({
@@ -15,33 +17,33 @@ export const BaseFeatSchema = z.object({
         .min(1, 'Feat name is required')
         .max(200, 'Feat name must be less than 200 characters')
         .trim(),
-    typeId: z.number().int().positive('Type ID must be a positive integer'),
+    typeId: commonValidations.positiveInt('Type ID'),
     repeatable: z.boolean().nullable(),
     fighterBonus: z.boolean().nullable(),
     useSubId: z.boolean().default(false),
     // benefits, prereqs, description, and summary removed - now handled via Feature system
     isVisible: z.boolean().default(true),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    editionId: commonValidations.positiveInt('Edition ID'),
     sourceBookInfo: z.array(SourceMapSchema).optional(),
 });
 
-import { FeatureProgressionSchema, CreateFeatureProgressionSchema } from './feature.js';
+import { FeatureProgressionResponseSchema, CreateFeatureProgressionRequestSchema } from './feature.js';
 
 export const FeatSchema = BaseFeatSchema.extend({
-    id: z.number().int().positive('Feat ID must be a positive integer'),
-    featureProgressions: z.array(FeatureProgressionSchema).optional(),
+    id: commonValidations.positiveInt('Feat ID'),
+    featureProgressions: z.array(FeatureProgressionResponseSchema).optional(),
 });
 
 // Extended schema for creating feats with feature progressions
 export const CreateFeatWithProgressionsSchema = BaseFeatSchema.extend({
-    featureProgressions: z.array(CreateFeatureProgressionSchema).optional(),
+    featureProgressions: z.array(CreateFeatureProgressionRequestSchema).optional(),
 });
 
 export const FeatInQueryResponseSchema = FeatSchema.omit({ featureProgressions: true });
 
 export const FeatSummarySchema = z.object({
-    id: z.number().int().positive(),
-    name: z.string().min(1).max(200),
+    id: commonValidations.positiveInt(),
+    name: commonValidations.name(200),
 });
 
 /**
@@ -60,9 +62,9 @@ export const FeatSummarySchema = z.object({
  * If a feat has multiple feature progressions, the first one's feature is used.
  */
 export const FeatWithFeatureInfoSchema = z.object({
-    id: z.number().int().positive('Feat ID must be a positive integer'),
-    name: z.string().min(1, 'Feat name is required').max(200, 'Feat name must be less than 200 characters'),
-    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
+    id: commonValidations.positiveInt('Feat ID'),
+    name: commonValidations.name(200),
+    description: commonValidations.description(10000).nullable(),
     summary: z.string().max(10000, 'Summary must be less than 10000 characters').nullable(),
 });
 
@@ -102,6 +104,7 @@ export type FeatQueryRequest = z.infer<typeof FeatQuerySchema>;
 export type GetAllFeatsResponse = z.infer<typeof GetAllFeatsResponseSchema>;
 export type FeatQueryResponse = z.infer<typeof FeatQueryResponseSchema>;
 export type GetFeatListResponse = z.infer<typeof GetFeatListResponseSchema>;
+export type GetFeatByIdResponse = z.infer<typeof FeatSchema>;
 export type Feat = z.infer<typeof BaseFeatSchema>;
 
 export type FeatSummary = z.infer<typeof FeatSummarySchema>;

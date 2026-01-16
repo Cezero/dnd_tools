@@ -1,14 +1,17 @@
 import { z } from 'zod';
+
+import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 
 export const BaseSourceBookSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     abbreviation: z.string().min(1, 'Abbreviation is required'),
     releaseDate: z.date().nullable(),
-    editionId: z.number().int().positive('Edition ID must be a positive integer').nullable(),
-    description: z.string().nullable(),
+    editionId: commonValidations.positiveInt('Edition ID').nullable(),
+    description: commonValidations.description().nullable(),
     isVisible: z.boolean().default(false),
-    settingId: z.number().int().positive('Setting ID must be a positive integer').nullable(),
+    settingId: commonValidations.positiveInt('Setting ID').nullable(),
+    hasCore: z.boolean().default(false),
     hasClasses: z.boolean().default(false),
     hasSpells: z.boolean().default(false),
     hasRaces: z.boolean().default(false),
@@ -18,7 +21,7 @@ export const BaseSourceBookSchema = z.object({
 });
 
 export const SourceBookSchema = BaseSourceBookSchema.extend({
-    id: z.number().int().positive('Source book ID must be a positive integer'),
+    id: commonValidations.positiveInt('Source book ID'),
 });
 
 /**
@@ -45,7 +48,7 @@ export const SourceMapSchema = z.object({
 });
 
 export const SourceBookIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export type SourceBook = z.infer<typeof SourceBookSchema>;

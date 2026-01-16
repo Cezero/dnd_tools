@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
+import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { ProgressionType, RPG_DICE } from '@shared/static-data';
 
 import type { GestaltProgressionDisplayProps } from './types';
@@ -11,24 +12,64 @@ export function GestaltProgressionDisplay({
     secondaryClass,
     showHeader = true
 }: GestaltProgressionDisplayProps): React.JSX.Element {
+    // Extract mechanics from feature progressions
+    // Note: classId may not be available on DnDClass type, so we extract without it
+    const primaryMechanics = useMemo(() => {
+        if (primaryClass.features) {
+            const classId = (primaryClass as { id?: number }).id;
+            return extractClassMechanics(primaryClass.features, classId);
+        }
+        return {
+            hitDie: null,
+            skillPoints: null,
+            babProgression: null,
+            fortProgression: null,
+            refProgression: null,
+            willProgression: null,
+        };
+    }, [primaryClass]);
 
-    console.log(primaryClass);
-    console.log(secondaryClass);
+    const secondaryMechanics = useMemo(() => {
+        if (secondaryClass.features) {
+            const classId = (secondaryClass as { id?: number }).id;
+            return extractClassMechanics(secondaryClass.features, classId);
+        }
+        return {
+            hitDie: null,
+            skillPoints: null,
+            babProgression: null,
+            fortProgression: null,
+            refProgression: null,
+            willProgression: null,
+        };
+    }, [secondaryClass]);
+
     // Create gestalt progression by choosing the better progression type for each stat
     const gestaltProgression = generateClassProgression({
         // Use better BAB progression (good=0 > average=1 > poor=2)
-        babProgression: Math.min(primaryClass.babProgression, secondaryClass.babProgression) as ProgressionType,
+        babProgression: Math.min(
+            primaryMechanics.babProgression ?? 2,
+            secondaryMechanics.babProgression ?? 2
+        ) as ProgressionType,
         // Use better save progressions (good=0 > poor=2)
-        fortProgression: Math.min(primaryClass.fortProgression, secondaryClass.fortProgression) as ProgressionType,
-        refProgression: Math.min(primaryClass.refProgression, secondaryClass.refProgression) as ProgressionType,
-        willProgression: Math.min(primaryClass.willProgression, secondaryClass.willProgression) as ProgressionType,
+        fortProgression: Math.min(
+            primaryMechanics.fortProgression ?? 2,
+            secondaryMechanics.fortProgression ?? 2
+        ) as ProgressionType,
+        refProgression: Math.min(
+            primaryMechanics.refProgression ?? 2,
+            secondaryMechanics.refProgression ?? 2
+        ) as ProgressionType,
+        willProgression: Math.min(
+            primaryMechanics.willProgression ?? 2,
+            secondaryMechanics.willProgression ?? 2
+        ) as ProgressionType,
         // For spellcasting, gestalt characters get both progressions
         // This will need to be handled differently - we can't just pass one progression
         // For now, we'll show the primary class progression and note that both are available
         spellcastingProgression: primaryClass.spellcastingProgression,
         spellsKnownProgression: primaryClass.spellsKnownProgression,
     });
-    console.log(gestaltProgression);
 
     return (
         <div className="mt-4">
@@ -70,19 +111,19 @@ export function GestaltProgressionDisplay({
                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
                     <h5 className="font-semibold text-sm mb-2">Primary Class: {primaryClass.name}</h5>
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Hit Die: {RPG_DICE[primaryClass.hitDie]?.name}<br />
-                        BAB: {primaryClass.babProgression === ProgressionType.good ? 'Good' : primaryClass.babProgression === ProgressionType.average ? 'Medium' : 'Poor'}<br />
-                        Saves: {primaryClass.fortProgression === ProgressionType.good ? 'Good' : 'Poor'} Fort, {primaryClass.refProgression === ProgressionType.good ? 'Good' : 'Poor'} Ref, {primaryClass.willProgression === ProgressionType.good ? 'Good' : 'Poor'} Will<br />
-                        {primaryClass.spellcastingProgression.length > 0 && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
+                        Hit Die: {primaryMechanics.hitDie ? RPG_DICE[primaryMechanics.hitDie]?.name : 'N/A'}<br />
+                        BAB: {primaryMechanics.babProgression === ProgressionType.good ? 'Good' : primaryMechanics.babProgression === ProgressionType.average ? 'Medium' : 'Poor'}<br />
+                        Saves: {primaryMechanics.fortProgression === ProgressionType.good ? 'Good' : 'Poor'} Fort, {primaryMechanics.refProgression === ProgressionType.good ? 'Good' : 'Poor'} Ref, {primaryMechanics.willProgression === ProgressionType.good ? 'Good' : 'Poor'} Will<br />
+                        {primaryClass.spellcastingProgression && primaryClass.spellcastingProgression.length > 0 && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
                     </p>
                 </div>
                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
                     <h5 className="font-semibold text-sm mb-2">Secondary Class: {secondaryClass.name}</h5>
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Hit Die: {RPG_DICE[secondaryClass.hitDie]?.name}<br />
-                        BAB: {secondaryClass.babProgression === ProgressionType.good ? 'Good' : secondaryClass.babProgression === ProgressionType.average ? 'Medium' : 'Poor'}<br />
-                        Saves: {secondaryClass.fortProgression === ProgressionType.good ? 'Good' : 'Poor'} Fort, {secondaryClass.refProgression === ProgressionType.good ? 'Good' : 'Poor'} Ref, {secondaryClass.willProgression === ProgressionType.good ? 'Good' : 'Poor'} Will<br />
-                        {secondaryClass.spellcastingProgression.length > 0 && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
+                        Hit Die: {secondaryMechanics.hitDie ? RPG_DICE[secondaryMechanics.hitDie]?.name : 'N/A'}<br />
+                        BAB: {secondaryMechanics.babProgression === ProgressionType.good ? 'Good' : secondaryMechanics.babProgression === ProgressionType.average ? 'Medium' : 'Poor'}<br />
+                        Saves: {secondaryMechanics.fortProgression === ProgressionType.good ? 'Good' : 'Poor'} Fort, {secondaryMechanics.refProgression === ProgressionType.good ? 'Good' : 'Poor'} Ref, {secondaryMechanics.willProgression === ProgressionType.good ? 'Good' : 'Poor'} Will<br />
+                        {secondaryClass.spellcastingProgression && secondaryClass.spellcastingProgression.length > 0 && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
                     </p>
                 </div>
             </div>

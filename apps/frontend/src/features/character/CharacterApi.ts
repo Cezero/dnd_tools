@@ -20,6 +20,8 @@ import {
     CharacterAttackIdParamSchema,
     GetAllCharacterAttackDefinitionsResponseSchema,
     ReorderCharacterAttackDefinitionsSchema,
+    SyncSpellsKnownRequestSchema,
+    SyncSpellsKnownParamSchema,
 } from '@shared/schema';
 
 
@@ -160,6 +162,14 @@ export const CharacterApi = {
         method: 'PUT',
         requestSchema: ReorderCharacterAttackDefinitionsSchema,
         paramsSchema: CharacterIdParamSchema,
+        responseSchema: UpdateResponseSchema,
+    }),
+
+    syncSpellsKnown: typedApi<typeof SyncSpellsKnownRequestSchema, typeof UpdateResponseSchema, typeof SyncSpellsKnownParamSchema>({
+        path: '/characters/:id/advancements/:advancementId/spells-known/sync',
+        method: 'POST',
+        requestSchema: SyncSpellsKnownRequestSchema,
+        paramsSchema: SyncSpellsKnownParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 }; 

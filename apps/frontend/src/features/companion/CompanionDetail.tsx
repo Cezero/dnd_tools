@@ -3,9 +3,9 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { EntityLink } from '@/components/entity-link';
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
-import { useCacheFunctions } from '@/services/cache';
+import { getMonsterNameFromCache } from '@/services/cache';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
-import { COMPANION_TYPE_MAP , SpecialFeatureId, FeatureSourceType } from '@shared/static-data';
+import { COMPANION_TYPE_MAP, SpecialFeatureId, FeatureSourceType } from '@shared/static-data';
 
 export function CompanionDetail() {
     const { id } = useParams();
@@ -13,7 +13,6 @@ export function CompanionDetail() {
     const navigate = useNavigate();
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
-    const { getMonsterNameFromCache } = useCacheFunctions();
 
     const companionId = id ? parseInt(id, 10) : undefined;
     const isValidId = companionId !== undefined && !isNaN(companionId);

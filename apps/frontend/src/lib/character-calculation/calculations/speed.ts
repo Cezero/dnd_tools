@@ -1,9 +1,10 @@
+import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import type { CharacterWithAllDetailsResponse, FeatureProgression, Race } from '@shared/schema';
-import { EntityAppliesToType } from '@shared/static-data';
+import { EntityAppliesToType, FeatureSourceType } from '@shared/static-data';
 
-import { resolveFeatureBonuses } from '../core/featureBonusResolver';
 import type { CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
-import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
+import { createBreakdownComponent, createFeatBreakdownComponent, createFeatureBreakdownComponent, createItemBreakdownComponent } from '../utils/breakdownBuilder';
+import { resolveStandardBonuses, buildCalculationResult } from '../utils/calculationHelpers';
 
 
 /**
@@ -24,21 +25,17 @@ export function getSpeed(
     resolvedProgressions: FeatureProgression[],
     race: Race | null
 ): CalculationResult<SpeedBreakdownMap> {
-    // Get base speed from race (default 30 if not available)
-    const baseSpeed = race?.speed ?? 30;
+    // Extract base speed from resolved progressions (race-mechanics feature)
+    const raceMechanics = extractRaceMechanicsFromResolved(resolvedProgressions);
+    const baseSpeed = raceMechanics.speed ?? 30;
 
-    // Get feat benefits (if any feats affect speed)
+    // Get standard bonuses (feat and feature)
     // Note: Speed might not have a specific feat benefit type, this is a placeholder
-    const featBonus = 0; // TODO: Check if there's a speed-related feat benefit type
-
-    // Get feature bonuses
-    const featureBonuses = resolveFeatureBonuses(
-        resolvedProgressions,
-        EntityAppliesToType.MovementSpeed,
+    const { featBonus, featureBonus, featBenefits, featureBonuses } = resolveStandardBonuses(
         character,
-        character.advancements.length
+        EntityAppliesToType.MovementSpeed,
+        resolvedProgressions
     );
-    const featureBonus = featureBonuses.reduce((sum, b) => sum + b.value, 0);
 
     // Item bonuses (would come from equipped items)
     const itemBonus = 0; // TODO: Implement item bonus resolution
@@ -49,22 +46,16 @@ export function getSpeed(
     // Build breakdown
     const breakdown: SpeedBreakdownMap = {
         base: createBreakdownComponent(baseSpeed, race?.name ?? 'base', 'base'),
-        feat: createBreakdownComponent(featBonus, featBonus > 0 ? 'feat' : null, featBonus > 0 ? 'feat' : null),
-        feature: createBreakdownComponent(
-            featureBonus,
-            featureBonus > 0 ? `Feature: ${featureBonuses.map(b => b.source.name).join(', ')}` : null,
-            featureBonus > 0 ? 'feature' : null,
-            featureBonuses[0]?.source.id
-        ),
-        item: createBreakdownComponent(itemBonus, itemBonus > 0 ? 'item' : null, itemBonus > 0 ? 'item' : null),
+        feat: createFeatBreakdownComponent(featBonus, featBenefits),
+        feature: createFeatureBreakdownComponent(featureBonus, featureBonuses),
+        item: createItemBreakdownComponent(itemBonus),
     };
 
-    const breakdownString = buildBreakdownString(breakdown);
-
+    // Override breakdown string to add "ft." unit
+    const result = buildCalculationResult(total, breakdown, 'Speed');
     return {
-        value: total,
-        breakdownString: `Speed: ${breakdownString} ft.`,
-        breakdown,
+        ...result,
+        breakdownString: `${result.breakdownString} ft.`,
     };
 }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { ItemTooltip } from './ItemTooltip';
 import { MonsterTooltip } from './MonsterTooltip';
 import { SpellTooltip } from './SpellTooltip';
 import type { EntityTooltipProps } from './types';
@@ -11,9 +12,8 @@ export function EntityTooltip({ entityType, entityId, children, href }: EntityTo
             return <SpellTooltip spellId={entityId} href={href}>{children}</SpellTooltip>;
         case 'monster':
             return <MonsterTooltip monsterId={entityId} href={href}>{children}</MonsterTooltip>;
-        // Future entity types can be added here:
-        // case 'item':
-        //     return <ItemTooltip itemId={entityId} href={href}>{children}</ItemTooltip>;
+        case 'item':
+            return <ItemTooltip itemId={entityId} href={href}>{children}</ItemTooltip>;
         default:
             // For unsupported entity types, just render the children without tooltip
             return <>{children}</>;

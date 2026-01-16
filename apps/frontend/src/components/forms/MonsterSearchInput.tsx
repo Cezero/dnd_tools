@@ -3,24 +3,12 @@ import { useMemo } from 'react';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import type { MonsterCacheEntry } from '@shared/schema';
 
-import { GenericSearchInput, type SearchableItem } from './GenericSearchInput';
+import { GenericSearchInput } from './GenericSearchInput';
+import type { SearchableItem, MonsterSearchInputProps } from './types';
 
 type MonsterListItem = SearchableItem & {
     typeIds?: number[]; // Array of monster type IDs
 };
-
-export interface MonsterSearchInputProps {
-    value: number | null;
-    onValueChange: (monsterId: number | null) => void;
-    label?: string;
-    placeholder?: string;
-    disabled?: boolean;
-    componentExtraClassName?: string;
-    labelExtraClassName?: string;
-    monsterList?: MonsterListItem[]; // Optional prop for pre-loaded monsters
-    customOptions?: MonsterListItem[]; // Custom options to prepend (e.g., "All" option with id: -1)
-    filter?: (monster: MonsterListItem) => boolean; // Filter function for monsters (e.g., by type)
-}
 
 export function MonsterSearchInput({
     value,

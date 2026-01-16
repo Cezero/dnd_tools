@@ -159,6 +159,102 @@ The character management routes follow the shared [RESTful API Structure](../app
 
 **Route Definitions**:
 
+### **Character Detail Routes**
+
+Routes for in-game character interaction and tracking:
+
+- **`GET /characters/:id/uses`**: Get all feature uses for a character
+  - **Parameters**: `id` (character ID)
+  - **Response**: Array of `CharacterFeatureUses`
+  - **Controller**: `GetCharacterUses`
+
+- **`POST /characters/:id/uses/:progressionId/:entityId`**: Update feature uses
+  - **Parameters**: `id` (character ID), `progressionId` (feature progression ID), `entityId` (feature entity ID)
+  - **Body**: `UpdateFeatureUsesRequest` (delta: number)
+  - **Response**: Updated `CharacterFeatureUses`
+  - **Controller**: `UpdateFeatureUses`
+
+- **`POST /characters/:id/uses/reset-daily`**: Reset daily uses (PER_DAY frequency) and spell cast status
+  - **Parameters**: `id` (character ID)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `ResetDailyUses`
+  - **Note**: Also resets spell cast status via `resetDailySpellPreparations`
+
+- **`POST /characters/:id/uses/reset-all`**: Reset all uses (all frequencies)
+  - **Parameters**: `id` (character ID)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `ResetAllUses`
+
+- **`POST /characters/:id/money`**: Update character money
+  - **Parameters**: `id` (character ID)
+  - **Body**: `UpdateMoneyRequest` (platinum, gold, silver, copper)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `UpdateMoney`
+
+- **`POST /characters/:id/items`**: Add item to character
+  - **Parameters**: `id` (character ID)
+  - **Body**: `AddItemRequest` (baseItemId, quantity, location)
+  - **Response**: `CreateResponse`
+  - **Controller**: `AddItem`
+
+- **`DELETE /characters/:id/items/:itemId`**: Remove item from character
+  - **Parameters**: `id` (character ID), `itemId` (character item ID)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `RemoveItem`
+
+- **`POST /characters/:id/wounds`**: Update wounds/nonlethal damage
+  - **Parameters**: `id` (character ID)
+  - **Body**: `UpdateWoundsRequest` (wounds: number)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `UpdateWounds`
+
+- **`POST /characters/:id/notes`**: Update character notes
+  - **Parameters**: `id` (character ID)
+  - **Body**: `UpdateNotesRequest` (notes: string)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `UpdateNotes`
+
+- **`POST /characters/:id/spell-preparations/reset-daily`**: Reset spell cast status (set all timesCast = 0)
+  - **Parameters**: `id` (character ID)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `ResetDailySpellPreparations`
+  - **Note**: Called by reset daily uses, but also available as standalone endpoint
+
+**Spell Preparation Routes** (existing, documented for completeness):
+
+- **`GET /characters/:id/spell-preparations`**: Get all spell preparations for a character
+  - **Parameters**: `id` (character ID)
+  - **Response**: Array of `CharacterSpellPreparationWithMetamagic`
+  - **Controller**: `GetSpellPreparations`
+
+- **`POST /characters/spell-preparations`**: Create new spell preparation
+  - **Body**: `CreateSpellPreparationRequest`
+  - **Response**: `CreateResponse` (id is prepKey)
+  - **Controller**: `CreateSpellPreparation`
+
+- **`PUT /characters/spell-preparations/:id/:prepKey`**: Update spell preparation
+  - **Parameters**: `id` (character ID), `prepKey` (preparation key)
+  - **Body**: `UpdateSpellPreparationRequest` (quantity)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `UpdateSpellPreparation`
+
+- **`DELETE /characters/spell-preparations/:id/:prepKey`**: Delete spell preparation
+  - **Parameters**: `id` (character ID), `prepKey` (preparation key)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `DeleteSpellPreparation`
+
+- **`POST /characters/:id/spell-preparations/:prepKey/cast`**: Increment spell cast count
+  - **Parameters**: `id` (character ID), `prepKey` (preparation key)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `CastSpell`
+
+- **`POST /characters/:id/spell-preparations/:prepKey/uncast`**: Decrement spell cast count
+  - **Parameters**: `id` (character ID), `prepKey` (preparation key)
+  - **Response**: `UpdateResponse`
+  - **Controller**: `UncastSpell`
+
+**Route Definitions**:
+
 **Core Character Routes**:
 - `GET /api/characters` - Retrieve all characters for user
 - `GET /api/characters/:id` - Retrieve specific character by ID
@@ -275,6 +371,32 @@ The character management system integrates with the feature system through chara
 **Integration Pattern**: The character system provides the framework for character feature integration, with feature choices and effects determining character capabilities.
 
 **Related Documentation**: [Feature System Backend Implementation](../feature-system/backend-implementation.md)
+
+### **Character Resolution Integration**
+
+The character management system integrates with the character resolution system for feat filtering:
+
+**Qualified Feats Computation**: During character resolution, the `AvailableFeatService.getQualifiedFeats()` method is called to compute the list of feats the character qualifies for. This computation:
+- Filters all feats by prerequisites (ability scores, skill ranks, feats, class levels, etc.)
+- Excludes already-owned feats (unless the feat is repeatable)
+- Excludes feats that provide proficiencies the character already has as "all" category
+- Returns the filtered list as `qualifiedFeats` in `ResolvedCharacterResult`
+
+**When Computed**: `qualifiedFeats` is computed during:
+- Session initialization (`InitializeSession`)
+- Session resume (`ResumeSession`)
+- Session state retrieval (`GetCurrentState`)
+- Session updates (`ApplyUpdate`)
+
+**Data Distinction**: 
+- `availableFeatsCount` (number): Count of feat slots/choices available - answers "How many feats can you select?"
+- `qualifiedFeats` (array): List of feats the character qualifies for - answers "Which feats can you select from?"
+
+**Source Files**:
+- `apps/backend/src/features/characterResolution/availableFeatService.ts` - Feat filtering service
+- `apps/backend/src/features/characterResolution/characterResolutionController.ts` - Controller methods that compute qualifiedFeats
+
+**Related Documentation**: [Character Resolution System](./character-resolution-system.md) - Complete resolution system documentation
 
 ### **Spell System Integration**
 

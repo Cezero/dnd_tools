@@ -32,7 +32,14 @@ export type { SavingThrowBreakdownMap } from './calculations/savingThrows';
 export type { CombatValuesBreakdownMap } from './calculations/combatValues';
 
 // Utilities
-export { buildBreakdownString, createBreakdownComponent } from './utils/breakdownBuilder';
+export {
+    buildBreakdownString,
+    createBreakdownComponent,
+    createFeatBreakdownComponent,
+    createFeatureBreakdownComponent,
+    createItemBreakdownComponent,
+} from './utils/breakdownBuilder';
+export { resolveStandardBonuses, buildCalculationResult } from './utils/calculationHelpers';
 export { applyFeatureFormula, getFormulaDisplayString } from './utils/formulaApplier';
 export {
     isOffHandWeapon,

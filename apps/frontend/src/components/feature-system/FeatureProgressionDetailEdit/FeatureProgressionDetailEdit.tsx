@@ -1,29 +1,21 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import { ScrollArea } from '@base-ui-components/react/scroll-area';
-import { useQueryClient } from '@tanstack/react-query';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 
 import { ValidatedInput, ValidatedForm, ValidatedCustomSelect } from '@/components/forms';
 import { displayStrategyFactory } from '@/lib/formatters';
-import type { FeatureProgression, Feature, FeaturePrerequisite, FeatureEntity } from '@shared/schema';
-import { EntityType, FEATURE_SOURCE_LIST, DisplayType } from '@shared/static-data';
+import { useCacheFunctions } from '@/services/cache';
+import type { FeatureProgression, Feature, FeatureEntity } from '@shared/schema';
+import { EntityType, FEATURE_SOURCE_LIST, DisplayType, FeatureSourceType } from '@shared/static-data';
 
 // Import our refactored components and hooks
 import { EntityDetailForm } from './EntityDetailForm';
 import { EntitySectionRenderer } from './EntitySectionRenderer';
-import type { EntityTypeConfig } from './types';
+import type { EntityTypeConfig, FeatureProgressionDetailEditProps } from './types';
 import { useEntityManagement } from './useEntityManagement';
 import { useFeatureProgressionForm } from './useFeatureProgressionForm';
 import { useGroupingState } from './useGroupingState';
 
-interface FeatureProgressionDetailEditProps {
-    isOpen: boolean;
-    onClose: () => void;
-    progression: FeatureProgression | null;
-    onSave: (progression: FeatureProgression) => void;
-    preSelectedFeature?: Feature;
-    showSourceTypeSelector?: boolean;
-}
 
 export function FeatureProgressionDetailEdit({
     isOpen,
@@ -31,9 +23,62 @@ export function FeatureProgressionDetailEdit({
     progression,
     onSave,
     preSelectedFeature,
-    showSourceTypeSelector = true
+    showSourceTypeSelector = true,
+    editionId: providedEditionId
 }: FeatureProgressionDetailEditProps) {
-    const queryClient = useQueryClient();
+    const cacheFunctions = useCacheFunctions();
+    const editionIdRef = useRef<number | null>(null);
+    const progressionKeyRef = useRef<string>('');
+
+    // Determine editionId: use provided, or get from cache based on progression source
+    // Use refs to track changes and prevent infinite loops
+    const editionId = useMemo(() => {
+        if (providedEditionId) {
+            if (editionIdRef.current !== providedEditionId) {
+                editionIdRef.current = providedEditionId;
+            }
+            return providedEditionId;
+        }
+
+        // Create a stable key from progression properties
+        const firstClassId = progression?.classes && progression.classes.length > 0 ? progression.classes[0].classId : '';
+        const firstRaceId = progression?.races && progression.races.length > 0 ? progression.races[0].raceId : '';
+        const progressionKey = progression
+            ? `${progression.sourceType}-${firstClassId}-${firstRaceId}-${progression.featId ?? ''}-${progression.editionId ?? ''}`
+            : '';
+
+        // Only recalculate if the progression key actually changed
+        if (progressionKey === progressionKeyRef.current && editionIdRef.current !== null) {
+            return editionIdRef.current;
+        }
+
+        progressionKeyRef.current = progressionKey;
+
+        // Try to get editionId from cache based on progression source
+        let calculatedEditionId: number | null = null;
+        if (progression) {
+            if (progression.sourceType === FeatureSourceType.Class && progression.classes && progression.classes.length > 0) {
+                const firstClassId = progression.classes[0].classId;
+                const classData = cacheFunctions.getClassSummaryById(firstClassId);
+                calculatedEditionId = classData?.editionId ?? null;
+            } else if (progression.sourceType === FeatureSourceType.Race && progression.races && progression.races.length > 0) {
+                const firstRaceId = progression.races[0].raceId;
+                const raceData = cacheFunctions.getRaceSummaryById(firstRaceId);
+                calculatedEditionId = raceData?.editionId ?? null;
+            } else if (progression.sourceType === FeatureSourceType.Feat && progression.featId) {
+                const featData = cacheFunctions.getFeatSummaryById(progression.featId);
+                calculatedEditionId = featData?.editionId ?? null;
+            } else if (progression.sourceType === FeatureSourceType.Edition && progression.editionId) {
+                calculatedEditionId = progression.editionId;
+            }
+        }
+
+        editionIdRef.current = calculatedEditionId;
+        return calculatedEditionId;
+        // cacheFunctions is stable (functions don't change), but the object reference does
+        // We exclude it from deps to prevent infinite loops
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [providedEditionId, progression]);
     // Use our custom hooks
     const {
         formData,
@@ -307,6 +352,7 @@ export function FeatureProgressionDetailEdit({
                                                                 setHoveredIndex={setHoveredIndex}
                                                                 preSelectedFeature={preSelectedFeature}
                                                                 progression={progression}
+                                                                editionId={editionId}
                                                             />
                                                         </div>
                                                     )}

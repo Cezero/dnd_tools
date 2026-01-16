@@ -1,6 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
+import { getSourceDisplay, getSourceBooksByType } from '@/services/cache';
 import { ClassSummary } from '@shared/schema';
 import {
     RPG_DICE_LIST,
@@ -16,7 +17,6 @@ import {
     BOOLEAN_FILTER_LIST,
     CLASS_TYPE_LIST
 } from '@shared/static-data';
-import { GetSourceDisplay, isVariantId, GetSourceBookTypeList } from '@shared/utils';
 
 export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
     {
@@ -31,33 +31,6 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
             required: true,
             filterType: FilterType.TEXT_INPUT,
             placeholder: 'Filter by name...'
-        },
-    },
-    {
-        accessorKey: 'id',
-        header: 'Type',
-        enableSorting: true,
-        enableColumnFilter: true,
-        enableResizing: true,
-        size: 100,
-        filterFn: (row, columnId, filterValue) => {
-            const id = row.getValue(columnId) as number;
-            const isVariant = isVariantId(id);
-
-            if (filterValue === ClassType.VARIANT) {
-                return isVariant;
-            } else if (filterValue === ClassType.BASE) {
-                return !isVariant;
-            }
-            return true;
-        },
-        cell: info => {
-            const id = info.getValue() as number;
-            return isVariantId(id) ? 'Variant' : 'Base';
-        },
-        meta: {
-            filterType: FilterType.SINGLE_SELECT,
-            options: CLASS_TYPE_LIST
         },
     },
     {
@@ -220,7 +193,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         cell: info => {
             const sourceBookInfo = info.getValue() as { sourceBookId: number; pageNumber: number }[];
             if (sourceBookInfo && sourceBookInfo.length > 0) {
-                return GetSourceDisplay(sourceBookInfo, true);
+                return getSourceDisplay(sourceBookInfo, true);
             }
             return '';
         },
@@ -229,7 +202,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
             options: (currentFilters: Array<{ id: string; value: unknown }>) => {
                 const editionFilter = currentFilters.find(f => f.id === 'editionId');
                 const editionId = editionFilter?.value as EditionId;
-                return GetSourceBookTypeList(SourceType.Classes, editionId);
+                return getSourceBooksByType(SourceType.Classes, editionId);
             },
         },
     },

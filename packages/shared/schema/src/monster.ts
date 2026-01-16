@@ -1,4 +1,6 @@
 import { z } from 'zod';
+
+import { numericParam, optionalBooleanParam, optionalIntegerParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 
@@ -12,84 +14,84 @@ export const MonsterSubtypeMapSchema = z.object({
 });
 
 export const MonsterSkillMapSchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
-    skillId: z.number().int().positive('Skill ID must be a positive integer'),
-    skillSubId: z.number().int().positive('Skill Sub ID must be a positive integer').nullable(),
+    id: commonValidations.positiveInt('ID'),
+    skillId: commonValidations.positiveInt('Skill ID'),
+    skillSubId: commonValidations.positiveInt('Skill Sub ID').nullable(),
     ranks: z.number().int().nullable(), // Can be negative (penalties)
     notes: z.string().nullable(),
 });
 
 export const MonsterFeatMapSchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
-    featId: z.number().int().positive('Feat ID must be a positive integer'),
+    id: commonValidations.positiveInt('ID'),
+    featId: commonValidations.positiveInt('Feat ID'),
     notes: z.string().max(128, 'Notes must be less than 128 characters').nullable(),
 });
 
 export const MonsterSpecialAbilitySchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
-    name: z.string().min(1, 'Name is required'),
-    description: z.string().nullable(),
-    abilityType: z.number().int().positive('Ability type must be a positive integer'),
-    effectiveCasterLevel: z.number().int().positive('Effective caster level must be a positive integer').nullable(),
-    saveAbility: z.number().int().positive('Save ability must be a positive integer').nullable(),
+    id: commonValidations.positiveInt('ID'),
+    name: commonValidations.name(),
+    description: commonValidations.description().nullable(),
+    abilityType: commonValidations.positiveInt('Ability type'),
+    effectiveCasterLevel: commonValidations.positiveInt('Effective caster level').nullable(),
+    saveAbility: commonValidations.positiveInt('Save ability').nullable(),
 });
 
 export const MonsterSpecialAbilityMapSchema = z.object({
-    abilityId: z.number().int().positive('Ability ID must be a positive integer'),
+    abilityId: commonValidations.positiveInt('Ability ID'),
     ability: MonsterSpecialAbilitySchema.nullable(),
 });
 
 export const MonsterArmorBreakdownSchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
-    componentType: z.number().int().positive('Component type must be a positive integer'),
+    id: commonValidations.positiveInt('ID'),
+    componentType: commonValidations.positiveInt('Component type'),
     value: z.number().int().nullable(),
-    equipmentItemId: z.number().int().positive('Equipment item ID must be a positive integer').nullable(),
+    equipmentItemId: commonValidations.positiveInt('Equipment item ID').nullable(),
     description: z.string().nullable(),
 });
 
 export const MonsterEquipmentSchema = z.object({
-    itemId: z.number().int().positive('Item ID must be a positive integer'),
+    itemId: commonValidations.positiveInt('Item ID'),
 });
 
 export const MonsterSpellSchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
-    spellId: z.number().int().positive('Spell ID must be a positive integer'),
-    spellType: z.number().int().positive('Spell type must be a positive integer'),
-    quantity: z.number().int().positive('Quantity must be a positive integer').nullable(),
-    usesPerDayId: z.number().int().positive('Uses per day ID must be a positive integer').nullable(),
+    id: commonValidations.positiveInt('ID'),
+    spellId: commonValidations.positiveInt('Spell ID'),
+    spellType: commonValidations.positiveInt('Spell type'),
+    quantity: commonValidations.positiveInt('Quantity').nullable(),
+    usesPerDayId: commonValidations.positiveInt('Uses per day ID').nullable(),
     saveDC: z.number().int().nullable(),
-    level: z.number().int().min(0, 'Level must be non-negative').max(9, 'Level must be at most 9').nullable(),
-    specialAbilityId: z.number().int().positive('Special ability ID must be a positive integer').nullable(),
+    level: commonValidations.nonNegativeInt('Level', 9).nullable(),
+    specialAbilityId: commonValidations.positiveInt('Special ability ID').nullable(),
     notes: z.string().max(200, 'Notes must be less than 200 characters').nullable(),
 });
 
 export const MonsterPreparedSpellSlotsSchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
-    spellLevel: z.number().int().min(0, 'Spell level must be non-negative').max(9, 'Spell level must be at most 9'),
-    numSlots: z.number().int().positive('Number of slots must be a positive integer'),
+    id: commonValidations.positiveInt('ID'),
+    spellLevel: commonValidations.nonNegativeInt('Spell level', 9),
+    numSlots: commonValidations.positiveInt('Number of slots'),
 });
 
 export const MonsterExtraHitDieSchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
+    id: commonValidations.positiveInt('ID'),
     hitDiceQty: z.number(),
-    hitDiceType: z.number().int().nonnegative('Hit dice type must be non-negative'), // Can be 0 (D4)
+    hitDiceType: commonValidations.nonNegativeInt('Hit dice type'), // Can be 0 (D4)
     bonusHP: z.number().int().nullable(),
 });
 
 export const MonsterAlternateSpeedSchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
-    movementTypeId: z.number().int().positive('Movement type ID must be a positive integer'),
-    speed: z.number().int().positive('Speed must be a positive integer'),
-    maneuverability: z.number().int().positive('Maneuverability must be a positive integer').nullable(),
+    id: commonValidations.positiveInt('ID'),
+    movementTypeId: commonValidations.positiveInt('Movement type ID'),
+    speed: commonValidations.positiveInt('Speed'),
+    maneuverability: commonValidations.positiveInt('Maneuverability').nullable(),
 });
 
 export const MonsterDomainMapSchema = z.object({
-    domainId: z.number().int().positive('Domain ID must be a positive integer'),
+    domainId: commonValidations.positiveInt('Domain ID'),
 });
 
 export const MonsterExtraDescriptionSchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
-    type: z.number().int().positive('Type must be a positive integer'),
+    id: commonValidations.positiveInt('ID'),
+    type: commonValidations.positiveInt('Type'),
     description: z.string().nullable(),
 });
 
@@ -97,9 +99,9 @@ export const MonsterSourceMapSchema = SourceMapSchema;
 
 // Hierarchy entry schema for variant monsters
 export const MonsterHierarchyEntrySchema = z.object({
-    id: z.number().int().positive('ID must be a positive integer'),
+    id: commonValidations.positiveInt('ID'),
     name: z.string(),
-    level: z.number().int().nonnegative('Level must be non-negative'),
+    level: commonValidations.nonNegativeInt('Level'),
     description: z.string().nullable(),
     combatDescription: z.string().nullable(),
     flavorText: z.string().nullable(),
@@ -109,16 +111,16 @@ export const MonsterHierarchyEntrySchema = z.object({
 
 // Core Monster schema
 export const MonsterSchema = z.object({
-    id: z.number().int().positive('Monster ID must be a positive integer'),
-    name: z.string().min(1, 'Monster name is required'),
-    baseMonsterId: z.number().int().positive('Base monster ID must be a positive integer').nullable(),
-    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    id: commonValidations.positiveInt('Monster ID'),
+    name: commonValidations.name(),
+    baseMonsterId: commonValidations.positiveInt('Base monster ID').nullable(),
+    editionId: commonValidations.positiveInt('Edition ID'),
     isVisible: z.boolean().default(true),
     flavorText: z.string().nullable(),
     description: z.string().nullable(),
     combatDescription: z.string().nullable(),
-    sizeId: z.number().int().positive('Size ID must be a positive integer').nullable(),
-    baseSpeed: z.number().int().nonnegative('Base speed must be non-negative').nullable(),
+    sizeId: commonValidations.positiveInt('Size ID').nullable(),
+    baseSpeed: commonValidations.nonNegativeInt('Base speed').nullable(),
     armorClass: z.number().int().nullable(),
     touchAC: z.number().int().nullable(),
     flatFootedAC: z.number().int().nullable(),
@@ -174,8 +176,8 @@ export const GetAllMonstersResponseSchema = QueryResponseSchema.extend({
 });
 
 export const GetAllMonstersQuerySchema = z.object({
-    includeStatblockOnly: z.string().optional().transform((val) => val === 'true'),
-    typeId: z.string().optional().transform((val) => val ? parseInt(val, 10) : undefined),
+    includeStatblockOnly: optionalBooleanParam(),
+    typeId: optionalIntegerParam(),
 });
 
 export const GetMonsterResponseSchema = MonsterSchema.omit({
@@ -189,7 +191,7 @@ export const UpdateMonsterSchema = MonsterSchema.omit({
 }).partial();
 
 export const MonsterIdParamSchema = z.object({
-    id: z.string().transform((val: string) => parseInt(val)),
+    id: numericParam(),
 });
 
 export const MonsterCacheSchema = MonsterSchema.pick({

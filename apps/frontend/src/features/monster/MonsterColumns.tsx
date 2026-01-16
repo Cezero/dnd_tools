@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
+import { getSourceDisplay } from '@/services/cache';
 import { Monster } from '@shared/schema';
 import {
     MONSTER_TYPE_LIST,
@@ -14,7 +15,6 @@ import {
     SourceType,
     EditionId,
 } from '@shared/static-data';
-import { GetSourceDisplay } from '@shared/utils';
 
 export const useMonsterColumns = (): ColumnDef<Monster, unknown>[] => {
     const queryClient = useQueryClient();
@@ -176,7 +176,7 @@ export const useMonsterColumns = (): ColumnDef<Monster, unknown>[] => {
             cell: info => {
                 const sources = info.getValue() as { sourceBookId: number; pageNumber: number | null }[] | null;
                 if (!sources || sources.length === 0) return '';
-                return GetSourceDisplay(sources, true);
+                return getSourceDisplay(sources, true);
             },
             meta: {
                 filterType: FilterType.MULTI_SELECT,

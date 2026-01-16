@@ -1,9 +1,11 @@
-import type { CharacterWithAllDetailsResponse, DnDClass , FeatureProgression } from '@shared/schema';
+import { extractBABProgression } from '@/lib/feature-extraction/classMechanicsExtractor';
+import type { CharacterWithAllDetailsResponse, DnDClass, FeatureProgression } from '@shared/schema';
 import {
     WEAPON_TYPE_ENUM,
     SizeId,
     GetAbilityModifier,
-    AbilityId,
+    FeatureSourceType,
+    ProgressionType,
 } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
 
@@ -20,17 +22,17 @@ export function isProficientWithWeapon(
 ): boolean {
     // Use public extractProficiencies function
     const proficiencies = extractProficiencies(resolvedProgressions);
-    
+
     // Check weapon category proficiency
     if (proficiencies.weaponCategories.includes(weapon.category)) {
         return true;
     }
-    
+
     // Check specific item proficiency
     if (proficiencies.itemIds.includes(baseItemId)) {
         return true;
     }
-    
+
     return false;
 }
 
@@ -61,29 +63,74 @@ export function isTwoHandedWeapon(weapon: { type: number }): boolean {
 
 /**
  * Get character's base attack bonus (first value only)
+ * 
+ * For gestalt characters, the backend filters progressions to include only the best BAB,
+ * so we should use the character's total level with the single best progression.
+ * For non-gestalt multiclass characters, we sum BAB from all classes.
  */
 export function getCharacterBAB(
     character: CharacterWithAllDetailsResponse,
-    classDetailsMap: Map<number, DnDClass>
+    classDetailsMap: Map<number, DnDClass>,
+    resolvedProgressions?: FeatureProgression[]
 ): number {
-    // Calculate class levels
+    // Check if character is gestalt
+    const isGestalt = character.isGestalt || character.advancements.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
+
+    if (isGestalt) {
+        // For gestalt, backend has already filtered to include only the best BAB progression
+        // Use total character level with the best progression from resolved progressions
+        const totalLevel = character.advancements.length;
+        
+        if (resolvedProgressions && resolvedProgressions.length > 0) {
+            // Find the best BAB progression from resolved progressions
+            // For gestalt, there should only be one class-mechanics progression with the best BAB
+            const classMechanicsProgressions = resolvedProgressions.filter(p =>
+                p.feature?.slug === 'class-mechanics' &&
+                p.sourceType === FeatureSourceType.Class
+            );
+            
+            if (classMechanicsProgressions.length > 0) {
+                // Extract BAB from the first class-mechanics progression (should be the merged/best one)
+                const babProgression = extractBABProgression(classMechanicsProgressions);
+                if (babProgression !== null && babProgression !== undefined) {
+                    const babString = getBABProgression(totalLevel, babProgression as ProgressionType);
+                    const match = babString.match(/\+(\d+)/);
+                    if (match) {
+                        return parseInt(match[1], 10);
+                    }
+                }
+            }
+        }
+        
+        // Fallback: return 0 if no progression found
+        return 0;
+    }
+
+    // Non-gestalt multiclass: sum BAB from all classes
     const classLevelCounts = new Map<number, number>();
     for (const advancement of character.advancements) {
         const currentLevel = classLevelCounts.get(advancement.classId) ?? 0;
         classLevelCounts.set(advancement.classId, currentLevel + 1);
-        
-        if (advancement.secondaryClassId) {
-            const secondaryLevel = classLevelCounts.get(advancement.secondaryClassId) ?? 0;
-            classLevelCounts.set(advancement.secondaryClassId, secondaryLevel + 1);
-        }
     }
 
-    // Calculate total BAB
+    // Calculate total BAB by summing contributions from each class
     let totalBAB = 0;
     for (const [classId, level] of classLevelCounts.entries()) {
         const classDetails = classDetailsMap.get(classId);
-        if (classDetails?.babProgression !== undefined) {
-            const babString = getBABProgression(level, classDetails.babProgression);
+        if (!classDetails) continue;
+
+        // Extract BAB progression from resolved progressions
+        let babProgression: number | null | undefined;
+        if (resolvedProgressions) {
+            const classProgressions = resolvedProgressions.filter(p =>
+                p.sourceType === FeatureSourceType.Class &&
+                p.classes?.some(c => c.classId === classId)
+            );
+            babProgression = extractBABProgression(classProgressions, classId);
+        }
+
+        if (babProgression !== undefined && babProgression !== null) {
+            const babString = getBABProgression(level, babProgression as ProgressionType);
             const match = babString.match(/\+(\d+)/);
             if (match) {
                 totalBAB += parseInt(match[1], 10);
@@ -122,12 +169,12 @@ export function getCharacterSizeId(character: CharacterWithAllDetailsResponse): 
  */
 export function formatDamageType(damageType: string | null): string {
     if (!damageType) return '';
-    
+
     // Damage type can be "2", "2|3", "1&2", etc.
     // Parse and format
     const parts = damageType.split(/[|&]/);
     const typeAbbrevs: string[] = [];
-    
+
     for (const part of parts) {
         const typeId = parseInt(part.trim(), 10);
         // Map type IDs to abbreviations
@@ -138,13 +185,13 @@ export function formatDamageType(damageType: string | null): string {
             default: typeAbbrevs.push(`T${typeId}`);
         }
     }
-    
+
     if (damageType.includes('&')) {
         return typeAbbrevs.join('&');
     } else if (damageType.includes('|')) {
         return typeAbbrevs.join('/');
     }
-    
+
     return typeAbbrevs[0] || '';
 }
 
@@ -154,12 +201,12 @@ export function formatDamageType(damageType: string | null): string {
  */
 export function formatRange(range: string | null): string | null {
     if (!range) return null;
-    
+
     // Check if range already includes "ft." or "ft"
     if (range.includes('ft.') || range.includes('ft')) {
         return range;
     }
-    
+
     return `${range} ft.`;
 }
 
