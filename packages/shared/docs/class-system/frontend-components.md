@@ -114,62 +114,106 @@ Comprehensive display component for viewing complete class information. This com
 
 ### **ClassEdit Component**
 
-Comprehensive editing interface for creating and modifying classes. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern.
+Comprehensive editing interface for creating and modifying classes. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern and uses a **state-based pattern with SQLite session storage** for reliable data management.
 
-**Props Interface**:
-```typescript
-interface ClassEditProps {
-  classId?: number;
-  mode: 'create' | 'edit';
-  onSave?: (classData: ClassWithDetails) => void;
-  onCancel?: () => void;
-  initialData?: Partial<ClassWithDetails>;
-  readonly?: boolean;
-}
-```
+**Architecture**: The component uses a centralized state management pattern that mirrors the `CharacterEdit` implementation, providing:
+- **Single Source of Truth**: All class data managed through `useClassEditState` hook
+- **Backend Session Storage**: SQLite session database for persistent editing sessions
+- **Automatic Synchronization**: Frontend state automatically syncs with backend session
+- **Context Preservation**: Class ID and context preserved throughout navigation and feature creation
+- **Deterministic ID Management**: Backend generates temporary IDs for new entities, eliminating signature matching
 
 **State Management**:
 ```typescript
-const [classData, setClassData] = useState<ClassWithDetails>(initialData);
-const [activeTab, setActiveTab] = useState<string>('basic');
-const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-const [isDirty, setIsDirty] = useState<boolean>(false);
-const [isSaving, setIsSaving] = useState<boolean>(false);
+// Centralized state hook
+const { state, updateState } = useClassEditState();
+
+// Session management hook
+const resolution = useClassResolution(state.classId || null);
+
+// State structure
+interface ClassEditState {
+  // Core class identity
+  classId: number | null;
+  name: string;
+  abbreviation: string;
+  editionId: number;
+  isPrestige: boolean;
+  isVisible: boolean;
+  canCastSpells: boolean;
+  spellsKnown: boolean;
+  isDivine: boolean;
+  description: string | null;
+  
+  // Feature progressions (id: number for existing, null for new)
+  featureProgressions: FeatureProgression[];
+  
+  // Spellcasting progressions
+  spellcastingProgression: SpellcastingProgressionWithSlots[];
+  spellsKnownProgression: SpellcastingProgressionWithSlots[];
+  
+  // UI state
+  activeTab: string;
+  isFeatureAssocOpen: boolean;
+  isProgressionDialogOpen: boolean;
+  editingProgression: FeatureProgression | null;
+  preSelectedFeature: FeatureProgression['feature'] | undefined;
+}
 ```
+
+**State Update Pattern**:
+All state updates use action-based updates through `updateState`:
+```typescript
+// Update class name
+updateState({ 
+  type: ClassEditStateUpdateType.SET_NAME, 
+  payload: { name: 'Fighter' } 
+});
+
+// Add feature progression
+updateState({ 
+  type: ClassEditStateUpdateType.ADD_FEATURE_PROGRESSION, 
+  payload: { progression: newProgression } 
+});
+
+// Update feature progression
+updateState({ 
+  type: ClassEditStateUpdateType.UPDATE_FEATURE_PROGRESSION, 
+  payload: { progressionId: 123, progression: { level: 5 } } 
+});
+```
+
+**Session Synchronization**:
+The component automatically synchronizes state changes with the backend SQLite session:
+- **Field Changes**: Individual field changes (name, abbreviation, etc.) sync via `UPDATE_CLASS_FIELD` actions
+- **Progression Changes**: Feature progression changes sync via diff-based detection
+- **Spellcasting Changes**: Spellcasting progression changes sync automatically
+- **Automatic Sync**: `useEffect` hooks watch state changes and send updates to backend session
 
 **Class-Specific Features**:
 - **Class Data Entry**: Forms for entering and modifying class data
 - **Class Validation**: Real-time validation with user-friendly error messages
 - **Class Complex Data**: Handle complex nested data like features and spellcasting
 - **Class User Guidance**: Guide users through the class creation/editing process
-
-**Usage Example**:
-```tsx
-<ClassEdit 
-  mode="create"
-  onSave={(classData) => {
-    console.log('Saving class:', classData);
-    navigate('/classes');
-  }}
-  onCancel={() => navigate('/classes')}
-  initialData={{
-    name: '',
-    abbreviation: '',
-    editionId: 5,
-    isPrestige: false
-  }}
-/>
-```
+- **Mechanics Management**: All mechanics (BAB, saves, hit die, skill points) managed via feature workflow (no convenience forms)
+- **Shared Progressions**: Support for shared feature progressions across multiple classes
 
 **User Workflow**:
 1. **Enter Basic Info**: Fill in class name, abbreviation, and basic attributes
-2. **Configure Progression**: Set BAB and saving throw progression values
-3. **Add Features**: Configure class features and their progression
-4. **Set Spellcasting**: Configure spellcasting capabilities and progression
-5. **Add Sources**: Link to source books and page references
-6. **Review and Save**: Review all data and save the class
+2. **Add Features**: Configure class features and their progression via FeaturesTab
+3. **Set Spellcasting**: Configure spellcasting capabilities and progression
+4. **Add Sources**: Link to source books and page references
+5. **Review and Save**: Review all data and save the class (transforms SQLite session → MySQL)
 
-**Source File**: `frontend/src/features/class/ClassEdit.tsx`
+**Source Files**: 
+- Component: `frontend/src/features/class/ClassEdit.tsx`
+- State Hook: `frontend/src/features/class/useClassEditState.ts`
+- Session Hook: `frontend/src/features/class/useClassResolution.ts`
+- Types: `frontend/src/features/class/types.ts`
+
+**Related Documentation**: 
+- [State-Based Pattern Architecture](#state-based-pattern-architecture) - Detailed architecture documentation
+- [Backend Session Management](../backend-implementation.md#session-management) - Backend session infrastructure
 
 ## 📋 **Tab Components**
 
@@ -351,6 +395,196 @@ Proper state management for complex class data:
 **Loading States**: Handle loading states for API operations
 **Error States**: Manage error states and error messages
 **Navigation State**: Handle navigation between tabs and views
+
+## 🏛️ **State-Based Pattern Architecture**
+
+The class editing system uses a **state-based pattern with SQLite session storage** that provides reliable data management, context preservation, and deterministic ID handling. This pattern mirrors the `CharacterEdit` implementation and solves several architectural challenges.
+
+### **Overview**
+
+The state-based pattern provides:
+- **Single Source of Truth**: Centralized state management eliminates prop drilling
+- **Context Preservation**: Class ID and context preserved throughout navigation
+- **No Orphaned Data**: Automatic linking of new features/progressions to class
+- **Deterministic IDs**: Backend generates temporary IDs, eliminating signature matching
+- **Persistent Sessions**: SQLite session storage for reliable editing sessions
+- **Automatic Synchronization**: Frontend state automatically syncs with backend
+
+### **State Management Hooks**
+
+#### **useClassEditState Hook**
+
+Centralized state management hook that provides a single source of truth for all class editing data.
+
+**Purpose**: Eliminates per-tab state management and provides immutable state updates through action-based updates.
+
+**Source File**: `frontend/src/features/class/useClassEditState.ts`
+
+**Usage**:
+```typescript
+const { state, updateState } = useClassEditState(initialState);
+
+// Update class name
+updateState({ 
+  type: ClassEditStateUpdateType.SET_NAME, 
+  payload: { name: 'Fighter' } 
+});
+
+// Add feature progression
+updateState({ 
+  type: ClassEditStateUpdateType.ADD_FEATURE_PROGRESSION, 
+  payload: { progression: newProgression } 
+});
+```
+
+**State Structure**: See [ClassEditState Type Definition](#classeditstate-type-definition)
+
+**Update Actions**: All state updates use discriminated union pattern with specific action types:
+- `SET_CLASS_ID`, `SET_NAME`, `SET_ABBREVIATION`, `SET_EDITION_ID`
+- `SET_FEATURE_PROGRESSIONS`, `ADD_FEATURE_PROGRESSION`, `UPDATE_FEATURE_PROGRESSION`, `REMOVE_FEATURE_PROGRESSION`
+- `SET_SPELLCASTING_PROGRESSION`, `SET_SPELLS_KNOWN_PROGRESSION`
+- `SET_ACTIVE_TAB`, `SET_IS_FEATURE_ASSOC_OPEN`, `SET_IS_PROGRESSION_DIALOG_OPEN`
+- `SET_EDITING_PROGRESSION`, `SET_PRE_SELECTED_FEATURE`
+
+#### **useClassResolution Hook**
+
+Session management hook that handles backend SQLite session lifecycle.
+
+**Purpose**: Manages editing session initialization, state synchronization, and save operations.
+
+**Source File**: `frontend/src/features/class/useClassResolution.ts`
+
+**Usage**:
+```typescript
+const resolution = useClassResolution(classId);
+
+// Initialize/resume session
+await resolution.initializeSession();
+
+// Apply update to session
+await resolution.applyUpdate({
+  type: 'UPDATE_CLASS_FIELD',
+  payload: { field: 'name', value: 'Fighter' }
+});
+
+// Save session to MySQL
+await resolution.saveSession();
+```
+
+**Key Features**:
+- **Automatic Initialization**: Creates or resumes session on mount
+- **State Synchronization**: Syncs frontend state changes to backend session
+- **Save Transformation**: Transforms SQLite session → MySQL on save
+- **Error Handling**: Comprehensive error handling and loading states
+
+### **Session Synchronization**
+
+The component automatically synchronizes state changes with the backend SQLite session through `useEffect` hooks:
+
+**Field Synchronization**:
+```typescript
+// Sync individual field changes
+useEffect(() => {
+  if (!resolution.sessionId || !hasInitializedRef.current) return;
+  
+  // Only sync changed fields
+  if (prevRaceFieldsRef.current.name !== state.name) {
+    resolution.applyUpdate({
+      type: 'UPDATE_CLASS_FIELD',
+      payload: { field: 'name', value: state.name }
+    });
+  }
+}, [state.name, resolution.sessionId]);
+```
+
+**Progression Synchronization**:
+```typescript
+// Sync feature progression changes (diff-based)
+useEffect(() => {
+  if (!resolution.sessionId || !hasInitializedRef.current) return;
+  
+  // Detect added/removed/updated progressions
+  const prevIds = new Set(prevProgressionsRef.current.map(p => p.id));
+  const currIds = new Set(state.featureProgressions.map(p => p.id));
+  
+  // Handle removed progressions
+  prevProgressionsRef.current.forEach(prev => {
+    if (!currIds.has(prev.id)) {
+      resolution.applyUpdate({
+        type: 'REMOVE_PROGRESSION',
+        payload: { progressionId: prev.id }
+      });
+    }
+  });
+  
+  // Handle added/updated progressions
+  state.featureProgressions.forEach(curr => {
+    if (!prevIds.has(curr.id)) {
+      resolution.applyUpdate({
+        type: 'ADD_PROGRESSION',
+        payload: { progression: curr }
+      });
+    } else {
+      // Check if progression was updated
+      const prev = prevProgressionsRef.current.find(p => p.id === curr.id);
+      if (JSON.stringify(prev) !== JSON.stringify(curr)) {
+        resolution.applyUpdate({
+          type: 'UPDATE_PROGRESSION',
+          payload: { progressionId: curr.id, progression: curr }
+        });
+      }
+    }
+  });
+}, [state.featureProgressions, resolution.sessionId]);
+```
+
+### **ID Management**
+
+The system uses backend-managed IDs for all new entities:
+
+**Frontend**: New items have `id: null`, existing items have real database IDs
+**Backend**: SQLite session generates temporary auto-increment IDs for new entities
+**On Save**: Backend transforms new entities (create in MySQL) and existing entities (update in MySQL)
+**After Save**: Frontend receives updated state with real IDs from backend
+
+**Benefits**:
+- **No Signature Matching**: Deterministic tracking via temporary IDs
+- **No Heuristic Logic**: Backend handles all ID generation
+- **Reliable Updates**: Updates happen in place, not delete & recreate
+
+### **Mechanics Management**
+
+All class mechanics (BAB, saves, hit die, skill points) are managed through the feature management workflow:
+
+**No Convenience Forms**: Removed convenience form fields for mechanics
+**Feature-Based**: All mechanics are `FeatureEntity` records with `EntityType.Base`
+**Shared Progressions**: Progressions can be shared across multiple classes
+**Workflow**: Admins manage mechanics through FeaturesTab, same as other features
+
+**Rationale**:
+- Simplifies the model (no need to determine if progression exists vs. creating new)
+- Enables shared progressions (e.g., "good BAB progression" shared across classes)
+- Admins are already familiar with feature management workflow
+- Consistent with overall architecture (all mechanics flow through feature system)
+
+### **Context Preservation**
+
+The state-based pattern ensures context is preserved throughout the editing session:
+
+**Class ID**: Always available in `state.classId`
+**Feature Creation**: When creating new features, class ID is automatically linked
+**Modal Navigation**: FeatureEditForm uses modal mode, keeping user in ClassEdit context
+**No Orphaned Data**: New progressions automatically linked to class from state
+
+**Source Files**:
+- State Hook: `frontend/src/features/class/useClassEditState.ts`
+- Session Hook: `frontend/src/features/class/useClassResolution.ts`
+- API Client: `frontend/src/services/api/ClassResolutionApi.ts`
+- Types: `frontend/src/features/class/types.ts`, `packages/shared/schema/src/classResolution.ts`
+
+**Related Documentation**: 
+- [Backend Session Management](../backend-implementation.md#session-management) - Backend session infrastructure
+- [CharacterEdit Pattern](../character-management/frontend-components.md#state-based-pattern) - Reference implementation
 
 ## 🔗 **Integration Patterns**
 

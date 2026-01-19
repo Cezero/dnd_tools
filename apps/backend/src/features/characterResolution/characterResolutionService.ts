@@ -1,11 +1,11 @@
-import type { FeatureProgression, CharacterWithAllDetailsResponse, DnDClass, FeatInQueryResponse, FeatureEntity } from '@shared/schema';
+import type { FeatureProgression, CharacterWithAllDetailsResponse, DnDClass, FeatInQueryResponse, FeatureEntity, PendingChoice } from '@shared/schema';
 import { EditionId } from '@shared/static-data';
 
 import { CascadingResolver } from './cascadingResolver';
 import { ChoiceResolver } from './choiceResolver';
 import { FeatureEntityHandlers } from './featureEntityHandlers';
 import { GestaltClassService } from './gestaltClassService';
-import type { ResolutionContext, ResolutionResult, PendingChoice } from './types';
+import type { ResolutionContext, ResolutionResult } from './types';
 import { companionService } from '../companion/companionService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 

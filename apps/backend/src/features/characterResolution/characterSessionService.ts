@@ -1,9 +1,9 @@
-import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 
 import type { CharacterWithAllDetailsResponse, ClassSpellSelection, DnDClass, FeatInQueryResponse } from '@shared/schema';
 
-import { getSessionDatabase } from './sessionDatabase';
+import { getRedisClient } from '../shared/session/redisClient';
+import type { RedisSessionClient } from '../shared/session/types';
 import type { CharacterEditState, ResolutionResult } from './types';
 
 /**
@@ -23,27 +23,14 @@ export interface ResolvedCharacterResult extends ResolutionResult {
     /** List of feats the character qualifies for, filtered by prerequisites, proficiencies, owned feats, etc. */
     qualifiedFeats: FeatInQueryResponse[];
     spellSelection?: Record<string, ClassSpellSelection>;
+    /** Map of entity IDs to resolved formula values. Keyed by entity ID (or composite key). Used for BAB, saves, and other formula-based mechanics. */
+    resolvedFormulaValues?: Record<string, number>;
     effectiveClassDetails?: DnDClass | null;
     sessionId: string;
 }
 
 /**
- * Database row structure for character_edit_sessions table
- */
-interface CharacterSessionRow {
-    id: string;
-    character_id: number;
-    user_id: number;
-    session_key: string;
-    character_state: string;
-    resolved_result: string;
-    created_at: number;
-    updated_at: number;
-    expires_at: number;
-}
-
-/**
- * Character session stored in SQLite
+ * Character session stored in Redis
  */
 interface CharacterSession {
     id: string;
@@ -58,29 +45,62 @@ interface CharacterSession {
 }
 
 /**
- * Service for managing character editing sessions in SQLite.
+ * Internal session data structure stored in Redis
+ */
+interface CharacterSessionData {
+    id: string;
+    characterId: number;
+    userId: number;
+    sessionKey: string;
+    characterState: CharacterEditState;
+    resolvedResult: ResolvedCharacterResult;
+    createdAt: number;
+    updatedAt: number;
+    expiresAt: number;
+}
+
+/**
+ * Builds Redis key for session by session key.
+ */
+function buildSessionKey(sessionKey: string): string {
+    return `session:character:${sessionKey}`;
+}
+
+/**
+ * Builds Redis key for session by session ID.
+ */
+function buildSessionIdKey(sessionId: string): string {
+    return `session:character:id:${sessionId}`;
+}
+
+/**
+ * Builds Redis key for session index (reverse lookup from sessionKey to sessionId).
+ */
+function buildSessionIndexKey(sessionKey: string): string {
+    return `session:character:index:${sessionKey}`;
+}
+
+/**
+ * Service for managing character editing sessions in Redis.
  * 
- * Provides persistent session storage using better-sqlite3 for lightweight,
- * on-disk database operations. Sessions survive backend restarts and automatically
- * expire after a configurable period of inactivity.
+ * Provides persistent session storage using Redis for scalable,
+ * in-memory database operations. Sessions survive backend restarts and automatically
+ * expire after a configurable period of inactivity using Redis TTL.
  * 
  * Features:
- * - Automatic cleanup of expired sessions
+ * - Automatic expiration via Redis TTL (no manual cleanup needed)
  * - Session state persistence (character edits, resolved features)
  * - Per-user, per-character session isolation
- * - WAL mode for concurrent access
+ * - High-performance in-memory storage
  */
 export class CharacterSessionService {
-    private db: InstanceType<typeof Database>;
-    private cleanupInterval: ReturnType<typeof setInterval> | null = null;
-    private readonly SESSION_TTL_MS = (parseInt(process.env.SESSION_EXPIRATION_MINUTES || '30') * 60 * 1000);
+    private redis: RedisSessionClient;
+    private readonly SESSION_TTL_SECONDS: number;
 
-    constructor(db?: InstanceType<typeof Database>) {
-        this.db = db || getSessionDatabase();
-        // Run cleanup every 5 minutes
-        this.cleanupInterval = setInterval(() => {
-            this.cleanupExpiredSessions().catch(console.error);
-        }, 5 * 60 * 1000);
+    constructor() {
+        this.redis = getRedisClient();
+        const ttlMinutes = parseInt(process.env.SESSION_EXPIRATION_MINUTES || '30', 10);
+        this.SESSION_TTL_SECONDS = ttlMinutes * 60;
     }
 
     /**
@@ -88,26 +108,48 @@ export class CharacterSessionService {
      * 
      * Only returns sessions that have not expired. Returns null if no active session exists.
      */
-    getSession(characterId: number, userId: number): CharacterSession | null {
-        const sessionKey = `${characterId}:${userId}`;
-        const row = this.db.prepare(`
-            SELECT * FROM character_edit_sessions 
-            WHERE session_key = ? AND expires_at > ?
-        `).get(sessionKey, Date.now()) as CharacterSessionRow | undefined;
+    async getSession(characterId: number, userId: number): Promise<CharacterSession | null> {
+        try {
+            const sessionKey = `${characterId}:${userId}`;
+            const redisKey = buildSessionKey(sessionKey);
+            const data = await this.redis.get(redisKey);
 
-        if (!row) return null;
+            if (!data) {
+                return null;
+            }
 
-        return {
-            id: row.id,
-            characterId: row.character_id,
-            userId: row.user_id,
-            sessionKey: row.session_key,
-            characterState: JSON.parse(row.character_state),
-            resolvedResult: JSON.parse(row.resolved_result),
-            createdAt: new Date(row.created_at),
-            updatedAt: new Date(row.updated_at),
-            expiresAt: new Date(row.expires_at)
-        };
+            let sessionData: CharacterSessionData;
+            try {
+                sessionData = JSON.parse(data) as CharacterSessionData;
+            } catch (parseError) {
+                console.error(`Failed to parse session data for key ${redisKey}:`, parseError);
+                console.error('Raw data:', data);
+                return null;
+            }
+
+            // Check if session has expired (backup check, though Redis TTL should handle this)
+            if (sessionData.expiresAt && sessionData.expiresAt < Date.now()) {
+                return null;
+            }
+
+            return {
+                id: sessionData.id,
+                characterId: sessionData.characterId,
+                userId: sessionData.userId,
+                sessionKey: sessionData.sessionKey,
+                characterState: sessionData.characterState,
+                resolvedResult: sessionData.resolvedResult,
+                createdAt: new Date(sessionData.createdAt),
+                updatedAt: new Date(sessionData.updatedAt),
+                expiresAt: new Date(sessionData.expiresAt)
+            };
+        } catch (error) {
+            console.error(`Error retrieving session for character ${characterId}, user ${userId}:`, error);
+            if (error instanceof Error) {
+                console.error('Error stack:', error.stack);
+            }
+            throw error;
+        }
     }
 
     /**
@@ -115,24 +157,31 @@ export class CharacterSessionService {
      * 
      * Only returns sessions that have not expired. Returns null if session not found or expired.
      */
-    getSessionById(sessionId: string): CharacterSession | null {
-        const row = this.db.prepare(`
-            SELECT * FROM character_edit_sessions 
-            WHERE id = ? AND expires_at > ?
-        `).get(sessionId, Date.now()) as CharacterSessionRow | undefined;
+    async getSessionById(sessionId: string): Promise<CharacterSession | null> {
+        const redisKey = buildSessionIdKey(sessionId);
+        const data = await this.redis.get(redisKey);
 
-        if (!row) return null;
+        if (!data) {
+            return null;
+        }
+
+        const sessionData = JSON.parse(data) as CharacterSessionData;
+
+        // Check if session has expired (backup check, though Redis TTL should handle this)
+        if (sessionData.expiresAt && sessionData.expiresAt < Date.now()) {
+            return null;
+        }
 
         return {
-            id: row.id,
-            characterId: row.character_id,
-            userId: row.user_id,
-            sessionKey: row.session_key,
-            characterState: JSON.parse(row.character_state),
-            resolvedResult: JSON.parse(row.resolved_result),
-            createdAt: new Date(row.created_at),
-            updatedAt: new Date(row.updated_at),
-            expiresAt: new Date(row.expires_at)
+            id: sessionData.id,
+            characterId: sessionData.characterId,
+            userId: sessionData.userId,
+            sessionKey: sessionData.sessionKey,
+            characterState: sessionData.characterState,
+            resolvedResult: sessionData.resolvedResult,
+            createdAt: new Date(sessionData.createdAt),
+            updatedAt: new Date(sessionData.updatedAt),
+            expiresAt: new Date(sessionData.expiresAt)
         };
     }
 
@@ -150,10 +199,10 @@ export class CharacterSessionService {
     ): Promise<CharacterSession> {
         const sessionKey = `${character.id}:${userId}`;
         const now = Date.now();
-        const expiresAt = now + this.SESSION_TTL_MS;
+        const expiresAt = now + (this.SESSION_TTL_SECONDS * 1000);
 
         // Delete any existing session for this character/user
-        this.db.prepare('DELETE FROM character_edit_sessions WHERE session_key = ?').run(sessionKey);
+        await this.deleteSession(sessionKey);
 
         const session: CharacterSession = {
             id: uuidv4(),
@@ -167,30 +216,33 @@ export class CharacterSessionService {
             expiresAt: new Date(expiresAt)
         };
 
-        this.db.prepare(`
-            INSERT INTO character_edit_sessions 
-            (id, character_id, user_id, session_key, character_state, resolved_result, created_at, updated_at, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            session.id,
-            session.characterId,
-            session.userId,
-            session.sessionKey,
-            JSON.stringify(session.characterState),
-            JSON.stringify(session.resolvedResult),
-            now,
-            now,
-            expiresAt
-        );
+        // Prepare session data for storage
+        const sessionData: CharacterSessionData = {
+            id: session.id,
+            characterId: session.characterId,
+            userId: session.userId,
+            sessionKey: session.sessionKey,
+            characterState: session.characterState,
+            resolvedResult: session.resolvedResult,
+            createdAt: now,
+            updatedAt: now,
+            expiresAt: now + (this.SESSION_TTL_SECONDS * 1000)
+        };
+
+        const sessionRedisKey = buildSessionKey(sessionKey);
+        const sessionIdRedisKey = buildSessionIdKey(session.id);
+        const indexRedisKey = buildSessionIndexKey(sessionKey);
+
+        // Store session data in Redis with TTL
+        await Promise.all([
+            this.redis.setEx(sessionRedisKey, this.SESSION_TTL_SECONDS, JSON.stringify(sessionData)),
+            this.redis.setEx(sessionIdRedisKey, this.SESSION_TTL_SECONDS, JSON.stringify(sessionData)),
+            this.redis.setEx(indexRedisKey, this.SESSION_TTL_SECONDS, session.id)
+        ]);
 
         return session;
     }
 
-    /**
-     * Updates an existing session with new character state and resolution results.
-     * 
-     * Extends the session expiration time on each update. Throws an error if the session doesn't exist.
-     */
     /**
      * Updates an existing session with new character state and resolved result.
      * 
@@ -220,24 +272,32 @@ export class CharacterSessionService {
         characterState: CharacterEditState,
         resolvedResult: ResolvedCharacterResult
     ): Promise<void> {
-        const now = Date.now();
-        const expiresAt = now + this.SESSION_TTL_MS; // Extend expiration
+        const redisKey = buildSessionKey(sessionKey);
+        const existingData = await this.redis.get(redisKey);
 
-        const result = this.db.prepare(`
-            UPDATE character_edit_sessions 
-            SET character_state = ?, resolved_result = ?, updated_at = ?, expires_at = ?
-            WHERE session_key = ?
-        `).run(
-            JSON.stringify(characterState),
-            JSON.stringify(resolvedResult),
-            now,
-            expiresAt,
-            sessionKey
-        );
-
-        if (result.changes === 0) {
+        if (!existingData) {
             throw new Error(`Session not found: ${sessionKey}`);
         }
+
+        const existingSession = JSON.parse(existingData) as CharacterSessionData;
+        const now = Date.now();
+        const expiresAt = now + (this.SESSION_TTL_SECONDS * 1000);
+
+        const updatedSessionData: CharacterSessionData = {
+            ...existingSession,
+            characterState,
+            resolvedResult,
+            updatedAt: now,
+            expiresAt
+        };
+
+        const sessionIdRedisKey = buildSessionIdKey(existingSession.id);
+
+        // Update session data and extend TTL
+        await Promise.all([
+            this.redis.setEx(redisKey, this.SESSION_TTL_SECONDS, JSON.stringify(updatedSessionData)),
+            this.redis.setEx(sessionIdRedisKey, this.SESSION_TTL_SECONDS, JSON.stringify(updatedSessionData))
+        ]);
     }
 
     /**
@@ -246,7 +306,22 @@ export class CharacterSessionService {
      * Silently succeeds if the session doesn't exist.
      */
     async deleteSession(sessionKey: string): Promise<void> {
-        this.db.prepare('DELETE FROM character_edit_sessions WHERE session_key = ?').run(sessionKey);
+        const redisKey = buildSessionKey(sessionKey);
+        const indexRedisKey = buildSessionIndexKey(sessionKey);
+
+        // Get session ID from index for cleanup
+        const sessionId = await this.redis.get(indexRedisKey);
+        const sessionIdRedisKey = sessionId ? buildSessionIdKey(sessionId) : null;
+
+        // Delete all related keys
+        const keysToDelete = [redisKey, indexRedisKey];
+        if (sessionIdRedisKey) {
+            keysToDelete.push(sessionIdRedisKey);
+        }
+
+        if (keysToDelete.length > 0) {
+            await this.redis.del(keysToDelete);
+        }
     }
 
     /**
@@ -255,33 +330,48 @@ export class CharacterSessionService {
      * Silently succeeds if the session doesn't exist.
      */
     async deleteSessionById(sessionId: string): Promise<void> {
-        this.db.prepare('DELETE FROM character_edit_sessions WHERE id = ?').run(sessionId);
+        const sessionIdRedisKey = buildSessionIdKey(sessionId);
+        const sessionData = await this.redis.get(sessionIdRedisKey);
+
+        if (!sessionData) {
+            return; // Session doesn't exist, silently succeed
+        }
+
+        const session = JSON.parse(sessionData) as CharacterSessionData;
+        const sessionKey = session.sessionKey;
+
+        // Delete all related keys
+        const redisKey = buildSessionKey(sessionKey);
+        const indexRedisKey = buildSessionIndexKey(sessionKey);
+
+        await this.redis.del([redisKey, sessionIdRedisKey, indexRedisKey]);
     }
 
     /**
-     * Removes all expired sessions from the database.
+     * Removes all expired sessions from Redis.
      * 
-     * Called automatically every 5 minutes by the cleanup interval.
+     * **Note**: This method is kept for backward compatibility but is no longer needed.
+     * Redis automatically removes expired keys using TTL. This method does nothing.
      * 
-     * @returns Number of sessions deleted
+     * @returns Promise resolving to 0 (no manual cleanup needed)
+     * 
+     * @deprecated Redis TTL handles expiration automatically
      */
     async cleanupExpiredSessions(): Promise<number> {
-        const result = this.db.prepare('DELETE FROM character_edit_sessions WHERE expires_at < ?').run(Date.now());
-        return result.changes;
+        // Redis handles expiration automatically via TTL
+        // No manual cleanup needed
+        return 0;
     }
 
     /**
-     * Cleans up the service by stopping the cleanup interval.
+     * Cleans up the service.
      * 
-     * Note: Does not close the database connection as it's a singleton
-     * that should remain open for the application lifetime.
+     * **Note**: Redis connection is managed as a singleton and should remain open
+     * for the application lifetime. This method does nothing but is kept for
+     * backward compatibility.
      */
     destroy(): void {
-        if (this.cleanupInterval) {
-            clearInterval(this.cleanupInterval);
-        }
-        // Note: We don't close the database here as it's a singleton
-        // The database should be closed at application shutdown
+        // Redis connection is managed as a singleton
+        // No cleanup needed here
     }
 }
-

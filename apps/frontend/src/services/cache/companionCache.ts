@@ -45,8 +45,15 @@ export const getCompanionIdByName = (name: string): number | undefined => {
 
 /**
  * Get companion name from cache (standalone)
+ * 
+ * @param id - Companion ID (can be null or undefined)
+ * @returns Companion name or null if not found
  */
-export const getCompanionNameFromCache = (id: number): string | undefined => {
+export const getCompanionNameFromCache = (id: number | null | undefined): string | null => {
+    if (!id) {
+        return null;
+    }
+
     const queryClient = getStandaloneQueryClient();
     const cacheData = queryClient.getQueryData<CompanionCacheResponse>(['companions-cache']);
     if (!cacheData?.results) return undefined;

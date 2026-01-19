@@ -7,9 +7,9 @@ import type { BreakdownMap, BreakdownComponent as CalculationBreakdownComponent 
 import { canUseTwoHanded, isTwoHandedWeapon } from '@/lib/character-calculation/utils/weaponHelpers';
 import { extractBABProgression } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
-import { getSkillSummaryById, getSkillSelectFull } from '@/services/cache';
+import { getSkillSummaryById, getSkillSelectFull, getFeatNameFromCache, getItemNameFromCache, getFeatureNameFromCache, getSpellNameFromCache, getDomainNameFromCache } from '@/services/cache';
 import type { FeatureProgression, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
-import { FeatureSourceType , EntityAppliesToType, EntityType, AbilityId, SpecialFeatureId, CalculationMethodType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
+import { EntityAppliesToType, EntityType, AbilityId, SpecialFeatureId, CalculationMethodType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
 
 import { conditionLabelerRegistry } from './condition-labeler-registry';
@@ -40,7 +40,7 @@ import type {
     CalculationBreakdown,
     BreakdownComponent,
 } from './types';
-import { getFeatNameFromCache } from './utils/cache-helpers';
+import { getCharacterBAB } from '../attack-calculation/utils';
 
 export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     protected formatProgressions(
@@ -169,18 +169,27 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      * Get target name for structured data
      */
     private getTargetName(entity: CalculatedEntity): string | undefined {
-        if (entity.item?.name) {
-            return entity.item.name;
+        // Use cache lookups for all entity types
+        // Items are referenced via appliesToSubId for certain appliesTo types
+        if (entity.appliesToSubId) {
+            // Check if this might be an item reference - use cache lookup
+            const itemName = getItemNameFromCache(entity.appliesToSubId);
+            if (itemName) return itemName;
         }
-        // Use cache helper for feat name
+        if (entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && entity.appliesToId) {
+            return getItemNameFromCache(entity.appliesToId);
+        }
         if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
-            const featName = getFeatNameFromCache(entity.appliesToId);
-            if (featName) {
-                return featName;
-            }
+            return getFeatNameFromCache(entity.appliesToId);
         }
-        if (entity.feature?.name) {
-            return entity.feature.name;
+        if (entity.appliesTo === EntityAppliesToType.Feature && entity.appliesToId) {
+            return getFeatureNameFromCache(entity.appliesToId);
+        }
+        if (entity.appliesTo === EntityAppliesToType.Spell && entity.appliesToId) {
+            return getSpellNameFromCache(entity.appliesToId);
+        }
+        if (entity.appliesTo === EntityAppliesToType.Domain && entity.appliesToId) {
+            return getDomainNameFromCache(entity.appliesToId);
         }
         return undefined;
     }
@@ -655,7 +664,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         const initiative = this._formatInitiative(character, resolvedProgressions, context);
 
         // 10. Format base attack bonus
-        const baseAttackBonus = this._formatBaseAttackBonus(character, resolvedProgressions, classDetailsMap);
+        const baseAttackBonus = this._formatBaseAttackBonus(character, resolvedProgressions, classDetailsMap, context?.resolvedFormulaValues);
 
         // 11. Format grapple
         const grapple = this._formatGrapple(character, resolvedProgressions, classDetailsMap, context);
@@ -905,8 +914,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                         let bonusValue = 0;
                         if (entity.type === EntityType.Bonus && entity.value) {
                             bonusValue = entity.value;
-                        } else if (entity.type === EntityType.Other && entity.value) {
-                            // Some skill bonuses might be Other type
+                        } else if ((entity.type === EntityType.Other || entity.type === EntityType.Base) && entity.value) {
+                            // Some skill bonuses might be Other type, or base values might be Base type
                             bonusValue = entity.value;
                         }
 
@@ -1354,10 +1363,12 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 if (prog.entities) {
                     for (const ent of prog.entities) {
                         if (ent.appliesTo === EntityAppliesToType.Domain &&
-                            ent.domain &&
-                            ent.domain.id === prog.domainId) {
-                            domainMap.set(prog.domainId, ent.domain.name);
-                            break;
+                            ent.appliesToId === prog.domainId) {
+                            const domainName = getDomainNameFromCache(prog.domainId);
+                            if (domainName) {
+                                domainMap.set(prog.domainId, domainName);
+                                break;
+                            }
                         }
                     }
                 }
@@ -1512,9 +1523,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                         if (prog.entities) {
                             for (const ent of prog.entities) {
                                 if (ent.appliesTo === EntityAppliesToType.Domain &&
-                                    ent.domain &&
-                                    ent.domain.id === choice.appliesToId) {
-                                    return ent.domain.name;
+                                    ent.appliesToId === choice.appliesToId) {
+                                    const domainName = getDomainNameFromCache(choice.appliesToId);
+                                    if (domainName) {
+                                        return domainName;
+                                    }
                                 }
                             }
                         }
@@ -1541,9 +1554,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     if (prog.entities) {
                         for (const ent of prog.entities) {
                             if (ent.appliesTo === EntityAppliesToType.Feature &&
-                                ent.feature &&
-                                ent.feature.id === choice.appliesToId) {
-                                return ent.feature.name;
+                                ent.appliesToId === choice.appliesToId) {
+                                const featureName = getFeatureNameFromCache(choice.appliesToId);
+                                if (featureName) {
+                                    return featureName;
+                                }
                             }
                         }
                     }
@@ -1566,9 +1581,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     if (prog.entities) {
                         for (const ent of prog.entities) {
                             if (ent.appliesTo === EntityAppliesToType.Spell &&
-                                ent.spell &&
-                                ent.spell.id === choice.appliesToId) {
-                                return ent.spell.name;
+                                ent.appliesToId === choice.appliesToId) {
+                                const spellName = getSpellNameFromCache(choice.appliesToId);
+                                if (spellName) {
+                                    return spellName;
+                                }
                             }
                         }
                     }
@@ -1698,57 +1715,17 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     private _formatBaseAttackBonus(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
-        classDetailsMap: Map<number, DnDClass>
+        classDetailsMap: Map<number, DnDClass>,
+        resolvedFormulaValues?: Record<string, number>
     ): string {
-        // Check if character is gestalt
-        const isGestalt = character.isGestalt || character.advancements.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
-
-        let totalBAB = 0;
-
-        if (isGestalt) {
-            // For gestalt, backend has already filtered to include only the best BAB progression
-            // Use total character level with the best progression from resolved progressions
-            const totalLevel = character.advancements.length;
-            
-            if (resolvedProgressions && resolvedProgressions.length > 0) {
-                // Find the best BAB progression from resolved progressions
-                const classMechanicsProgressions = resolvedProgressions.filter(p =>
-                    p.feature?.slug === 'class-mechanics' &&
-                    p.sourceType === FeatureSourceType.Class
-                );
-                
-                if (classMechanicsProgressions.length > 0) {
-                    const babProgression = extractBABProgression(classMechanicsProgressions);
-                    if (babProgression !== null && babProgression !== undefined) {
-                        const babString = getBABProgression(totalLevel, babProgression);
-                        const match = babString.match(/\+(\d+)/);
-                        if (match) {
-                            totalBAB = parseInt(match[1], 10);
-                        }
-                    }
-                }
-            }
-        } else {
-            // Non-gestalt multiclass: sum BAB from all classes
-            const classLevelCounts = new Map<number, number>();
-            for (const advancement of character.advancements) {
-                const currentLevel = classLevelCounts.get(advancement.classId) ?? 0;
-                classLevelCounts.set(advancement.classId, currentLevel + 1);
-            }
-
-            // Calculate total BAB by summing contributions from each class
-            for (const [classId, level] of classLevelCounts.entries()) {
-                // Extract BAB progression from resolved progressions
-                const babProgression = extractBABProgression(resolvedProgressions, classId);
-                if (babProgression !== null && babProgression !== undefined) {
-                    const babString = getBABProgression(level, babProgression);
-                    const match = babString.match(/\+(\d+)/);
-                    if (match) {
-                        totalBAB += parseInt(match[1], 10);
-                    }
-                }
-            }
-        }
+        // Use getCharacterBAB which handles pre-resolved formula values when available,
+        // falling back to extracting ProgressionType for backward compatibility
+        const totalBAB = getCharacterBAB(
+            character,
+            classDetailsMap,
+            resolvedProgressions,
+            resolvedFormulaValues
+        );
 
         // Format BAB with iterative attacks
         if (totalBAB <= 0) return '+0';

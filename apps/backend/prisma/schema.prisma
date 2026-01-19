@@ -112,24 +112,24 @@ model Feature {
 }
 
 model FeatureProgression {
-  id                Int  @id @default(autoincrement())
-  sourceType        Int
-  level             Int
-  featureId         Int
-  domainId          Int? // Reference to domain for domain-granted features
-  featId            Int? // Reference to Feat (same pattern as domainId)
-  companionId       Int? // Reference to Companion for companion-granted features
-  editionId         Int? // Reference to edition for edition-granted features
+  id          Int  @id @default(autoincrement())
+  sourceType  Int
+  level       Int
+  featureId   Int
+  domainId    Int? // Reference to domain for domain-granted features
+  featId      Int? // Reference to Feat (same pattern as domainId)
+  companionId Int? // Reference to Companion for companion-granted features
+  editionId   Int? // Reference to edition for edition-granted features
 
-  domain               Domain?                                 @relation(fields: [domainId], references: [id]) // Domain relationship
-  feat                 Feat?                                   @relation(fields: [featId], references: [id]) // Feat relationship
-  companion            Companion?                              @relation(fields: [companionId], references: [id]) // Companion relationship
+  domain    Domain?    @relation(fields: [domainId], references: [id]) // Domain relationship
+  feat      Feat?      @relation(fields: [featId], references: [id]) // Feat relationship
+  companion Companion? @relation(fields: [companionId], references: [id]) // Companion relationship
 
   // Many-to-many relationship for reusable progressions
   classes FeatureProgressionClassMap[]
   races   FeatureProgressionRaceMap[] // Many-to-many relationship for reusable race progressions
 
-  feature                Feature                                  @relation(fields: [featureId], references: [id])
+  feature                Feature                       @relation(fields: [featureId], references: [id])
   spellcasting           SpellcastingLink?
   characterFeatureChoice CharacterFeatureChoice[]
   entities               FeatureEntity[]
@@ -176,7 +176,7 @@ model FeatureEntity {
   formulaParamsId Int?
   groupingId      Int     @default(0)
   type            Int
-  value           Int?
+  value           Float? // Can be float for fractional scalingValues (e.g., 0.5, 0.75 for LEVEL_TIMES_VALUE)
   bonusType       Int?
   displayInDetail Boolean @default(true)
   filterType      Int?
@@ -201,6 +201,10 @@ model FeatureFormulaParams {
   // Enhanced parameters for complex scaling
   valuesRepresent Int? // ConditionalScalingValueType enum
   cumulative      Boolean @default(false) // Whether values accumulate
+
+  // Division-based formula parameters (for LEVEL_DIVIDED_BY and LEVEL_DIVIDED_BY_PLUS_BASE)
+  divisor   Int? // Divisor value for floor(level / divisor) formulas
+  baseValue Int? // Base value to add for floor(level / divisor) + baseValue formulas
 
   featureEntity FeatureEntity[]
 }
@@ -258,16 +262,16 @@ model Spell {
   effect          String?
   target          String?
 
-  descriptorIds    SpellDescriptorMap[]
-  levelMapping     SpellLevelMap[]
-  schoolIds        SpellSchoolMap[]
-  sourceBookInfo   SpellSourceMap[]
-  subSchoolIds     SpellSubschoolMap[]
-  componentIds     SpellComponentMap[]
-  advSpells        AdvancementSpell[]
-  charSpellPrep    CharacterSpellPreparation[]
-  domainSpells     DomainSpell[] // NEW: Domain spell associations
-  monsterSpells    MonsterSpell[]
+  descriptorIds  SpellDescriptorMap[]
+  levelMapping   SpellLevelMap[]
+  schoolIds      SpellSchoolMap[]
+  sourceBookInfo SpellSourceMap[]
+  subSchoolIds   SpellSubschoolMap[]
+  componentIds   SpellComponentMap[]
+  advSpells      AdvancementSpell[]
+  charSpellPrep  CharacterSpellPreparation[]
+  domainSpells   DomainSpell[] // NEW: Domain spell associations
+  monsterSpells  MonsterSpell[]
 }
 
 model SpellDescriptorMap {

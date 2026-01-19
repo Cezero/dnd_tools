@@ -53,8 +53,15 @@ export const getSpellIdByName = (name: string): number | undefined => {
 
 /**
  * Get spell name from cache (standalone)
+ * 
+ * @param id - Spell ID (can be null or undefined)
+ * @returns Spell name or null if not found
  */
-export const getSpellNameFromCache = (id: number): string | undefined => {
+export const getSpellNameFromCache = (id: number | null | undefined): string | null => {
+    if (!id) {
+        return null;
+    }
+
     const queryClient = getStandaloneQueryClient();
     const cacheData = queryClient.getQueryData<SpellCacheResponse>(['spells-cache']);
     if (!cacheData?.results) return undefined;

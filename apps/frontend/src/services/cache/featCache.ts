@@ -93,8 +93,20 @@ export const getFeatIdByName = (name: string): number | undefined => {
 
 /**
  * Get feat name from cache (standalone)
+ * 
+ * Enhanced version that checks multiple cache keys with priority:
+ * 1. Individual feat cache: ['feats', 'item', featId]
+ * 2. Full feats list cache: ['feats', 'full']
+ * 3. Feats cache: ['feats-cache']
+ * 
+ * @param id - Feat ID (can be null or undefined)
+ * @returns Feat name or null if not found
  */
-export const getFeatNameFromCache = (id: number): string | undefined => {
+export const getFeatNameFromCache = (id: number | null | undefined): string | null => {
+    if (!id) {
+        return null;
+    }
+
     const queryClient = getStandaloneQueryClient();
     const cacheData = queryClient.getQueryData<FeatCacheResponse>(['feats-cache']);
     if (!cacheData?.results) return undefined;

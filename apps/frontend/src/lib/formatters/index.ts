@@ -24,7 +24,6 @@ export * from './phases';
 
 // Export utils
 export * from './utils';
-export * from './utils/cache-helpers';
 
 // Export hooks
 export * from './hooks/usePrecacheFeatureEntities';

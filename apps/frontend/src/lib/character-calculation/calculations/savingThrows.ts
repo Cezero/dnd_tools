@@ -1,6 +1,6 @@
 import { extractSaveProgression } from '@/lib/feature-extraction/classMechanicsExtractor';
 import type { CharacterWithAllDetailsResponse, FeatureProgression, DnDClass } from '@shared/schema';
-import { AbilityId, GetAbilityModifier, ABILITY_MAP, ProgressionType, EntityAppliesToType, SavingThrowId, FeatureSourceType } from '@shared/static-data';
+import { AbilityId, GetAbilityModifier, ABILITY_MAP, ProgressionType, EntityAppliesToType, EntityType, SavingThrowId, FeatureSourceType } from '@shared/static-data';
 import { getSaveProgression } from '@shared/utils';
 
 import { getAbilityScore } from './abilityScore';
@@ -30,12 +30,16 @@ export interface SavingThrowBreakdownMap extends BreakdownMap {
 
 /**
  * Get saving throw modifier
+ * 
+ * Uses pre-resolved formula values from backend when available (resolvedFormulaValues map).
+ * Falls back to extracting ProgressionType and using getSaveProgression for backward compatibility.
  */
 export function getSavingThrow(
     character: CharacterWithAllDetailsResponse,
     saveType: number,
     resolvedProgressions: FeatureProgression[],
-    classDetailsMap: Map<number, DnDClass>
+    classDetailsMap: Map<number, DnDClass>,
+    resolvedFormulaValues?: Record<string, number>
 ): CalculationResult<SavingThrowBreakdownMap> {
     // Determine ability score for this save
     let abilityId: number;
@@ -67,56 +71,94 @@ export function getSavingThrow(
 
     let baseSave = 0;
 
-    if (isGestalt) {
-        // For gestalt, backend has already filtered to include only the best save progression
-        // Use total character level with the best progression from resolved progressions
-        const totalLevel = character.advancements.length;
-        
-        if (resolvedProgressions && resolvedProgressions.length > 0) {
-            // Find the best save progression from resolved progressions
-            // For gestalt, there should only be one class-mechanics progression with the best saves
-            const classMechanicsProgressions = resolvedProgressions.filter(p =>
-                p.feature?.slug === 'class-mechanics' &&
-                p.sourceType === FeatureSourceType.Class
-            );
-            
-            if (classMechanicsProgressions.length > 0) {
-                // Extract save progression from the first class-mechanics progression (should be the merged/best one)
-                const progression = extractSaveProgression(classMechanicsProgressions, savingThrowId);
-                if (progression !== null && progression !== undefined) {
-                    if (progression === ProgressionType.good || progression === ProgressionType.poor) {
-                        baseSave = getSaveProgression(totalLevel, progression);
+    // Try to use pre-resolved values first
+    if (resolvedFormulaValues) {
+        // Find save entities for this save type in resolved progressions
+        const saveEntities: Array<{ entityId: number; progression: FeatureProgression }> = [];
+        for (const progression of resolvedProgressions) {
+            if (progression.entities) {
+                for (const entity of progression.entities) {
+                    if (entity.appliesTo === EntityAppliesToType.SavingThrow &&
+                        entity.appliesToId === savingThrowId &&
+                        entity.formulaParams) {
+                        saveEntities.push({ entityId: entity.id, progression });
                     }
                 }
             }
         }
-    } else {
-        // Non-gestalt multiclass: sum saves from all classes
-        const classLevelCounts = new Map<number, number>();
-        for (const advancement of character.advancements) {
-            const currentLevel = classLevelCounts.get(advancement.classId) ?? 0;
-            classLevelCounts.set(advancement.classId, currentLevel + 1);
+
+        // Try to use pre-resolved values first
+        if (resolvedFormulaValues) {
+            const saveKey = `save_${savingThrowId}`;
+            const resolvedSave = resolvedFormulaValues[saveKey];
+            if (resolvedSave !== undefined) {
+                baseSave = resolvedSave;
+            }
         }
+    }
 
-        // Calculate base save from class progressions
-        for (const [classId, level] of classLevelCounts.entries()) {
-            const classDetails = classDetailsMap.get(classId);
-            if (!classDetails) continue;
+    // Fallback to old method for backward compatibility if no resolved values found
+    if (baseSave === 0) {
+        if (isGestalt) {
+            // For gestalt, backend has already filtered to include only the best save progression
+            // Use total character level with the best progression from resolved progressions
+            const totalLevel = character.advancements.length;
 
-            // Extract progression from resolved progressions (class-mechanics feature)
-            const classProgressions = resolvedProgressions.filter(p =>
-                p.sourceType === FeatureSourceType.Class &&
-                p.classes?.some(c => c.classId === classId)
-            );
-            const progression = extractSaveProgression(classProgressions, savingThrowId, classId);
+            if (resolvedProgressions && resolvedProgressions.length > 0) {
+                // Find the best save progression from resolved progressions
+                // For gestalt, filter by sourceType and EntityType instead of feature slug
+                const classProgressions = resolvedProgressions.filter(p =>
+                    p.sourceType === FeatureSourceType.Class &&
+                    p.entities?.some(e =>
+                        e.type === EntityType.Base &&
+                        e.appliesTo === EntityAppliesToType.SavingThrow &&
+                        e.appliesToId === savingThrowId
+                    )
+                );
 
-            // Check for progression value - must check !== undefined, not truthy (0 is valid for good)
-            if (progression !== undefined && progression !== null) {
-                // Use existing getSaveProgression utility function
-                if (progression === ProgressionType.good || progression === ProgressionType.poor) {
-                    baseSave += getSaveProgression(level, progression);
+                if (classProgressions.length > 0) {
+                    // Extract save progression from class progressions (should be the merged/best one)
+                    const progression = extractSaveProgression(classProgressions, savingThrowId);
+                    if (progression !== null && progression !== undefined) {
+                        if (progression === ProgressionType.good || progression === ProgressionType.poor) {
+                            baseSave = getSaveProgression(totalLevel, progression);
+                        }
+                    }
                 }
-                // progression === 1 (average) is not used in D&D 3.5, skip it
+            }
+        } else {
+            // Non-gestalt multiclass: sum saves from all classes
+            const classLevelCounts = new Map<number, number>();
+            for (const advancement of character.advancements) {
+                const currentLevel = classLevelCounts.get(advancement.classId) ?? 0;
+                classLevelCounts.set(advancement.classId, currentLevel + 1);
+            }
+
+            // Calculate base save from class progressions
+            for (const [classId, level] of classLevelCounts.entries()) {
+                const classDetails = classDetailsMap.get(classId);
+                if (!classDetails) continue;
+
+                // Extract progression from resolved progressions (filter by sourceType and EntityType)
+                const classProgressions = resolvedProgressions.filter(p =>
+                    p.sourceType === FeatureSourceType.Class &&
+                    p.classes?.some(c => c.classId === classId) &&
+                    p.entities?.some(e =>
+                        e.type === EntityType.Base &&
+                        e.appliesTo === EntityAppliesToType.SavingThrow &&
+                        e.appliesToId === savingThrowId
+                    )
+                );
+                const progression = extractSaveProgression(classProgressions, savingThrowId, classId);
+
+                // Check for progression value - must check !== undefined, not truthy (0 is valid for good)
+                if (progression !== undefined && progression !== null) {
+                    // Use existing getSaveProgression utility function
+                    if (progression === ProgressionType.good || progression === ProgressionType.poor) {
+                        baseSave += getSaveProgression(level, progression);
+                    }
+                    // progression === 1 (average) is not used in D&D 3.5, skip it
+                }
             }
         }
     }

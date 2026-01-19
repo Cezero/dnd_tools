@@ -1,13 +1,19 @@
 import { useZodValidation } from '@/hooks/useZodValidation';
 import type { CreateRaceRequest, FeatureProgression, UpdateRaceRequest } from '@shared/schema';
 
+import type { RaceEditState, RaceEditStateUpdate } from '../types';
+
 // Form data type for race editing
 export type RaceFormData = CreateRaceRequest | UpdateRaceRequest;
 
 // Props interface for all tab components
 export interface RaceTabProps {
-    formData: RaceFormData;
-    setFormData: (data: RaceFormData) => void;
+    // State-based props (preferred)
+    state: RaceEditState;
+    updateState: (update: RaceEditStateUpdate) => void;
+    // Legacy form validation props (kept for backward compatibility)
+    formData?: RaceFormData;
+    setFormData?: (data: RaceFormData) => void;
     validation: ReturnType<typeof useZodValidation>;
     isLoading?: boolean;
     featureProgressions?: FeatureProgression[];

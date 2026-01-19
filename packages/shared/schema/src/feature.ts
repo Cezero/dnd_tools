@@ -102,6 +102,31 @@ export const FeatureFormulaParamsSchema = z.object({
 
     // Control whether to include the progression level in the formula calculation
     includeProgressionLevel: z.boolean().default(true),
+
+    // Division-based formula parameters (for LEVEL_DIVIDED_BY and LEVEL_DIVIDED_BY_PLUS_BASE)
+    divisor: commonValidations.positiveInt('Divisor').optional().nullable(),
+    baseValue: z.number().int().optional().nullable(),
+});
+
+/**
+ * Formula calculation parameters for runtime formula evaluation
+ * Extends FeatureFormulaParamsSchema but converts nullable baseValue/divisor to optional undefined,
+ * and adds runtime calculation fields (level, startLevel, scalingValue, context)
+ */
+export const FormulaCalculationParamsSchema = FeatureFormulaParamsSchema.omit({
+    baseValue: true,
+    divisor: true,
+}).extend({
+    level: z.number().int().min(1),
+    startLevel: z.number().int().min(1),
+    scalingValue: z.number(),
+    context: z.object({
+        character: z.object({
+            abilityScores: z.record(z.number().int(), z.number().int()),
+        }),
+    }),
+    baseValue: z.number().int().optional(), // Override: optional (undefined) instead of nullable
+    divisor: z.number().int().positive().optional(), // Override: optional (undefined) instead of nullable
 });
 
 export const FeatureEntityConditionSchema = z.object({
@@ -123,22 +148,15 @@ export const FeatureEntitySchema = z.object({
     progressionId: commonValidations.positiveInt('Progression ID'),
     type: z.enum(EntityType),
     appliesTo: z.enum(EntityAppliesToType),
-    appliesToId: z.number().int().nullable(),
-    appliesToSubId: z.number().int().nullable(),
-    value: z.number().int().nullable(),
+    appliesToId: z.number().int().nullable(), // ID reference - frontend should look up from cache
+    appliesToSubId: z.number().int().nullable(), // ID reference - frontend should look up from cache
+    value: z.number().nullable(),
     bonusType: z.enum(FeatureBonusType).nullable(),
     formulaParamsId: z.number().int().optional().nullable(),
     groupingId: z.number().int().default(0),
     displayInDetail: z.boolean().default(true),
     filterType: z.number().int().nullable(),
     conditions: z.array(FeatureEntityConditionSchema).optional(),
-
-    // Optional related entities
-    item: ItemSchema.optional().nullable(),  // When appliesTo === Item
-    spell: SpellSummarySchema.optional().nullable(),  // When appliesTo === Spell (minimal data only)
-    feature: FeatureSchema.optional().nullable(),  // When appliesTo === Feature (FULL schema)
-    domain: DomainReferenceSchema.optional().nullable(),  // When appliesTo === Domain (minimal data only)
-    companion: CompanionSummarySchema.optional().nullable(),  // When appliesTo === AnimalCompanion (minimal data only)
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
 });
 
@@ -192,6 +210,8 @@ export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit(
     values: z.array(z.union([z.string(), z.number()])).nullable().optional(),
     valuesRepresent: z.enum(ConditionalScalingValueType).optional().nullable(),
     cumulative: z.boolean().optional(),
+    divisor: commonValidations.positiveInt('Divisor').optional().nullable(),
+    baseValue: z.number().int().optional().nullable(),
 });
 
 export const CreateFeatureEntitySchema = FeatureEntitySchema.omit({
@@ -200,15 +220,10 @@ export const CreateFeatureEntitySchema = FeatureEntitySchema.omit({
     conditions: true,
     formulaParams: true,
     formulaParamsId: true,
-    // Display-only fields that should be filtered out:
-    item: true,
-    feature: true,
-    spell: true,
-    domain: true,
 }).extend({
     conditions: z.array(CreateFeatureEntityConditionSchema).optional(),
     formulaParams: CreateFeatureFormulaParamsSchema.optional().nullable(),
-});
+}).strip(); // Explicitly strip unknown fields
 
 // Schema for creating feature progressions (used in bulk operations)
 export const CreateFeatureProgressionSchema = FeatureProgressionSchema.omit({
@@ -231,7 +246,7 @@ export const CreateFeatureProgressionRequestSchema = CreateFeatureProgressionSch
 
 export const UpdateFeatureProgressionSchema = CreateFeatureProgressionRequestSchema.partial().extend({
     id: z.number().int().optional()
-});
+}).strip(); // Explicitly strip unknown fields from nested entities
 
 // Response schema for feature progressions (omits classes/races arrays)
 // These arrays are only included in character resolution responses where they're needed
@@ -337,6 +352,19 @@ export type UpdateFeatureProgressionsRequest = z.infer<typeof UpdateFeatureProgr
 export type FeatureList = z.infer<typeof FeatureListSchema>;
 export type GetFeatureListResponse = z.infer<typeof GetFeatureListResponseSchema>;
 
+// Feature Cache Schema (minimal data for cache)
+export const FeatureCacheSchema = z.object({
+    id: commonValidations.positiveInt('Feature ID'),
+    name: commonValidations.name(),
+});
+
+export const FeatureCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(FeatureCacheSchema),
+});
+
+export type FeatureCacheEntry = z.infer<typeof FeatureCacheSchema>;
+export type FeatureCacheResponse = z.infer<typeof FeatureCacheResponseSchema>;
+
 // Array schemas for frontend type safety
 export const PrerequisiteArraySchema = z.array(FeaturePrerequisiteSchema);
 export const EntityArraySchema = z.array(FeatureEntitySchema);
@@ -364,6 +392,7 @@ export { CreateResponse, UpdateResponse } from './common';
 export type PrerequisiteArray = z.infer<typeof PrerequisiteArraySchema>;
 export type EntityArray = z.infer<typeof EntityArraySchema>;
 export type FormulaParamsData = z.infer<typeof FeatureFormulaParamsSchema>;
+export type FormulaCalculationParams = z.infer<typeof FormulaCalculationParamsSchema>;
 export type CloneClassFeaturesRequest = z.infer<typeof CloneClassFeaturesRequestSchema>;
 export type ForkProgressionRequest = z.infer<typeof ForkProgressionRequestSchema>;
 export type ForkProgressionResponse = z.infer<typeof ForkProgressionResponseSchema>;

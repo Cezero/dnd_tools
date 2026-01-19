@@ -59,8 +59,6 @@ export function createDefaultEntity(): FeatureEntity {
         displayInDetail: true,
         filterType: null,
         conditions: [],
-        item: null,
-        feature: null,
         formulaParams: null,
     };
 }

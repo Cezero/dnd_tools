@@ -51,6 +51,34 @@ import type { FeatureProgressionContext } from '../featureSystem/types';
 
 const prisma = new PrismaClient();
 
+/**
+ * Detects if an ID is a temporary frontend ID (created with Date.now() + Math.random())
+ * vs a real database ID.
+ * 
+ * **Always Send IDs Pattern**: This function is part of the architecture pattern where
+ * the frontend always sends IDs (temporary for new items, real for existing) and the
+ * backend uses this function to distinguish between them. This eliminates the need for
+ * frontend logic to determine whether an item is new or existing.
+ * 
+ * **Temporary ID Format**: Frontend generates temporary IDs using `Date.now() + Math.random()`,
+ * which creates numbers that are:
+ * - Very large (Date.now() is ~1.7 trillion as of 2024)
+ * - May have decimal parts (from Math.random())
+ * - Always >= 1 billion
+ * 
+ * **Real Database IDs**: Database auto-increment IDs are:
+ * - Positive integers (no decimals)
+ * - Typically much smaller (< 1 billion in practice)
+ * 
+ * @param id - The ID to check
+ * @returns `true` if the ID is a temporary frontend ID, `false` if it's a real database ID
+ */
+function isTemporaryId(id: number): boolean {
+    // Temporary IDs are very large (Date.now() is ~1.7 trillion) and may have decimals
+    // Real database IDs are positive integers, typically < 1 billion
+    return !Number.isInteger(id) || id >= 1000000000;
+}
+
 export const classService: ClassService = {
     async getAllClasses(query?: GetAllClassesQuery): Promise<GetAllClassesResponse> {
 
@@ -155,9 +183,21 @@ export const classService: ClassService = {
             });
 
             // Create feature progressions using consolidated feature system service
+            // Convert UpdateFeatureProgression[] to CreateFeatureProgressionRequest[] by providing defaults
             if (features && features.length > 0) {
                 const context: FeatureProgressionContext = { classId: classResult.id };
-                await featureSystemService.createMultipleFeatureProgressions(features, context);
+                const createProgressions: CreateFeatureProgressionRequest[] = features.map(prog => ({
+                    level: prog.level ?? 1,
+                    sourceType: prog.sourceType ?? FeatureSourceType.Class,
+                    featureId: prog.featureId!,
+                    domainId: prog.domainId ?? null,
+                    featId: prog.featId ?? null,
+                    companionId: prog.companionId ?? null,
+                    editionId: prog.editionId ?? null,
+                    entities: prog.entities,
+                    displayConditions: prog.displayConditions,
+                }));
+                await featureSystemService.createMultipleFeatureProgressions(createProgressions, context);
             }
 
             // Create spellcasting progression (spell slots)
@@ -225,7 +265,7 @@ export const classService: ClassService = {
                     await tx.featureEntity.create({
                         data: {
                             progressionId: featureProgression.id,
-                            type: EntityType.Other,
+                            type: EntityType.Base,
                             appliesTo: EntityAppliesToType.SpellcastingProgression,
                             appliesToId: null,
                             appliesToSubId: null,
@@ -344,6 +384,9 @@ export const classService: ClassService = {
     },
 
     async updateClass(query: ClassIdParamRequest, data: UpdateClassRequest) {
+        // Track orphaned progression IDs to clean up after the main transaction completes
+        const orphanedProgressionIdsToCleanup: number[] = [];
+
         await prisma.$transaction(async (tx) => {
             // Delete existing source book mappings
             await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
@@ -409,17 +452,34 @@ export const classService: ClassService = {
 
             // Update/create feature progressions using new upsert logic
             if (features && features.length > 0) {
-                // Type guard for progressions with id (update requests)
-                // UpdateClassRequest uses CreateFeatureProgressionRequest but in practice may include id
-                type ProgressionWithId = CreateFeatureProgressionRequest & { id: number };
-                const hasId = (p: CreateFeatureProgressionRequest): p is ProgressionWithId => {
-                    return 'id' in p && typeof (p as { id?: number }).id === 'number';
+                console.log(`[ClassService] Updating class ${query.id} with ${features.length} feature progressions`);
+
+                // Type guard for progressions with real database ID (update requests)
+                // Always Send IDs Pattern: Frontend always sends IDs (temporary or real), we filter out
+                // temporary IDs here to identify progressions that should be updated vs created
+                type ProgressionWithId = UpdateFeatureProgression & { id: number };
+                const hasId = (p: UpdateFeatureProgression): p is ProgressionWithId => {
+                    return 'id' in p &&
+                        typeof (p as { id?: number }).id === 'number' &&
+                        !isTemporaryId((p as { id: number }).id); // Filter out temporary IDs - only real DB IDs indicate updates
                 };
 
-                // Get featureIds for existing progressions (those with IDs)
-                const progressionIds = features
-                    .filter(hasId)
-                    .map(p => p.id);
+                // Log incoming progressions and their IDs
+                const progressionsWithIds = features.filter(hasId);
+                const progressionsWithTemporaryIds = features.filter(p =>
+                    'id' in p &&
+                    typeof (p as { id?: number }).id === 'number' &&
+                    isTemporaryId((p as { id: number }).id)
+                );
+                const progressionsWithoutIds = features.filter(p => !('id' in p) || (p as { id?: number }).id === undefined || (p as { id?: number }).id === null);
+
+                console.log(`[ClassService] Progressions breakdown: ${progressionsWithIds.length} with real IDs, ${progressionsWithTemporaryIds.length} with temporary IDs, ${progressionsWithoutIds.length} without IDs`);
+                if (progressionsWithIds.length > 0) {
+                    console.log(`[ClassService] Real progression IDs: ${progressionsWithIds.map(p => (p as { id: number }).id).join(', ')}`);
+                }
+
+                // Get featureIds for existing progressions (those with real database IDs)
+                const progressionIds = progressionsWithIds.map(p => p.id);
 
                 const existingProgressions = progressionIds.length > 0
                     ? await tx.featureProgression.findMany({
@@ -427,6 +487,15 @@ export const classService: ClassService = {
                         select: { id: true, featureId: true }
                     })
                     : [];
+
+                if (progressionIds.length > 0) {
+                    console.log(`[ClassService] Found ${existingProgressions.length} existing progressions out of ${progressionIds.length} requested`);
+                    if (existingProgressions.length < progressionIds.length) {
+                        const foundIds = new Set(existingProgressions.map(p => p.id));
+                        const missingIds = progressionIds.filter(id => !foundIds.has(id));
+                        console.error(`[ClassService] WARNING: ${missingIds.length} progression IDs not found in database: ${missingIds.join(', ')}`);
+                    }
+                }
 
                 // Group progressions by featureId
                 // Cast to UpdateFeatureProgression[] since updateFeatureProgressions expects that type
@@ -458,19 +527,30 @@ export const classService: ClassService = {
 
                 // Update progressions for each feature
                 for (const [featureId, progressions] of progressionsByFeatureId) {
+                    console.log(`[ClassService] Updating ${progressions.length} progressions for feature ${featureId}`);
                     await featureSystemService.updateFeatureProgressions(featureId, progressions);
                 }
 
-                // After updating, find all progression IDs that match the incoming progressions
-                // For existing progressions, we have their IDs
-                // For new progressions, we need to find them by matching characteristics
+                // After updating, rebuild finalProgressionIds by re-querying the database
+                // This ensures we only include progression IDs that actually exist after updates
                 const finalProgressionIds: number[] = [];
 
-                // Add existing progression IDs
-                finalProgressionIds.push(...progressionIds);
+                // For progressions with real database IDs: verify they still exist after update
+                for (const progressionId of progressionIds) {
+                    const stillExists = await tx.featureProgression.findUnique({
+                        where: { id: progressionId },
+                        select: { id: true }
+                    });
+                    if (stillExists) {
+                        finalProgressionIds.push(progressionId);
+                    } else {
+                        console.error(`[ClassService] WARNING: Progression ${progressionId} was deleted during updateFeatureProgressions`);
+                    }
+                }
 
-                // For new progressions (those without IDs), find them by matching characteristics
+                // For new progressions (those without real IDs or with temporary IDs), find them by matching characteristics
                 const newProgressions = features.filter(p => !hasId(p));
+                console.log(`[ClassService] Finding ${newProgressions.length} new progressions by matching characteristics`);
                 for (const newProgression of newProgressions) {
                     if (newProgression.featureId !== undefined && newProgression.featureId !== null) {
                         const featureId = newProgression.featureId;
@@ -490,15 +570,36 @@ export const classService: ClassService = {
                         });
                         if (matching) {
                             finalProgressionIds.push(matching.id);
+                            console.log(`[ClassService] Found new progression ${matching.id} for feature ${featureId}`);
+                        } else {
+                            console.error(`[ClassService] WARNING: Could not find new progression for feature ${featureId} after creation`);
                         }
                     }
                 }
 
+                console.log(`[ClassService] Final progression IDs for sync: ${finalProgressionIds.length} progressions (${finalProgressionIds.join(', ')})`);
+                if (finalProgressionIds.length === 0 && features.length > 0) {
+                    console.error(`[ClassService] CRITICAL WARNING: No valid progression IDs found after update, but ${features.length} progressions were provided. This will remove all FeatureProgressionClassMap entries!`);
+                }
+
                 // Sync FeatureProgressionClassMap entries for this class
-                await featureSystemService.syncClassFeatureProgressions(query.id, finalProgressionIds, tx);
+                console.log(`[ClassService] Syncing FeatureProgressionClassMap for class ${query.id} with ${finalProgressionIds.length} progression IDs`);
+                const orphanedProgressionIds = await featureSystemService.syncClassFeatureProgressions(query.id, finalProgressionIds, tx);
+
+                // Clean up orphaned progressions in a separate transaction after the main update completes
+                if (orphanedProgressionIds.length > 0) {
+                    // Store for cleanup after transaction commits
+                    orphanedProgressionIdsToCleanup.push(...orphanedProgressionIds);
+                }
             } else {
                 // No features provided - sync to empty list (removes all links for this class)
-                await featureSystemService.syncClassFeatureProgressions(query.id, [], tx);
+                console.log(`[ClassService] No features provided for class ${query.id}, removing all FeatureProgressionClassMap entries`);
+                const orphanedProgressionIds = await featureSystemService.syncClassFeatureProgressions(query.id, [], tx);
+
+                // Clean up orphaned progressions in a separate transaction after the main update completes
+                if (orphanedProgressionIds.length > 0) {
+                    orphanedProgressionIdsToCleanup.push(...orphanedProgressionIds);
+                }
             }
 
             // Create new spellcasting progression (spell slots)
@@ -579,7 +680,7 @@ export const classService: ClassService = {
                     await tx.featureEntity.create({
                         data: {
                             progressionId: featureProgression.id,
-                            type: EntityType.Other,
+                            type: EntityType.Base,
                             appliesTo: EntityAppliesToType.SpellcastingProgression,
                             appliesToId: null,
                             appliesToSubId: null,
@@ -703,7 +804,19 @@ export const classService: ClassService = {
                     });
                 }
             }
+        }, {
+            timeout: 60000 // 60 seconds timeout for large operations
         });
+
+        // Clean up orphaned progressions in a separate transaction after the main update succeeds
+        if (orphanedProgressionIdsToCleanup.length > 0) {
+            try {
+                await featureSystemService.cleanupOrphanedProgressions(orphanedProgressionIdsToCleanup);
+            } catch (error) {
+                // Log error but don't fail the class update - orphan cleanup is a separate concern
+                console.error(`[ClassService] Failed to clean up ${orphanedProgressionIdsToCleanup.length} orphaned progressions:`, error);
+            }
+        }
 
         return { message: 'Class updated successfully' };
     },

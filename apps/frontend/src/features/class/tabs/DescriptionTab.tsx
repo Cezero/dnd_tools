@@ -2,11 +2,12 @@ import React from 'react';
 
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 
+import { ClassEditStateUpdateType } from '../types';
 import type { ClassTabProps } from './types';
 
 export function DescriptionTab({
-    formData,
-    setFormData,
+    state,
+    updateState,
     validation,
     isLoading: _isLoading = false
 }: ClassTabProps): React.JSX.Element {
@@ -17,8 +18,8 @@ export function DescriptionTab({
                     <MarkdownEditor
                         id="description"
                         label=""
-                        value={formData.description || ''}
-                        onChange={(value) => setFormData({ ...formData, description: value })}
+                        value={state.description || ''}
+                        onChange={(value) => updateState({ type: ClassEditStateUpdateType.SET_DESCRIPTION, payload: { description: value || null } })}
                     />
                     {validation?.getError?.('description') && (
                         <span className="text-red-500 text-sm">{validation.getError('description')}</span>

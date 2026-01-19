@@ -89,8 +89,19 @@ export const getClassIdByName = (name: string): number | undefined => {
 
 /**
  * Get class name from cache (standalone)
+ * 
+ * Enhanced version that checks multiple cache keys with priority:
+ * 1. Individual class cache: ['classes', 'item', classId]
+ * 2. Classes cache: ['classes-cache']
+ * 
+ * @param id - Class ID (can be null or undefined)
+ * @returns Class name or null if not found
  */
-export const getClassNameFromCache = (id: number): string | undefined => {
+export const getClassNameFromCache = (id: number | null | undefined): string | null => {
+    if (!id) {
+        return null;
+    }
+
     const queryClient = getStandaloneQueryClient();
     const cacheData = queryClient.getQueryData<ClassCacheResponse>(['classes-cache']);
     if (!cacheData?.results) return undefined;

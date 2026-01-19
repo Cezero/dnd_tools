@@ -69,6 +69,10 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerLabeler(EntityType.Other, labeler, appliesToType);
     }
 
+    registerBaseLabeler(appliesToType: EntityAppliesToType, labeler: Labeler): void {
+        this.registerLabeler(EntityType.Base, labeler, appliesToType);
+    }
+
     registerProficiencyLabeler(appliesToType: EntityAppliesToType, labeler: Labeler): void {
         this.registerLabeler(EntityType.Other, labeler, appliesToType);
     }
@@ -142,17 +146,19 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerOtherLabeler(EntityAppliesToType.AnimalCompanion, animalCompanionLabeler); // Animal companion grants
         this.registerOtherLabeler(EntityAppliesToType.Familiar, animalCompanionLabeler); // Familiar grants (use same labeler as animal companions)
 
-        // Class/Race mechanics labelers
-        this.registerOtherLabeler(EntityAppliesToType.BaseAttackBonus, displayNameLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.HitDice, displayNameLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.SavingThrow, savingThrowProgressionLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.Size, sizeCategoryLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.FavoredClass, displayNameLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.LevelAdjustment, displayNameLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.SkillPoints, displayNameLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.CastingAbility, castingAbilityLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.CastingType, displayNameLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.SpellcastingProgression, displayNameLabeler);
+        // Class/Race mechanics labelers (EntityType.Base)
+        this.registerBaseLabeler(EntityAppliesToType.BaseAttackBonus, displayNameLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.HitDice, displayNameLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.SavingThrow, savingThrowProgressionLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.Size, sizeCategoryLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.FavoredClass, displayNameLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.LevelAdjustment, displayNameLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.SkillPoints, displayNameLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.CastingAbility, castingAbilityLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.CastingType, displayNameLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.SpellcastingProgression, displayNameLabeler);
+        // MovementSpeed is compatible with both Quantity (bonuses) and Base (base race speed)
+        this.registerBaseLabeler(EntityAppliesToType.MovementSpeed, displayNameLabeler);
 
         // Proficiency (EntityType.Other with appliesTo = EntityAppliesToType.Proficiency)
         this.registerProficiencyLabeler(EntityAppliesToType.Proficiency, emptyStringLabeler);

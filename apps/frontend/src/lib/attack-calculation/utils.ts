@@ -6,6 +6,8 @@ import {
     GetAbilityModifier,
     FeatureSourceType,
     ProgressionType,
+    EntityAppliesToType,
+    EntityType,
 } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
 
@@ -64,6 +66,9 @@ export function isTwoHandedWeapon(weapon: { type: number }): boolean {
 /**
  * Get character's base attack bonus (first value only)
  * 
+ * Uses pre-resolved formula values from backend when available (resolvedFormulaValues map).
+ * Falls back to extracting ProgressionType and using getBABProgression for backward compatibility.
+ * 
  * For gestalt characters, the backend filters progressions to include only the best BAB,
  * so we should use the character's total level with the single best progression.
  * For non-gestalt multiclass characters, we sum BAB from all classes.
@@ -71,8 +76,18 @@ export function isTwoHandedWeapon(weapon: { type: number }): boolean {
 export function getCharacterBAB(
     character: CharacterWithAllDetailsResponse,
     classDetailsMap: Map<number, DnDClass>,
-    resolvedProgressions?: FeatureProgression[]
+    resolvedProgressions?: FeatureProgression[],
+    resolvedFormulaValues?: Record<string, number>
 ): number {
+    // Try to use pre-resolved values first
+    if (resolvedFormulaValues) {
+        const bab = resolvedFormulaValues['bab'];
+        if (bab !== undefined) {
+            return bab;
+        }
+    }
+
+    // Fallback to old method for backward compatibility
     // Check if character is gestalt
     const isGestalt = character.isGestalt || character.advancements.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
 
@@ -80,18 +95,21 @@ export function getCharacterBAB(
         // For gestalt, backend has already filtered to include only the best BAB progression
         // Use total character level with the best progression from resolved progressions
         const totalLevel = character.advancements.length;
-        
+
         if (resolvedProgressions && resolvedProgressions.length > 0) {
             // Find the best BAB progression from resolved progressions
-            // For gestalt, there should only be one class-mechanics progression with the best BAB
-            const classMechanicsProgressions = resolvedProgressions.filter(p =>
-                p.feature?.slug === 'class-mechanics' &&
-                p.sourceType === FeatureSourceType.Class
+            // For gestalt, filter by sourceType and EntityType instead of feature slug
+            const classProgressions = resolvedProgressions.filter(p =>
+                p.sourceType === FeatureSourceType.Class &&
+                p.entities?.some(e =>
+                    e.type === EntityType.Base &&
+                    e.appliesTo === EntityAppliesToType.BaseAttackBonus
+                )
             );
-            
-            if (classMechanicsProgressions.length > 0) {
-                // Extract BAB from the first class-mechanics progression (should be the merged/best one)
-                const babProgression = extractBABProgression(classMechanicsProgressions);
+
+            if (classProgressions.length > 0) {
+                // Extract BAB from class progressions (should be the merged/best one)
+                const babProgression = extractBABProgression(classProgressions);
                 if (babProgression !== null && babProgression !== undefined) {
                     const babString = getBABProgression(totalLevel, babProgression as ProgressionType);
                     const match = babString.match(/\+(\d+)/);
@@ -101,7 +119,7 @@ export function getCharacterBAB(
                 }
             }
         }
-        
+
         // Fallback: return 0 if no progression found
         return 0;
     }
@@ -119,12 +137,16 @@ export function getCharacterBAB(
         const classDetails = classDetailsMap.get(classId);
         if (!classDetails) continue;
 
-        // Extract BAB progression from resolved progressions
+        // Extract BAB progression from resolved progressions (filter by sourceType and EntityType)
         let babProgression: number | null | undefined;
         if (resolvedProgressions) {
             const classProgressions = resolvedProgressions.filter(p =>
                 p.sourceType === FeatureSourceType.Class &&
-                p.classes?.some(c => c.classId === classId)
+                p.classes?.some(c => c.classId === classId) &&
+                p.entities?.some(e =>
+                    e.type === EntityType.Base &&
+                    e.appliesTo === EntityAppliesToType.BaseAttackBonus
+                )
             );
             babProgression = extractBABProgression(classProgressions, classId);
         }

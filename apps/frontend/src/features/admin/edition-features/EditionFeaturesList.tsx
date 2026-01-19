@@ -173,7 +173,7 @@ export default function EditionFeaturesList() {
                             companionId: null,
                             editionId: selectedEditionId,
                             entities: (progressionToSave.entities || []).map(entity => {
-                                const { id: _entityId, progressionId: _progressionId, feature: _entityFeature, item: _item, domain: _domain, ...entityData } = entity;
+                                const { id: _entityId, progressionId: _progressionId, ...entityData } = entity;
                                 return entityData;
                             }),
                         };
@@ -183,7 +183,7 @@ export default function EditionFeaturesList() {
                             ...progData,
                             id: p.id,
                             entities: (p.entities || []).map(entity => {
-                                const { id: _entityId, progressionId: _progressionId, feature: _entityFeature, item: _item, domain: _domain, ...entityData } = entity;
+                                const { id: _entityId, progressionId: _progressionId, ...entityData } = entity;
                                 return entityData;
                             }),
                         };
@@ -203,7 +203,7 @@ export default function EditionFeaturesList() {
                     companionId: null,
                     editionId: selectedEditionId,
                     entities: (progressionToSave.entities || []).map(entity => {
-                        const { id: _entityId, progressionId: _progressionId, feature: _entityFeature, item: _item, domain: _domain, ...entityData } = entity;
+                        const { id: _entityId, progressionId: _progressionId, ...entityData } = entity;
                         return entityData;
                     }),
                 };
@@ -213,7 +213,7 @@ export default function EditionFeaturesList() {
                         ...progData,
                         id: p.id,
                         entities: (p.entities || []).map(entity => {
-                            const { id: _entityId, progressionId: _progressionId, feature: _entityFeature, item: _item, domain: _domain, ...entityData } = entity;
+                            const { id: _entityId, progressionId: _progressionId, ...entityData } = entity;
                             return entityData;
                         }),
                     };

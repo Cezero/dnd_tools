@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 import { getClassNameFromCache, getDomainSelectByEdition } from '@/services/cache';
-import type { FeatureProgression, FeatureEntity, PendingChoice, PendingChoiceOption } from '@shared/schema';
+import type { FeatureProgression, FeatureEntity, PendingChoice } from '@shared/schema';
 import { EntityType, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES } from '@shared/static-data';
 
 /**
@@ -97,13 +97,10 @@ function createPendingChoice(
 /**
  * Generate feat options for a choice
  */
-function generateFeatOptions(_entity: FeatureEntity): PendingChoiceOption[] {
+function generateFeatOptions(_entity: FeatureEntity): number[] {
     // TODO: Implement feat options generation
     // This would need to query available feats based on prerequisites
-    return [
-        { id: '1', name: 'Sample Feat 1', description: 'A sample feat option', value: 1 },
-        { id: '2', name: 'Sample Feat 2', description: 'Another sample feat option', value: 2 },
-    ];
+    return [1, 2];
 }
 
 /**
@@ -112,61 +109,44 @@ function generateFeatOptions(_entity: FeatureEntity): PendingChoiceOption[] {
 function generateDomainOptions(
     entity: FeatureEntity,
     editionId?: number
-): PendingChoiceOption[] {
+): number[] {
     if (!editionId) {
         return [];
     }
 
     const domains = getDomainSelectByEdition(editionId);
-    return domains.map(domain => ({
-        id: domain.id.toString(),
-        name: domain.name,
-        description: `Domain: ${domain.name}`,
-        value: domain.id,
-    }));
+    return domains.map(domain => domain.id);
 }
 
 /**
  * Generate skill options for a choice
  */
-function generateSkillOptions(_entity: FeatureEntity): PendingChoiceOption[] {
+function generateSkillOptions(_entity: FeatureEntity): number[] {
     // TODO: Implement skill options generation
-    return [
-        { id: '1', name: 'Sample Skill 1', description: 'A sample skill option', value: 1 },
-        { id: '2', name: 'Sample Skill 2', description: 'Another sample skill option', value: 2 },
-    ];
+    return [1, 2];
 }
 
 /**
  * Generate spell options for a choice
  */
-function generateSpellOptions(_entity: FeatureEntity): PendingChoiceOption[] {
+function generateSpellOptions(_entity: FeatureEntity): number[] {
     // TODO: Implement spell options generation
-    return [
-        { id: '1', name: 'Sample Spell 1', description: 'A sample spell option', value: 1 },
-        { id: '2', name: 'Sample Spell 2', description: 'Another sample spell option', value: 2 },
-    ];
+    return [1, 2];
 }
 
 /**
  * Generate feature options for a choice
  */
-function generateFeatureOptions(_entity: FeatureEntity): PendingChoiceOption[] {
+function generateFeatureOptions(_entity: FeatureEntity): number[] {
     // TODO: Implement feature options generation
-    return [
-        { id: '1', name: 'Sample Feature 1', description: 'A sample feature option', value: 1 },
-        { id: '2', name: 'Sample Feature 2', description: 'Another sample feature option', value: 2 },
-    ];
+    return [1, 2];
 }
 
 /**
  * Generate generic options for a choice
  */
-function generateGenericOptions(_entity: FeatureEntity): PendingChoiceOption[] {
-    return [
-        { id: '1', name: 'Option 1', description: 'Generic option 1', value: 1 },
-        { id: '2', name: 'Option 2', description: 'Generic option 2', value: 2 },
-    ];
+function generateGenericOptions(_entity: FeatureEntity): number[] {
+    return [1, 2];
 }
 
 /**

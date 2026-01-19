@@ -3,6 +3,8 @@ import React from 'react';
 import { useZodValidation } from '@/hooks/useZodValidation';
 import type { CreateClassRequest, UpdateClassRequest, FeatureProgression, SpellcastingProgressionWithSlots } from '@shared/schema';
 
+import type { ClassEditState, ClassEditStateUpdate } from '../types';
+
 // Type definitions for the form state
 export type ClassFormData = CreateClassRequest | UpdateClassRequest;
 
@@ -33,8 +35,12 @@ export interface ProficiencyItem {
 
 // Props interface for all tab components
 export interface ClassTabProps {
-    formData: ClassFormData;
-    setFormData: (data: ClassFormData) => void;
+    // State-based props (preferred)
+    state: ClassEditState;
+    updateState: (update: ClassEditStateUpdate) => void;
+    // Legacy form validation props (kept for backward compatibility)
+    formData?: ClassFormData;
+    setFormData?: (data: ClassFormData) => void;
     validation: ReturnType<typeof useZodValidation>;
     isLoading?: boolean;
     // Additional props that may be needed by specific tabs

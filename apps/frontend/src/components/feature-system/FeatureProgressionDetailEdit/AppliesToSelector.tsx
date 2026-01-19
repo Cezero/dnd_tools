@@ -174,16 +174,7 @@ export function AppliesToSelector({
                                             if (i === index) {
                                                 const updatedEntity = { ...ent, appliesToId: value };
 
-                                                // If this is a domain selection, populate the domain object
-                                                if (appliesTo === EntityAppliesToType.Domain && value) {
-                                                    const selectedDomain = finalOptions.find(option => option.id === value);
-                                                    if (selectedDomain) {
-                                                        updatedEntity.domain = {
-                                                            id: value,
-                                                            name: selectedDomain.name
-                                                        };
-                                                    }
-                                                }
+                                                // Domain object is no longer stored on entity - frontend uses cache for lookups
 
                                                 return updatedEntity;
                                             }

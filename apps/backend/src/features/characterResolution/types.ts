@@ -5,6 +5,7 @@ import type {
     DnDClass,
     FeatureProgression,
     CharacterFeatureChoice,
+    PendingChoice,
 } from '@shared/schema';
 import type { EntityAppliesToType } from '@shared/static-data';
 
@@ -39,27 +40,6 @@ export interface ResolutionContext {
     includePendingChoices: boolean;
     resolveCascading: boolean;
     maxResolutionDepth: number;
-}
-
-/**
- * Pending choice that requires user input
- */
-export interface PendingChoice {
-    id: string;
-    type: EntityAppliesToType;
-    name: string;
-    description: string;
-    source: string;
-    level: number;
-    required: boolean;
-    maxSelections: number;
-    minSelections: number;
-    options: Array<{
-        id: string;
-        name: string;
-        description: string;
-        value: number;
-    }>;
 }
 
 /**

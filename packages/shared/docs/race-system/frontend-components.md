@@ -77,23 +77,92 @@ Comprehensive display component for viewing complete race information. This comp
 
 ### **RaceEdit Component**
 
-Comprehensive editing interface for creating and modifying races. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern.
+Comprehensive editing interface for creating and modifying races. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern and uses a **state-based pattern with SQLite session storage** for reliable data management.
+
+**Architecture**: The component uses a centralized state management pattern that mirrors the `CharacterEdit` and `ClassEdit` implementations, providing:
+- **Single Source of Truth**: All race data managed through `useRaceEditState` hook
+- **Backend Session Storage**: SQLite session database for persistent editing sessions
+- **Automatic Synchronization**: Frontend state automatically syncs with backend session
+- **Context Preservation**: Race ID and context preserved throughout navigation and feature creation
+- **Deterministic ID Management**: Backend generates temporary IDs for new entities, eliminating signature matching
+
+**State Management**:
+```typescript
+// Centralized state hook
+const { state, updateState } = useRaceEditState();
+
+// Session management hook
+const resolution = useRaceResolution(state.raceId || null);
+
+// State structure
+interface RaceEditState {
+  // Core race identity
+  raceId: number | null;
+  name: string;
+  editionId: number;
+  isVisible: boolean;
+  description: string | null;
+  sourceBookInfo: SourceMap[] | null;
+  
+  // Feature progressions (id: number for existing, null for new)
+  featureProgressions: FeatureProgression[];
+  
+  // UI state
+  activeTab: string;
+  isFeatureAssocOpen: boolean;
+  isProgressionDialogOpen: boolean;
+  editingProgression: FeatureProgression | null;
+  preSelectedFeature: FeatureProgression['feature'] | undefined;
+}
+```
+
+**State Update Pattern**:
+All state updates use action-based updates through `updateState`:
+```typescript
+// Update race name
+updateState({ 
+  type: RaceEditStateUpdateType.SET_NAME, 
+  payload: { name: 'Human' } 
+});
+
+// Add feature progression
+updateState({ 
+  type: RaceEditStateUpdateType.ADD_FEATURE_PROGRESSION, 
+  payload: { progression: newProgression } 
+});
+```
+
+**Session Synchronization**:
+The component automatically synchronizes state changes with the backend SQLite session:
+- **Field Changes**: Individual field changes (name, editionId, etc.) sync via `UPDATE_RACE_FIELD` actions
+- **Progression Changes**: Feature progression changes sync via diff-based detection
+- **Automatic Sync**: `useEffect` hooks watch state changes and send updates to backend session
 
 **Race-Specific Features**:
 - **Race Data Entry**: Forms for entering and modifying race data
 - **Race Validation**: Real-time validation with user-friendly error messages
 - **Race Complex Data**: Handle complex nested data like features and abilities
 - **Race User Guidance**: Guide users through the race creation/editing process
+- **Mechanics Management**: All mechanics (size, speed, favored class, level adjustment) managed via feature workflow (no convenience forms)
+- **Shared Progressions**: Support for shared feature progressions across multiple races
 
 **User Workflow**:
-1. **Enter Basic Info**: Fill in race name, size, speed, and basic attributes
-2. **Configure Abilities**: Set ability score adjustments and racial bonuses
-3. **Add Features**: Configure racial features and their effects
+1. **Enter Basic Info**: Fill in race name, edition, and basic attributes
+2. **Add Features**: Configure racial features and their progression via FeaturesTab
+3. **Configure Abilities**: Set ability score adjustments and racial bonuses
 4. **Set Languages**: Configure racial languages and language options
 5. **Add Sources**: Link to source books and page references
-6. **Review and Save**: Review all data and save the race
+6. **Review and Save**: Review all data and save the race (transforms SQLite session → MySQL)
 
-**Source File**: `frontend/src/features/race/RaceEdit.tsx`
+**Source Files**: 
+- Component: `frontend/src/features/race/RaceEdit.tsx`
+- State Hook: `frontend/src/features/race/useRaceEditState.ts`
+- Session Hook: `frontend/src/features/race/useRaceResolution.ts`
+- Types: `frontend/src/features/race/types.ts`
+
+**Related Documentation**: 
+- [State-Based Pattern Architecture](#state-based-pattern-architecture) - Detailed architecture documentation
+- [Backend Session Management](../backend-implementation.md#session-management) - Backend session infrastructure
 
 ## 📋 **Tab Components**
 
@@ -238,6 +307,127 @@ Proper state management for complex race data:
 **Loading States**: Handle loading states for API operations
 **Error States**: Manage error states and error messages
 **Navigation State**: Handle navigation between tabs and views
+
+## 🏛️ **State-Based Pattern Architecture**
+
+The race editing system uses a **state-based pattern with SQLite session storage** that provides reliable data management, context preservation, and deterministic ID handling. This pattern mirrors the `CharacterEdit` and `ClassEdit` implementations.
+
+### **Overview**
+
+The state-based pattern provides:
+- **Single Source of Truth**: Centralized state management eliminates prop drilling
+- **Context Preservation**: Race ID and context preserved throughout navigation
+- **No Orphaned Data**: Automatic linking of new features/progressions to race
+- **Deterministic IDs**: Backend generates temporary IDs, eliminating signature matching
+- **Persistent Sessions**: SQLite session storage for reliable editing sessions
+- **Automatic Synchronization**: Frontend state automatically syncs with backend
+
+### **State Management Hooks**
+
+#### **useRaceEditState Hook**
+
+Centralized state management hook that provides a single source of truth for all race editing data.
+
+**Purpose**: Eliminates per-tab state management and provides immutable state updates through action-based updates.
+
+**Source File**: `frontend/src/features/race/useRaceEditState.ts`
+
+**Usage**:
+```typescript
+const { state, updateState } = useRaceEditState(initialState);
+
+// Update race name
+updateState({ 
+  type: RaceEditStateUpdateType.SET_NAME, 
+  payload: { name: 'Human' } 
+});
+
+// Add feature progression
+updateState({ 
+  type: RaceEditStateUpdateType.ADD_FEATURE_PROGRESSION, 
+  payload: { progression: newProgression } 
+});
+```
+
+**Update Actions**: All state updates use discriminated union pattern with specific action types:
+- `SET_RACE_ID`, `SET_NAME`, `SET_EDITION_ID`, `SET_IS_VISIBLE`
+- `SET_DESCRIPTION`, `SET_SOURCE_BOOK_INFO`
+- `SET_FEATURE_PROGRESSIONS`, `ADD_FEATURE_PROGRESSION`, `UPDATE_FEATURE_PROGRESSION`, `REMOVE_FEATURE_PROGRESSION`
+- `SET_ACTIVE_TAB`, `SET_IS_FEATURE_ASSOC_OPEN`, `SET_IS_PROGRESSION_DIALOG_OPEN`
+- `SET_EDITING_PROGRESSION`, `SET_PRE_SELECTED_FEATURE`
+
+#### **useRaceResolution Hook**
+
+Session management hook that handles backend SQLite session lifecycle.
+
+**Purpose**: Manages editing session initialization, state synchronization, and save operations.
+
+**Source File**: `frontend/src/features/race/useRaceResolution.ts`
+
+**Usage**:
+```typescript
+const resolution = useRaceResolution(raceId);
+
+// Initialize/resume session
+await resolution.initializeSession();
+
+// Apply update to session
+await resolution.applyUpdate({
+  type: 'UPDATE_RACE_FIELD',
+  payload: { field: 'name', value: 'Human' }
+});
+
+// Save session to MySQL
+await resolution.saveSession();
+```
+
+**Key Features**:
+- **Automatic Initialization**: Creates or resumes session on mount
+- **State Synchronization**: Syncs frontend state changes to backend session
+- **Save Transformation**: Transforms SQLite session → MySQL on save
+- **Error Handling**: Comprehensive error handling and loading states
+
+### **Session Synchronization**
+
+The component automatically synchronizes state changes with the backend SQLite session through `useEffect` hooks, similar to the class system. See [Class System State-Based Pattern](../class-system/frontend-components.md#state-based-pattern-architecture) for detailed synchronization patterns.
+
+### **ID Management**
+
+The system uses backend-managed IDs for all new entities, identical to the class system. See [Class System ID Management](../class-system/frontend-components.md#id-management) for details.
+
+### **Mechanics Management**
+
+All race mechanics (size, speed, favored class, level adjustment) are managed through the feature management workflow:
+
+**No Convenience Forms**: Removed convenience form fields for mechanics
+**Feature-Based**: All mechanics are `FeatureEntity` records with `EntityType.Base`
+**Shared Progressions**: Progressions can be shared across multiple races
+**Workflow**: Admins manage mechanics through FeaturesTab, same as other features
+
+**Rationale**:
+- Simplifies the model (no need to determine if progression exists vs. creating new)
+- Enables shared progressions (e.g., "Medium size" shared across races)
+- Admins are already familiar with feature management workflow
+- Consistent with overall architecture (all mechanics flow through feature system)
+
+### **Context Preservation**
+
+The state-based pattern ensures context is preserved throughout the editing session:
+
+**Race ID**: Always available in `state.raceId`
+**Feature Creation**: When creating new features, race ID is automatically linked
+**Modal Navigation**: FeatureEditForm uses modal mode, keeping user in RaceEdit context
+**No Orphaned Data**: New progressions automatically linked to race from state
+
+**Source Files**:
+- State Hook: `frontend/src/features/race/useRaceEditState.ts`
+- Session Hook: `frontend/src/features/race/useRaceResolution.ts`
+- API Client: `frontend/src/services/api/RaceResolutionApi.ts`
+- Types: `frontend/src/features/race/types.ts`, `packages/shared/schema/src/classResolution.ts`
+
+**Related Documentation**: 
+- [Backend Session Management](../backend-implementation.md#session-management) - Backend session infrastructure
+- [Class System State-Based Pattern](../class-system/frontend-components.md#state-based-pattern-architecture) - Reference implementation
 
 ## 🔗 **Integration Patterns**
 

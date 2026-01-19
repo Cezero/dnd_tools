@@ -468,7 +468,7 @@ export function CharacterEdit(): React.JSX.Element {
 
         // Find the pending choice to get progressionId and featureEntityId
         const pendingChoice = resolvedData.pendingChoices.find(p =>
-            p.type === choiceType && p.options.some(opt => opt.value === selectedId)
+            p.type === choiceType && p.options.includes(selectedId)
         );
 
         if (!pendingChoice) {

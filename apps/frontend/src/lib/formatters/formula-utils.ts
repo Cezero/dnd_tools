@@ -14,11 +14,14 @@ export function buildFormulaParams(
     modifierValue?: number
 ): Record<string, unknown> {
     // Use the formula object directly and add the additional parameters
+    // scalingValue comes from entity.value (modifierValue parameter), default to 1 if not provided
+    const scalingValue = modifierValue !== undefined ? modifierValue : 1;
+
     const params: Record<string, unknown> = {
         ...formula,
         level,
         startLevel,
-        scalingValue: modifierValue !== undefined ? modifierValue : 1,
+        scalingValue,
         baseValue: modifierValue !== undefined ? modifierValue : 1, // Add baseValue for Ability-based formulas
         context // Pass context to formulas
     };

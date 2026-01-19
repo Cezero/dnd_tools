@@ -60,8 +60,15 @@ export const getDomainIdByName = (name: string): number | undefined => {
 
 /**
  * Get domain name from cache (standalone)
+ * 
+ * @param id - Domain ID (can be null or undefined)
+ * @returns Domain name or null if not found
  */
-export const getDomainNameFromCache = (id: number): string | undefined => {
+export const getDomainNameFromCache = (id: number | null | undefined): string | null => {
+    if (!id) {
+        return null;
+    }
+
     const queryClient = getStandaloneQueryClient();
     const cacheData = queryClient.getQueryData<DomainCacheResponse>(['domains-cache']);
     if (!cacheData?.results) return undefined;

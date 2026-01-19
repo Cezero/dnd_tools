@@ -90,24 +90,16 @@ export const CharacterResolutionCharacterIdParamSchema = z.object({
 });
 
 export const SessionIdParamSchema = z.object({
-    sessionId: z.string().uuid(),
+    sessionId: z.uuid(),
 });
 
 export const CharacterResolutionParamsSchema = CharacterResolutionCharacterIdParamSchema.extend({
-    sessionId: z.string().uuid(),
+    sessionId: z.uuid(),
 });
 
 // Body schema for applying updates
 export const ApplyCharacterUpdateBodySchema = z.object({
     update: CharacterUpdateSchema,
-});
-
-// Pending choice option schema
-export const PendingChoiceOptionSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    description: z.string(),
-    value: commonValidations.positiveInt(),
 });
 
 // Pending choice schema
@@ -121,7 +113,7 @@ export const PendingChoiceSchema = z.object({
     required: z.boolean(),
     maxSelections: z.number().int().nonnegative(),
     minSelections: z.number().int().nonnegative(),
-    options: z.array(PendingChoiceOptionSchema),
+    options: z.array(commonValidations.positiveInt()), // Just an array of numeric IDs - frontend will look up names from cache
 });
 
 /**
@@ -207,9 +199,11 @@ export const ResolvedCharacterResultSchema = z.object({
     /** List of feats the character qualifies for, filtered by prerequisites, proficiencies, owned feats, etc. */
     qualifiedFeats: z.array(FeatInQueryResponseSchema),
     spellSelection: z.record(z.string(), ClassSpellSelectionSchema).optional(),
+    /** Map of entity IDs to resolved formula values. Keyed by entity ID (or composite key). Used for BAB, saves, and other formula-based mechanics. */
+    resolvedFormulaValues: z.record(z.string(), z.number()).optional(),
     warnings: z.array(z.string()),
     errors: z.array(z.string()),
-    sessionId: z.string().uuid(),
+    sessionId: z.uuid(),
 });
 
 /**
@@ -263,7 +257,6 @@ export type CharacterResolutionCharacterIdParamRequest = z.infer<typeof Characte
 export type SessionIdParamRequest = z.infer<typeof SessionIdParamSchema>;
 export type CharacterResolutionParamsRequest = z.infer<typeof CharacterResolutionParamsSchema>;
 export type ApplyCharacterUpdateBodyRequest = z.infer<typeof ApplyCharacterUpdateBodySchema>;
-export type PendingChoiceOption = z.infer<typeof PendingChoiceOptionSchema>;
 export type PendingChoice = z.infer<typeof PendingChoiceSchema>;
 export type ClassSkill = z.infer<typeof ClassSkillSchema>;
 export type SkillBonus = z.infer<typeof SkillBonusSchema>;

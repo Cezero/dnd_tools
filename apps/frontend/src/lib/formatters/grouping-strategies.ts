@@ -1,5 +1,5 @@
 
-import { getFeatNameFromCache } from '@/services/cache/featCache';
+import { getFeatNameFromCache, getItemNameFromCache, getFeatureNameFromCache, getSpellNameFromCache, getDomainNameFromCache } from '@/services/cache';
 import { EntityType, EntityAppliesToType, USES_GROUPED_LABEL } from '@shared/static-data';
 
 import { labelerRegistry } from './labeler-registry';
@@ -103,9 +103,10 @@ export class EntityGroupingStrategy extends BaseGroupingStrategy {
                 // Extract raw data from the entity data (before individual labeling)
                 const rawData = sortedItems
                     .map(item => {
-                        // For Weapon Familiarity, get the raw weapon name from the entity's item data
-                        if (item.entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && item.entity.item) {
-                            return item.entity.item.name;
+                        // For Weapon Familiarity, get the raw weapon name from cache
+                        if (item.entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && item.entity.appliesToId) {
+                            const name = getItemNameFromCache(item.entity.appliesToId);
+                            if (name) return name;
                         }
                         // For Uses, get the formatted value (which includes the frequency)
                         if (item.entity.appliesTo === EntityAppliesToType.Uses) {
@@ -120,15 +121,32 @@ export class EntityGroupingStrategy extends BaseGroupingStrategy {
                                 'Bonus Language: ' : 'Automatic Language: ';
                             return item.formattedValue.replace(prefix, '');
                         }
-                        // For other entities, get the raw data (spell names, etc.)
-                        if (item.entity.spell) {
-                            return item.entity.spell.name;
+                        // For other entities, get the raw data from cache
+                        if (item.entity.appliesTo === EntityAppliesToType.Spell && item.entity.appliesToId) {
+                            const name = getSpellNameFromCache(item.entity.appliesToId);
+                            if (name) return name;
                         }
                         if (item.entity.appliesTo === EntityAppliesToType.Feat && item.entity.appliesToId) {
-                            return getFeatNameFromCache(item.entity.appliesToId);
+                            const name = getFeatNameFromCache(item.entity.appliesToId);
+                            if (name) return name;
                         }
-                        if (item.entity.item) {
-                            return item.entity.item.name;
+                        // Items are referenced via appliesToSubId for certain appliesTo types (e.g., Uses)
+                        if (item.entity.appliesToSubId) {
+                            // Check if this might be an item reference - use cache lookup
+                            const name = getItemNameFromCache(item.entity.appliesToSubId);
+                            if (name) return name;
+                        }
+                        if (item.entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && item.entity.appliesToId) {
+                            const name = getItemNameFromCache(item.entity.appliesToId);
+                            if (name) return name;
+                        }
+                        if (item.entity.appliesTo === EntityAppliesToType.Feature && item.entity.appliesToId) {
+                            const name = getFeatureNameFromCache(item.entity.appliesToId);
+                            if (name) return name;
+                        }
+                        if (item.entity.appliesTo === EntityAppliesToType.Domain && item.entity.appliesToId) {
+                            const name = getDomainNameFromCache(item.entity.appliesToId);
+                            if (name) return name;
                         }
                         // Fallback to the formatted value if raw data is missing
                         return item.formattedValue;

@@ -18,6 +18,7 @@ import {
     CloneClassFeaturesRequest,
     ForkProgressionRequest,
     ForkProgressionResponse,
+    FeatureCacheResponse,
 } from '@shared/schema';
 
 import { featureSystemService } from './featureSystemService.js';
@@ -35,6 +36,14 @@ export async function GetAllFeatures(req: ValidatedBodyT<FeatureQueryRequest, Ge
  */
 export async function GetFeatureList(req: ValidatedBodyT<FeatureQueryRequest, GetFeatureListResponse>, res: Response, _next: NextFunction) {
     const features = await featureSystemService.getFeatureList(req.body.sourceTypes);
+    res.json(features);
+}
+
+/**
+ * Fetches feature cache (id and name only) for frontend caching.
+ */
+export async function GetFeatureCache(req: ValidatedNoInput<FeatureCacheResponse>, res: Response, _next: NextFunction) {
+    const features = await featureSystemService.getFeatureCache();
     res.json(features);
 }
 

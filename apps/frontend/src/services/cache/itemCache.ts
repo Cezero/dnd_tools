@@ -310,8 +310,15 @@ export const getItemIdByName = (name: string): number | undefined => {
 
 /**
  * Get item name from cache (standalone)
+ * 
+ * @param id - Item ID (can be null or undefined)
+ * @returns Item name or null if not found
  */
-export const getItemNameFromCache = (id: number): string | undefined => {
+export const getItemNameFromCache = (id: number | null | undefined): string | null => {
+    if (!id) {
+        return null;
+    }
+
     const queryClient = getStandaloneQueryClient();
     const cacheData = queryClient.getQueryData<ItemCacheResponse>(['items-cache']);
     if (!cacheData?.results) return undefined;

@@ -96,6 +96,12 @@ const CachePrefetcher: React.FC<{ isAuthenticated: boolean; authLoading: boolean
                         staleTime: Infinity,
                         gcTime: Infinity,
                     }),
+                    queryClient.fetchQuery({
+                        queryKey: ['features-cache'],
+                        queryFn: () => CacheQueryHooks.getFeaturesCacheQueryFn(),
+                        staleTime: Infinity,
+                        gcTime: Infinity,
+                    }),
                 ]);
 
                 setIsLoading(false);

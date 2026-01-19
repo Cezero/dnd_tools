@@ -34,7 +34,7 @@ export function ChoicesTab({
     character
 }: TabComponentProps): React.JSX.Element {
     const queryClient = useQueryClient();
-    const { getDomainSelectByEdition, getClassSummaryById, getClassNameFromCache, getFeatNameFromCache, getFeatSummaryById, getRaceNameFromCache } = useCacheFunctions();
+    const { getDomainSelectByEdition, getClassSummaryById, getClassNameFromCache, getFeatNameFromCache, getFeatSummaryById, getRaceNameFromCache, getDomainNameFromCache, getSpellNameFromCache, getFeatureNameFromCache, getCompanionNameFromCache } = useCacheFunctions();
 
     // State for domain options
     const [domainOptions, setDomainOptions] = useState<{ id: number; name: string; abbreviation?: string }[]>([]);
@@ -271,7 +271,7 @@ export function ChoicesTab({
                         }
 
                         // Build options array based on choice type
-                        const options: Array<{ id: string; name: string; description: string; value: number }> = [];
+                        const options: number[] = [];
 
                         if (entity.appliesTo === EntityAppliesToType.Familiar || entity.appliesTo === EntityAppliesToType.AnimalCompanion) {
                             // Get companions of the appropriate type
@@ -281,35 +281,18 @@ export function ChoicesTab({
                             const availableCompanions = companionsByType.get(companionType) || [];
 
                             availableCompanions.forEach(companion => {
-                                options.push({
-                                    id: `companion-${companion.id}`,
-                                    name: companion.name,
-                                    description: `${companionType === CompanionType.Familiar ? 'Familiar' : 'Animal Companion'}: ${companion.name}`,
-                                    value: companion.id,
-                                });
+                                options.push(companion.id);
                             });
                         } else if (entity.appliesTo === EntityAppliesToType.Domain) {
                             // Use domain options from state
                             domainOptions.forEach(domain => {
-                                options.push({
-                                    id: `domain-${domain.id}`,
-                                    name: domain.name,
-                                    description: `Domain: ${domain.name}`,
-                                    value: domain.id,
-                                });
+                                options.push(domain.id);
                             });
                         } else if (entity.appliesTo === EntityAppliesToType.Feat) {
-                            // For feats, we'll use the filtered feats from the existing logic
-                            // This will be handled separately in the rendering logic
-                            const featName = selected.appliesToId
-                                ? getFeatNameFromCache(selected.appliesToId) || sharedData.allFeats.find(f => f.id === selected.appliesToId)?.name
-                                : undefined;
-                            options.push({
-                                id: `feat-${selected.appliesToId}`,
-                                name: featName || 'Selected Feat',
-                                description: '',
-                                value: selected.appliesToId,
-                            });
+                            // For feats, just add the selected ID
+                            if (selected.appliesToId) {
+                                options.push(selected.appliesToId);
+                            }
                         }
 
                         const syntheticChoice = {
@@ -744,7 +727,30 @@ export function ChoicesTab({
                                                 <CustomSelect
                                                     options={choice.type === EntityAppliesToType.Domain && state.editionId
                                                         ? domainOptions
-                                                        : choice.options.map(opt => ({ id: opt.value, name: opt.name }))
+                                                        : choice.options.map(optionId => {
+                                                            let name = '';
+                                                            switch (choice.type) {
+                                                                case EntityAppliesToType.Domain:
+                                                                    name = getDomainNameFromCache(optionId) || `Domain ${optionId}`;
+                                                                    break;
+                                                                case EntityAppliesToType.Spell:
+                                                                    name = getSpellNameFromCache(optionId) || `Spell ${optionId}`;
+                                                                    break;
+                                                                case EntityAppliesToType.Feature:
+                                                                    name = getFeatureNameFromCache(optionId) || `Feature ${optionId}`;
+                                                                    break;
+                                                                case EntityAppliesToType.AnimalCompanion:
+                                                                case EntityAppliesToType.Familiar:
+                                                                    name = getCompanionNameFromCache(optionId) || `Companion ${optionId}`;
+                                                                    break;
+                                                                case EntityAppliesToType.Feat:
+                                                                    name = getFeatNameFromCache(optionId) || `Feat ${optionId}`;
+                                                                    break;
+                                                                default:
+                                                                    name = `Option ${optionId}`;
+                                                            }
+                                                            return { id: optionId, name };
+                                                        })
                                                     }
                                                     disabled={isLoadingDomains}
                                                     value={(() => {
@@ -778,25 +784,48 @@ export function ChoicesTab({
                                             Select {choice.minSelections} to {choice.maxSelections} options
                                         </p>
                                         <div className="space-y-2">
-                                            {choice.options.map((option) => (
-                                                <label key={option.id} className="flex items-center space-x-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedChoices[choice.id]?.includes(option.value) || false}
-                                                        onChange={(e) => {
-                                                            const currentValues = selectedChoices[choice.id] || [];
-                                                            const newValues = e.target.checked
-                                                                ? [...currentValues, option.value]
-                                                                : currentValues.filter(v => v !== option.value);
-                                                            handleSelectionChange(choice.id, newValues);
-                                                        }}
-                                                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                                                    />
-                                                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                                                        {option.name}
-                                                    </span>
-                                                </label>
-                                            ))}
+                                            {choice.options.map((optionId) => {
+                                                let optionName = '';
+                                                switch (choice.type) {
+                                                    case EntityAppliesToType.Domain:
+                                                        optionName = getDomainNameFromCache(optionId) || `Domain ${optionId}`;
+                                                        break;
+                                                    case EntityAppliesToType.Spell:
+                                                        optionName = getSpellNameFromCache(optionId) || `Spell ${optionId}`;
+                                                        break;
+                                                    case EntityAppliesToType.Feature:
+                                                        optionName = getFeatureNameFromCache(optionId) || `Feature ${optionId}`;
+                                                        break;
+                                                    case EntityAppliesToType.AnimalCompanion:
+                                                    case EntityAppliesToType.Familiar:
+                                                        optionName = getCompanionNameFromCache(optionId) || `Companion ${optionId}`;
+                                                        break;
+                                                    case EntityAppliesToType.Feat:
+                                                        optionName = getFeatNameFromCache(optionId) || `Feat ${optionId}`;
+                                                        break;
+                                                    default:
+                                                        optionName = `Option ${optionId}`;
+                                                }
+                                                return (
+                                                    <label key={optionId} className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedChoices[choice.id]?.includes(optionId) || false}
+                                                            onChange={(e) => {
+                                                                const currentValues = selectedChoices[choice.id] || [];
+                                                                const newValues = e.target.checked
+                                                                    ? [...currentValues, optionId]
+                                                                    : currentValues.filter(v => v !== optionId);
+                                                                handleSelectionChange(choice.id, newValues);
+                                                            }}
+                                                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                                        />
+                                                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                                                            {optionName}
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}

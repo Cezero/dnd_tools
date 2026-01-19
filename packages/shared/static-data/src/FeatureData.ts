@@ -61,6 +61,7 @@ export const EntityType = {
     Quantity: 1,     // Counts, amounts, resources (3d6 damage, 2 targets, 30ft speed)
     Replacement: 2,  // Replace existing values (unarmed damage, base speed)
     Other: 3,        // Special cases, complex effects
+    Base: 4,         // Base value entities (BAB, saves, hit dice, skill points, size, speed, etc.)
     Choice: 5,      // Choice-based features
     Allocation: 6,  // Allocation-based features
 } as const;
@@ -72,6 +73,7 @@ export const ENTITY_TYPES: BaseMap<CoreComponent> = {
     [EntityType.Quantity]: { id: EntityType.Quantity, name: 'Quantity' },
     [EntityType.Replacement]: { id: EntityType.Replacement, name: 'Replacement' },
     [EntityType.Other]: { id: EntityType.Other, name: 'Other' },
+    [EntityType.Base]: { id: EntityType.Base, name: 'Base' },
     [EntityType.Choice]: { id: EntityType.Choice, name: 'Choice' },
     [EntityType.Allocation]: { id: EntityType.Allocation, name: 'Allocation' },
 }
@@ -131,7 +133,7 @@ export const EntityAppliesToType = {
     CastingType: 40,             // Casting type (Prepared, Spontaneous)
     BaseAttackBonus: 41,         // Base Attack Bonus progression type
     Size: 42,                    // Creature size (for race)
-    Speed: 43,                   // Base speed (for race)
+    // 43 was Speed - removed, use MovementSpeed (8) instead
     FavoredClass: 44,            // Favored class (for race)
     LevelAdjustment: 45,         // Level adjustment (for race)
 } as const;
@@ -190,7 +192,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.CastingType]: { id: EntityAppliesToType.CastingType, name: 'Casting Type', displayName: 'Casting Type' },
     [EntityAppliesToType.BaseAttackBonus]: { id: EntityAppliesToType.BaseAttackBonus, name: 'Base Attack Bonus', displayName: 'BAB' },
     [EntityAppliesToType.Size]: { id: EntityAppliesToType.Size, name: 'Size', displayName: 'Size' },
-    [EntityAppliesToType.Speed]: { id: EntityAppliesToType.Speed, name: 'Speed', displayName: 'Speed' },
+    // Speed (43) removed - use MovementSpeed (8) instead
     [EntityAppliesToType.FavoredClass]: { id: EntityAppliesToType.FavoredClass, name: 'Favored Class', displayName: 'Favored Class' },
     [EntityAppliesToType.LevelAdjustment]: { id: EntityAppliesToType.LevelAdjustment, name: 'Level Adjustment', displayName: 'LA' },
 }
@@ -230,6 +232,20 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.MovementSpeed,
         EntityAppliesToType.Ability, // For ability score replacement
     ],
+    [EntityType.Base]: [
+        // Base value entities for class and race mechanics
+        EntityAppliesToType.BaseAttackBonus, // BAB progression
+        EntityAppliesToType.SavingThrow, // Saving throw progression (for class mechanics)
+        EntityAppliesToType.HitDice, // Hit dice (for class mechanics)
+        EntityAppliesToType.SkillPoints, // Skill points (for class mechanics)
+        EntityAppliesToType.Size, // Creature size
+        EntityAppliesToType.MovementSpeed, // Base movement speed (for race mechanics)
+        EntityAppliesToType.FavoredClass, // Favored class
+        EntityAppliesToType.LevelAdjustment, // Level adjustment
+        EntityAppliesToType.SpellcastingProgression, // Spellcasting progression reference
+        EntityAppliesToType.CastingAbility, // Casting ability
+        EntityAppliesToType.CastingType, // Casting type
+    ],
     [EntityType.Other]: [
         EntityAppliesToType.Other,
         EntityAppliesToType.BonusLanguage, // Bonus languages are Other type modifiers
@@ -246,18 +262,6 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.SizeCategory,
         EntityAppliesToType.CreatureType,
         EntityAppliesToType.DamageType,
-
-        // NEW: Class/Race refactoring types
-        EntityAppliesToType.SpellcastingProgression, // Spellcasting progression reference
-        EntityAppliesToType.CastingAbility, // Casting ability
-        EntityAppliesToType.CastingType, // Casting type
-        EntityAppliesToType.BaseAttackBonus, // BAB progression
-        EntityAppliesToType.HitDice, // Hit dice (for class mechanics)
-        EntityAppliesToType.Size, // Creature size
-        EntityAppliesToType.FavoredClass, // Favored class
-        EntityAppliesToType.LevelAdjustment, // Level adjustment
-        EntityAppliesToType.SkillPoints, // Skill points (for class mechanics)
-        EntityAppliesToType.SavingThrow, // Saving throw progression (for class mechanics)
     ],
     [EntityType.Choice]: [
         EntityAppliesToType.Feat, // Choice between feats

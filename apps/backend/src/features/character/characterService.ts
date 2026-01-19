@@ -2392,7 +2392,7 @@ export const characterService: CharacterService = {
             // Try to get resolved progressions from session first (if character is being edited)
             if (!effectiveResolvedProgressionsForValidation && characterForValidation.userId) {
                 const sessionService = new CharacterSessionService();
-                const session = sessionService.getSession(characterId, characterForValidation.userId);
+                const session = await sessionService.getSession(characterId, characterForValidation.userId);
                 if (session?.resolvedResult?.resolvedProgressions) {
                     effectiveResolvedProgressionsForValidation = session.resolvedResult.resolvedProgressions;
                 }
@@ -2534,7 +2534,7 @@ export const characterService: CharacterService = {
         let resolvedCharacterResult: ResolvedCharacterResult | undefined;
 
         if (updatedCharacter.userId) {
-            const session = sessionService.getSession(characterId, updatedCharacter.userId);
+            const session = await sessionService.getSession(characterId, updatedCharacter.userId);
 
             if (session) {
                 // Re-resolve features with updated character state
@@ -2847,7 +2847,7 @@ export const characterService: CharacterService = {
         let resolvedCharacterResult: ResolvedCharacterResult | undefined;
 
         if (updatedCharacter.userId) {
-            const session = sessionService.getSession(characterId, updatedCharacter.userId);
+            const session = await sessionService.getSession(characterId, updatedCharacter.userId);
 
             if (session) {
                 // Re-resolve features with updated character state

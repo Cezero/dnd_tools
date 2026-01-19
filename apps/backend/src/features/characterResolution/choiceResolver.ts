@@ -1,26 +1,13 @@
 import { PrismaClient } from '@shared/prisma-client';
-import type { FeatureProgression, FeatureEntity, FeatInQueryResponse } from '@shared/schema';
+import type { FeatureProgression, FeatureEntity, FeatInQueryResponse, PendingChoice } from '@shared/schema';
 import { EntityType, EntityAppliesToType, FeatureFeatChoiceFilter, FeatureSourceType, CompanionType, SpecialFeatureId } from '@shared/static-data';
 
 import { FeatureEntityHandlers, type EntityProcessingResult } from './featureEntityHandlers';
-import type { PendingChoice } from './types';
-import { companionService } from '../companion/companionService';
 import { domainService } from '../domain/domainService';
-import { featService } from '../feat/featService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 
 const prisma = new PrismaClient();
 
-/**
- * Choice option for pending choices
- */
-interface ChoiceOption {
-    id: string;
-    name: string;
-    description: string;
-    value: number;
-    prerequisites?: string[];
-}
 
 /**
  * Backend service for resolving character choices.
@@ -292,9 +279,25 @@ export class ChoiceResolver {
                 return await this.resolveAnimalCompanionChoice(selectedId, sourceProgressions);
             case EntityAppliesToType.Familiar:
                 return await this.resolveFamiliarChoice(selectedId, sourceProgressions);
-            default:
-                console.warn(`Unknown appliesTo type: ${appliesToType}`);
+            default: {
+                // Many appliesTo types are not choices (e.g., bonuses, direct grants, values)
+                // Only log if it's a type that might actually be a choice we're missing
+                const potentiallyMissingChoiceTypes: number[] = [
+                    EntityAppliesToType.SpellbookSpell, // 37 - might need handler
+                ];
+
+                if (potentiallyMissingChoiceTypes.includes(appliesToType)) {
+                    console.warn(`[Choice Resolver] Potentially missing choice handler for appliesTo type: ${appliesToType}`);
+                } else {
+                    // These are expected - many appliesTo types are not choices
+                    // (e.g., AutomaticLanguage, BonusLanguage, Proficiency, bonuses, etc.)
+                    // Only log at debug level if needed
+                    if (process.env.DEBUG_CHOICE_RESOLVER === 'true') {
+                        console.debug(`[Choice Resolver] Non-choice appliesTo type (expected): ${appliesToType}`);
+                    }
+                }
                 return [];
+            }
         }
     }
 
@@ -444,12 +447,12 @@ export class ChoiceResolver {
             choiceName = `${source}: Make a Choice`;
         }
 
-        const options = await this.getChoiceOptions(entity, progression, editionId, allFeats);
-        // Filter out invalid options (value must be > 0 per Zod schema)
-        const validOptions = options.filter(opt => opt.value > 0);
+        const optionIds = await this.getChoiceOptions(entity, progression, editionId, allFeats);
+        // Filter out invalid options (ID must be > 0 per Zod schema)
+        const validOptionIds = optionIds.filter(id => id > 0);
 
         // Don't return a pending choice if there are no valid options
-        if (validOptions.length === 0) {
+        if (validOptionIds.length === 0) {
             return null;
         }
 
@@ -461,7 +464,7 @@ export class ChoiceResolver {
             source,
             level: progression.level,
             required: true,
-            options: validOptions,
+            options: validOptionIds,
             maxSelections: entity.value || 1,
             minSelections: 1,
         };
@@ -475,51 +478,31 @@ export class ChoiceResolver {
         _progression: FeatureProgression,
         editionId?: number,
         allFeats?: FeatInQueryResponse[]
-    ): Promise<ChoiceOption[]> {
-        const options: ChoiceOption[] = [];
+    ): Promise<number[]> {
+        const options: number[] = [];
 
         switch (entity.appliesTo) {
             case EntityAppliesToType.Domain:
-                if (entity.domain) {
-                    // Specific domain choice
-                    // Only add if ID is valid (> 0)
-                    if (entity.domain.id > 0) {
-                        options.push({
-                            id: `domain-${entity.domain.id}`,
-                            name: entity.domain.name,
-                            description: `Domain: ${entity.domain.name}`,
-                            value: entity.domain.id,
-                            prerequisites: []
-                        });
+                if (entity.appliesToId) {
+                    // Specific domain choice - just return the ID
+                    if (entity.appliesToId > 0) {
+                        options.push(entity.appliesToId);
                     }
                 } else {
-                    // General domain choice - fetch all domains for edition
+                    // General domain choice - get all domain IDs for edition
                     if (editionId) {
                         try {
-                            const domainsResponse = await domainService.getAllDomains();
-                            const domains = domainsResponse.results.filter(d => d.editionId === editionId);
-                            domains.forEach(domain => {
-                                // Only add domain if ID is valid (> 0)
+                            const domainIds = await prisma.domain.findMany({
+                                where: { editionId },
+                                select: { id: true }
+                            });
+                            domainIds.forEach(domain => {
                                 if (domain.id > 0) {
-                                    options.push({
-                                        id: `domain-${domain.id}`,
-                                        name: domain.name,
-                                        description: `Domain: ${domain.name}`,
-                                        value: domain.id,
-                                        prerequisites: []
-                                    });
+                                    options.push(domain.id);
                                 }
                             });
                         } catch (error) {
-                            console.error('Error fetching domains:', error);
-                            // Don't add error placeholder - return empty options instead to avoid Zod validation error
-                            // options.push({
-                            //     id: 'domain-error',
-                            //     name: 'Error loading domains',
-                            //     description: 'Could not load domain options',
-                            //     value: 0,
-                            //     prerequisites: []
-                            // });
+                            console.error('Error fetching domain IDs:', error);
                         }
                     }
                 }
@@ -527,39 +510,13 @@ export class ChoiceResolver {
 
             case EntityAppliesToType.Feat:
                 if (entity.appliesToId) {
-                    // Specific feat choice - fetch feat data
-                    try {
-                        const featResponse = await featService.getFeatById({ id: entity.appliesToId });
-                        if (featResponse && featResponse.id && featResponse.id > 0) {
-                            const feat = featResponse;
-                            // Get feature description for description field
-                            const featureDescription = feat.featureProgressions?.[0]?.feature?.description || null;
-                            options.push({
-                                id: `feat-${feat.id}`,
-                                name: feat.name,
-                                description: featureDescription || `Feat: ${feat.name}`,
-                                value: feat.id,
-                                prerequisites: feat.featureProgressions?.[0]?.feature?.prerequisites?.map(p => p.type.toString()) || []
-                            });
-                        }
-                    } catch (error) {
-                        console.error(`Error fetching feat ${entity.appliesToId}:`, error);
-                        // Fall through to general feat choice
+                    // Specific feat choice - just return the ID
+                    if (entity.appliesToId > 0) {
+                        options.push(entity.appliesToId);
                     }
-                }
-
-                if (options.length === 0) {
+                } else {
                     // General feat choice
-                    if (!allFeats || allFeats.length === 0) {
-                        // Don't add error placeholder - return empty options instead to avoid Zod validation error
-                        // options.push({
-                        //     id: 'feat-no-data',
-                        //     name: 'No feats available',
-                        //     description: 'Feats data not provided',
-                        //     value: 0,
-                        //     prerequisites: []
-                        // });
-                    } else {
+                    if (allFeats && allFeats.length > 0) {
                         let availableFeats = allFeats;
 
                         // Filter by filterType if specified
@@ -568,16 +525,8 @@ export class ChoiceResolver {
                         }
 
                         availableFeats.forEach(feat => {
-                            // Only add feat if ID is valid (> 0)
                             if (feat.id > 0) {
-                                // FeatInQueryResponse doesn't include featureProgressions, so use name as description
-                                options.push({
-                                    id: `feat-${feat.id}`,
-                                    name: feat.name,
-                                    description: `Feat: ${feat.name}`,
-                                    value: feat.id,
-                                    prerequisites: [] // Prerequisites are now handled through Feature system
-                                });
+                                options.push(feat.id);
                             }
                         });
                     }
@@ -585,87 +534,47 @@ export class ChoiceResolver {
                 break;
 
             case EntityAppliesToType.Spell:
-                if (entity.spell && entity.spell.id > 0) {
-                    options.push({
-                        id: `spell-${entity.spell.id}`,
-                        name: entity.spell.name,
-                        description: `Spell: ${entity.spell.name}`,
-                        value: entity.spell.id,
-                        prerequisites: []
-                    });
+                if (entity.appliesToId) {
+                    // Specific spell choice - just return the ID
+                    if (entity.appliesToId > 0) {
+                        options.push(entity.appliesToId);
+                    }
                 }
                 break;
 
             case EntityAppliesToType.Feature:
-                if (entity.feature && entity.feature.id > 0) {
-                    options.push({
-                        id: `feature-${entity.feature.id}`,
-                        name: entity.feature.name,
-                        description: entity.feature.description || `Feature: ${entity.feature.name}`,
-                        value: entity.feature.id,
-                        prerequisites: entity.feature.prerequisites?.map(p => p.type.toString()) || []
-                    });
+                if (entity.appliesToId) {
+                    // Specific feature choice - just return the ID
+                    if (entity.appliesToId > 0) {
+                        options.push(entity.appliesToId);
+                    }
                 }
                 break;
 
             case EntityAppliesToType.AnimalCompanion:
             case EntityAppliesToType.Familiar:
-                if (entity.companion && entity.companion.id > 0) {
-                    // Specific companion choice
-                    const companionName = entity.companion.name || `Companion ${entity.companion.id}`;
-                    const companionTypeName = entity.appliesTo === EntityAppliesToType.Familiar ? 'Familiar' : 'Animal Companion';
-                    options.push({
-                        id: `companion-${entity.companion.id}`,
-                        name: companionName,
-                        description: `${companionTypeName}: ${companionName}`,
-                        value: entity.companion.id,
-                        prerequisites: []
-                    });
+                if (entity.appliesToId) {
+                    // Specific companion choice - just return the ID
+                    if (entity.appliesToId > 0) {
+                        options.push(entity.appliesToId);
+                    }
                 } else {
-                    // General companion choice - fetch all companions
+                    // General companion choice - get all companion IDs by type
                     try {
-                        const companionsResponse = await companionService.getAllCompanions();
                         const typeFilter = entity.appliesTo === EntityAppliesToType.Familiar
                             ? CompanionType.Familiar
                             : CompanionType.AnimalCompanion;
-                        const companions = companionsResponse.results.filter(
-                            companion => companion.type === typeFilter
-                        );
-
-                        // Fetch monster names for all companions in batch
-                        const monsterIds = companions.map(c => c.monsterId);
-                        const monsters = await prisma.monster.findMany({
-                            where: { id: { in: monsterIds } },
-                            select: { id: true, name: true }
+                        const companionIds = await prisma.companion.findMany({
+                            where: { type: typeFilter },
+                            select: { id: true }
                         });
-                        const monsterMap = new Map(monsters.map(m => [m.id, m.name]));
-
-                        companions.forEach(companion => {
-                            // Only add companion if ID is valid (> 0)
+                        companionIds.forEach(companion => {
                             if (companion.id > 0) {
-                                const monsterName = monsterMap.get(companion.monsterId) || `Monster ${companion.monsterId}`;
-                                const companionTypeName = companion.type === CompanionType.Familiar
-                                    ? 'Familiar'
-                                    : 'Animal Companion';
-                                options.push({
-                                    id: `companion-${companion.id}`,
-                                    name: monsterName,
-                                    description: `${companionTypeName}: ${monsterName}`,
-                                    value: companion.id,
-                                    prerequisites: []
-                                });
+                                options.push(companion.id);
                             }
                         });
                     } catch (error) {
-                        console.error('Error fetching companions:', error);
-                        // Don't add error placeholder - return empty options instead to avoid Zod validation error
-                        // options.push({
-                        //     id: 'companion-error',
-                        //     name: 'Error loading companions',
-                        //     description: 'Could not load companion options',
-                        //     value: 0,
-                        //     prerequisites: []
-                        // });
+                        console.error('Error fetching companion IDs:', error);
                     }
                 }
                 break;

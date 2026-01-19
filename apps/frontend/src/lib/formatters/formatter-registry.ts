@@ -103,6 +103,10 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerFormatter(EntityType.Other, formatter, appliesToType);
     }
 
+    registerBaseFormatter(appliesToType: EntityAppliesToType, formatter: BaseFormatter): void {
+        this.registerFormatter(EntityType.Base, formatter, appliesToType);
+    }
+
     registerProficiencyFormatter(appliesToType: EntityAppliesToType, formatter: BaseFormatter): void {
         this.registerFormatter(EntityType.Other, formatter, appliesToType);
     }
@@ -199,17 +203,19 @@ export class FormatterRegistry implements IFormatterRegistry {
         // SpellbookSpell formatter
         this.registerOtherFormatter(EntityAppliesToType.SpellbookSpell, spellbookSpellFormatter);
 
-        // Class/Race mechanics formatters
-        this.registerOtherFormatter(EntityAppliesToType.BaseAttackBonus, baseAttackBonusFormatter);
-        this.registerOtherFormatter(EntityAppliesToType.HitDice, diceFormatter);
-        this.registerOtherFormatter(EntityAppliesToType.SavingThrow, savingThrowProgressionFormatter);
-        this.registerOtherFormatter(EntityAppliesToType.Size, sizeCategoryFormatter);
-        this.registerOtherFormatter(EntityAppliesToType.FavoredClass, favoredClassFormatter);
-        this.registerOtherFormatter(EntityAppliesToType.LevelAdjustment, levelAdjustmentFormatter);
-        this.registerOtherFormatter(EntityAppliesToType.SkillPoints, valueFormatter);
-        this.registerOtherFormatter(EntityAppliesToType.CastingAbility, castingAbilityFormatter);
-        this.registerOtherFormatter(EntityAppliesToType.CastingType, castingTypeFormatter);
-        this.registerOtherFormatter(EntityAppliesToType.SpellcastingProgression, spellcastingProgressionFormatter);
+        // Class/Race mechanics formatters (EntityType.Base)
+        this.registerBaseFormatter(EntityAppliesToType.BaseAttackBonus, baseAttackBonusFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.HitDice, diceFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.SavingThrow, savingThrowProgressionFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.Size, sizeCategoryFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.FavoredClass, favoredClassFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.LevelAdjustment, levelAdjustmentFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.SkillPoints, valueFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.CastingAbility, castingAbilityFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.CastingType, castingTypeFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.SpellcastingProgression, spellcastingProgressionFormatter);
+        // MovementSpeed is compatible with both Quantity (bonuses) and Base (base race speed)
+        this.registerBaseFormatter(EntityAppliesToType.MovementSpeed, movementSpeedFormatter);
 
         // Proficiency-compatible types
         this.registerProficiencyFormatter(EntityAppliesToType.Proficiency, proficiencyFormatter);

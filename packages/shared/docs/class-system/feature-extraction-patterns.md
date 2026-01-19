@@ -10,14 +10,14 @@ Class and race mechanics (hit die, BAB, saving throws, size, speed, etc.) are no
 
 ### Feature Progression Structure
 
-Mechanics are stored in feature progressions with the slug `"class-mechanics"` (for classes) or `"race-mechanics"` (for races). Each progression contains `FeatureEntity` entries that represent individual mechanical values:
+Mechanics are stored in feature progressions with the slug `"class-mechanics"` (for classes) or `"race-mechanics"` (for races). Each progression contains `FeatureEntity` entries with `EntityType.Base` that represent individual mechanical values:
 
 - **Hit Die**: `EntityAppliesToType.HitDice` with value in `appliesToId`
-- **BAB Progression**: `EntityAppliesToType.BaseAttackBonus` with progression type in `appliesToId`
-- **Saving Throws**: `EntityAppliesToType.SavingThrow` with save type in `appliesToId` and progression type in `appliesToSubId`
+- **BAB Progression**: `EntityAppliesToType.BaseAttackBonus` with formula-based calculation (see Formula-Based BAB below)
+- **Saving Throws**: `EntityAppliesToType.SavingThrow` with formula-based calculation (see Formula-Based Saves below)
 - **Skill Points**: `EntityAppliesToType.SkillPoints` with base value in `value` (uses `ABILITY_BASED` formula)
 - **Size**: `EntityAppliesToType.Size` with size ID in `appliesToId`
-- **Speed**: `EntityAppliesToType.Speed` with speed value in `value`
+- **Speed**: `EntityAppliesToType.MovementSpeed` with speed value in `value`
 - **Favored Class**: `EntityAppliesToType.FavoredClass` with class ID in `appliesToId`
 - **Level Adjustment**: `EntityAppliesToType.LevelAdjustment` with LA value in `value`
 
@@ -57,8 +57,10 @@ const mechanics = extractClassMechanics(progressions, classId);
 
 - `extractHitDie(progressions, classId?)` - Returns hit die type (d4, d6, d8, etc.)
 - `extractSkillPoints(progressions, classId?)` - Returns base skill points value
-- `extractBABProgression(progressions, classId?)` - Returns BAB progression type (good/average/poor)
-- `extractSaveProgression(progressions, saveType, classId?)` - Returns saving throw progression type
+- `extractBABProgression(progressions, classId?)` - Returns BAB progression type (good/average/poor) by reverse-lookup from formula
+- `extractSaveProgression(progressions, saveType, classId?)` - Returns saving throw progression type (good/poor) by reverse-lookup from formula
+
+**Note**: These functions now check for formula-based entities first and use `formulaToProgressionType` helpers to reverse-lookup the `ProgressionType` from formula parameters. They fall back to old `appliesToId`/`appliesToSubId` patterns for backward compatibility during migration.
 
 ### Race Mechanics Extraction
 
@@ -105,7 +107,6 @@ const raceMechanics = extractRaceMechanicsFromResolved(resolvedProgressions);
 Used when the value references an enum or lookup table:
 
 - **Hit Die**: Stored in `appliesToId` (references `RPG_DICE` enum)
-- **BAB Progression**: Stored in `appliesToId` (references `ProgressionType` enum)
 - **Size**: Stored in `appliesToId` (references `SIZE_MAP`)
 - **Favored Class**: Stored in `appliesToId` (references class ID)
 
@@ -117,6 +118,8 @@ Used when the value references an enum or lookup table:
   value: 0
 }
 ```
+
+**Note**: BAB Progression previously used this pattern but has been migrated to formula-based storage (see Pattern 4).
 
 ### Pattern 2: Literal Value Storage (`value`)
 
@@ -135,21 +138,91 @@ Used when the value is a literal number:
 }
 ```
 
-### Pattern 3: Sub-ID Storage (`appliesToSubId`)
+### Pattern 3: Formula-Based BAB Storage
 
-Used when the value needs both a type and a subtype:
+Used for Base Attack Bonus progressions with formula-based calculations:
 
-- **Saving Throws**: Save type in `appliesToId`, progression type in `appliesToSubId`
+- **BAB Progression**: Formula-based calculation using `FeatureFormulaParams`
+- **Good BAB**: `LINEAR_SCALING` formula with `value = 1.0` (stored in `entity.value`)
+- **Average BAB**: `LEVEL_TIMES_VALUE` formula with `value = 0.75` (stored in `entity.value`)
+- **Poor BAB**: `LEVEL_TIMES_VALUE` formula with `value = 0.5` (stored in `entity.value`)
 
-**Example**:
+**Example (Good BAB)**:
+```typescript
+{
+  appliesTo: EntityAppliesToType.BaseAttackBonus,
+  appliesToId: null, // No longer uses ProgressionType enum
+  appliesToSubId: null,
+  value: 1.0, // scalingValue for LINEAR_SCALING
+  formulaParams: {
+    formulaId: FormulaId.LINEAR_SCALING,
+    includeProgressionLevel: true,
+    // ... other formula params
+  }
+}
+```
+
+**Example (Average BAB)**:
+```typescript
+{
+  appliesTo: EntityAppliesToType.BaseAttackBonus,
+  appliesToId: null,
+  appliesToSubId: null,
+  value: 0.75, // scalingValue for LEVEL_TIMES_VALUE
+  formulaParams: {
+    formulaId: FormulaId.LEVEL_TIMES_VALUE,
+    includeProgressionLevel: true,
+    // ... other formula params
+  }
+}
+```
+
+**Note**: The old pattern using `appliesToId` with `ProgressionType` enum has been migrated to this formula-based approach.
+
+### Pattern 4: Formula-Based Saving Throw Storage
+
+Used for saving throw progressions with formula-based calculations:
+
+- **Saving Throws**: Formula-based calculation using `FeatureFormulaParams`
+- **Good Save**: `LEVEL_DIVIDED_BY_PLUS_BASE` formula with `divisor = 2`, `baseValue = 2`
+- **Poor Save**: `LEVEL_DIVIDED_BY` formula with `divisor = 3`
+- **Save Type**: Stored in `appliesToId` (Fortitude, Reflex, or Will)
+
+**Example (Good Fortitude Save)**:
 ```typescript
 {
   appliesTo: EntityAppliesToType.SavingThrow,
-  appliesToId: SavingThrowId.Fortitude, // Which save
-  appliesToSubId: ProgressionType.good, // Progression type
-  value: 0
+  appliesToId: SavingThrowId.Fortitude, // Which save type
+  appliesToSubId: null, // No longer uses ProgressionType enum
+  value: null, // Not used for saves
+  formulaParams: {
+    formulaId: FormulaId.LEVEL_DIVIDED_BY_PLUS_BASE,
+    divisor: 2,
+    baseValue: 2,
+    includeProgressionLevel: true,
+    // ... other formula params
+  }
 }
 ```
+
+**Example (Poor Reflex Save)**:
+```typescript
+{
+  appliesTo: EntityAppliesToType.SavingThrow,
+  appliesToId: SavingThrowId.Reflex, // Which save type
+  appliesToSubId: null,
+  value: null,
+  formulaParams: {
+    formulaId: FormulaId.LEVEL_DIVIDED_BY,
+    divisor: 3,
+    baseValue: null,
+    includeProgressionLevel: true,
+    // ... other formula params
+  }
+}
+```
+
+**Note**: The old pattern using `appliesToSubId` with `ProgressionType` enum has been migrated to this formula-based approach.
 
 ## Usage Examples
 

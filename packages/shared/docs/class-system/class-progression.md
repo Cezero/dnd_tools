@@ -27,29 +27,40 @@ The progression system calculates character advancement across multiple dimensio
 
 ## ⚔️ **Base Attack Bonus (BAB) System**
 
-### **Progression Types**
+### **Formula-Based Progression**
 
-The BAB system supports three progression patterns that determine combat effectiveness.
+BAB progressions are now stored as formula-based `FeatureEntity` records in the database, using the feature system's formula resolution. This replaces the previous hard-coded `ProgressionType` enum approach.
 
 **Good BAB Progression**:
-- **Formula**: `BAB = level` (1:1 ratio)
+- **Formula**: `LINEAR_SCALING` with `scalingValue = 1` (stored in `entity.value`)
+- **Calculation**: `level × 1` (1:1 ratio)
 - **Rate**: Full attack bonus progression
 - **Examples**: Fighter, Paladin, Barbarian
 - **Characteristics**: Combat-focused classes with high attack accuracy
+- **Database**: `FeatureEntity` with `appliesTo = BaseAttackBonus`, `formulaParams.formulaId = LINEAR_SCALING`, `value = 1.0`
 
 **Average BAB Progression**:
-- **Formula**: `BAB = level * 3/4` (3:4 ratio)
+- **Formula**: `LEVEL_TIMES_VALUE` with `scalingValue = 0.75` (stored in `entity.value`)
+- **Calculation**: `floor(level × 0.75)` (3:4 ratio)
 - **Rate**: Three-quarters attack bonus progression
 - **Examples**: Cleric, Druid, Ranger
 - **Characteristics**: Balanced classes with moderate combat ability
+- **Database**: `FeatureEntity` with `appliesTo = BaseAttackBonus`, `formulaParams.formulaId = LEVEL_TIMES_VALUE`, `value = 0.75`
 
 **Poor BAB Progression**:
-- **Formula**: `BAB = level * 1/2` (1:2 ratio)
+- **Formula**: `LEVEL_TIMES_VALUE` with `scalingValue = 0.5` (stored in `entity.value`)
+- **Calculation**: `floor(level × 0.5)` (1:2 ratio)
 - **Rate**: Half attack bonus progression
 - **Examples**: Wizard, Sorcerer, Rogue
 - **Characteristics**: Non-combat focused classes with limited attack accuracy
+- **Database**: `FeatureEntity` with `appliesTo = BaseAttackBonus`, `formulaParams.formulaId = LEVEL_TIMES_VALUE`, `value = 0.5`
 
-**Source File**: `packages/shared/static-data/src/ClassData.ts` (BAB calculation functions)
+**Source Files**: 
+- Formula Definitions: `packages/shared/static-data/src/FormulaDefinitions.ts`
+- Resolution: `apps/backend/src/features/characterResolution/resolvedFeatureService.ts` (resolveFormulaValues)
+- Calculation: `apps/frontend/src/lib/attack-calculation/utils.ts` (getCharacterBAB)
+
+**Note**: The old `getBABProgression()` function in `packages/shared/utils/src/ClassUtils.ts` is deprecated. Use formula-based resolution instead.
 
 ### **Iterative Attacks**
 
@@ -102,23 +113,32 @@ The BAB system calculates iterative attacks for high-level characters.
 
 ## 🛡️ **Saving Throw System**
 
-### **Progression Types**
+### **Formula-Based Progression**
 
-The saving throw system uses two progression patterns for different save types.
+Saving throw progressions are now stored as formula-based `FeatureEntity` records in the database, using the feature system's formula resolution. This replaces the previous hard-coded `ProgressionType` enum approach.
 
 **Good Save Progression**:
-- **Formula**: `Save = floor(level / 2) + 2`
+- **Formula**: `LEVEL_DIVIDED_BY_PLUS_BASE` with `divisor = 2`, `baseValue = 2`
+- **Calculation**: `floor(level / 2) + 2`
 - **Rate**: Good saving throw progression
 - **Examples**: Fighter (Fortitude), Rogue (Reflex), Cleric (Will)
 - **Characteristics**: Classes with strong defensive capabilities in specific areas
+- **Database**: `FeatureEntity` with `appliesTo = SavingThrow`, `appliesToId = saveType`, `formulaParams.formulaId = LEVEL_DIVIDED_BY_PLUS_BASE`, `formulaParams.divisor = 2`, `formulaParams.baseValue = 2`
 
 **Poor Save Progression**:
-- **Formula**: `Save = floor(level / 3)`
+- **Formula**: `LEVEL_DIVIDED_BY` with `divisor = 3`
+- **Calculation**: `floor(level / 3)`
 - **Rate**: Poor saving throw progression
 - **Examples**: Wizard (Fortitude), Cleric (Reflex), Fighter (Will)
 - **Characteristics**: Classes with limited defensive focus in specific areas
+- **Database**: `FeatureEntity` with `appliesTo = SavingThrow`, `appliesToId = saveType`, `formulaParams.formulaId = LEVEL_DIVIDED_BY`, `formulaParams.divisor = 3`
 
-**Source File**: `packages/shared/static-data/src/ClassData.ts` (Saving throw functions)
+**Source Files**: 
+- Formula Definitions: `packages/shared/static-data/src/FormulaDefinitions.ts`
+- Resolution: `apps/backend/src/features/characterResolution/resolvedFeatureService.ts` (resolveFormulaValues)
+- Calculation: `apps/frontend/src/lib/character-calculation/calculations/savingThrows.ts` (getSavingThrow)
+
+**Note**: The old `getSaveProgression()` function in `packages/shared/utils/src/ClassUtils.ts` is deprecated. Use formula-based resolution instead.
 
 ### **Save Types and Characteristics**
 
@@ -345,24 +365,34 @@ The system provides visual displays of progression data.
 
 ### **Calculation Functions**
 
-**BAB Calculations**:
-- **getGoodBAB(level)**: Calculate good BAB progression
-- **getAverageBAB(level)**: Calculate average BAB progression
-- **getPoorBAB(level)**: Calculate poor BAB progression
-- **formatIterativeBAB(bab)**: Format BAB with iterative attacks
+**BAB Calculations** (Formula-Based):
+- **ResolvedFeatureService.resolveFormulaValues()**: Resolves BAB and save formulas for all classes
+- **getCharacterBAB()**: Frontend function that uses pre-resolved formula values
+- **formatIterativeBAB(bab)**: Format BAB with iterative attacks (still used for display)
 
-**Save Calculations**:
-- **getGoodSave(level)**: Calculate good save progression
-- **getPoorSave(level)**: Calculate poor save progression
-- **getSaveProgression(level, type)**: Generic save calculation
+**Save Calculations** (Formula-Based):
+- **ResolvedFeatureService.resolveFormulaValues()**: Resolves save formulas for all classes
+- **getSavingThrow()**: Frontend function that uses pre-resolved formula values
+
+**Deprecated Functions** (Backward Compatibility Only):
+- **getBABProgression(level, type)**: ⚠️ Deprecated - Use formula-based resolution
+- **getSaveProgression(level, type)**: ⚠️ Deprecated - Use formula-based resolution
+- **getGoodBAB(level)**: ⚠️ Deprecated - Use formula-based resolution
+- **getAverageBAB(level)**: ⚠️ Deprecated - Use formula-based resolution
+- **getPoorBAB(level)**: ⚠️ Deprecated - Use formula-based resolution
+- **getGoodSave(level)**: ⚠️ Deprecated - Use formula-based resolution
+- **getPoorSave(level)**: ⚠️ Deprecated - Use formula-based resolution
 
 **Advancement Calculations**:
-- **getFeatCount(level)**: Calculate feats gained
-- **getAbilityScoreIncreases(level)**: Calculate ability score increases
+- **getFeatCount(level)**: ⚠️ Deprecated - Use ResolvedFeatureService.getAvailableFeatsCount()
+- **getAbilityScoreIncreases(level)**: ⚠️ Deprecated - Use ResolvedFeatureService.getAvailableAbilityScoreIncreases()
 - **getClassSkillMaxRanks(level)**: Calculate class skill maximum ranks
 - **getCrossClassSkillMaxRanks(level)**: Calculate cross-class skill maximum ranks
 
-**Source File**: `packages/shared/static-data/src/ClassData.ts` (All calculation functions)
+**Source Files**: 
+- Formula Resolution: `apps/backend/src/features/characterResolution/resolvedFeatureService.ts`
+- Frontend Calculations: `apps/frontend/src/lib/attack-calculation/utils.ts`, `apps/frontend/src/lib/character-calculation/calculations/savingThrows.ts`
+- Deprecated Functions: `packages/shared/utils/src/ClassUtils.ts`
 
 ### **Performance Optimization**
 

@@ -140,6 +140,180 @@ The class system controllers follow the shared [Controller Layer Pattern](../app
 
 **Source File**: `src/features/class/classController.ts`
 
+## 🗄️ **Session Management**
+
+The class system uses **SQLite session storage** for persistent editing sessions, providing reliable state management and deterministic ID handling. This pattern mirrors the `CharacterEdit` session management implementation.
+
+### **Overview**
+
+The session management system provides:
+- **Persistent Sessions**: SQLite database stores editing sessions that survive backend restarts
+- **Automatic Expiration**: Sessions automatically expire after configurable period of inactivity
+- **Per-User Isolation**: Each user has separate sessions for each class
+- **Temporary ID Generation**: SQLite auto-increment generates temporary IDs for new entities
+- **Save Transformation**: Transforms SQLite session state → MySQL on save
+
+### **Session Database**
+
+**Purpose**: Lightweight SQLite database for storing class editing session state.
+
+**Source File**: `src/features/classResolution/sessionDatabase.ts`
+
+**Tables**:
+- **`class_edit_sessions`**: Stores session metadata and class state (JSON)
+- **`class_session_progressions`**: Temporary progressions in session (with auto-increment IDs)
+- **`class_session_entities`**: Temporary entities in session (with auto-increment IDs)
+
+**Key Features**:
+- **WAL Mode**: Write-Ahead Logging for concurrent access
+- **Auto-Increment IDs**: SQLite generates temporary IDs for new entities
+- **Session Expiration**: Automatic cleanup of expired sessions
+- **Per-User Isolation**: Sessions keyed by `classId:userId`
+
+### **ClassSessionService**
+
+Service for managing class editing sessions in SQLite.
+
+**Purpose**: Provides persistent session storage with automatic cleanup and state management.
+
+**Source File**: `src/features/classResolution/classSessionService.ts`
+
+**Key Methods**:
+
+**createSession**: Creates a new editing session
+- **Method Signature**: `async createSession(classId: number, userId: number, classState: ClassEditState): Promise<ClassSession>`
+- **Parameters**: Class ID, user ID, initial class state
+- **Business Logic**: Creates session in SQLite with unique session key and expiration time
+- **Returns**: Created session with session ID and state
+
+**getSession**: Retrieves an active session
+- **Method Signature**: `getSession(classId: number, userId: number): ClassSession | null`
+- **Parameters**: Class ID, user ID
+- **Business Logic**: Looks up session by key, checks expiration
+- **Returns**: Active session or null if not found/expired
+
+**updateSession**: Updates session state
+- **Method Signature**: `async updateSession(sessionId: string, classState: ClassEditState): Promise<void>`
+- **Parameters**: Session ID, updated class state
+- **Business Logic**: Updates session state JSON and expiration time
+- **Returns**: Void
+
+**deleteSession**: Deletes a session
+- **Method Signature**: `async deleteSession(sessionId: string): Promise<void>`
+- **Parameters**: Session ID
+- **Business Logic**: Deletes session and all related temporary entities
+- **Returns**: Void
+
+**cleanupExpiredSessions**: Removes expired sessions
+- **Method Signature**: `async cleanupExpiredSessions(): Promise<number>`
+- **Parameters**: None
+- **Business Logic**: Deletes all sessions past expiration time
+- **Returns**: Number of sessions deleted
+
+### **ClassResolutionController**
+
+Controller for managing class editing sessions and applying updates.
+
+**Purpose**: Handles HTTP requests for session lifecycle and state updates.
+
+**Source File**: `src/features/classResolution/classResolutionController.ts`
+
+**API Endpoints**:
+
+**POST /api/classes/:id/session** - Initialize or resume session
+- **Purpose**: Creates new session or returns existing active session
+- **Authentication**: User authentication required
+- **Response**: `{ sessionId: string, classState: ClassEditState }`
+- **Business Logic**: Loads class from MySQL, creates or resumes SQLite session
+
+**GET /api/classes/:id/session/:sessionId** - Get session state
+- **Purpose**: Retrieves current session state
+- **Authentication**: User authentication required
+- **Response**: `{ classState: ClassEditState }`
+- **Business Logic**: Loads session state from SQLite
+
+**PATCH /api/classes/:id/session/:sessionId** - Apply update
+- **Purpose**: Applies action-based update to session state
+- **Authentication**: User authentication required
+- **Body**: `ClassUpdate` (discriminated union of update actions)
+- **Response**: `{ classState: ClassEditState }`
+- **Business Logic**: Applies update to session state using `classUpdateApplier`
+
+**POST /api/classes/:id/session/:sessionId/save** - Save session to MySQL
+- **Purpose**: Transforms SQLite session → MySQL and saves class
+- **Authentication**: Admin authentication required
+- **Response**: `{ class: DnDClass }`
+- **Business Logic**: Uses `ClassSaveService` to transform and persist session
+
+**DELETE /api/classes/:id/session/:sessionId** - Cancel session
+- **Purpose**: Deletes session without saving
+- **Authentication**: User authentication required
+- **Response**: `{ message: string }`
+- **Business Logic**: Deletes session from SQLite
+
+### **Update Actions**
+
+The system uses action-based updates (discriminated union) for state modifications:
+
+**Update Types**:
+- `UPDATE_CLASS_FIELD`: Update individual class field (name, abbreviation, etc.)
+- `ADD_PROGRESSION`: Add new feature progression to session
+- `UPDATE_PROGRESSION`: Update existing feature progression
+- `REMOVE_PROGRESSION`: Remove feature progression from session
+- `SET_SPELLCASTING_PROGRESSION`: Update spellcasting progression
+- `SET_SPELLS_KNOWN_PROGRESSION`: Update spells known progression
+
+**Source File**: `src/features/classResolution/types.ts`
+
+### **ClassUpdateApplier**
+
+Service for applying action-based updates to session state.
+
+**Purpose**: Immutably applies updates to session state based on action type.
+
+**Source File**: `src/features/classResolution/classUpdateApplier.ts`
+
+**Key Features**:
+- **Immutable Updates**: All updates create new state objects
+- **Type Safety**: Discriminated union ensures type-safe updates
+- **Validation**: Validates updates before applying
+- **ID Management**: Handles temporary ID generation for new entities
+
+### **ClassSaveService**
+
+Service for transforming SQLite session state → MySQL.
+
+**Purpose**: Transforms session state to MySQL format and persists class data.
+
+**Source File**: `src/features/classResolution/classSaveService.ts`
+
+**Transform Process**:
+1. **Load Session**: Load session state from SQLite
+2. **Transform State**: Convert `ClassEditState` to `UpdateClassRequest`
+3. **Handle Progressions**: 
+   - Existing progressions (with real IDs): Update in MySQL
+   - New progressions (with temporary IDs): Create in MySQL, get real IDs
+4. **Persist Class**: Save class to MySQL via `classService.updateClass`
+5. **Cleanup**: Delete session from SQLite
+
+**Key Features**:
+- **Deterministic Tracking**: Uses temporary IDs from session, no signature matching
+- **Update in Place**: Existing entities updated, not deleted & recreated
+- **ID Mapping**: Maps temporary IDs to real MySQL IDs
+- **Transaction Safety**: All operations in single transaction
+
+**Source Files**:
+- Session Database: `src/features/classResolution/sessionDatabase.ts`
+- Session Service: `src/features/classResolution/classSessionService.ts`
+- Resolution Controller: `src/features/classResolution/classResolutionController.ts`
+- Update Applier: `src/features/classResolution/classUpdateApplier.ts`
+- Save Service: `src/features/classResolution/classSaveService.ts`
+- Types: `src/features/classResolution/types.ts`, `packages/shared/schema/src/classResolution.ts`
+
+**Related Documentation**: 
+- [Frontend State-Based Pattern](frontend-components.md#state-based-pattern-architecture) - Frontend implementation
+- [CharacterEdit Session Pattern](../character-management/backend-implementation.md#session-management) - Reference implementation
+
 ## 🔗 **Routes Layer**
 
 The class system routes follow the shared [RESTful API Structure](../application-overview/backend-implementation.md#restful-api-structure) with class-specific endpoints:

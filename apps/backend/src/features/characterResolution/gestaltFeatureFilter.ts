@@ -9,69 +9,29 @@ import { EntityAppliesToType, SavingThrowId, ProgressionType, EntityType } from 
  */
 export class GestaltFeatureFilter {
     /**
-     * Filter overlapping class-mechanics features to keep only the best progression.
+     * Filter overlapping class-mechanics features.
      * 
-     * For gestalt characters, when both classes have class-mechanics progressions,
-     * we need to merge them intelligently:
-     * - BAB: Keep the better progression (lower value = better: good=0 < average=1 < poor=2)
-     * - Saving Throws: Keep the better progression for each save type (lower value = better)
-     * - Hit Die: Keep the larger value
-     * - Skill Points: Keep the larger value
+     * NOTE: Class-mechanics filtering (BAB, saves, hit dice, skill points) is now deferred
+     * until after full character resolution. This allows proper handling of multiclassing
+     * within each gestalt half. See GestaltMechanicsResolver for the deferred resolution.
      * 
-     * All non-overlapping features are preserved.
+     * This method now simply returns all features without filtering mechanics.
      * 
      * @param primaryFeatures - Feature progressions from primary class
      * @param secondaryFeatures - Feature progressions from secondary class
-     * @returns Filtered feature progressions with only the best overlapping mechanics
+     * @returns All feature progressions (mechanics filtering deferred)
      */
     static filterOverlappingMechanics(
         primaryFeatures: FeatureProgression[],
         secondaryFeatures: FeatureProgression[]
     ): FeatureProgression[] {
-        // Find class-mechanics progressions from both classes
-        const primaryMechanics = primaryFeatures.find(
-            p => p.feature?.slug === 'class-mechanics'
-        );
-        const secondaryMechanics = secondaryFeatures.find(
-            p => p.feature?.slug === 'class-mechanics'
-        );
-
-        // If neither class has mechanics, return all features
-        if (!primaryMechanics && !secondaryMechanics) {
-            return [...primaryFeatures, ...secondaryFeatures];
-        }
-
-        // If only one class has mechanics, return all features (no overlap to resolve)
-        if (!primaryMechanics || !secondaryMechanics) {
-            return [...primaryFeatures, ...secondaryFeatures];
-        }
-
-        // Both classes have mechanics - need to merge intelligently
-        const mergedMechanics = this.mergeClassMechanics(primaryMechanics, secondaryMechanics);
-
-        // Build result: merged mechanics + all non-mechanics features
-        const result: FeatureProgression[] = [mergedMechanics];
-
-        // Add all non-mechanics features from both classes
-        for (const feature of primaryFeatures) {
-            const isMechanics = feature.feature?.slug === 'class-mechanics';
-            if (!isMechanics) {
-                result.push(feature);
-            }
-        }
-
-        for (const feature of secondaryFeatures) {
-            const isMechanics = feature.feature?.slug === 'class-mechanics';
-            if (!isMechanics) {
-                result.push(feature);
-            }
-        }
-
-        return result;
+        // Return all features - mechanics filtering is now deferred to GestaltMechanicsResolver
+        return [...primaryFeatures, ...secondaryFeatures];
     }
 
     /**
-     * Merge two class-mechanics progressions, keeping only the best values for each mechanic.
+     * @deprecated Class-mechanics merging is now deferred to GestaltMechanicsResolver.
+     * This method is no longer used but kept for reference.
      */
     private static mergeClassMechanics(
         primary: FeatureProgression,
@@ -296,7 +256,7 @@ export class GestaltFeatureFilter {
                 appliesToId: appliesTo === EntityAppliesToType.SavingThrow ? appliesToId : (appliesTo === EntityAppliesToType.SkillPoints ? null : appliesToId),
                 appliesToSubId: appliesTo === EntityAppliesToType.SavingThrow ? valueOrSubId : null,
                 value: appliesTo === EntityAppliesToType.SkillPoints ? valueOrSubId : null,
-                type: EntityType.Other as EntityType,
+                type: EntityType.Base,
                 groupingId: 0,
                 displayInDetail: true,
                 bonusType: null,

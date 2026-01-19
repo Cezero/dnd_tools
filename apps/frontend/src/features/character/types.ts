@@ -1,7 +1,7 @@
 import React from 'react';
 
 import type { FormattedCharacterResult } from '@/lib/formatters';
-import type { FeatureProgression, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterFeatureChoice, CharacterDisallowedSource, FeatWithFeatureInfo, FeatInQueryResponse, PendingChoice, PendingChoiceOption, SkillBonus, ClassSpellSelection, ItemWithDetails } from '@shared/schema';
+import type { FeatureProgression, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterFeatureChoice, CharacterDisallowedSource, FeatWithFeatureInfo, FeatInQueryResponse, PendingChoice, SkillBonus, ClassSpellSelection, ItemWithDetails } from '@shared/schema';
 import { PROFICIENCY_TYPE_ENUM, ResolutionStepType, CoreComponent, SpellSlotType } from '@shared/static-data';
 
 import { useCharacterResolution } from './useCharacterResolution';

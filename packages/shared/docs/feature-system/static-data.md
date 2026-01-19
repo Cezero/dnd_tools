@@ -76,6 +76,13 @@ Defines the types of entities that features can provide, affecting how they are 
 - **Compatibility**: Damage, UnarmedDamage, MovementSpeed, Ability
 - **Real Example**: Monk Unarmed Strike replaces unarmed damage with progressive dice (type: 2, appliesTo: 20=UnarmedDamage, formulaParams: threshold-based progression)
 
+**Base Entities (4)**: Base value entities for class and race mechanics
+- **Examples**: Base Attack Bonus, saving throw progressions, hit dice, skill points, size, movement speed, favored class, level adjustment, spellcasting progression, casting ability, casting type
+- **Stacking**: Custom logic per mechanic type (summing for multiclass, best value for gestalt)
+- **Compatibility**: BaseAttackBonus, SavingThrow, HitDice, SkillPoints, Size, MovementSpeed, FavoredClass, LevelAdjustment, SpellcastingProgression, CastingAbility, CastingType
+- **Real Example**: Fighter class mechanics progression provides Good BAB (type: 4, appliesTo: 41=BaseAttackBonus, formulaParams: linear-scaling)
+- **Note**: MovementSpeed is compatible with both EntityType.Quantity (for bonuses like Fast Movement) and EntityType.Base (for base race speed)
+
 **Other Entities (3)**: Special cases and complex effects that require custom handling
 - **Examples**: Direct feat grants, language grants, special abilities
 - **Stacking**: Custom logic per effect type

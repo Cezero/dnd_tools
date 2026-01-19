@@ -1,24 +1,8 @@
 import { PrismaClient } from '@shared/prisma-client';
-import type { FeatureProgression, FeatureEntity, CharacterWithAllDetailsResponse, FormulaParamsData } from '@shared/schema';
-import { EntityType, EntityAppliesToType, SpecialFeatureId, FORMULA_MAP, FormulaId, GetAbilityModifier, FeatureSourceType } from '@shared/static-data';
+import type { FeatureProgression, FeatureEntity, CharacterWithAllDetailsResponse, FormulaCalculationParams } from '@shared/schema';
+import { EntityType, EntityAppliesToType, SpecialFeatureId, FORMULA_MAP, FormulaId, FeatureSourceType, SavingThrowId } from '@shared/static-data';
 
 const prisma = new PrismaClient();
-
-/**
- * Parameters for formula calculation
- * Extends FormulaParamsData with runtime calculation fields
- */
-interface FormulaCalculationParams extends FormulaParamsData {
-    level: number;
-    startLevel: number;
-    scalingValue: number;
-    context: {
-        character: {
-            abilityScores: Record<number, number>;
-        };
-    };
-    baseValue?: number;
-}
 
 /**
  * Backend service for extracting resolved feature data
@@ -392,18 +376,26 @@ export class ResolvedFeatureService {
 
                         // Only calculate if level is at or after the formula start level
                         if (level >= formulaStartLevel) {
+                            // Use entity.value for scalingValue if available (for formulas like LEVEL_TIMES_VALUE)
+                            // Otherwise default to 1
+                            const scalingValue = entity.value !== null && entity.value !== undefined
+                                ? entity.value
+                                : 1;
+
                             const params: FormulaCalculationParams = {
                                 ...entity.formulaParams,
                                 level,
                                 startLevel: progression.level,
-                                scalingValue: entity.value ?? 0,
+                                scalingValue,
                                 context: {
                                     character: {
                                         abilityScores: Object.fromEntries(
                                             (character.abilityScores || []).map(a => [a.abilityId, a.value])
                                         )
                                     }
-                                }
+                                },
+                                baseValue: entity.formulaParams.baseValue ?? undefined,
+                                divisor: entity.formulaParams.divisor ?? undefined,
                             };
 
                             // Add ability-specific params for ABILITY_BASED formula
@@ -495,6 +487,180 @@ export class ResolvedFeatureService {
         }
 
         return false;
+    }
+
+    /**
+     * Resolve formula values for BAB and saving throw entities
+     * Returns a map with semantic keys: 'bab' for BAB, 'save_<id>' for saves
+     * For non-gestalt: sums all class contributions
+     * For gestalt: will be overridden by GestaltMechanicsResolver
+     */
+    static resolveFormulaValues(
+        resolvedProgressions: FeatureProgression[],
+        character: CharacterWithAllDetailsResponse,
+        targetLevel: number
+    ): Record<string, number> {
+        const resolvedValues: Record<string, number> = {};
+        const isGestalt = character.isGestalt || character.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
+
+        // Calculate class levels for multiclass summing
+        const classLevels = new Map<number, number>();
+        if (character.advancements) {
+            for (const adv of character.advancements) {
+                if (adv.classId) {
+                    const currentLevel = classLevels.get(adv.classId) ?? 0;
+                    classLevels.set(adv.classId, currentLevel + 1);
+                }
+                if (adv.secondaryClassId && !isGestalt) {
+                    // For non-gestalt, secondary class is just another class to sum
+                    const currentLevel = classLevels.get(adv.secondaryClassId) ?? 0;
+                    classLevels.set(adv.secondaryClassId, currentLevel + 1);
+                }
+            }
+        }
+
+        // Collect all BAB and save entities by class
+        const babEntitiesByClass = new Map<number, Array<{ entity: FeatureEntity; progression: FeatureProgression }>>();
+        const saveEntitiesByClass = new Map<number, Array<{ entity: FeatureEntity; saveType: number; progression: FeatureProgression }>>();
+
+        for (const progression of resolvedProgressions) {
+            if (!progression.entities) continue;
+
+            // Get class ID from progression
+            const classId = progression.classes?.[0]?.classId;
+            if (!classId) continue;
+
+            for (const entity of progression.entities) {
+                // Only resolve BAB and saving throw entities with formulas
+                const isBAB = entity.appliesTo === EntityAppliesToType.BaseAttackBonus;
+                const isSave = entity.appliesTo === EntityAppliesToType.SavingThrow &&
+                    entity.appliesToId !== null &&
+                    (entity.appliesToId === SavingThrowId.Fortitude ||
+                        entity.appliesToId === SavingThrowId.Reflex ||
+                        entity.appliesToId === SavingThrowId.Will);
+
+                if ((isBAB || isSave) && entity.formulaParams) {
+                    if (isBAB) {
+                        if (!babEntitiesByClass.has(classId)) {
+                            babEntitiesByClass.set(classId, []);
+                        }
+                        babEntitiesByClass.get(classId)!.push({ entity, progression });
+                    } else if (isSave) {
+                        if (!saveEntitiesByClass.has(classId)) {
+                            saveEntitiesByClass.set(classId, []);
+                        }
+                        saveEntitiesByClass.get(classId)!.push({ entity, saveType: entity.appliesToId ?? 0, progression });
+                    }
+                }
+            }
+        }
+
+        // Calculate BAB: sum all class contributions
+        let totalBAB = 0;
+        for (const [classId, entities] of babEntitiesByClass.entries()) {
+            const classLevel = classLevels.get(classId) ?? 0;
+            if (classLevel === 0) continue;
+
+            for (const { entity, progression } of entities) {
+                const value = this.calculateFormulaValueForEntity(entity, progression, classLevel, character);
+                if (value !== null) {
+                    totalBAB += value;
+                }
+            }
+        }
+        if (totalBAB > 0) {
+            resolvedValues['bab'] = totalBAB;
+        }
+
+        // Calculate saves: sum all class contributions per save type
+        for (const saveType of [SavingThrowId.Fortitude, SavingThrowId.Reflex, SavingThrowId.Will]) {
+            let totalSave = 0;
+            for (const [classId, entities] of saveEntitiesByClass.entries()) {
+                const classLevel = classLevels.get(classId) ?? 0;
+                if (classLevel === 0) continue;
+
+                for (const { entity, saveType: entitySaveType, progression } of entities) {
+                    if (entitySaveType !== saveType) continue;
+                    const value = this.calculateFormulaValueForEntity(entity, progression, classLevel, character);
+                    if (value !== null) {
+                        totalSave += value;
+                    }
+                }
+            }
+            if (totalSave > 0) {
+                resolvedValues[`save_${saveType}`] = totalSave;
+            }
+        }
+
+        return resolvedValues;
+    }
+
+    /**
+     * Calculate formula value for an entity at a specific class level.
+     */
+    private static calculateFormulaValueForEntity(
+        entity: FeatureEntity,
+        progression: FeatureProgression,
+        classLevel: number,
+        character: CharacterWithAllDetailsResponse
+    ): number | null {
+        if (!entity.formulaParams) return null;
+
+        const formulaDef = FORMULA_MAP[entity.formulaParams.formulaId];
+        if (!formulaDef) return null;
+
+        const formulaStartLevel = entity.formulaParams.formulaStartLevel ?? progression.level;
+
+        // Only calculate if level is at or after the formula start level
+        if (classLevel < formulaStartLevel) {
+            return null;
+        }
+
+        // Build formula params
+        const abilityScores: Record<number, number> = {};
+        if (character.abilityScores) {
+            for (const score of character.abilityScores) {
+                abilityScores[score.abilityId] = score.value;
+            }
+        }
+
+        // Use entity.value for scalingValue if available (for formulas like LEVEL_TIMES_VALUE)
+        // Otherwise default to 1
+        const scalingValue = entity.value !== null && entity.value !== undefined
+            ? entity.value
+            : 1;
+
+        const params: FormulaCalculationParams = {
+            ...entity.formulaParams,
+            level: classLevel,
+            startLevel: progression.level,
+            scalingValue,
+            context: {
+                character: {
+                    abilityScores,
+                },
+            },
+            // Convert null to undefined for baseValue and divisor
+            baseValue: entity.formulaParams.baseValue != null ? entity.formulaParams.baseValue : undefined,
+            divisor: entity.formulaParams.divisor != null ? entity.formulaParams.divisor : undefined,
+        };
+
+        // Add ability-specific params for ABILITY_BASED formula
+        if (entity.formulaParams.formulaId === FormulaId.ABILITY_BASED && entity.formulaParams.abilityId) {
+            params.baseValue = entity.value ?? 0;
+        }
+
+        // Calculate formula value
+        try {
+            const value = formulaDef.calculate(params);
+            if (value !== null && value !== undefined && typeof value === 'number') {
+                return value;
+            }
+        } catch (error) {
+            console.error('Error calculating formula value:', error);
+        }
+
+        return null;
     }
 }
 

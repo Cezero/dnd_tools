@@ -9,8 +9,20 @@ import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { Feature, FeatureProgression } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
+import type { ClassEditState, ClassEditStateUpdate } from '../../features/class/types';
+import { ClassEditStateUpdateType } from '../../features/class/types';
+import type { RaceEditState, RaceEditStateUpdate } from '../../features/race/types';
+import { RaceEditStateUpdateType } from '../../features/race/types';
+
+type EditState = ClassEditState | RaceEditState;
+type EditStateUpdate = ClassEditStateUpdate | RaceEditStateUpdate;
+
 interface FeaturesManagerProps {
-    // Common props
+    // State-based props (preferred for ClassEdit/RaceEdit)
+    state?: EditState;
+    updateState?: (update: EditStateUpdate) => void;
+
+    // Legacy props (for backward compatibility with FeatEdit/CompanionEdit)
     featureProgressions?: FeatureProgression[];
     onEditProgression?: (progression: FeatureProgression) => void;
     onRemoveProgression?: (progressionId: number) => void;
@@ -18,7 +30,7 @@ interface FeaturesManagerProps {
 
     // Context-specific props
     contextType: FeatureSourceType;
-    contextId: number;
+    contextId?: number; // Optional when using state-based pattern
     parentType?: 'class' | 'race' | 'domain' | 'feat';
 
     // UI text props
@@ -28,19 +40,21 @@ interface FeaturesManagerProps {
     // Special feature filtering
     excludeSpecialFeatures?: number[];
 
-    // Dialog state management
+    // Dialog state management (legacy - only used if state/updateState not provided)
     setEditingProgression?: (progression: FeatureProgression | null) => void;
     setPreSelectedFeature?: (feature: FeatureProgression['feature'] | null) => void;
     setIsProgressionDialogOpen?: (open: boolean) => void;
 }
 
 export function FeaturesManager({
-    featureProgressions = [],
+    state,
+    updateState,
+    featureProgressions: propFeatureProgressions = [],
     onEditProgression,
     onRemoveProgression,
     onAddFeature,
     contextType,
-    contextId,
+    contextId: propContextId,
     parentType,
     title,
     emptyMessage,
@@ -54,6 +68,25 @@ export function FeaturesManager({
     const [isNewFeatureDialogOpen, setIsNewFeatureDialogOpen] = useState(false);
     const [editingFeatureId, setEditingFeatureId] = useState<number | 'new' | undefined>(undefined);
     const queryClient = useQueryClient();
+
+    // Use state-based pattern if state/updateState provided, otherwise use legacy props
+    const isStateBased = state !== undefined && updateState !== undefined;
+    const featureProgressions = isStateBased ? state.featureProgressions : propFeatureProgressions;
+
+    // Type guard to determine if state is ClassEditState or RaceEditState
+    const getContextIdFromState = (editState: EditState): number => {
+        if ('classId' in editState) {
+            return editState.classId ?? 0;
+        }
+        if ('raceId' in editState) {
+            return editState.raceId ?? 0;
+        }
+        return 0;
+    };
+
+    const contextId = isStateBased
+        ? getContextIdFromState(state)
+        : (propContextId ?? 0);
 
     // Precache all entities referenced in feature progressions (including prerequisites)
     const { isComplete: prereqsPrefetched } = usePrecacheFeatureEntities(featureProgressions);
@@ -79,21 +112,83 @@ export function FeaturesManager({
     );
 
     const handleEditProgression = (progression: FeatureProgression) => {
-        onEditProgression?.(progression);
+        if (isStateBased && updateState) {
+            // Use state-based pattern
+            if ('classId' in state) {
+                updateState({ type: ClassEditStateUpdateType.SET_EDITING_PROGRESSION, payload: { editingProgression: progression } });
+                updateState({ type: ClassEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+            } else {
+                updateState({ type: RaceEditStateUpdateType.SET_EDITING_PROGRESSION, payload: { editingProgression: progression } });
+                updateState({ type: RaceEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+            }
+        } else {
+            // Use legacy callback pattern
+            onEditProgression?.(progression);
+        }
     };
 
     const handleRemoveProgression = (progressionId: number) => {
-        onRemoveProgression?.(progressionId);
+        if (isStateBased && updateState) {
+            // Use state-based pattern
+            if ('classId' in state) {
+                updateState({ type: ClassEditStateUpdateType.REMOVE_FEATURE_PROGRESSION, payload: { progressionId } });
+            } else {
+                updateState({ type: RaceEditStateUpdateType.REMOVE_FEATURE_PROGRESSION, payload: { progressionId } });
+            }
+        } else {
+            // Use legacy callback pattern
+            onRemoveProgression?.(progressionId);
+        }
     };
 
     const handleFeatureSelected = (feature: { id: number; name: string; description: string; slug: string }) => {
-        onAddFeature?.(feature);
+        if (isStateBased && updateState) {
+            // For state-based pattern, we need to create a new progression
+            // This will be handled by the parent component when the progression dialog opens
+            // For now, just open the progression dialog with the pre-selected feature
+            if ('classId' in state) {
+                updateState({
+                    type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE,
+                    payload: { preSelectedFeature: { id: feature.id, name: feature.name, description: feature.description, slug: feature.slug } as FeatureProgression['feature'] }
+                });
+                updateState({ type: ClassEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+            } else {
+                updateState({
+                    type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE,
+                    payload: { preSelectedFeature: { id: feature.id, name: feature.name, description: feature.description, slug: feature.slug } as FeatureProgression['feature'] }
+                });
+                updateState({ type: RaceEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+            }
+        } else {
+            // Use legacy callback pattern
+            onAddFeature?.(feature);
+        }
     };
 
     const handleAddProgression = (_feature: Feature) => {
-        setEditingProgression?.(null);
-        setPreSelectedFeature?.(_feature);
-        setIsProgressionDialogOpen?.(true);
+        if (isStateBased && updateState) {
+            // Use state-based pattern
+            if ('classId' in state) {
+                updateState({ type: ClassEditStateUpdateType.SET_EDITING_PROGRESSION, payload: { editingProgression: null } });
+                updateState({
+                    type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE,
+                    payload: { preSelectedFeature: _feature as FeatureProgression['feature'] }
+                });
+                updateState({ type: ClassEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+            } else {
+                updateState({ type: RaceEditStateUpdateType.SET_EDITING_PROGRESSION, payload: { editingProgression: null } });
+                updateState({
+                    type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE,
+                    payload: { preSelectedFeature: _feature as FeatureProgression['feature'] }
+                });
+                updateState({ type: RaceEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+            }
+        } else {
+            // Use legacy callback pattern
+            setEditingProgression?.(null);
+            setPreSelectedFeature?.(_feature);
+            setIsProgressionDialogOpen?.(true);
+        }
     };
 
     const handleEditFeature = (featureId: number) => {
@@ -161,13 +256,31 @@ export function FeaturesManager({
         setEditingFeatureId(undefined);
 
         // If this was a new feature created from the selection dialog, automatically add it
-        if (wasNewFeature && onAddFeature) {
-            onAddFeature({
-                id: feature.id,
-                name: feature.name,
-                description: feature.description ?? '',
-                slug: feature.slug
-            });
+        if (wasNewFeature) {
+            if (isStateBased && updateState) {
+                // Use state-based pattern - open progression dialog with pre-selected feature
+                if ('classId' in state) {
+                    updateState({
+                        type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE,
+                        payload: { preSelectedFeature: { id: feature.id, name: feature.name, description: feature.description, slug: feature.slug } as FeatureProgression['feature'] }
+                    });
+                    updateState({ type: ClassEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+                } else {
+                    updateState({
+                        type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE,
+                        payload: { preSelectedFeature: { id: feature.id, name: feature.name, description: feature.description, slug: feature.slug } as FeatureProgression['feature'] }
+                    });
+                    updateState({ type: RaceEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+                }
+            } else if (onAddFeature) {
+                // Use legacy callback pattern
+                onAddFeature({
+                    id: feature.id,
+                    name: feature.name,
+                    description: feature.description ?? '',
+                    slug: feature.slug
+                });
+            }
         }
     };
 

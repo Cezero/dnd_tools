@@ -11,13 +11,16 @@ export const enum FormulaId {
     ABILITY_MODIFIER = 7,     // Just ability modifier
     LEVEL_TIMES_ABILITY = 8,  // Level × ability modifier
     // NEW: Level-based multiplication
-    LEVEL_TIMES_VALUE = 9,      // Total level × base value (e.g., 2 × level for healing)
+    LEVEL_TIMES_VALUE = 9,      // Total level × base value with floor (e.g., floor(level × 0.5) for Poor BAB)
     // NEW: Fixed value plus level
     VALUE_PLUS_LEVEL = 10,      // Fixed value + level (e.g., 10 + level for Spell Resistance)
     // NEW: Level plus ability modifier
     LEVEL_PLUS_ABILITY = 11,  // Level + ability modifier (e.g., level + CHA for Wild Empathy)
     // NEW: Static value every N levels (doesn't multiply by level)
     STATIC_EVERY_N_LEVELS = 12, // Fixed value every N levels (e.g., 1 skill point every level)
+    // NEW: Division-based formulas for BAB and saves
+    LEVEL_DIVIDED_BY = 14,      // floor(level / divisor) (e.g., floor(level / 3) for Poor Save)
+    LEVEL_DIVIDED_BY_PLUS_BASE = 15, // floor(level / divisor) + baseValue (e.g., floor(level / 2) + 2 for Good Save)
 }
 
 // ============================================================================
@@ -52,13 +55,14 @@ export const FORMULA_MAP: BaseMap<Formula> = {
     [FormulaId.EVERY_N_LEVELS]: {
         id: FormulaId.EVERY_N_LEVELS,
         name: 'Every N Levels',
-        description: 'Increases every N levels starting from a specific level (e.g., every 3 levels starting at level 7). Can use formulaStartLevel to start progression at a different level than the feature.',
+        description: 'Increases every N levels starting from a specific level (e.g., every 3 levels starting at level 7). Can use formulaStartLevel to start progression at a different level than the feature. When includeProgressionLevel is false, returns null for levels before formulaStartLevel instead of returning the base scalingValue.',
         parameters: [
             { name: 'level', description: 'Character level', required: true },
             { name: 'startLevel', description: 'Starting level for the progression', required: true },
             { name: 'scalingValue', description: 'Value to scale by (from FeatureModifier.value)', required: true },
             { name: 'interval', description: 'Level interval (from ProgressionFormulaParams.interval)', required: true },
-            { name: 'formulaStartLevel', description: 'Level when formula progression begins (from ProgressionFormulaParams.formulaStartLevel)', required: false }
+            { name: 'formulaStartLevel', description: 'Level when formula progression begins (from ProgressionFormulaParams.formulaStartLevel)', required: false },
+            { name: 'includeProgressionLevel', description: 'Whether to include the progression level in the calculation. When false and formulaStartLevel is set, returns null for levels before formulaStartLevel instead of returning the base scalingValue.', required: false }
         ],
         calculate: (params) => {
             // If character level is before the starting level, return null
@@ -241,21 +245,22 @@ export const FORMULA_MAP: BaseMap<Formula> = {
     [FormulaId.LEVEL_TIMES_VALUE]: {
         id: FormulaId.LEVEL_TIMES_VALUE,
         name: 'Level Times Value (Total Level)',
-        description: 'Total character level multiplied by a base value: level × scalingValue. Use when the feature should scale with total character level, not just since the feature started.',
+        description: 'Total character level multiplied by a base value with floor: floor(level × scalingValue). Use when the feature should scale with total character level, not just since the feature started. Applies Math.floor() to the result, allowing fractional scalingValues (e.g., 0.5 for floor(level/2), 0.75 for floor(3×level/4)). scalingValue can come from entity.value (integer) or formulaParams.scalingValue (stored as hundredths, e.g., 50 for 0.5, 75 for 0.75).',
         parameters: [
             { name: 'level', description: 'Character level', required: true },
             { name: 'startLevel', description: 'Starting level for the progression', required: true },
-            { name: 'scalingValue', description: 'Base value to multiply by level (from FeatureModifier.value)', required: true }
+            { name: 'scalingValue', description: 'Base value to multiply by level. Can come from entity.value (integer) or formulaParams.scalingValue (float).', required: true }
         ],
         calculate: (params) => {
             // If character level is before the starting level, return null
             if (params.level < params.startLevel) {
                 return null;
             }
-            return params.level * params.scalingValue;
+            // Apply Math.floor() to allow fractional scalingValues for division operations
+            return Math.floor(params.level * params.scalingValue);
         },
         getDisplayString: (params) => {
-            return `level × ${params.scalingValue}`;
+            return `floor(level × ${params.scalingValue})`;
         },
         isCharacterDependent: false
     },
@@ -312,13 +317,14 @@ export const FORMULA_MAP: BaseMap<Formula> = {
     [FormulaId.STATIC_EVERY_N_LEVELS]: {
         id: FormulaId.STATIC_EVERY_N_LEVELS,
         name: 'Static Value Every N Levels',
-        description: 'Grants a fixed value every N levels without multiplying by level (e.g., 1 skill point every level, 2 skill points every 2 levels). Returns the value for THIS level only, not cumulative.',
+        description: 'Grants a fixed value every N levels without multiplying by level (e.g., 1 skill point every level, 2 skill points every 2 levels). Returns the value for THIS level only, not cumulative. When includeProgressionLevel is false, returns null for levels before formulaStartLevel.',
         parameters: [
             { name: 'level', description: 'Character level', required: true },
             { name: 'startLevel', description: 'Starting level for the progression', required: true },
             { name: 'scalingValue', description: 'Fixed value granted at each interval (from FeatureModifier.value)', required: true },
             { name: 'interval', description: 'Level interval (from ProgressionFormulaParams.interval)', required: true },
-            { name: 'formulaStartLevel', description: 'Level when formula progression begins (from ProgressionFormulaParams.formulaStartLevel)', required: false }
+            { name: 'formulaStartLevel', description: 'Level when formula progression begins (from ProgressionFormulaParams.formulaStartLevel)', required: false },
+            { name: 'includeProgressionLevel', description: 'Whether to include the progression level in the calculation. When false and formulaStartLevel is set, returns null for levels before formulaStartLevel.', required: false }
         ],
         calculate: (params) => {
             // If character level is before the starting level, return null
@@ -359,6 +365,51 @@ export const FORMULA_MAP: BaseMap<Formula> = {
                 return `${params.scalingValue} every level (starting at ${effectiveStartLevel})`;
             }
             return `${params.scalingValue} every ${params.interval} levels (starting at ${effectiveStartLevel})`;
+        },
+        isCharacterDependent: false
+    },
+
+    [FormulaId.LEVEL_DIVIDED_BY]: {
+        id: FormulaId.LEVEL_DIVIDED_BY,
+        name: 'Level Divided By',
+        description: 'Calculates floor(level / divisor). Use when you need division that starts at 0 (e.g., floor(level / 3) for Poor Save progression).',
+        parameters: [
+            { name: 'level', description: 'Character level', required: true },
+            { name: 'startLevel', description: 'Starting level for the progression', required: true },
+            { name: 'divisor', description: 'Divisor value (e.g., 3 for level/3)', required: true }
+        ],
+        calculate: (params) => {
+            // If character level is before the starting level, return null
+            if (params.level < params.startLevel) {
+                return null;
+            }
+            return Math.floor(params.level / params.divisor);
+        },
+        getDisplayString: (params) => {
+            return `floor(level / ${params.divisor})`;
+        },
+        isCharacterDependent: false
+    },
+
+    [FormulaId.LEVEL_DIVIDED_BY_PLUS_BASE]: {
+        id: FormulaId.LEVEL_DIVIDED_BY_PLUS_BASE,
+        name: 'Level Divided By Plus Base',
+        description: 'Calculates floor(level / divisor) + baseValue. Use for progressions that combine division with a base value (e.g., floor(level / 2) + 2 for Good Save progression).',
+        parameters: [
+            { name: 'level', description: 'Character level', required: true },
+            { name: 'startLevel', description: 'Starting level for the progression', required: true },
+            { name: 'divisor', description: 'Divisor value (e.g., 2 for level/2)', required: true },
+            { name: 'baseValue', description: 'Base value to add (e.g., 2 for +2)', required: true }
+        ],
+        calculate: (params) => {
+            // If character level is before the starting level, return null
+            if (params.level < params.startLevel) {
+                return null;
+            }
+            return Math.floor(params.level / params.divisor) + params.baseValue;
+        },
+        getDisplayString: (params) => {
+            return `floor(level / ${params.divisor}) + ${params.baseValue}`;
         },
         isCharacterDependent: false
     },

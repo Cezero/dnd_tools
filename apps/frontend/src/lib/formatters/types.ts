@@ -146,6 +146,7 @@ export interface DisplayContext extends BaseFormatterContext {
     skillRanks?: Array<{ skillId: number; skillSubId: number | null; customSubtype: string | null; pointsSpent: number }>; // Session skill ranks (overrides character.advancements[].skills)
     classSkills?: Array<{ skillId: number; skillSubId: number | null }>; // Class skills from backend resolution API
     skillBonuses?: Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }>; // Skill bonuses from backend resolution API
+    resolvedFormulaValues?: Record<string, number>; // Pre-resolved formula values from backend (keyed by entity ID)
 }
 
 // Calculation context for formatter calculations

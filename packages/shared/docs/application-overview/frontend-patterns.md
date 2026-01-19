@@ -9,6 +9,7 @@ This document consolidates shared frontend patterns, architecture principles, an
 **Related Documentation**:
 - [Frontend Components](frontend-components.md) - Shared component patterns
 - [Character Management Frontend Components](../character-management/frontend-components.md) - Character-specific frontend components
+- [Backend Implementation Patterns](backend-implementation.md) - Backend patterns including ID handling
 
 ## 🏗️ **State Synchronization Patterns**
 
@@ -123,6 +124,98 @@ if (resolution.sessionId) {
 
 **Related Documentation**:
 - [Character Resolution System](../character-management/character-resolution-system.md) - Resolution system documentation
+
+### **Always Send IDs Pattern**
+
+The standardized pattern for frontend→backend data flow where the frontend always includes IDs for all items, regardless of whether they are new or existing.
+
+**Purpose**: Eliminate frontend logic for distinguishing new vs existing items by always sending IDs and letting the backend handle ID resolution.
+
+**How It Works**:
+1. **Frontend always generates IDs**: For new items, frontend generates temporary IDs using `Date.now() + Math.random()`
+2. **Frontend always sends IDs**: All items (new and existing) are sent with IDs included
+3. **Backend distinguishes IDs**: Backend uses `isTemporaryId()` to identify temporary vs real database IDs
+4. **Backend handles resolution**: Backend creates new items for temporary IDs, updates existing items for real IDs
+
+**Temporary ID Format**:
+- Generated using `Date.now() + Math.random()`
+- Creates very large numbers (Date.now() is ~1.7 trillion as of 2024)
+- May have decimal parts (from Math.random())
+- Always >= 1 billion
+
+**Real Database ID Format**:
+- Positive integers (no decimals)
+- Typically much smaller (< 1 billion in practice)
+- Assigned by database auto-increment
+
+**Benefits**:
+- **No frontend logic needed**: Frontend doesn't need to track whether items are new or existing
+- **Consistent data flow**: All items follow the same pattern
+- **Simpler frontend code**: No conditional logic for new vs existing items
+- **Backend handles complexity**: Backend is responsible for ID resolution logic
+- **Type safety**: Schemas allow optional IDs, enabling this pattern
+
+**When to Use**:
+- ✅ When creating or updating entities with nested relationships (e.g., classes with feature progressions)
+- ✅ When frontend needs to track items before they're saved
+- ✅ When you want to eliminate frontend logic for new vs existing items
+- ✅ For all frontend→backend interactions involving entities with IDs
+
+**When NOT to Use**:
+- ❌ For simple CRUD operations where new vs existing is obvious from context
+- ❌ When IDs would add unnecessary complexity
+
+**Example Implementation**:
+
+```typescript
+// Frontend: Always generate temporary IDs for new items
+const createFeatureProgression = (baseProgression: Partial<FeatureProgression>): FeatureProgression => {
+    return {
+        id: Date.now() + Math.random(), // Temporary ID - always generated
+        sourceType: FeatureSourceType.Class,
+        level: 1,
+        ...baseProgression,
+    } as FeatureProgression;
+};
+
+// Frontend: Always send IDs (temporary for new, real for existing)
+const classData = {
+    ...formData,
+    features: featureProgressions.map(prog => {
+        // Include id - backend will handle resolution
+        return { ...prog };
+    })
+};
+
+// Backend: Distinguish temporary vs real IDs
+function isTemporaryId(id: number): boolean {
+    return !Number.isInteger(id) || id >= 1000000000;
+}
+
+const hasRealId = (p: Progression): boolean => {
+    return 'id' in p && typeof p.id === 'number' && !isTemporaryId(p.id);
+};
+```
+
+**Canonical Examples**:
+- **ClassEdit**: `apps/frontend/src/features/class/ClassEdit.tsx`
+  - `createFeatureProgression` always generates temporary IDs
+  - Form submission always includes IDs
+- **RaceEdit**: `apps/frontend/src/features/race/RaceEdit.tsx`
+  - `handleAddFeature` always generates temporary IDs
+  - Form submission always includes IDs
+
+**Backend Implementation**:
+- **classService**: `apps/backend/src/features/class/classService.ts`
+  - `isTemporaryId()` distinguishes temporary vs real IDs
+  - `hasId()` filters out temporary IDs to identify updates
+
+**Schema Requirements**:
+- Request schemas must allow optional `id` field
+- Use `UpdateFeatureProgressionSchema` instead of `CreateFeatureProgressionRequestSchema` for schemas that need to support both create and update operations
+
+**Related Documentation**:
+- [Backend Implementation Patterns](backend-implementation.md#id-handling-pattern) - Backend ID handling documentation
 
 ## 🔧 **Pattern Selection Guide**
 

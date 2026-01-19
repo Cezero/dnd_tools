@@ -1,5 +1,7 @@
 import type { FeatureProgression } from '@shared/schema';
-import { EntityAppliesToType, SavingThrowId, ProgressionType } from '@shared/static-data';
+import { EntityAppliesToType, EntityType, FeatureSourceType, SavingThrowId, ProgressionType } from '@shared/static-data';
+
+import { getBABProgressionTypeFromFormula, getSaveProgressionTypeFromFormula } from './formulaToProgressionType';
 
 /**
  * Extracted class mechanics from feature progressions
@@ -14,150 +16,143 @@ export interface ClassMechanics {
 }
 
 /**
- * Find the "class-mechanics" feature progression from a list of progressions.
- * Handles both direct classId links and shared progressions via many-to-many relationship.
+ * Find entities by EntityType and EntityAppliesToType across class progressions.
+ * Filters by sourceType === FeatureSourceType.Class and optionally by classId.
  */
-function findClassMechanicsProgression(
+function findClassMechanicsEntities(
     progressions: FeatureProgression[],
+    appliesTo: EntityAppliesToType,
     classId?: number
-): FeatureProgression | null {
-    return progressions.find(p => {
-        // Check if this is a class-mechanics progression
-        const isClassMechanics = p.feature?.slug === 'class-mechanics';
-        if (!isClassMechanics) return false;
-
-        // If classId provided, check if progression is linked to this class via many-to-many relationship
-        if (classId !== undefined) {
-            if (p.classes?.some(c => c.classId === classId)) return true;
-        }
-
-        // If no classId provided, return first class-mechanics progression found
-        return true;
-    }) || null;
+) {
+    return progressions
+        .filter(p =>
+            p.sourceType === FeatureSourceType.Class &&
+            (classId === undefined || p.classes?.some(c => c.classId === classId))
+        )
+        .flatMap(p => p.entities || [])
+        .filter(e => e.type === EntityType.Base && e.appliesTo === appliesTo);
 }
 
 /**
- * Extract hit die value from class mechanics progression
+ * Extract hit die value from class mechanics progressions
  */
 export function extractHitDie(progressions: FeatureProgression[], classId?: number): number | null {
-    const mechanicsProgression = findClassMechanicsProgression(progressions, classId);
-    if (!mechanicsProgression?.entities) return null;
-
-    const hitDieEntity = mechanicsProgression.entities.find(
-        e => e.appliesTo === EntityAppliesToType.HitDice && e.appliesToId !== null
-    );
-
+    const hitDieEntities = findClassMechanicsEntities(progressions, EntityAppliesToType.HitDice, classId);
+    const hitDieEntity = hitDieEntities.find(e => e.appliesToId !== null);
     return hitDieEntity?.appliesToId ?? null;
 }
 
 /**
- * Extract skill points value from class mechanics progression
+ * Extract skill points value from class mechanics progressions
  * SkillPoints uses value field (not appliesToId) and may have an ABILITY_BASED formula
  */
 export function extractSkillPoints(progressions: FeatureProgression[], classId?: number): number | null {
-    const mechanicsProgression = findClassMechanicsProgression(progressions, classId);
-    if (!mechanicsProgression?.entities) return null;
-
-    const skillPointsEntity = mechanicsProgression.entities.find(
-        e => e.appliesTo === EntityAppliesToType.SkillPoints && e.value !== null
-    );
-
+    const skillPointsEntities = findClassMechanicsEntities(progressions, EntityAppliesToType.SkillPoints, classId);
+    const skillPointsEntity = skillPointsEntities.find(e => e.value !== null);
     return skillPointsEntity?.value ?? null;
 }
 
 /**
- * Extract BAB progression type from class mechanics progression
+ * Extract BAB progression type from class mechanics progressions
+ * Supports both old format (ProgressionType in appliesToId) and new format (formula-based)
  */
 export function extractBABProgression(progressions: FeatureProgression[], classId?: number): ProgressionType | null {
-    const mechanicsProgression = findClassMechanicsProgression(progressions, classId);
-    if (!mechanicsProgression?.entities) return null;
+    const babEntities = findClassMechanicsEntities(progressions, EntityAppliesToType.BaseAttackBonus, classId);
+    const babEntity = babEntities[0];
 
-    const babEntity = mechanicsProgression.entities.find(
-        e => e.appliesTo === EntityAppliesToType.BaseAttackBonus && e.appliesToId !== null
-    );
+    if (!babEntity) return null;
 
-    return (babEntity?.appliesToId as ProgressionType) ?? null;
+    // New format: Check if entity has formula params
+    if (babEntity.formulaParams) {
+        const progressionType = getBABProgressionTypeFromFormula(babEntity.formulaParams, babEntity.value);
+        if (progressionType !== null) {
+            return progressionType;
+        }
+    }
+
+    // Old format: Fall back to appliesToId (for backward compatibility)
+    if (babEntity.appliesToId !== null) {
+        return babEntity.appliesToId as ProgressionType;
+    }
+
+    return null;
 }
 
 /**
- * Extract saving throw progression type from class mechanics progression
+ * Extract saving throw progression type from class mechanics progressions
+ * Supports both old format (ProgressionType in appliesToSubId) and new format (formula-based)
  */
 export function extractSaveProgression(
     progressions: FeatureProgression[],
     saveType: SavingThrowId,
     classId?: number
 ): ProgressionType | null {
-    const mechanicsProgression = findClassMechanicsProgression(progressions, classId);
-    if (!mechanicsProgression?.entities) return null;
+    const saveEntities = findClassMechanicsEntities(progressions, EntityAppliesToType.SavingThrow, classId);
+    const saveEntity = saveEntities.find(e => e.appliesToId === saveType);
 
-    const saveEntity = mechanicsProgression.entities.find(
-        e =>
-            e.appliesTo === EntityAppliesToType.SavingThrow &&
-            e.appliesToId === saveType &&
-            e.appliesToSubId !== null
-    );
+    if (!saveEntity) return null;
 
-    // For saving throws, appliesToId is the save type (Fortitude/Reflex/Will)
-    // and appliesToSubId is the progression type (good/poor)
-    return (saveEntity?.appliesToSubId as ProgressionType) ?? null;
+    // New format: Check if entity has formula params
+    if (saveEntity.formulaParams) {
+        const progressionType = getSaveProgressionTypeFromFormula(saveEntity.formulaParams);
+        if (progressionType !== null) {
+            return progressionType;
+        }
+    }
+
+    // Old format: Fall back to appliesToSubId (for backward compatibility)
+    if (saveEntity.appliesToSubId !== null) {
+        return saveEntity.appliesToSubId as ProgressionType;
+    }
+
+    return null;
 }
 
 /**
  * Extract all class mechanics from feature progressions in one call
  */
 export function extractClassMechanics(progressions: FeatureProgression[], classId?: number): ClassMechanics {
-    const mechanicsProgression = findClassMechanicsProgression(progressions, classId);
-    if (!mechanicsProgression?.entities) {
-        return {
-            hitDie: null,
-            skillPoints: null,
-            babProgression: null,
-            fortProgression: null,
-            refProgression: null,
-            willProgression: null,
-        };
-    }
-
-    const entities = mechanicsProgression.entities;
-
     // Extract hit die (stored in appliesToId)
-    const hitDieEntity = entities.find(e => e.appliesTo === EntityAppliesToType.HitDice && e.appliesToId !== null);
+    const hitDieEntities = findClassMechanicsEntities(progressions, EntityAppliesToType.HitDice, classId);
+    const hitDieEntity = hitDieEntities.find(e => e.appliesToId !== null);
     const hitDie = hitDieEntity?.appliesToId ?? null;
 
     // Extract skill points (stored in value, may have ABILITY_BASED formula)
-    const skillPointsEntity = entities.find(e => e.appliesTo === EntityAppliesToType.SkillPoints && e.value !== null);
+    const skillPointsEntities = findClassMechanicsEntities(progressions, EntityAppliesToType.SkillPoints, classId);
+    const skillPointsEntity = skillPointsEntities.find(e => e.value !== null);
     const skillPoints = skillPointsEntity?.value ?? null;
 
-    // Extract BAB progression (stored in appliesToId)
-    const babEntity = entities.find(e => e.appliesTo === EntityAppliesToType.BaseAttackBonus && e.appliesToId !== null);
-    const babProgression = (babEntity?.appliesToId as ProgressionType) ?? null;
+    // Extract BAB progression (supports both old and new format)
+    const babEntities = findClassMechanicsEntities(progressions, EntityAppliesToType.BaseAttackBonus, classId);
+    const babEntity = babEntities[0];
+    const babProgression = babEntity
+        ? (babEntity.formulaParams
+            ? getBABProgressionTypeFromFormula(babEntity.formulaParams, babEntity.value)
+            : (babEntity.appliesToId !== null ? (babEntity.appliesToId as ProgressionType) : null))
+        : null;
 
-    // Extract saving throw progressions
-    // For saving throws, appliesToId is the save type (Fortitude/Reflex/Will)
-    // and appliesToSubId is the progression type (good/poor)
-    const fortEntity = entities.find(
-        e =>
-            e.appliesTo === EntityAppliesToType.SavingThrow &&
-            e.appliesToId === SavingThrowId.Fortitude &&
-            e.appliesToSubId !== null
-    );
-    const fortProgression = (fortEntity?.appliesToSubId as ProgressionType) ?? null;
+    // Extract saving throw progressions (supports both old and new format)
+    const saveEntities = findClassMechanicsEntities(progressions, EntityAppliesToType.SavingThrow, classId);
+    const fortEntity = saveEntities.find(e => e.appliesToId === SavingThrowId.Fortitude);
+    const fortProgression = fortEntity
+        ? (fortEntity.formulaParams
+            ? getSaveProgressionTypeFromFormula(fortEntity.formulaParams)
+            : (fortEntity.appliesToSubId !== null ? (fortEntity.appliesToSubId as ProgressionType) : null))
+        : null;
 
-    const refEntity = entities.find(
-        e =>
-            e.appliesTo === EntityAppliesToType.SavingThrow &&
-            e.appliesToId === SavingThrowId.Reflex &&
-            e.appliesToSubId !== null
-    );
-    const refProgression = (refEntity?.appliesToSubId as ProgressionType) ?? null;
+    const refEntity = saveEntities.find(e => e.appliesToId === SavingThrowId.Reflex);
+    const refProgression = refEntity
+        ? (refEntity.formulaParams
+            ? getSaveProgressionTypeFromFormula(refEntity.formulaParams)
+            : (refEntity.appliesToSubId !== null ? (refEntity.appliesToSubId as ProgressionType) : null))
+        : null;
 
-    const willEntity = entities.find(
-        e =>
-            e.appliesTo === EntityAppliesToType.SavingThrow &&
-            e.appliesToId === SavingThrowId.Will &&
-            e.appliesToSubId !== null
-    );
-    const willProgression = (willEntity?.appliesToSubId as ProgressionType) ?? null;
+    const willEntity = saveEntities.find(e => e.appliesToId === SavingThrowId.Will);
+    const willProgression = willEntity
+        ? (willEntity.formulaParams
+            ? getSaveProgressionTypeFromFormula(willEntity.formulaParams)
+            : (willEntity.appliesToSubId !== null ? (willEntity.appliesToSubId as ProgressionType) : null))
+        : null;
 
     return {
         hitDie,

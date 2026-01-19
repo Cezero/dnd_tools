@@ -20,6 +20,8 @@ export class FeatureEntityHandlers {
 
         // Handle different entity types
         switch (entity.type) {
+            case EntityType.Base:
+                return this.processBaseEntity(entity, progression);
             case EntityType.Other:
                 return this.processOtherEntity(entity, progression);
             case EntityType.Bonus:
@@ -32,6 +34,24 @@ export class FeatureEntityHandlers {
                 result.warnings = [`Unknown entity type: ${entity.type}`];
                 return result;
         }
+    }
+
+    /**
+     * Process Base entity type (BAB, saves, hit dice, skill points, size, speed, etc.)
+     */
+    private static processBaseEntity(
+        entity: FeatureEntity,
+        _progression: FeatureProgression
+    ): EntityProcessingResult {
+        const result: EntityProcessingResult = {
+            grants: []
+        };
+
+        // For Base entities, they directly grant base values
+        // The entity itself contains all the information needed
+        result.grants.push(entity);
+
+        return result;
     }
 
     /**

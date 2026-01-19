@@ -42,12 +42,28 @@ function formatIterativeBAB(bab: number): string {
     return attacks.map(a => `+${a}`).join('/');
 }
 
+/**
+ * @deprecated Use formula-based resolution instead. Saving throw progressions are now stored
+ * as formula-based FeatureEntity records in the database and resolved via the feature system.
+ * Use ResolvedFeatureService.resolveFormulaValues() or getSavingThrow() from character-calculation
+ * to get saving throw values from resolved progressions.
+ * 
+ * This function is kept for backward compatibility but should not be used in new code.
+ */
 export function getSaveProgression(level: number, progressionType: typeof ProgressionType.good | typeof ProgressionType.poor): number {
     if (progressionType === ProgressionType.good) return getGoodSave(level);
     if (progressionType === ProgressionType.poor) return getPoorSave(level);
     throw new Error('Invalid progression type');
 }
 
+/**
+ * @deprecated Use formula-based resolution instead. BAB progressions are now stored
+ * as formula-based FeatureEntity records in the database and resolved via the feature system.
+ * Use ResolvedFeatureService.resolveFormulaValues() or getCharacterBAB() from attack-calculation
+ * to get BAB values from resolved progressions.
+ * 
+ * This function is kept for backward compatibility but should not be used in new code.
+ */
 export function getBABProgression(level: number, progressionType: typeof ProgressionType.good | typeof ProgressionType.average | typeof ProgressionType.poor): string {
     if (progressionType === ProgressionType.good) return getGoodBAB(level);
     if (progressionType === ProgressionType.average) return getAverageBAB(level);

@@ -422,7 +422,7 @@ export function FeatEdit() {
                         // Remove nested objects that shouldn't be sent
                         feature: undefined,
                         entities: progressionData.entities?.map(e => {
-                            const { id: _eId, progressionId: _pId, item, feature: _feat, spell, domain, ...entityData } = e;
+                            const { id: _eId, progressionId: _pId, ...entityData } = e;
                             return {
                                 ...entityData,
                                 conditions: entityData.conditions?.map(c => {

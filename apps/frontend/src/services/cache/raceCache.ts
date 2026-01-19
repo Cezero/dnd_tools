@@ -60,8 +60,15 @@ export const getRaceIdByName = (name: string): number | undefined => {
 
 /**
  * Get race name from cache (standalone)
+ * 
+ * @param id - Race ID (can be null or undefined)
+ * @returns Race name or null if not found
  */
-export const getRaceNameFromCache = (id: number): string | undefined => {
+export const getRaceNameFromCache = (id: number | null | undefined): string | null => {
+    if (!id) {
+        return null;
+    }
+
     const queryClient = getStandaloneQueryClient();
     const cacheData = queryClient.getQueryData<RaceCacheResponse>(['races-cache']);
     if (!cacheData?.results) return undefined;

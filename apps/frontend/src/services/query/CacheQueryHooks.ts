@@ -31,6 +31,7 @@ import {
     ItemCacheResponseSchema,
     SourceBookCacheResponseSchema,
     CompanionCacheResponseSchema,
+    FeatureCacheResponseSchema,
 } from '@shared/schema';
 
 import { createQueryHooks } from './QueryHooksFactory';
@@ -176,6 +177,18 @@ const companionsCacheConfig = createQueryHooks({
 });
 
 /**
+ * Features cache endpoint - lightweight feature data for dropdowns and filtering
+ * Contains: id, name (see FeatureCacheSchema)
+ */
+const featuresCacheConfig = createQueryHooks({
+    path: '/features/cache',
+    method: 'GET',
+    responseSchema: FeatureCacheResponseSchema,
+    queryKey: 'features-cache',
+    queryKeyBuilder: () => ['features-cache'],
+});
+
+/**
  * Cache Query Hooks Export
  * 
  * Provides both React hooks (useXxxCache) and imperative methods (getXxxCache) for all cache endpoints.
@@ -196,6 +209,7 @@ export const CacheQueryHooks = {
     useItemsCache: itemsCacheConfig.useQuery,
     useSourcebooksCache: sourcebooksCacheConfig.useQuery,
     useCompanionsCache: companionsCacheConfig.useQuery,
+    useFeaturesCache: featuresCacheConfig.useQuery,
 
     // Add imperative methods
     getClassesCache: (params?: unknown) => classesCacheConfig.fetch(params),
@@ -209,6 +223,7 @@ export const CacheQueryHooks = {
     getItemsCache: (params?: unknown) => itemsCacheConfig.fetch(params),
     getSourcebooksCache: (params?: unknown) => sourcebooksCacheConfig.fetch(params),
     getCompanionsCache: (params?: unknown) => companionsCacheConfig.fetch(params),
+    getFeaturesCache: (params?: unknown) => featuresCacheConfig.fetch(params),
 
     // Expose query functions for advanced usage
     getClassesCacheQueryFn: classesCacheConfig.queryFn,
@@ -222,4 +237,5 @@ export const CacheQueryHooks = {
     getItemsCacheQueryFn: itemsCacheConfig.queryFn,
     getSourcebooksCacheQueryFn: sourcebooksCacheConfig.queryFn,
     getCompanionsCacheQueryFn: companionsCacheConfig.queryFn,
+    getFeaturesCacheQueryFn: featuresCacheConfig.queryFn,
 };

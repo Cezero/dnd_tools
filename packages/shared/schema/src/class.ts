@@ -4,7 +4,7 @@ import { numericParam, optionalBooleanParam, commonValidations } from './common.
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 import { CastingType, ProgressionType } from '@shared/static-data';
-import { CreateFeatureProgressionRequestSchema, FeatureProgressionResponseSchema } from './feature.js';
+import { CreateFeatureProgressionRequestSchema, FeatureProgressionResponseSchema, UpdateFeatureProgressionSchema } from './feature.js';
 import { CreateSpellcastingProgressionSchema, SpellcastingProgressionWithSlotsSchema } from './spellcasting.js';
 
 // Simplified schema for character feature choices (for enriching progressions)
@@ -87,7 +87,7 @@ export const UpdateClassSchema = BaseClassSchema.omit({
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
-    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
+    features: z.array(UpdateFeatureProgressionSchema).nullable(),
     spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 }).partial();
@@ -97,7 +97,7 @@ export const CreateClassSchema = BaseClassSchema.omit({
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
-    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
+    features: z.array(UpdateFeatureProgressionSchema).nullable(),
     spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 });

@@ -8,13 +8,14 @@ import {
     CreateResponse,
     UpdateResponse,
     RaceCacheResponse,
+    CreateFeatureProgressionRequest,
 } from '@shared/schema';
+import { FeatureSourceType } from '@shared/static-data';
 
 import type { RaceService } from './types';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 import type { FeatureProgressionContext } from '../featureSystem/types';
-
-
+import { extractRaceMechanicsFromProgressions } from '../../utils/raceMechanicsExtractor';
 
 const prisma = new PrismaClient();
 
@@ -35,21 +36,24 @@ export const raceService: RaceService = {
             prisma.race.count(),
         ]);
 
-        // Get feature progressions for all races using the feature system service
-        const racesWithFeatures = await Promise.all(
+        // Get feature progressions for all races and extract mechanics for summary
+        const racesWithMechanics = await Promise.all(
             races.map(async (race) => {
                 const features = await featureSystemService.getFeatureProgressionsByRaceId(race.id);
+                const mechanics = extractRaceMechanicsFromProgressions(features, race.id);
 
                 return {
                     ...race,
-                    features,
+                    sizeId: mechanics.sizeId,
+                    speed: mechanics.speed,
+                    favoredClassId: mechanics.favoredClassId,
                 };
             })
         );
 
         return {
             total: races.length,
-            results: racesWithFeatures,
+            results: racesWithMechanics,
         };
     },
 
@@ -97,9 +101,21 @@ export const raceService: RaceService = {
         });
 
         // Create feature progressions using consolidated feature system service
+        // Convert UpdateFeatureProgression[] to CreateFeatureProgressionRequest[] by providing defaults
         if (features && features.length > 0) {
             const context: FeatureProgressionContext = { raceId: result.id };
-            await featureSystemService.createMultipleFeatureProgressions(features, context);
+            const createProgressions: CreateFeatureProgressionRequest[] = features.map(prog => ({
+                level: prog.level ?? 1,
+                sourceType: prog.sourceType ?? FeatureSourceType.Race,
+                featureId: prog.featureId!,
+                domainId: prog.domainId ?? null,
+                featId: prog.featId ?? null,
+                companionId: prog.companionId ?? null,
+                editionId: prog.editionId ?? null,
+                entities: prog.entities,
+                displayConditions: prog.displayConditions,
+            }));
+            await featureSystemService.createMultipleFeatureProgressions(createProgressions, context);
         }
 
         return { id: result.id.toString(), message: 'Race created successfully' };
@@ -131,9 +147,21 @@ export const raceService: RaceService = {
             });
 
             // Create new feature progressions using consolidated feature system service
+            // Convert UpdateFeatureProgression[] to CreateFeatureProgressionRequest[] by providing defaults
             if (features && features.length > 0) {
                 const createContext: FeatureProgressionContext = { raceId: id.id };
-                await featureSystemService.createMultipleFeatureProgressions(features, createContext, tx);
+                const createProgressions: CreateFeatureProgressionRequest[] = features.map(prog => ({
+                    level: prog.level ?? 1,
+                    sourceType: prog.sourceType ?? FeatureSourceType.Race,
+                    featureId: prog.featureId!,
+                    domainId: prog.domainId ?? null,
+                    featId: prog.featId ?? null,
+                    companionId: prog.companionId ?? null,
+                    editionId: prog.editionId ?? null,
+                    entities: prog.entities,
+                    displayConditions: prog.displayConditions,
+                }));
+                await featureSystemService.createMultipleFeatureProgressions(createProgressions, createContext, tx);
             }
         });
 

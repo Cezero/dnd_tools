@@ -86,7 +86,7 @@ The unified model that handles all types of feature effects including modifiers,
 - **`appliesToSubId`**: Sub-target ID for complex applications
 - **`formulaParamsId`**: Reference to formula parameters (if formula-based)
 - **`groupingId`**: Groups related entities together (default: 0)
-- **`type`**: Type of entity (Bonus, Quantity, Replacement, Other, Choice, Allocation) - references @EntityType enum. Note: Proficiencies use EntityType.Other with appliesTo = EntityAppliesToType.Proficiency
+- **`type`**: Type of entity (Bonus, Quantity, Replacement, Base, Other, Choice, Allocation) - references @EntityType enum. Note: Class and race mechanics use EntityType.Base. Proficiencies use EntityType.Other with appliesTo = EntityAppliesToType.Proficiency
 - **`value`**: Numerical value of the entity (if applicable)
 - **`bonusType`**: Bonus type for stacking rules (if applicable)
 - **`displayInDetail`**: Whether to display this entity in detailed views (default: true)

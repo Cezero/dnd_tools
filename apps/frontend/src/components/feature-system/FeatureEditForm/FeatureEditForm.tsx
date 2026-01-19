@@ -302,7 +302,7 @@ export function FeatureEditForm({
                             ...progressionData,
                             featureId: featureIdNum,
                             entities: progression.entities?.map(entity => {
-                                const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                                const { id: _, progressionId: __, ...entityData } = entity;
                                 return entityData;
                             }) || [],
                         };
@@ -363,7 +363,7 @@ export function FeatureEditForm({
                         return {
                             ...progressionData,
                             entities: progression.entities?.map(entity => {
-                                const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                                const { id: _, progressionId: __, ...entityData } = entity;
                                 return entityData;
                             }) || [],
                         };

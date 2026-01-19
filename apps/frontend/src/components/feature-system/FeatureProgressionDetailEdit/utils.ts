@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 
 import { hasSubtypes, getSkillSubtypes } from '@/lib/skill-utils';
-import { getSkillSelectFull, getItemsByProficiencyType, useCacheFunctions } from '@/services/cache';
+import { getSkillSelectFull, getItemsByProficiencyType, useCacheFunctions, getItemNameFromCache } from '@/services/cache';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
@@ -295,16 +295,15 @@ export function useProficiencySubIdOptions(
                 if (currentSubId !== null && currentSubId !== undefined && currentSubId !== -1) {
                     const hasCurrentValue = finalOptions.some(opt => opt.id === currentSubId);
                     if (!hasCurrentValue) {
-                        // Try to get the item from entity.item first
-                        if (entity.item && entity.item.id === currentSubId) {
+                        // Try to get the item from cache
+                        const itemName = getItemNameFromCache(currentSubId);
+                        if (itemName) {
                             finalOptions.push({
-                                id: entity.item.id,
-                                name: entity.item.name
+                                id: currentSubId,
+                                name: itemName
                             });
                         } else {
-                            // If we don't have the item in entity.item, try to fetch it
-                            // For now, just add a placeholder - the item should be loaded by the backend
-                            // but if it's not, we'll show the ID
+                            // If we don't have the item in cache, add a placeholder
                             finalOptions.push({
                                 id: currentSubId,
                                 name: `Item ${currentSubId}`
@@ -327,7 +326,6 @@ export function useProficiencySubIdOptions(
         entity?.type,
         entity?.appliesTo,
         entity?.appliesToSubId,
-        entity?.item?.id,
         appliesToId
     ]);
 

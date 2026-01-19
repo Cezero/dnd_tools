@@ -3,6 +3,16 @@ import pluralize from 'pluralize';
 
 import { formatSignedValue } from '@/lib/formatterUtils';
 import {
+    getFeatNameFromCache,
+    getFeatureNameFromCache,
+    getSpellNameFromCache,
+    getDomainNameFromCache,
+    getSkillNameFromCache,
+    getClassNameFromCache,
+    getItemNameFromCache,
+    getCompanionNameFromCache,
+} from '@/services/cache';
+import {
     EntityAppliesToType,
     EntityType,
     FEATURE_FEAT_CHOICE_FILTER_TYPES,
@@ -18,26 +28,32 @@ import {
     ABILITY_MAP,
     SIZE_LIST,
     PROFICIENCY_TYPE_LIST,
-    BAB_PROGRESSION_LIST,
     SAVING_THROW_MAP,
-    SAVE_PROGRESSION_LIST,
     CASTING_TYPE_MAP,
 } from '@shared/static-data';
 
 import type { BaseFormatter, CalculatedEntity, DisplayContext } from './types';
-import {
-    getFeatNameFromCache,
-    getFeatureNameFromCache,
-    getSpellNameFromCache,
-    getDomainNameFromCache,
-    getSkillNameFromCache,
-    getClassNameFromCache,
-} from './utils/cache-helpers';
 
 
 export class DamageFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+    format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
+
+        // Handle null/undefined values with detailed logging
+        if (value === null || value === undefined) {
+            console.warn('[DamageFormatter] Null or undefined value in modifier:', {
+                entityId: modifier.id,
+                progressionId: modifier.progressionId,
+                appliesTo: modifier.appliesTo,
+                appliesToId: modifier.appliesToId,
+                entityType: modifier.type,
+                value: modifier.value,
+                calculatedValue: modifier.calculatedValue,
+                context: context ? { level: context.level, currentLevel: context.currentLevel } : 'no context',
+                stackTrace: new Error().stack
+            });
+            return '';
+        }
 
         // For now, use default values since diceType and size aren't in the current schema
         // TODO: figure out if this is ever used, if so switch to using appliesToId to lookup the dice type from RPG_DICE
@@ -47,11 +63,33 @@ export class DamageFormatter implements BaseFormatter {
 }
 
 export class DamageBonusFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+    format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
 
+        // Handle null/undefined values with detailed logging
+        if (value === null || value === undefined) {
+            console.warn('[DamageBonusFormatter] Null or undefined value in modifier:', {
+                entityId: modifier.id,
+                progressionId: modifier.progressionId,
+                appliesTo: modifier.appliesTo,
+                appliesToId: modifier.appliesToId,
+                entityType: modifier.type,
+                value: modifier.value,
+                calculatedValue: modifier.calculatedValue,
+                context: context ? { level: context.level, currentLevel: context.currentLevel } : 'no context',
+                stackTrace: new Error().stack
+            });
+            return '';
+        }
+
         // For string values, return as-is; for numeric values, format with sign
-        const baseValue = typeof value === 'string' ? value : formatSignedValue(value);
+        const formatContext = {
+            entityId: modifier.id,
+            progressionId: modifier.progressionId,
+            appliesTo: modifier.appliesTo,
+            caller: 'DamageBonusFormatter'
+        };
+        const baseValue = typeof value === 'string' ? value : formatSignedValue(value, formatContext);
 
         // Include damage type if appliesToId is present
         if (modifier.appliesToId) {
@@ -63,8 +101,24 @@ export class DamageBonusFormatter implements BaseFormatter {
 }
 
 export class HealingFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+    format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
+
+        // Handle null/undefined values with detailed logging
+        if (value === null || value === undefined) {
+            console.warn('[HealingFormatter] Null or undefined value in modifier:', {
+                entityId: modifier.id,
+                progressionId: modifier.progressionId,
+                appliesTo: modifier.appliesTo,
+                appliesToId: modifier.appliesToId,
+                entityType: modifier.type,
+                value: modifier.value,
+                calculatedValue: modifier.calculatedValue,
+                context: context ? { level: context.level, currentLevel: context.currentLevel } : 'no context',
+                stackTrace: new Error().stack
+            });
+            return '';
+        }
 
         return `${value} hp/day`;
     }
@@ -74,8 +128,44 @@ export class SignedValueFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
 
+        // Handle null/undefined values with detailed logging
+        if (value === null || value === undefined) {
+            console.warn('[SignedValueFormatter] Null or undefined value in modifier:', {
+                entityId: modifier.id,
+                progressionId: modifier.progressionId,
+                appliesTo: modifier.appliesTo,
+                appliesToId: modifier.appliesToId,
+                appliesToSubId: modifier.appliesToSubId,
+                entityType: modifier.type,
+                value: modifier.value,
+                calculatedValue: modifier.calculatedValue,
+                bonusType: modifier.bonusType,
+                formulaParamsId: modifier.formulaParamsId,
+                groupingId: modifier.groupingId,
+                displayInDetail: modifier.displayInDetail,
+                filterType: modifier.filterType,
+                hasConditions: modifier.conditions && modifier.conditions.length > 0,
+                conditionsCount: modifier.conditions?.length || 0,
+                context: context ? {
+                    level: context.level,
+                    currentLevel: context.currentLevel,
+                    hasCharacter: !!context.character,
+                    hasChoices: !!context.choices,
+                    hasCompanions: !!context.companions,
+                } : 'no context',
+                stackTrace: new Error().stack
+            });
+            return '';
+        }
+
         // For string values, return as-is; for numeric values, format with sign
-        const baseValue = typeof value === 'string' ? value : formatSignedValue(value);
+        const formatContext = {
+            entityId: modifier.id,
+            progressionId: modifier.progressionId,
+            appliesTo: modifier.appliesTo,
+            caller: 'SignedValueFormatter'
+        };
+        const baseValue = typeof value === 'string' ? value : formatSignedValue(value, formatContext);
 
         // Include bonus type if present and displayBonusType is not false
         const displayBonusType = context?.displayBonusType !== false; // Default to true
@@ -110,10 +200,12 @@ export class FeatFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
 
-        // This is a proficiency - return the item name
-        const itemName = modifier.item?.name;
-        if (itemName) {
-            return itemName.toLowerCase();
+        // This is a proficiency - get item name from cache
+        if (modifier.appliesToId) {
+            const itemName = getItemNameFromCache(modifier.appliesToId);
+            if (itemName) {
+                return itemName.toLowerCase();
+            }
         }
 
         // Use cache helper to get feat name
@@ -134,10 +226,7 @@ export class DomainFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
 
-        // Priority 1: Use included entity data
-        if (modifier.domain) {
-            return modifier.domain.name;
-        }
+        // Priority 1: Use cache helper (domain object no longer on entity)
 
         // Priority 2: Use cache helper
         const domainId = modifier.appliesToId;
@@ -157,10 +246,7 @@ export class SpellFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
 
-        // Priority 1: Use included spell data if available (from backend)
-        if (modifier.spell) {
-            return modifier.spell.name;
-        }
+        // Priority 1: Use cache helper (spell object no longer on entity)
 
         // Priority 2: Use cache helper
         const spellId = modifier.appliesToId;
@@ -336,12 +422,7 @@ export class FeatureEntityFormatter implements BaseFormatter {
     }
 
     private getDomainName(choice: CalculatedEntity, context?: DisplayContext): string {
-        // Priority 1: Use included entity data (specific domain selected)
-        if (choice.domain) {
-            return choice.domain.name;
-        }
-
-        // Priority 2: Use cache helper
+        // Priority 1: Use cache helper (domain object no longer on entity)
         if (choice.appliesToId) {
             const cachedName = getDomainNameFromCache(choice.appliesToId);
             if (cachedName) {
@@ -359,12 +440,7 @@ export class FeatureEntityFormatter implements BaseFormatter {
     }
 
     private getFeatureName(choice: CalculatedEntity, context?: DisplayContext): string {
-        // Priority 1: Use included entity data
-        if (choice.feature) {
-            return choice.feature.name;
-        }
-
-        // Priority 2: Use cache helper
+        // Priority 1: Use cache helper (feature object no longer on entity)
         if (choice.appliesToId) {
             const cachedName = getFeatureNameFromCache(choice.appliesToId);
             if (cachedName) {
@@ -404,9 +480,12 @@ export class FeatureEntityFormatter implements BaseFormatter {
     }
 
     private getAnimalCompanionName(choice: CalculatedEntity): string {
-        // Priority 1: Use included entity data (specific companion selected)
-        if (choice.companion) {
-            return choice.companion.name;
+        // Priority 1: Use cache helper (companion object no longer on entity)
+        if (choice.appliesToId) {
+            const companionName = getCompanionNameFromCache(choice.appliesToId);
+            if (companionName) {
+                return companionName;
+            }
         }
 
         // Priority 2: Use static data filter type name (filter type is set)
@@ -420,9 +499,12 @@ export class FeatureEntityFormatter implements BaseFormatter {
     }
 
     private getFamiliarName(choice: CalculatedEntity): string {
-        // Priority 1: Use included entity data (specific familiar selected)
-        if (choice.companion) {
-            return choice.companion.name;
+        // Priority 1: Use cache helper (companion object no longer on entity)
+        if (choice.appliesToId) {
+            const companionName = getCompanionNameFromCache(choice.appliesToId);
+            if (companionName) {
+                return companionName;
+            }
         }
 
         // Priority 2: Use static data filter type name (filter type is set)
@@ -491,8 +573,12 @@ export class ProficiencyFormatter implements BaseFormatter {
             return 'all items';
         } else if (modifier.appliesToSubId && modifier.appliesToSubId > 0) {
             // itemId > 0 means a specific item proficiency
-            if (modifier.item) {
-                return modifier.item.name.toLowerCase();
+            // Use cache to get item name
+            if (modifier.appliesToSubId) {
+                const itemName = getItemNameFromCache(modifier.appliesToSubId);
+                if (itemName) {
+                    return itemName.toLowerCase();
+                }
             }
             // Fallback if item name not found
             return `item ${modifier.appliesToSubId}`;
@@ -559,9 +645,12 @@ export class DamageTypeFormatter implements BaseFormatter {
 
 export class WeaponFamiliarityFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, _context?: DisplayContext): string {
-        // Use the weapon name from the item data
-        if (modifier.item) {
-            return modifier.item.name;
+        // Use cache to get weapon name
+        if (modifier.appliesToId) {
+            const itemName = getItemNameFromCache(modifier.appliesToId);
+            if (itemName) {
+                return itemName;
+            }
         }
 
         // Fallback if weapon data is missing
@@ -602,11 +691,7 @@ export class SpellbookSpellFormatter implements BaseFormatter {
         // If appliesToSubId is a specific spell ID, show the spell name
         if (modifier.appliesToSubId && modifier.appliesToSubId > 0) {
             // Priority 1: Use included spell data if available
-            if (modifier.spell) {
-                return modifier.spell.name;
-            }
-
-            // Priority 2: Use cache helper
+            // Priority 1: Use cache helper (spell object no longer on entity)
             const cachedName = getSpellNameFromCache(modifier.appliesToSubId);
             if (cachedName) {
                 return cachedName;
@@ -848,46 +933,47 @@ export class PrerequisiteFormatter implements BaseFormatter {
 }
 
 /**
- * Formatter for Base Attack Bonus progression type
- * Formats the progression type (good/average/poor) from appliesToId
+ * Formatter for Base Attack Bonus progression
+ * Formats the calculated BAB value (e.g., "+1", "+2") from formula resolution
  */
 export class BaseAttackBonusFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, _context?: DisplayContext): string {
-        const progressionTypeId = modifier.appliesToId;
-        if (progressionTypeId !== null && progressionTypeId !== undefined) {
-            const progression = BAB_PROGRESSION_LIST.find(p => p.id === progressionTypeId);
-            if (progression) {
-                return progression.name;
-            }
+        const value = modifier.value;
+
+        if (typeof value === 'number') {
+            return formatSignedValue(value);
         }
-        return `BAB Progression ID: ${progressionTypeId}`;
+
+        return 'BAB';
     }
 }
 
 /**
  * Formatter for Saving Throw progression
- * Formats the saving throw type (Fortitude/Reflex/Will) and progression type (good/poor)
+ * Formats the calculated save value (e.g., "+2", "+3") from formula resolution
  */
 export class SavingThrowProgressionFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, _context?: DisplayContext): string {
-        const savingThrowId = modifier.appliesToId;
-        const progressionTypeId = modifier.appliesToSubId;
+        const value = modifier.value;
 
+        if (typeof value === 'number') {
+            const savingThrowId = modifier.appliesToId;
+            const savingThrow = savingThrowId !== null && savingThrowId !== undefined
+                ? SAVING_THROW_MAP[savingThrowId]
+                : null;
+
+            if (savingThrow) {
+                return `${savingThrow.name} ${formatSignedValue(value)}`;
+            }
+            return formatSignedValue(value);
+        }
+
+        const savingThrowId = modifier.appliesToId;
         const savingThrow = savingThrowId !== null && savingThrowId !== undefined
             ? SAVING_THROW_MAP[savingThrowId]
             : null;
-        const progression = progressionTypeId !== null && progressionTypeId !== undefined
-            ? SAVE_PROGRESSION_LIST.find(p => p.id === progressionTypeId)
-            : null;
 
-        if (savingThrow && progression) {
-            return `${savingThrow.name} (${progression.name})`;
-        } else if (savingThrow) {
-            return savingThrow.name;
-        } else if (progression) {
-            return progression.name;
-        }
-        return `Saving Throw ID: ${savingThrowId}, Progression ID: ${progressionTypeId}`;
+        return savingThrow ? savingThrow.name : 'Saving Throw';
     }
 }
 

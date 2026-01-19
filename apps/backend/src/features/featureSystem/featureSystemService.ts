@@ -14,6 +14,7 @@ import {
     CreateFeatureEntityRequest,
     CreateFeatureEntityConditionRequest,
     CreateFeatureProgressionConditionRequest,
+    FeatureCacheResponse,
 } from '@shared/schema';
 import { EntityAppliesToType, SpecialFeatureId, FeatureSourceType, FeatureEntityConditionType, EntityType, FeatureBonusType } from '@shared/static-data';
 
@@ -495,6 +496,21 @@ export const featureSystemService: FeatureSystemService = {
         return features;
     },
 
+    async getFeatureCache(): Promise<FeatureCacheResponse> {
+        const features = await prisma.feature.findMany({
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+            }
+        });
+
+        return {
+            total: features.length,
+            results: features,
+        };
+    },
+
     async getFeatureById(query: FeatureIdParamRequest): Promise<GetFeatureResponse | null> {
         const feature = await prisma.feature.findUnique({
             where: { id: query.id },
@@ -861,14 +877,35 @@ export const featureSystemService: FeatureSystemService = {
 
     /**
      * Sync FeatureProgressionClassMap entries for a specific class.
-     * Removes links for progressions not in the incoming list, adds links for new progressions,
-     * and deletes orphaned progressions (those with no remaining class or race links).
+     * Removes links for progressions not in the incoming list, adds links for new progressions.
+     * Returns orphaned progression IDs that should be cleaned up in a separate transaction.
      */
     async syncClassFeatureProgressions(
         classId: number,
         progressionIds: number[],
         tx: Prisma.TransactionClient
-    ): Promise<void> {
+    ): Promise<number[]> {
+        console.log(`[FeatureSystemService] syncClassFeatureProgressions: classId=${classId}, incoming progressionIds=[${progressionIds.join(', ')}]`);
+
+        // Validate that progression IDs exist before syncing
+        if (progressionIds.length > 0) {
+            const existingProgressions = await tx.featureProgression.findMany({
+                where: { id: { in: progressionIds } },
+                select: { id: true }
+            });
+            const existingIds = new Set(existingProgressions.map(p => p.id));
+            const invalidIds = progressionIds.filter(id => !existingIds.has(id));
+            if (invalidIds.length > 0) {
+                console.error(`[FeatureSystemService] WARNING: ${invalidIds.length} invalid progression IDs provided: ${invalidIds.join(', ')}`);
+                // Filter out invalid IDs
+                const validProgressionIds = progressionIds.filter(id => existingIds.has(id));
+                if (validProgressionIds.length === 0) {
+                    console.error(`[FeatureSystemService] CRITICAL ERROR: All progression IDs are invalid! This will remove all FeatureProgressionClassMap entries for class ${classId}`);
+                }
+                progressionIds = validProgressionIds;
+            }
+        }
+
         // Get current progressions linked to this class
         const currentLinks = await tx.featureProgressionClassMap.findMany({
             where: { classId },
@@ -876,6 +913,8 @@ export const featureSystemService: FeatureSystemService = {
         });
         const currentProgressionIds = new Set(currentLinks.map(link => link.progressionId));
         const incomingProgressionIds = new Set(progressionIds);
+
+        console.log(`[FeatureSystemService] Current links: ${currentProgressionIds.size}, Incoming: ${incomingProgressionIds.size}`);
 
         // Find progressions to remove (in current but not in incoming)
         const progressionIdsToRemove = Array.from(currentProgressionIds).filter(
@@ -887,6 +926,19 @@ export const featureSystemService: FeatureSystemService = {
             id => !currentProgressionIds.has(id)
         );
 
+        console.log(`[FeatureSystemService] Will remove ${progressionIdsToRemove.length} links, add ${progressionIdsToAdd.length} links`);
+        if (progressionIdsToRemove.length > 0) {
+            console.log(`[FeatureSystemService] Removing links for progression IDs: ${progressionIdsToRemove.join(', ')}`);
+        }
+        if (progressionIdsToAdd.length > 0) {
+            console.log(`[FeatureSystemService] Adding links for progression IDs: ${progressionIdsToAdd.join(', ')}`);
+        }
+
+        // Critical warning if removing all links
+        if (progressionIdsToRemove.length === currentProgressionIds.size && currentProgressionIds.size > 0 && incomingProgressionIds.size === 0) {
+            console.error(`[FeatureSystemService] CRITICAL WARNING: Removing ALL ${currentProgressionIds.size} FeatureProgressionClassMap entries for class ${classId}!`);
+        }
+
         // Remove links for progressions no longer associated with this class
         if (progressionIdsToRemove.length > 0) {
             await tx.featureProgressionClassMap.deleteMany({
@@ -896,65 +948,30 @@ export const featureSystemService: FeatureSystemService = {
                 }
             });
 
-            // Check for orphaned progressions (no class or race links remaining)
-            for (const progressionId of progressionIdsToRemove) {
-                const classLinkCount = await tx.featureProgressionClassMap.count({
-                    where: { progressionId }
-                });
-                const raceLinkCount = await tx.featureProgressionRaceMap.count({
-                    where: { progressionId }
-                });
+            // Batch check for orphaned progressions (no class or race links remaining)
+            // Get all remaining class links for progressions we're removing
+            const remainingClassLinks = await tx.featureProgressionClassMap.findMany({
+                where: { progressionId: { in: progressionIdsToRemove } },
+                select: { progressionId: true }
+            });
+            const remainingClassLinkProgressionIds = new Set(remainingClassLinks.map(l => l.progressionId));
 
-                // If no links remain, delete the orphaned progression
-                if (classLinkCount === 0 && raceLinkCount === 0) {
-                    // Get entity IDs for this progression
-                    const entities = await tx.featureEntity.findMany({
-                        where: { progressionId },
-                        select: { id: true, formulaParamsId: true }
-                    });
-                    const entityIds = entities.map(e => e.id);
-                    const formulaParamIds = entities
-                        .map(e => e.formulaParamsId)
-                        .filter(id => id !== null) as number[];
+            // Get all remaining race links for progressions we're removing
+            const remainingRaceLinks = await tx.featureProgressionRaceMap.findMany({
+                where: { progressionId: { in: progressionIdsToRemove } },
+                select: { progressionId: true }
+            });
+            const remainingRaceLinkProgressionIds = new Set(remainingRaceLinks.map(l => l.progressionId));
 
-                    // Delete character feature choices
-                    if (entityIds.length > 0) {
-                        await tx.characterFeatureChoice.deleteMany({
-                            where: { featureEntityId: { in: entityIds } }
-                        });
-                    }
+            // Find truly orphaned progressions (no class or race links remaining)
+            const orphanedProgressionIds = progressionIdsToRemove.filter(
+                id => !remainingClassLinkProgressionIds.has(id) && !remainingRaceLinkProgressionIds.has(id)
+            );
 
-                    // Delete conditions
-                    if (entityIds.length > 0) {
-                        await tx.featureEntityCondition.deleteMany({
-                            where: { featureEntityId: { in: entityIds } }
-                        });
-                    }
-
-                    // Delete entities
-                    if (entityIds.length > 0) {
-                        await tx.featureEntity.deleteMany({
-                            where: { progressionId }
-                        });
-                    }
-
-                    // Delete orphaned formula params
-                    if (formulaParamIds.length > 0) {
-                        await tx.featureFormulaParams.deleteMany({
-                            where: { id: { in: formulaParamIds } }
-                        });
-                    }
-
-                    // Delete display conditions
-                    await tx.featureProgressionCondition.deleteMany({
-                        where: { progressionId }
-                    });
-
-                    // Delete the orphaned progression
-                    await tx.featureProgression.delete({
-                        where: { id: progressionId }
-                    });
-                }
+            if (orphanedProgressionIds.length > 0) {
+                console.log(`[FeatureSystemService] Found ${orphanedProgressionIds.length} orphaned progressions to clean up: ${orphanedProgressionIds.join(', ')}`);
+                // Return orphaned IDs to be cleaned up in a separate transaction
+                return orphanedProgressionIds;
             }
         }
 
@@ -967,18 +984,95 @@ export const featureSystemService: FeatureSystemService = {
                 })),
                 skipDuplicates: true
             });
+            console.log(`[FeatureSystemService] Successfully added ${progressionIdsToAdd.length} new FeatureProgressionClassMap entries`);
         }
+
+        // Final verification
+        const finalLinks = await tx.featureProgressionClassMap.findMany({
+            where: { classId },
+            select: { progressionId: true }
+        });
+        console.log(`[FeatureSystemService] Final state: ${finalLinks.length} FeatureProgressionClassMap entries for class ${classId}`);
+
+        // Return empty array if no orphans found
+        return [];
+    },
+
+    /**
+     * Clean up orphaned progressions in a separate transaction.
+     * This should be called after the main operation completes successfully.
+     */
+    async cleanupOrphanedProgressions(orphanedProgressionIds: number[]): Promise<void> {
+        if (orphanedProgressionIds.length === 0) {
+            return;
+        }
+
+        console.log(`[FeatureSystemService] Cleaning up ${orphanedProgressionIds.length} orphaned progressions in separate transaction`);
+
+        await prisma.$transaction(async (tx) => {
+            // Get all entities for orphaned progressions in one query
+            const allEntities = await tx.featureEntity.findMany({
+                where: { progressionId: { in: orphanedProgressionIds } },
+                select: { id: true, formulaParamsId: true }
+            });
+            const allEntityIds = allEntities.map(e => e.id);
+            const allFormulaParamIds = allEntities
+                .map(e => e.formulaParamsId)
+                .filter(id => id !== null) as number[];
+
+            // Batch delete all related data
+            if (allEntityIds.length > 0) {
+                // Delete character feature choices
+                await tx.characterFeatureChoice.deleteMany({
+                    where: { featureEntityId: { in: allEntityIds } }
+                });
+
+                // Delete conditions
+                await tx.featureEntityCondition.deleteMany({
+                    where: { featureEntityId: { in: allEntityIds } }
+                });
+            }
+
+            // Delete entities
+            if (allEntityIds.length > 0) {
+                await tx.featureEntity.deleteMany({
+                    where: { progressionId: { in: orphanedProgressionIds } }
+                });
+            }
+
+            // Delete orphaned formula params
+            if (allFormulaParamIds.length > 0) {
+                await tx.featureFormulaParams.deleteMany({
+                    where: { id: { in: allFormulaParamIds } }
+                });
+            }
+
+            // Delete display conditions
+            await tx.featureProgressionCondition.deleteMany({
+                where: { progressionId: { in: orphanedProgressionIds } }
+            });
+
+            // Delete the orphaned progressions
+            await tx.featureProgression.deleteMany({
+                where: { id: { in: orphanedProgressionIds } }
+            });
+
+            console.log(`[FeatureSystemService] Successfully deleted ${orphanedProgressionIds.length} orphaned progressions and their related data`);
+        }, {
+            timeout: 60000 // 60 seconds timeout for large cleanup operations
+        });
     },
 
     /**
      * Sync FeatureProgressionRaceMap entries for a specific race.
      * Same logic as syncClassFeatureProgressions but for races.
+     * Returns orphaned progression IDs that should be cleaned up in a separate transaction.
      */
     async syncRaceFeatureProgressions(
         raceId: number,
         progressionIds: number[],
         tx: Prisma.TransactionClient
-    ): Promise<void> {
+    ): Promise<number[]> {
         // Get current progressions linked to this race
         const currentLinks = await tx.featureProgressionRaceMap.findMany({
             where: { raceId },
@@ -1006,65 +1100,30 @@ export const featureSystemService: FeatureSystemService = {
                 }
             });
 
-            // Check for orphaned progressions (no class or race links remaining)
-            for (const progressionId of progressionIdsToRemove) {
-                const classLinkCount = await tx.featureProgressionClassMap.count({
-                    where: { progressionId }
-                });
-                const raceLinkCount = await tx.featureProgressionRaceMap.count({
-                    where: { progressionId }
-                });
+            // Batch check for orphaned progressions (no class or race links remaining)
+            // Get all remaining class links for progressions we're removing
+            const remainingClassLinks = await tx.featureProgressionClassMap.findMany({
+                where: { progressionId: { in: progressionIdsToRemove } },
+                select: { progressionId: true }
+            });
+            const remainingClassLinkProgressionIds = new Set(remainingClassLinks.map(l => l.progressionId));
 
-                // If no links remain, delete the orphaned progression
-                if (classLinkCount === 0 && raceLinkCount === 0) {
-                    // Get entity IDs for this progression
-                    const entities = await tx.featureEntity.findMany({
-                        where: { progressionId },
-                        select: { id: true, formulaParamsId: true }
-                    });
-                    const entityIds = entities.map(e => e.id);
-                    const formulaParamIds = entities
-                        .map(e => e.formulaParamsId)
-                        .filter(id => id !== null) as number[];
+            // Get all remaining race links for progressions we're removing
+            const remainingRaceLinks = await tx.featureProgressionRaceMap.findMany({
+                where: { progressionId: { in: progressionIdsToRemove } },
+                select: { progressionId: true }
+            });
+            const remainingRaceLinkProgressionIds = new Set(remainingRaceLinks.map(l => l.progressionId));
 
-                    // Delete character feature choices
-                    if (entityIds.length > 0) {
-                        await tx.characterFeatureChoice.deleteMany({
-                            where: { featureEntityId: { in: entityIds } }
-                        });
-                    }
+            // Find truly orphaned progressions (no class or race links remaining)
+            const orphanedProgressionIds = progressionIdsToRemove.filter(
+                id => !remainingClassLinkProgressionIds.has(id) && !remainingRaceLinkProgressionIds.has(id)
+            );
 
-                    // Delete conditions
-                    if (entityIds.length > 0) {
-                        await tx.featureEntityCondition.deleteMany({
-                            where: { featureEntityId: { in: entityIds } }
-                        });
-                    }
-
-                    // Delete entities
-                    if (entityIds.length > 0) {
-                        await tx.featureEntity.deleteMany({
-                            where: { progressionId }
-                        });
-                    }
-
-                    // Delete orphaned formula params
-                    if (formulaParamIds.length > 0) {
-                        await tx.featureFormulaParams.deleteMany({
-                            where: { id: { in: formulaParamIds } }
-                        });
-                    }
-
-                    // Delete display conditions
-                    await tx.featureProgressionCondition.deleteMany({
-                        where: { progressionId }
-                    });
-
-                    // Delete the orphaned progression
-                    await tx.featureProgression.delete({
-                        where: { id: progressionId }
-                    });
-                }
+            if (orphanedProgressionIds.length > 0) {
+                console.log(`[FeatureSystemService] Found ${orphanedProgressionIds.length} orphaned progressions to clean up: ${orphanedProgressionIds.join(', ')}`);
+                // Return orphaned IDs to be cleaned up in a separate transaction
+                return orphanedProgressionIds;
             }
         }
 
@@ -1078,6 +1137,9 @@ export const featureSystemService: FeatureSystemService = {
                 skipDuplicates: true
             });
         }
+
+        // Return empty array if no orphans found
+        return [];
     },
 
     async updateFeatureProgressions(featureId: number, progressions: UpdateFeatureProgression[]): Promise<UpdateResponse> {
@@ -1352,96 +1414,8 @@ export const featureSystemService: FeatureSystemService = {
             }
         }
 
-        // Fetch items, feats, and features for entities that need them
-        const allEntities = progressions.flatMap(p => p.entities);
-        const itemIds = allEntities
-            .filter(e => e.appliesToSubId && e.appliesToSubId > 0 && e.appliesTo !== EntityAppliesToType.Skill)
-            .map(e => e.appliesToSubId!);
-
-        // Also fetch items for Weapon Familiarity entities (stored in appliesToId)
-        const weaponFamiliarityItemIds = allEntities
-            .filter(e => e.appliesTo === EntityAppliesToType.WeaponFamiliarity && e.appliesToId !== null && e.appliesToId !== undefined)
-            .map(e => e.appliesToId!)
-            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
-
-        // Collect IDs from entities and from choices
-        const featIdsSet = new Set<number>();
-        const featureIdsSet = new Set<number>();
-        const spellIdsSet = new Set<number>();
-        const domainIdsSet = new Set<number>();
-
-        // Add IDs from entities
-        for (const entity of allEntities) {
-            if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId !== null && entity.appliesToId !== undefined) {
-                featIdsSet.add(entity.appliesToId);
-            }
-            if (entity.appliesTo === EntityAppliesToType.Feature && entity.appliesToId !== null && entity.appliesToId !== undefined) {
-                featureIdsSet.add(entity.appliesToId);
-            }
-            if (entity.appliesTo === EntityAppliesToType.Spell && entity.appliesToId !== null && entity.appliesToId !== undefined) {
-                spellIdsSet.add(entity.appliesToId);
-            }
-            if (entity.appliesTo === EntityAppliesToType.Domain && entity.appliesToId !== null && entity.appliesToId !== undefined) {
-                domainIdsSet.add(entity.appliesToId);
-            }
-        }
-
-        // Add IDs from character choices
-        if (characterFeatureChoices) {
-            for (const choice of characterFeatureChoices) {
-                // Find the entity to determine its appliesTo type
-                const entity = allEntities.find(e => e.id === choice.featureEntityId && e.progressionId === choice.progressionId);
-                if (entity && choice.appliesToId !== null) {
-                    if (entity.appliesTo === EntityAppliesToType.Feat) {
-                        featIdsSet.add(choice.appliesToId);
-                    } else if (entity.appliesTo === EntityAppliesToType.Feature) {
-                        featureIdsSet.add(choice.appliesToId);
-                    } else if (entity.appliesTo === EntityAppliesToType.Spell) {
-                        spellIdsSet.add(choice.appliesToId);
-                    } else if (entity.appliesTo === EntityAppliesToType.Domain) {
-                        domainIdsSet.add(choice.appliesToId);
-                    }
-                }
-            }
-        }
-
-        const featIds = Array.from(featIdsSet);
-        const featureIds = Array.from(featureIdsSet);
-        const spellIds = Array.from(spellIdsSet);
-        const domainIds = Array.from(domainIdsSet);
-
-        // Fetch items, feats, and features
-        const allItemIds = [...itemIds, ...weaponFamiliarityItemIds];
-        const items = allItemIds.length > 0 ? await prisma.item.findMany({
-            where: { id: { in: allItemIds } }
-        }) : [];
-
-        const feats = featIds.length > 0 ? await prisma.feat.findMany({
-            where: { id: { in: featIds } }
-        }) : [];
-
-        const features = featureIds.length > 0 ? await prisma.feature.findMany({
-            where: { id: { in: featureIds } },
-            include: {
-                prerequisites: true
-            }
-        }) : [];
-
-        const spells = spellIds.length > 0 ? await prisma.spell.findMany({
-            where: { id: { in: spellIds } },
-            select: {
-                id: true,
-                name: true
-            }
-        }) : [];
-
-        const domains = domainIds.length > 0 ? await prisma.domain.findMany({
-            where: { id: { in: domainIds } },
-            select: {
-                id: true,
-                name: true
-            }
-        }) : [];
+        // Note: We no longer fetch items, spells, features, or domains here.
+        // The frontend has caches for these and should look them up using appliesToId/appliesToSubId.
 
         // Fetch classes and races (only if includeClassRaceInfo is true)
         const classes = includeClassRaceInfo && classIds.length > 0 ? await prisma.class.findMany({
@@ -1474,12 +1448,7 @@ export const featureSystemService: FeatureSystemService = {
             }
         }) : [];
 
-        // Create lookup maps
-        const itemMap = new Map(items.map(item => [item.id, item]));
-        const _featMap = new Map(feats.map(feat => [feat.id, feat]));
-        const featureMap = new Map(features.map(feature => [feature.id, feature]));
-        const spellMap = new Map(spells.map(spell => [spell.id, spell]));
-        const domainMap = new Map(domains.map(domain => [domain.id, domain]));
+        // Create lookup maps (only for classes, races, and feat details which are still needed)
         const classMap = new Map(classes.map(cls => [cls.id, cls]));
         const raceMap = new Map(races.map(race => [race.id, race]));
         const _featDetailMap = new Map(featDetails.map(feat => [feat.id, feat]));
@@ -1516,35 +1485,18 @@ export const featureSystemService: FeatureSystemService = {
                     const choiceKey = `${progression.id}:${entity.id}`;
                     const choice = choiceMap.get(choiceKey);
 
-                    // Use choice's appliesToId if available, otherwise use entity's appliesToId
+                    // Use choice's appliesToId/appliesToSubId if available, otherwise use entity's
+                    // Frontend should look up items, spells, features, domains from caches using these IDs
                     const effectiveAppliesToId = choice?.appliesToId ?? entity.appliesToId;
                     const effectiveAppliesToSubId = choice?.appliesToSubId ?? entity.appliesToSubId;
 
                     return {
                         ...entity,
+                        appliesToId: effectiveAppliesToId,
+                        appliesToSubId: effectiveAppliesToSubId,
                         formulaParams: entity.formulaParams
                             ? transformFormulaParamsFromDatabase(entity.formulaParams)
                             : null,
-                        // Add item data if appliesToSubId > 0 (and not a Skill entity, where appliesToSubId is a skill subtype)
-                        // OR if it's Weapon Familiarity (appliesToId)
-                        item: entity.appliesTo !== EntityAppliesToType.Skill &&
-                            effectiveAppliesToSubId && effectiveAppliesToSubId > 0
-                            ? itemMap.get(effectiveAppliesToSubId) || null
-                            : entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && effectiveAppliesToId
-                                ? itemMap.get(effectiveAppliesToId) || null
-                                : null,
-                        // Add feature data if appliesTo === Feature (use choice's appliesToId if available)
-                        feature: entity.appliesTo === EntityAppliesToType.Feature && effectiveAppliesToId
-                            ? featureMap.get(effectiveAppliesToId) || null
-                            : null,
-                        // Add spell data if appliesTo === Spell (use choice's appliesToId if available)
-                        spell: entity.appliesTo === EntityAppliesToType.Spell && effectiveAppliesToId
-                            ? spellMap.get(effectiveAppliesToId) || null
-                            : null,
-                        // Add domain data if appliesTo === Domain (use choice's appliesToId if available)
-                        domain: entity.appliesTo === EntityAppliesToType.Domain && effectiveAppliesToId
-                            ? domainMap.get(effectiveAppliesToId) || null
-                            : null
                     };
                 })
             };

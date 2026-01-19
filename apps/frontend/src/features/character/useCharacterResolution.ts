@@ -3,8 +3,24 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { CharacterResolutionApi, type ResolvedCharacterResult, type CharacterUpdate } from '@/services/api/CharacterResolutionApi';
 
 /**
- * Hook for managing character resolution sessions
- * Handles session lifecycle: initialize, resume, update, save, cancel
+ * Hook for managing character resolution sessions.
+ * 
+ * **Implementation Note**: Character resolution is more complex than Class/Race resolution
+ * because it returns `ResolvedCharacterResult` (with resolved progressions, pending choices,
+ * etc.) instead of just state. This hook follows similar patterns to the generic resolution hook
+ * but is customized for Character's unique requirements.
+ * 
+ * Handles session lifecycle: initialize, resume, update, save, cancel.
+ * 
+ * **Key Differences from Generic Hook**:
+ * - Uses `resumeSession` API instead of `initializeSession` (backend handles both cases)
+ * - Returns `ResolvedCharacterResult` instead of just state
+ * - Includes complex resolution logic (feature resolution, spell selection, etc.)
+ * 
+ * @param characterId - The character ID to manage session for (null if not yet loaded)
+ * @returns Object containing session state and operations
+ * 
+ * @see useGenericResolution - Generic implementation (used by Class/Race)
  */
 export function useCharacterResolution(characterId: number | null) {
     const [sessionId, setSessionId] = useState<string | null>(null);
@@ -106,7 +122,7 @@ export function useCharacterResolution(characterId: number | null) {
     }, [characterId, sessionId]);
 
     /**
-     * Save session to database
+     * Save session to database.
      */
     const saveSession = useCallback(async (): Promise<void> => {
         if (!characterId || !sessionId) {
@@ -134,7 +150,7 @@ export function useCharacterResolution(characterId: number | null) {
     }, [characterId, sessionId]);
 
     /**
-     * Cancel session without saving
+     * Cancel session without saving.
      */
     const cancelSession = useCallback(async (): Promise<void> => {
         if (!characterId || !sessionId) {
@@ -211,7 +227,7 @@ export function useCharacterResolution(characterId: number | null) {
     }, [characterId, sessionId]);
 
     /**
-     * Cleanup on unmount - cancel session if still active
+     * Cleanup on unmount - cancel session if still active.
      */
     useEffect(() => {
         return () => {

@@ -1,4 +1,4 @@
-import { getSkillNameFromCache } from '@/lib/formatters/utils/cache-helpers';
+import { getSkillNameFromCache } from '@/services/cache';
 import { FeaturePrerequisite } from '@shared/schema';
 import {
     FeaturePrerequisiteType,

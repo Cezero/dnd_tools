@@ -130,6 +130,153 @@ The race system controllers follow the shared [Controller Layer Pattern](../appl
 
 **Source File**: `src/features/race/raceController.ts`
 
+## 🗄️ **Session Management**
+
+The race system uses **SQLite session storage** for persistent editing sessions, providing reliable state management and deterministic ID handling. This pattern mirrors the `CharacterEdit` and `ClassEdit` session management implementations.
+
+### **Overview**
+
+The session management system provides:
+- **Persistent Sessions**: SQLite database stores editing sessions that survive backend restarts
+- **Automatic Expiration**: Sessions automatically expire after configurable period of inactivity
+- **Per-User Isolation**: Each user has separate sessions for each race
+- **Temporary ID Generation**: SQLite auto-increment generates temporary IDs for new entities
+- **Save Transformation**: Transforms SQLite session state → MySQL on save
+
+### **Session Database**
+
+**Purpose**: Lightweight SQLite database for storing race editing session state.
+
+**Source File**: `src/features/raceResolution/sessionDatabase.ts`
+
+**Tables**:
+- **`race_edit_sessions`**: Stores session metadata and race state (JSON)
+- **`race_session_progressions`**: Temporary progressions in session (with auto-increment IDs)
+- **`race_session_entities`**: Temporary entities in session (with auto-increment IDs)
+
+**Key Features**:
+- **WAL Mode**: Write-Ahead Logging for concurrent access
+- **Auto-Increment IDs**: SQLite generates temporary IDs for new entities
+- **Session Expiration**: Automatic cleanup of expired sessions
+- **Per-User Isolation**: Sessions keyed by `raceId:userId`
+
+### **RaceSessionService**
+
+Service for managing race editing sessions in SQLite.
+
+**Purpose**: Provides persistent session storage with automatic cleanup and state management.
+
+**Source File**: `src/features/raceResolution/raceSessionService.ts`
+
+**Key Methods**: Similar to `ClassSessionService` but for race sessions:
+- **createSession**: Creates a new editing session
+- **getSession**: Retrieves an active session
+- **updateSession**: Updates session state
+- **deleteSession**: Deletes a session
+- **cleanupExpiredSessions**: Removes expired sessions
+
+### **RaceResolutionController**
+
+Controller for managing race editing sessions and applying updates.
+
+**Purpose**: Handles HTTP requests for session lifecycle and state updates.
+
+**Source File**: `src/features/raceResolution/raceResolutionController.ts`
+
+**API Endpoints**:
+
+**POST /api/races/:id/session** - Initialize or resume session
+- **Purpose**: Creates new session or returns existing active session
+- **Authentication**: User authentication required
+- **Response**: `{ sessionId: string, raceState: RaceEditState }`
+- **Business Logic**: Loads race from MySQL, creates or resumes SQLite session
+
+**GET /api/races/:id/session/:sessionId** - Get session state
+- **Purpose**: Retrieves current session state
+- **Authentication**: User authentication required
+- **Response**: `{ raceState: RaceEditState }`
+- **Business Logic**: Loads session state from SQLite
+
+**PATCH /api/races/:id/session/:sessionId** - Apply update
+- **Purpose**: Applies action-based update to session state
+- **Authentication**: User authentication required
+- **Body**: `RaceUpdate` (discriminated union of update actions)
+- **Response**: `{ raceState: RaceEditState }`
+- **Business Logic**: Applies update to session state using `raceUpdateApplier`
+
+**POST /api/races/:id/session/:sessionId/save** - Save session to MySQL
+- **Purpose**: Transforms SQLite session → MySQL and saves race
+- **Authentication**: Admin authentication required
+- **Response**: `{ race: Race }`
+- **Business Logic**: Uses `RaceSaveService` to transform and persist session
+
+**DELETE /api/races/:id/session/:sessionId** - Cancel session
+- **Purpose**: Deletes session without saving
+- **Authentication**: User authentication required
+- **Response**: `{ message: string }`
+- **Business Logic**: Deletes session from SQLite
+
+### **Update Actions**
+
+The system uses action-based updates (discriminated union) for state modifications:
+
+**Update Types**:
+- `UPDATE_RACE_FIELD`: Update individual race field (name, editionId, etc.)
+- `ADD_PROGRESSION`: Add new feature progression to session
+- `UPDATE_PROGRESSION`: Update existing feature progression
+- `REMOVE_PROGRESSION`: Remove feature progression from session
+
+**Source File**: `src/features/raceResolution/types.ts`
+
+### **RaceUpdateApplier**
+
+Service for applying action-based updates to session state.
+
+**Purpose**: Immutably applies updates to session state based on action type.
+
+**Source File**: `src/features/raceResolution/raceUpdateApplier.ts`
+
+**Key Features**:
+- **Immutable Updates**: All updates create new state objects
+- **Type Safety**: Discriminated union ensures type-safe updates
+- **Validation**: Validates updates before applying
+- **ID Management**: Handles temporary ID generation for new entities
+
+### **RaceSaveService**
+
+Service for transforming SQLite session state → MySQL.
+
+**Purpose**: Transforms session state to MySQL format and persists race data.
+
+**Source File**: `src/features/raceResolution/raceSaveService.ts`
+
+**Transform Process**:
+1. **Load Session**: Load session state from SQLite
+2. **Transform State**: Convert `RaceEditState` to `UpdateRaceRequest`
+3. **Handle Progressions**: 
+   - Existing progressions (with real IDs): Update in MySQL
+   - New progressions (with temporary IDs): Create in MySQL, get real IDs
+4. **Persist Race**: Save race to MySQL via `raceService.updateRace`
+5. **Cleanup**: Delete session from SQLite
+
+**Key Features**:
+- **Deterministic Tracking**: Uses temporary IDs from session, no signature matching
+- **Update in Place**: Existing entities updated, not deleted & recreated
+- **ID Mapping**: Maps temporary IDs to real MySQL IDs
+- **Transaction Safety**: All operations in single transaction
+
+**Source Files**:
+- Session Database: `src/features/raceResolution/sessionDatabase.ts`
+- Session Service: `src/features/raceResolution/raceSessionService.ts`
+- Resolution Controller: `src/features/raceResolution/raceResolutionController.ts`
+- Update Applier: `src/features/raceResolution/raceUpdateApplier.ts`
+- Save Service: `src/features/raceResolution/raceSaveService.ts`
+- Types: `src/features/raceResolution/types.ts`, `packages/shared/schema/src/classResolution.ts`
+
+**Related Documentation**: 
+- [Frontend State-Based Pattern](frontend-components.md#state-based-pattern-architecture) - Frontend implementation
+- [Class System Session Management](../class-system/backend-implementation.md#session-management) - Reference implementation
+
 ## 🔗 **Routes Layer**
 
 The race system routes follow the shared [RESTful API Structure](../application-overview/backend-implementation.md#restful-api-structure) with race-specific endpoints:

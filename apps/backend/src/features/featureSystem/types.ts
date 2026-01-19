@@ -10,6 +10,7 @@ import type {
     UpdateFeatureProgression,
     FeatureProgression,
     GetFeatureListResponse,
+    FeatureCacheResponse,
 } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
@@ -25,6 +26,7 @@ export interface FeatureProgressionContext {
 export interface FeatureSystemService {
     getAllFeatures(sourceTypes?: number[]): Promise<GetAllFeaturesResponse>;
     getFeatureList(sourceTypes?: number[]): Promise<GetFeatureListResponse>;
+    getFeatureCache(): Promise<FeatureCacheResponse>;
     getFeatureById(query: { id: number }): Promise<GetFeatureResponse | null>;
     createFeature(data: CreateFeatureRequest): Promise<CreateResponse>;
     updateFeature(query: { id: number }, data: UpdateFeatureRequest): Promise<UpdateResponse>;
@@ -46,6 +48,7 @@ export interface FeatureSystemService {
     getFeatureProgressionById(progressionId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression | null>;
     cloneClassFeatures(sourceClassId: number, targetClassId: number, forkProgressions?: boolean): Promise<void>;
     forkProgressionForClass(progressionId: number, classId: number): Promise<number>;
-    syncClassFeatureProgressions(classId: number, progressionIds: number[], tx: Prisma.TransactionClient): Promise<void>;
-    syncRaceFeatureProgressions(raceId: number, progressionIds: number[], tx: Prisma.TransactionClient): Promise<void>;
+    syncClassFeatureProgressions(classId: number, progressionIds: number[], tx: Prisma.TransactionClient): Promise<number[]>;
+    syncRaceFeatureProgressions(raceId: number, progressionIds: number[], tx: Prisma.TransactionClient): Promise<number[]>;
+    cleanupOrphanedProgressions(orphanedProgressionIds: number[]): Promise<void>;
 } 

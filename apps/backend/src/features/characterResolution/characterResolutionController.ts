@@ -2,19 +2,75 @@ import { Response, NextFunction } from 'express';
 
 import type { ValidatedParamsT, ValidatedParamsBodyT } from '@/util/validated-types';
 import type { CharacterWithAllDetailsResponse, FeatInQueryResponse, ClassSpellSelection, FeatureProgression } from '@shared/schema';
+import { EntityAppliesToType } from '@shared/static-data';
+
+import { applyUpdateToState as genericApplyUpdateToState } from '../shared/session/GenericUpdateApplier';
 
 import { AvailableFeatService } from './availableFeatService';
 import { buildCharacterEditState } from './characterEditStateBuilder';
+import { characterUpdateApplierConfig } from './characterUpdateApplierConfig';
 import { CharacterResolutionService } from './characterResolutionService';
 import type { ResolvedCharacterResult } from './characterSessionService';
 import { CharacterSessionService } from './characterSessionService';
 import { ResolvedFeatureService } from './resolvedFeatureService';
+import { GestaltMechanicsResolver } from './gestaltMechanicsResolver';
 import type { CharacterUpdate, UserChoices, CharacterEditState } from './types';
 import { characterService } from '../character/characterService';
 import { classService } from '../class/classService';
 import { featService } from '../feat/featService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 import { raceService } from '../race/raceService';
+
+/**
+ * Filters out entities with invalid appliesTo values from progressions.
+ * This prevents validation errors when returning data to the frontend.
+ * 
+ * Logs warnings for each filtered entity to help identify database records that need fixing.
+ * 
+ * @param progressions - Array of feature progressions to filter
+ * @returns Filtered progressions with only valid entities
+ */
+function filterInvalidAppliesToEntities(progressions: FeatureProgression[]): FeatureProgression[] {
+    const validAppliesToValues = new Set(Object.values(EntityAppliesToType));
+    return progressions.map(progression => {
+        if (!progression.entities || progression.entities.length === 0) {
+            return progression;
+        }
+
+        const validEntities: typeof progression.entities = [];
+        const invalidEntities: typeof progression.entities = [];
+
+        for (const entity of progression.entities) {
+            if (validAppliesToValues.has(entity.appliesTo)) {
+                validEntities.push(entity);
+            } else {
+                invalidEntities.push(entity);
+            }
+        }
+
+        // Log warnings for invalid entities
+        if (invalidEntities.length > 0) {
+            for (const entity of invalidEntities) {
+                console.warn(
+                    `[Character Resolution] Filtered entity with invalid appliesTo value:`,
+                    {
+                        progressionId: progression.id,
+                        entityId: entity.id,
+                        invalidAppliesTo: entity.appliesTo,
+                        entityType: entity.type,
+                        appliesToId: entity.appliesToId,
+                        validAppliesToValues: Array.from(validAppliesToValues).sort((a, b) => a - b)
+                    }
+                );
+            }
+        }
+
+        return {
+            ...progression,
+            entities: validEntities
+        };
+    });
+}
 
 /**
  * Calculate spell selection data for all spellcasting classes in a character.
@@ -306,6 +362,25 @@ export async function InitializeSession(
             });
         }
 
+        // Filter out entities with invalid appliesTo values before storing in session
+        enrichedProgressions = filterInvalidAppliesToEntities(enrichedProgressions);
+
+        // Resolve formula values for BAB and saves
+        let resolvedFormulaValues = ResolvedFeatureService.resolveFormulaValues(
+            enrichedProgressions,
+            character,
+            targetLevel as number
+        );
+
+        // Apply gestalt mechanics resolution (deferred until after full resolution)
+        if (character.isGestalt || character.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)) {
+            resolvedFormulaValues = GestaltMechanicsResolver.resolveGestaltMechanics(
+                character,
+                enrichedProgressions,
+                resolvedFormulaValues
+            );
+        }
+
         // Build ResolvedCharacterResult for session
         const resolvedCharacterResult: ResolvedCharacterResult = {
             resolvedProgressions: enrichedProgressions,
@@ -317,6 +392,7 @@ export async function InitializeSession(
             availableFighterBonusFeats,
             qualifiedFeats,
             ...(Object.keys(spellSelection).length > 0 && { spellSelection }),
+            ...(Object.keys(resolvedFormulaValues).length > 0 && { resolvedFormulaValues }),
             effectiveClassDetails: resolutionResult.effectiveClassDetails ?? null,
             warnings: resolutionResult.warnings,
             errors: resolutionResult.errors,
@@ -341,7 +417,14 @@ export async function InitializeSession(
         res.json(result);
     } catch (error) {
         console.error('Error initializing resolution session:', error);
-        res.status(500).json({ error: 'Failed to initialize resolution session' });
+        if (error instanceof Error) {
+            console.error('Error stack:', error.stack);
+            console.error('Error message:', error.message);
+        }
+        res.status(500).json({
+            error: 'Failed to initialize resolution session',
+            details: error instanceof Error ? error.message : String(error)
+        });
     }
 }
 
@@ -380,7 +463,7 @@ export async function ResumeSession(
 
     try {
         const sessionService = new CharacterSessionService();
-        const session = sessionService.getSession(characterId, userId);
+        const session = await sessionService.getSession(characterId, userId);
 
         // Get character to check current level
         const character = await characterService.getCharacterWithAllDetails({ id: characterId });
@@ -394,14 +477,18 @@ export async function ResumeSession(
         // If session exists, check if it needs to be re-resolved
         // Re-resolve if cached progressions include levels above the character's current level
         if (session) {
-            const maxCachedLevel = Math.max(...session.resolvedResult.resolvedProgressions.map(p => p.level), 0);
+            const progressionLevels = session.resolvedResult.resolvedProgressions?.map(p => p.level) || [];
+            const maxCachedLevel = progressionLevels.length > 0 ? Math.max(...progressionLevels) : 0;
             const needsReResolution = maxCachedLevel > targetLevel;
 
             if (!needsReResolution) {
+                // Filter cached session data to remove invalid appliesTo values (and log them)
+                const filteredProgressions = filterInvalidAppliesToEntities(session.resolvedResult.resolvedProgressions);
+
                 // Build response from session
-                const classSkills = ResolvedFeatureService.getClassSkills(session.resolvedResult.resolvedProgressions);
-                const skillBonuses = await ResolvedFeatureService.getSkillBonuses(session.resolvedResult.resolvedProgressions);
-                const grantedFeats = ResolvedFeatureService.getGrantedFeats(session.resolvedResult.resolvedProgressions);
+                const classSkills = ResolvedFeatureService.getClassSkills(filteredProgressions);
+                const skillBonuses = await ResolvedFeatureService.getSkillBonuses(filteredProgressions);
+                const grantedFeats = ResolvedFeatureService.getGrantedFeats(filteredProgressions);
 
                 const classLevels = new Map<number, number>();
                 if (character.advancements) {
@@ -416,12 +503,12 @@ export async function ResumeSession(
                 }
 
                 const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
-                    session.resolvedResult.resolvedProgressions,
+                    filteredProgressions,
                     session.characterState.level,
                     classLevels
                 );
                 const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(
-                    session.resolvedResult.resolvedProgressions
+                    filteredProgressions
                 );
 
                 // Calculate qualified feats (list of feats the character qualifies for)
@@ -433,7 +520,7 @@ export async function ResumeSession(
                     : null;
                 const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
                     character,
-                    session.resolvedResult.resolvedProgressions,
+                    filteredProgressions,
                     classDetails,
                     raceDetails,
                     allFeatsResponse.results
@@ -443,19 +530,13 @@ export async function ResumeSession(
                 const spellSelection = await calculateSpellSelection(
                     characterId,
                     character,
-                    session.resolvedResult.resolvedProgressions
+                    filteredProgressions
                 );
 
-                // Filter out invalid pending choices (those with invalid options)
-                const validPendingChoices = session.resolvedResult.pendingChoices
-                    .map(choice => ({
-                        ...choice,
-                        options: choice.options.filter(opt => opt.value > 0)
-                    }))
-                    .filter(choice => choice.options.length > 0); // Remove choices with no valid options
+                const validPendingChoices = session.resolvedResult.pendingChoices;
 
                 // Enrich progressions with filtered class/race info (only for character's classes/race)
-                let enrichedProgressions = session.resolvedResult.resolvedProgressions;
+                let enrichedProgressions = filteredProgressions;
                 const progressionIds = enrichedProgressions.map(p => p.id);
                 if (progressionIds.length > 0) {
                     const character = await characterService.getCharacterWithAllDetails({ id: characterId });
@@ -507,6 +588,9 @@ export async function ResumeSession(
                     }
                 }
 
+                // Final pass: filter out entities with invalid appliesTo values from all progressions
+                enrichedProgressions = filterInvalidAppliesToEntities(enrichedProgressions);
+
                 const result: ResolvedCharacterResult = {
                     resolvedProgressions: enrichedProgressions,
                     pendingChoices: validPendingChoices,
@@ -517,6 +601,9 @@ export async function ResumeSession(
                     availableFighterBonusFeats,
                     qualifiedFeats,
                     ...(Object.keys(spellSelection).length > 0 && { spellSelection }),
+                    ...(session.resolvedResult.resolvedFormulaValues && Object.keys(session.resolvedResult.resolvedFormulaValues).length > 0
+                        ? { resolvedFormulaValues: session.resolvedResult.resolvedFormulaValues }
+                        : {}),
                     effectiveClassDetails: session.resolvedResult.effectiveClassDetails ?? null,
                     warnings: session.resolvedResult.warnings,
                     errors: session.resolvedResult.errors,
@@ -674,13 +761,7 @@ export async function ResumeSession(
             !!secondaryClassDetails
         );
 
-        // Filter out invalid pending choices (those with invalid options)
-        const validPendingChoices = resolutionResult.pendingChoices
-            .map(choice => ({
-                ...choice,
-                options: choice.options.filter(opt => opt.value > 0)
-            }))
-            .filter(choice => choice.options.length > 0); // Remove choices with no valid options
+        const validPendingChoices = resolutionResult.pendingChoices;
 
         // Enrich progressions with filtered class/race info (only for character's classes/race)
         let enrichedProgressions = resolutionResult.resolvedProgressions;
@@ -725,6 +806,25 @@ export async function ResumeSession(
             });
         }
 
+        // Filter out entities with invalid appliesTo values
+        enrichedProgressions = filterInvalidAppliesToEntities(enrichedProgressions);
+
+        // Resolve formula values for BAB and saves
+        let resolvedFormulaValues = ResolvedFeatureService.resolveFormulaValues(
+            enrichedProgressions,
+            character,
+            targetLevel as number
+        );
+
+        // Apply gestalt mechanics resolution (deferred until after full resolution)
+        if (character.isGestalt || character.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)) {
+            resolvedFormulaValues = GestaltMechanicsResolver.resolveGestaltMechanics(
+                character,
+                enrichedProgressions,
+                resolvedFormulaValues
+            );
+        }
+
         // Build ResolvedCharacterResult for session
         const resolvedCharacterResult: ResolvedCharacterResult = {
             resolvedProgressions: enrichedProgressions,
@@ -736,6 +836,7 @@ export async function ResumeSession(
             availableFighterBonusFeats,
             qualifiedFeats,
             ...(Object.keys(spellSelection).length > 0 && { spellSelection }),
+            ...(Object.keys(resolvedFormulaValues).length > 0 && { resolvedFormulaValues }),
             effectiveClassDetails: resolutionResult.effectiveClassDetails ?? null,
             warnings: resolutionResult.warnings,
             errors: resolutionResult.errors,
@@ -759,7 +860,14 @@ export async function ResumeSession(
         res.json(result);
     } catch (error) {
         console.error('Error resuming resolution session:', error);
-        res.status(500).json({ error: 'Failed to resume resolution session' });
+        if (error instanceof Error) {
+            console.error('Error stack:', error.stack);
+            console.error('Error message:', error.message);
+        }
+        res.status(500).json({
+            error: 'Failed to resume resolution session',
+            details: error instanceof Error ? error.message : String(error)
+        });
     }
 }
 
@@ -787,15 +895,15 @@ export async function ApplyUpdate(
 
     try {
         const sessionService = new CharacterSessionService();
-        const session = sessionService.getSessionById(sessionId);
+        const session = await sessionService.getSessionById(sessionId);
 
         if (!session || session.characterId !== characterId || session.userId !== userId) {
             res.status(404).json({ error: 'Session not found' });
             return;
         }
 
-        // Apply update to character state
-        const updatedState = applyUpdateToState(session.characterState, req.body.update);
+        // Apply update to character state using generic update applier
+        const updatedState = genericApplyUpdateToState(session.characterState, req.body.update, characterUpdateApplierConfig);
 
         // Re-resolve features with updated state
         const character = await characterService.getCharacterWithAllDetails({ id: characterId });
@@ -884,13 +992,7 @@ export async function ApplyUpdate(
             resolutionResult.resolvedProgressions
         );
 
-        // Filter out invalid pending choices (those with invalid options)
-        const validPendingChoices = resolutionResult.pendingChoices
-            .map(choice => ({
-                ...choice,
-                options: choice.options.filter(opt => opt.value > 0)
-            }))
-            .filter(choice => choice.options.length > 0); // Remove choices with no valid options
+        const validPendingChoices = resolutionResult.pendingChoices;
 
         // Enrich progressions with filtered class/race info (only for character's classes/race)
         let enrichedProgressions = resolutionResult.resolvedProgressions;
@@ -935,6 +1037,25 @@ export async function ApplyUpdate(
             });
         }
 
+        // Filter out entities with invalid appliesTo values
+        enrichedProgressions = filterInvalidAppliesToEntities(enrichedProgressions);
+
+        // Resolve formula values for BAB and saves
+        let resolvedFormulaValues = ResolvedFeatureService.resolveFormulaValues(
+            enrichedProgressions,
+            character,
+            updatedState.level
+        );
+
+        // Apply gestalt mechanics resolution (deferred until after full resolution)
+        if (character.isGestalt || character.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)) {
+            resolvedFormulaValues = GestaltMechanicsResolver.resolveGestaltMechanics(
+                character,
+                enrichedProgressions,
+                resolvedFormulaValues
+            );
+        }
+
         const resolvedCharacterResult: ResolvedCharacterResult = {
             resolvedProgressions: enrichedProgressions,
             pendingChoices: validPendingChoices,
@@ -945,6 +1066,7 @@ export async function ApplyUpdate(
             availableFighterBonusFeats,
             qualifiedFeats,
             ...(Object.keys(spellSelection).length > 0 && { spellSelection }),
+            ...(Object.keys(resolvedFormulaValues).length > 0 && { resolvedFormulaValues }),
             effectiveClassDetails: resolutionResult.effectiveClassDetails ?? null,
             warnings: resolutionResult.warnings,
             errors: resolutionResult.errors,
@@ -988,17 +1110,20 @@ export async function GetCurrentState(
 
     try {
         const sessionService = new CharacterSessionService();
-        const session = sessionService.getSessionById(sessionId);
+        const session = await sessionService.getSessionById(sessionId);
 
         if (!session || session.characterId !== characterId || session.userId !== userId) {
             res.status(404).json({ error: 'Session not found' });
             return;
         }
 
+        // Filter cached session data to remove invalid appliesTo values (and log them)
+        const filteredProgressions = filterInvalidAppliesToEntities(session.resolvedResult.resolvedProgressions);
+
         // Build response from session (same as ResumeSession)
-        const classSkills = ResolvedFeatureService.getClassSkills(session.resolvedResult.resolvedProgressions);
-        const skillBonuses = await ResolvedFeatureService.getSkillBonuses(session.resolvedResult.resolvedProgressions);
-        const grantedFeats = ResolvedFeatureService.getGrantedFeats(session.resolvedResult.resolvedProgressions);
+        const classSkills = ResolvedFeatureService.getClassSkills(filteredProgressions);
+        const skillBonuses = await ResolvedFeatureService.getSkillBonuses(filteredProgressions);
+        const grantedFeats = ResolvedFeatureService.getGrantedFeats(filteredProgressions);
 
         const character = await characterService.getCharacterWithAllDetails({ id: characterId });
         if (!character) {
@@ -1019,12 +1144,12 @@ export async function GetCurrentState(
         }
 
         const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
-            session.resolvedResult.resolvedProgressions,
+            filteredProgressions,
             session.characterState.level,
             classLevels
         );
         const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(
-            session.resolvedResult.resolvedProgressions
+            filteredProgressions
         );
 
         // Calculate qualified feats (list of feats the character qualifies for)
@@ -1036,22 +1161,17 @@ export async function GetCurrentState(
             : null;
         const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
             character,
-            session.resolvedResult.resolvedProgressions,
+            filteredProgressions,
             classDetails,
             raceDetails,
             allFeatsResponse.results
         );
 
         // Filter out invalid pending choices (those with invalid options)
-        const validPendingChoices = session.resolvedResult.pendingChoices
-            .map(choice => ({
-                ...choice,
-                options: choice.options.filter(opt => opt.value > 0)
-            }))
-            .filter(choice => choice.options.length > 0); // Remove choices with no valid options
+        const validPendingChoices = session.resolvedResult.pendingChoices;
 
         const result: ResolvedCharacterResult = {
-            resolvedProgressions: session.resolvedResult.resolvedProgressions,
+            resolvedProgressions: filteredProgressions,
             pendingChoices: validPendingChoices,
             classSkills,
             skillBonuses,
@@ -1059,6 +1179,9 @@ export async function GetCurrentState(
             availableFeatsCount,
             availableFighterBonusFeats,
             qualifiedFeats,
+            ...(session.resolvedResult.resolvedFormulaValues && Object.keys(session.resolvedResult.resolvedFormulaValues).length > 0
+                ? { resolvedFormulaValues: session.resolvedResult.resolvedFormulaValues }
+                : {}),
             effectiveClassDetails: session.resolvedResult.effectiveClassDetails ?? null,
             warnings: session.resolvedResult.warnings,
             errors: session.resolvedResult.errors,
@@ -1096,7 +1219,7 @@ export async function SaveSession(
 
     try {
         const sessionService = new CharacterSessionService();
-        const session = sessionService.getSessionById(sessionId);
+        const session = await sessionService.getSessionById(sessionId);
 
         if (!session || session.characterId !== characterId || session.userId !== userId) {
             res.status(404).json({ error: 'Session not found' });
@@ -1148,7 +1271,7 @@ export async function CancelSession(
 
     try {
         const sessionService = new CharacterSessionService();
-        const session = sessionService.getSessionById(sessionId);
+        const session = await sessionService.getSessionById(sessionId);
 
         if (!session || session.characterId !== characterId || session.userId !== userId) {
             res.status(404).json({ error: 'Session not found' });
@@ -1165,108 +1288,21 @@ export async function CancelSession(
 }
 
 /**
- * Apply an update to character state
+ * Apply an update to character state.
+ * 
+ * **Implementation Note**: This function delegates to the generic update applier
+ * with Character-specific configuration. All update logic is handled by the generic
+ * applier using the strategy functions in `characterUpdateApplierConfig`.
+ * 
+ * @param state - Current character edit state
+ * @param update - Update operation to apply
+ * @returns Updated character edit state
+ * 
+ * @see GenericUpdateApplier - Generic implementation
+ * @see characterUpdateApplierConfig - Character-specific update strategies
  */
 function applyUpdateToState(state: CharacterEditState, update: CharacterUpdate): CharacterEditState {
-    const newState = { ...state };
-
-    switch (update.type) {
-        case 'SET_ABILITY_SCORE': {
-            const abilityIndex = newState.abilityScores.findIndex(as => as.abilityId === update.payload.abilityId);
-            if (abilityIndex >= 0) {
-                newState.abilityScores[abilityIndex] = { ...newState.abilityScores[abilityIndex], value: update.payload.value };
-            } else {
-                newState.abilityScores.push({ abilityId: update.payload.abilityId, value: update.payload.value });
-            }
-            break;
-        }
-        case 'SET_SKILL_RANK': {
-            const skillIndex = newState.skillRanks.findIndex(sr =>
-                sr.skillId === update.payload.skillId &&
-                sr.skillSubId === update.payload.skillSubId &&
-                sr.customSubtype === update.payload.customSubtype
-            );
-            if (update.payload.pointsSpent === 0) {
-                // Remove skill rank entry if pointsSpent is 0
-                if (skillIndex >= 0) {
-                    newState.skillRanks.splice(skillIndex, 1);
-                }
-            } else if (skillIndex >= 0) {
-                // Update existing skill rank
-                newState.skillRanks[skillIndex] = { ...newState.skillRanks[skillIndex], pointsSpent: update.payload.pointsSpent };
-            } else {
-                // Add new skill rank
-                newState.skillRanks.push({
-                    skillId: update.payload.skillId,
-                    skillSubId: update.payload.skillSubId,
-                    customSubtype: update.payload.customSubtype,
-                    pointsSpent: update.payload.pointsSpent
-                });
-            }
-            break;
-        }
-        case 'SET_RACE':
-            newState.raceId = update.payload.raceId;
-            break;
-        case 'SET_CLASS':
-            newState.classId = update.payload.classId;
-            break;
-        case 'SET_SECONDARY_CLASS':
-            newState.secondaryClassId = update.payload.secondaryClassId;
-            newState.isGestalt = update.payload.secondaryClassId !== null;
-            break;
-        case 'SET_LEVEL':
-            newState.level = update.payload.level;
-            break;
-        case 'MAKE_CHOICE': {
-            // Add or update feature choice
-            const choiceIndex = newState.featureChoices.findIndex(fc =>
-                fc.progressionId === update.payload.progressionId &&
-                fc.featureEntityId === update.payload.featureEntityId
-            );
-            if (choiceIndex >= 0) {
-                newState.featureChoices[choiceIndex] = {
-                    ...newState.featureChoices[choiceIndex],
-                    appliesToId: update.payload.appliesToId,
-                    appliesToSubId: update.payload.appliesToSubId
-                };
-            } else {
-                newState.featureChoices.push({
-                    id: 0, // Will be assigned by database
-                    characterId: newState.characterId,
-                    progressionId: update.payload.progressionId,
-                    advancementId: 0, // Will be assigned by database
-                    featureEntityId: update.payload.featureEntityId,
-                    appliesToId: update.payload.appliesToId,
-                    appliesToSubId: update.payload.appliesToSubId,
-                    choiceIndex: null
-                });
-            }
-            break;
-        }
-        case 'SET_FEAT':
-            if (!newState.selectedFeats.includes(update.payload.featId)) {
-                newState.selectedFeats.push(update.payload.featId);
-            }
-            break;
-        case 'REMOVE_FEAT':
-            newState.selectedFeats = newState.selectedFeats.filter(id => id !== update.payload.featId);
-            break;
-        case 'SET_DISALLOWED_SOURCE':
-            if (!newState.disallowedSources.some(ds => ds.sourceBookId === update.payload.sourceBookId)) {
-                newState.disallowedSources.push({
-                    sourceBookId: update.payload.sourceBookId
-                });
-            }
-            break;
-        case 'REMOVE_DISALLOWED_SOURCE':
-            newState.disallowedSources = newState.disallowedSources.filter(
-                ds => ds.sourceBookId !== update.payload.sourceBookId
-            );
-            break;
-    }
-
-    return newState;
+    return genericApplyUpdateToState(state, update, characterUpdateApplierConfig);
 }
 
 /**

@@ -23,6 +23,7 @@ import {
     GetFeatureProgressionsByFeatId,
     GetFeatureProgressionsByEditionId,
     GetFeatureList,
+    GetFeatureCache,
     CloneClassFeatures,
     ForkProgressionForClass,
 } from './featureSystemController.js';
@@ -31,6 +32,7 @@ import { requireAdmin } from '../../middleware/authMiddleware.js';
 const { router: FeatureSystemRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Core Feature Routes
+get('/cache', {}, GetFeatureCache);
 get('/:id', { params: FeatureIdParamSchema }, GetFeatureById);
 post('/query', { body: FeatureQuerySchema }, GetAllFeatures);
 post('/list', { body: FeatureQuerySchema }, GetFeatureList);

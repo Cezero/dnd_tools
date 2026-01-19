@@ -4,11 +4,12 @@ import { CustomCheckbox } from '@/components/forms';
 import { SpellProgressionEditor } from '@/components/spell-progression';
 import type { CreateSpellcastingProgressionRequest } from '@shared/schema';
 
+import { ClassEditStateUpdateType } from '../types';
 import type { ClassTabProps } from './types';
 
 export function SpellcastingTab({
-    formData,
-    setFormData,
+    state,
+    updateState,
     validation: _validation,
     isLoading: _isLoading = false,
     spellcastingProgression = [],
@@ -32,8 +33,8 @@ export function SpellcastingTab({
                 <div className="max-w-md">
                     <CustomCheckbox
                         label="Has Spells Known"
-                        checked={formData.spellsKnown || false}
-                        onCheckedChange={(checked) => setFormData({ ...formData, spellsKnown: checked })}
+                        checked={state.spellsKnown}
+                        onCheckedChange={(checked) => updateState({ type: ClassEditStateUpdateType.SET_SPELLS_KNOWN, payload: { spellsKnown: checked } })}
                     />
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Check if this class has a limited number of spells known (like Bards or Sorcerers)
@@ -44,7 +45,7 @@ export function SpellcastingTab({
             {/* Spell Progression */}
             <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Spell Progression</h3>
-                {formData.canCastSpells ? (
+                {state.canCastSpells ? (
                     <>
                         {/* How to Use Info Box */}
                         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -91,7 +92,7 @@ export function SpellcastingTab({
                             </div>
 
                             {/* Spells Known Progression */}
-                            {formData.spellsKnown && (
+                            {state.spellsKnown && (
                                 <div>
                                     <h4 className="text-md font-medium mb-3">Spells Known by Level</h4>
                                     <SpellProgressionEditor

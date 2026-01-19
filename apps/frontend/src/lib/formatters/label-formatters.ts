@@ -1,8 +1,8 @@
 import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
-import { ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, SPELL_SCHOOL_MAP, AttackBonusAppliesTo, ATTACK_BONUS_APPLIES_TO_TYPES } from '@shared/static-data';
+import { getSkillNameFromCache } from '@/services/cache';
+import { ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, SPELL_SCHOOL_MAP, ATTACK_BONUS_APPLIES_TO_TYPES } from '@shared/static-data';
 
 import type { CalculatedEntity } from './types';
-import { getSkillNameFromCache } from './utils/cache-helpers';
 
 // Helper function to get skill name including subtypes
 function getSkillNameWithSubtype(skillId: number, skillSubId?: number | null, customSubtype?: string | null): string {

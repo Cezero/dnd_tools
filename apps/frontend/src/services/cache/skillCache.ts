@@ -60,8 +60,15 @@ export const getSkillIdByName = (name: string): number | undefined => {
 
 /**
  * Get skill name from cache (standalone)
+ * 
+ * @param id - Skill ID (can be null or undefined)
+ * @returns Skill name or null if not found
  */
-export const getSkillNameFromCache = (id: number): string | undefined => {
+export const getSkillNameFromCache = (id: number | null | undefined): string | null => {
+    if (!id) {
+        return null;
+    }
+
     const queryClient = getStandaloneQueryClient();
     const cacheData = queryClient.getQueryData<SkillCacheResponse>(['skills-cache']);
     if (!cacheData?.results) return undefined;
