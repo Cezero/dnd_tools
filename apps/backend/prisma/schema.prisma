@@ -24,29 +24,23 @@ model Class {
   isDivine      Boolean @default(false)
   description   String? @db.Text
 
-  sharedFeatureProgressions FeatureProgressionClassMap[] // NEW: Many-to-many relationship for reusable progressions
+  sharedFeatures FeatureClassMap[] // Many-to-many relationship for reusable features
   sourceBookInfo            ClassSourceMap[]
   spellLevels               SpellLevelMap[]
   charAdvancements          CharacterAdvancement[]
   charAdvSecondary          CharacterAdvancement[]       @relation("SecondaryClass")
   charSpellPrep             CharacterSpellPreparation[]
-  spellcastingProgression   SpellcastingProgression[]
-  classSpellsKnown          SpellcastingProgression[]    @relation("classSpellsKnown")
   deityClasses              DeityClassMap[]
 }
 
 model SpellcastingProgression {
   id                 Int  @id @default(autoincrement())
-  classId            Int? // KEEP: For backward compatibility during migration, make nullable
   classLevel         Int
-  classSpellsKnownId Int? // KEEP: For backward compatibility during migration
 
-  // NEW: Link via FeatureProgression
-  featureProgressionId Int? @unique // NEW: Links to FeatureProgression that grants this casting
-  spellcastingType     Int? // NEW: Enum: SpellsPerDay (1), SpellsKnown (2)
+  // Link via Feature
+  featureId      Int? @unique // Links to Feature that grants this casting
+  spellcastingType Int? // Enum: SpellsPerDay (1), SpellsKnown (2)
 
-  class            Class?             @relation(fields: [classId], references: [id]) // KEEP: Backward compat
-  classSpellsKnown Class?             @relation("classSpellsKnown", fields: [classSpellsKnownId], references: [id]) // KEEP: Backward compat
   slots            SpellcastingSlot[]
   spellcastingLink SpellcastingLink[]
 }
@@ -61,13 +55,13 @@ model SpellcastingSlot {
 }
 
 model SpellcastingLink {
-  id                   Int     @id @default(autoincrement())
-  featureProgressionId Int     @unique
-  progressionId        Int
-  inheritedFrom        String?
-  levelOffset          Int?
+  id            Int     @id @default(autoincrement())
+  featureId     Int     @unique
+  progressionId Int
+  inheritedFrom String?
+  levelOffset   Int?
 
-  feature     FeatureProgression      @relation(fields: [featureProgressionId], references: [id])
+  feature     Feature                @relation(fields: [featureId], references: [id])
   progression SpellcastingProgression @relation(fields: [progressionId], references: [id])
 }
 
@@ -105,71 +99,67 @@ model Feature {
   description             String  @db.Text
   summary                 String? @db.Text // Can contain template placeholders {{placeholder}}
   displayInCharacterSheet Boolean @default(true)
-
-  progressions        FeatureProgression[]
-  prerequisites       FeaturePrerequisite[]
-  transformationForms TransformationFormEligibility[]
-}
-
-model FeatureProgression {
-  id          Int  @id @default(autoincrement())
+  
+  // Fields from FeatureProgression (merged)
   sourceType  Int
   level       Int
-  featureId   Int
   domainId    Int? // Reference to domain for domain-granted features
   featId      Int? // Reference to Feat (same pattern as domainId)
   companionId Int? // Reference to Companion for companion-granted features
   editionId   Int? // Reference to edition for edition-granted features
 
+  // Relationships from FeatureProgression
   domain    Domain?    @relation(fields: [domainId], references: [id]) // Domain relationship
   feat      Feat?      @relation(fields: [featId], references: [id]) // Feat relationship
   companion Companion? @relation(fields: [companionId], references: [id]) // Companion relationship
 
-  // Many-to-many relationship for reusable progressions
-  classes FeatureProgressionClassMap[]
-  races   FeatureProgressionRaceMap[] // Many-to-many relationship for reusable race progressions
+  // Many-to-many relationship for reusable features
+  classes FeatureClassMap[]
+  races   FeatureRaceMap[]
 
-  feature                Feature                       @relation(fields: [featureId], references: [id])
-  spellcasting           SpellcastingLink?
+  // Relationships
+  prerequisites       FeaturePrerequisite[]
+  transformationForms TransformationFormEligibility[]
+  spellcasting        SpellcastingLink?
   characterFeatureChoice CharacterFeatureChoice[]
-  entities               FeatureEntity[]
-  displayConditions      FeatureProgressionCondition[]
-  characterFeatureUses   CharacterFeatureUses[]
+  entities            FeatureEntity[]
+  displayConditions   FeatureCondition[]
+  characterFeatureUses CharacterFeatureUses[]
 
   @@index([featId])
   @@index([companionId])
   @@index([editionId])
 }
 
-// NEW: Junction table for many-to-many class-progression relationship
-model FeatureProgressionClassMap {
-  progressionId Int
-  classId       Int
+// Junction table for many-to-many class-feature relationship
+model FeatureClassMap {
+  featureId Int
+  classId   Int
 
-  progression FeatureProgression @relation(fields: [progressionId], references: [id], onDelete: Cascade)
-  class       Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
 
-  @@id([progressionId, classId])
+  @@id([featureId, classId])
   @@index([classId])
-  @@index([progressionId])
+  @@index([featureId])
 }
 
-// NEW: Junction table for many-to-many race-progression relationship
-model FeatureProgressionRaceMap {
-  progressionId Int
-  raceId        Int
+// Junction table for many-to-many race-feature relationship
+model FeatureRaceMap {
+  featureId Int
+  raceId    Int
 
-  progression FeatureProgression @relation(fields: [progressionId], references: [id], onDelete: Cascade)
-  race        Race               @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  race    Race    @relation(fields: [raceId], references: [id], onDelete: Cascade)
 
-  @@id([progressionId, raceId])
+  @@id([featureId, raceId])
   @@index([raceId])
-  @@index([progressionId])
+  @@index([featureId])
 }
 
 model FeatureEntity {
   id              Int     @id @default(autoincrement())
-  progressionId   Int
+  featureId       Int
   appliesTo       Int
   appliesToId     Int?
   appliesToSubId  Int?
@@ -181,7 +171,7 @@ model FeatureEntity {
   displayInDetail Boolean @default(true)
   filterType      Int?
 
-  featureProgression     FeatureProgression       @relation(fields: [progressionId], references: [id])
+  feature                Feature                  @relation(fields: [featureId], references: [id])
   conditions             FeatureEntityCondition[]
   formulaParams          FeatureFormulaParams?    @relation(fields: [formulaParamsId], references: [id])
   characterFeatureChoice CharacterFeatureChoice[]
@@ -197,6 +187,7 @@ model FeatureFormulaParams {
   thresholds              String?
   values                  String?
   includeProgressionLevel Boolean @default(true)
+  featureLevelZero        Boolean @default(false)
 
   // Enhanced parameters for complex scaling
   valuesRepresent Int? // ConditionalScalingValueType enum
@@ -205,6 +196,9 @@ model FeatureFormulaParams {
   // Division-based formula parameters (for LEVEL_DIVIDED_BY and LEVEL_DIVIDED_BY_PLUS_BASE)
   divisor   Int? // Divisor value for floor(level / divisor) formulas
   baseValue Int? // Base value to add for floor(level / divisor) + baseValue formulas
+
+  // Starting value for formulas that need a different starting value than the increment (e.g., EVERY_N_LEVELS)
+  startingValue Int? // Starting value (defaults to entity.value if null)
 
   featureEntity FeatureEntity[]
 }
@@ -228,15 +222,15 @@ model FeaturePrerequisite {
   feature Feature @relation(fields: [featureId], references: [id])
 }
 
-model FeatureProgressionCondition {
-  id             Int @id @default(autoincrement())
-  progressionId  Int
-  conditionType  Int // Reuses FeatureEntityConditionType enum
+model FeatureCondition {
+  id            Int @id @default(autoincrement())
+  featureId     Int
+  conditionType Int // Reuses FeatureEntityConditionType enum
   conditionValue Int
 
-  progression FeatureProgression @relation(fields: [progressionId], references: [id])
+  feature Feature @relation(fields: [featureId], references: [id])
 
-  @@index([progressionId])
+  @@index([featureId])
 }
 
 // =================
@@ -394,7 +388,7 @@ model Feat {
   advFeat AdvancementFeat[]
 
   monsters                   MonsterFeatMap[]
-  featureProgressions        FeatureProgression[]
+  features                   Feature[]
   characterSpellPreparations CharacterSpellPreparation[]
 }
 
@@ -422,7 +416,7 @@ model Race {
 
   sourceBookInfo            RaceSourceMap[]
   userCharacter             UserCharacter[]
-  sharedFeatureProgressions FeatureProgressionRaceMap[] // NEW: Many-to-many relationship for reusable progressions
+  sharedFeatures            FeatureRaceMap[] // Many-to-many relationship for reusable features
   deityRaces                DeityRaceMap[]
 }
 
@@ -826,7 +820,7 @@ model AdvancementSpell {
 model CharacterFeatureChoice {
   id                  Int     @id @default(autoincrement())
   characterId         Int
-  progressionId       Int
+  featureId           Int
   advancementId       Int
   featureEntityId     Int
   appliesToId         Int
@@ -836,11 +830,11 @@ model CharacterFeatureChoice {
   choiceData          Json?
   linkedChoiceGroupId String?
 
-  featureProgression FeatureProgression   @relation(fields: [progressionId], references: [id])
-  featureEntity      FeatureEntity        @relation(fields: [featureEntityId], references: [id])
-  advancement        CharacterAdvancement @relation(fields: [advancementId], references: [id])
+  feature     Feature                @relation(fields: [featureId], references: [id])
+  featureEntity FeatureEntity        @relation(fields: [featureEntityId], references: [id])
+  advancement CharacterAdvancement @relation(fields: [advancementId], references: [id])
 
-  @@unique([advancementId, progressionId, featureEntityId])
+  @@unique([advancementId, featureId, featureEntityId])
 }
 
 model CharacterSpellPreparation {
@@ -865,17 +859,17 @@ model CharacterSpellPreparation {
 model CharacterFeatureUses {
   id              Int @id @default(autoincrement())
   characterId     Int
-  progressionId   Int
+  featureId       Int
   featureEntityId Int
   currentUses     Int @default(0)
   maxUses         Int
   frequency       Int // USES_FREQUENCY_ENUM (PER_DAY, PER_WEEK, PER_LEVEL, PER_ENCOUNTER)
 
-  character     UserCharacter      @relation(fields: [characterId], references: [id])
-  progression   FeatureProgression @relation(fields: [progressionId], references: [id])
-  featureEntity FeatureEntity      @relation(fields: [featureEntityId], references: [id])
+  character     UserCharacter @relation(fields: [characterId], references: [id])
+  feature       Feature      @relation(fields: [featureId], references: [id])
+  featureEntity FeatureEntity @relation(fields: [featureEntityId], references: [id])
 
-  @@unique([characterId, progressionId, featureEntityId])
+  @@unique([characterId, featureId, featureEntityId])
   @@index([characterId])
 }
 
@@ -966,7 +960,7 @@ model Domain {
 
   domainSpells        DomainSpell[]
   deityDomains        DeityDomain[]
-  featureProgressions FeatureProgression[]
+  features            Feature[]
   sourceBookInfo      DomainSourceMap[]
   monsters            MonsterDomainMap[]
 }
@@ -1370,7 +1364,7 @@ model Companion {
 
   monster             Monster              @relation(fields: [monsterId], references: [id])
   characterCompanions CharacterCompanion[]
-  featureProgressions FeatureProgression[] // Feature progressions for companion benefits
+  features             Feature[] // Features for companion benefits
 
   @@unique([type, monsterId, minLevel])
   @@index([type])

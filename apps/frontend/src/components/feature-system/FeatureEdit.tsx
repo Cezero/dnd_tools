@@ -3,7 +3,7 @@ import React from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
-import { Feature, FeatureProgression } from '@shared/schema';
+import { Feature, FeatureWithRelations } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
 export function FeatureEdit() {
@@ -46,7 +46,7 @@ export function FeatureEdit() {
         }
     };
 
-    const handleSave = async (feature: Feature, progressions: FeatureProgression[]) => {
+    const handleSave = async (feature: Feature, features: FeatureWithRelations[]) => {
         const parentType = location.state?.parentType;
         const parentId = location.state?.parentId;
 

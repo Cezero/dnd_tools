@@ -12,7 +12,7 @@ export function GestaltProgressionDisplay({
     secondaryClass,
     showHeader = true
 }: GestaltProgressionDisplayProps): React.JSX.Element {
-    // Extract mechanics from feature progressions
+    // Extract mechanics from feature features
     // Note: classId may not be available on DnDClass type, so we extract without it
     const primaryMechanics = useMemo(() => {
         if (primaryClass.features) {
@@ -44,29 +44,19 @@ export function GestaltProgressionDisplay({
         };
     }, [secondaryClass]);
 
-    // Create gestalt progression by choosing the better progression type for each stat
+    // Create gestalt feature by combining both classes' feature features
+    // The feature generator will calculate the better BAB/saves at each level
+    const primaryClassId = (primaryClass as { id?: number }).id;
+    const secondaryClassId = (secondaryClass as { id?: number }).id;
+    const combinedProgressions = [
+        ...(primaryClass.features || []),
+        ...(secondaryClass.features || [])
+    ];
+
     const gestaltProgression = generateClassProgression({
-        // Use better BAB progression (good=0 > average=1 > poor=2)
-        babProgression: Math.min(
-            primaryMechanics.babProgression ?? 2,
-            secondaryMechanics.babProgression ?? 2
-        ) as ProgressionType,
-        // Use better save progressions (good=0 > poor=2)
-        fortProgression: Math.min(
-            primaryMechanics.fortProgression ?? 2,
-            secondaryMechanics.fortProgression ?? 2
-        ) as ProgressionType,
-        refProgression: Math.min(
-            primaryMechanics.refProgression ?? 2,
-            secondaryMechanics.refProgression ?? 2
-        ) as ProgressionType,
-        willProgression: Math.min(
-            primaryMechanics.willProgression ?? 2,
-            secondaryMechanics.willProgression ?? 2
-        ) as ProgressionType,
-        // For spellcasting, gestalt characters get both progressions
-        // This will need to be handled differently - we can't just pass one progression
-        // For now, we'll show the primary class progression and note that both are available
+        features: combinedProgressions,
+        // For gestalt, we calculate BAB/saves from both classes and take the better
+        // This is handled in the feature generator by finding the best value at each level
         spellcastingProgression: primaryClass.spellcastingProgression,
         spellsKnownProgression: primaryClass.spellsKnownProgression,
     });
@@ -76,18 +66,18 @@ export function GestaltProgressionDisplay({
             {showHeader && (
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
                     <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">
-                        Gestalt Progression: {primaryClass.name} + {secondaryClass.name}
+                        Gestalt Feature: {primaryClass.name} + {secondaryClass.name}
                     </h3>
                     <p className="text-sm text-blue-600 dark:text-blue-400">
-                        This progression combines both classes, using the better BAB and saving throw progressions.
+                        This feature combines both classes, using the better BAB and saving throw features.
                     </p>
                 </div>
             )}
 
             <div className="mt-4">
-                <h4 className="text-md font-semibold mb-2">Combined Class Progression</h4>
+                <h4 className="text-md font-semibold mb-2">Combined Class Feature</h4>
                 <ClassProgressionTable
-                    progression={gestaltProgression}
+                    feature={gestaltProgression}
                     className="mt-2"
                 />
 
@@ -99,7 +89,7 @@ export function GestaltProgressionDisplay({
                         </h5>
                         <p className="text-xs text-purple-600 dark:text-purple-400">
                             <strong>Note:</strong> Gestalt characters with spellcasting classes get spells from both classes.
-                            The progression table above shows {primaryClass.name} spells.
+                            The feature table above shows {primaryClass.name} spells.
                             {secondaryClass.spellcastingProgression.length > 0 && ` You also gain ${secondaryClass.name} spells.`}
                         </p>
                     </div>

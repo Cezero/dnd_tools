@@ -3,43 +3,44 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ResolutionApi, ResolutionHookResult } from './types';
 
 /**
- * Generic React hook for managing entity editing sessions.
+ * Generic React hook for managing entity editing.
  * 
- * Handles session lifecycle: initialize, resume, update, save, cancel.
- * Provides a consistent interface for all entity types (Character, Class, Race).
+ * Handles editing lifecycle: start editing, update, save, cancel.
+ * Provides a consistent interface for all entity types (Feature, Class, Race).
  * 
  * **Generic Type Parameters**:
  * - `TEntityId`: The type of the entity ID
- * - `TState`: The type of the session state
+ * - `TState`: The type of the entity state
  * - `TUpdate`: The type of update operations
  * 
- * **Session Lifecycle**:
- * 1. **Initialization**: Automatically initializes or resumes session on mount
- * 2. **Updates**: Applies updates to session state via `applyUpdate()`
- * 3. **Persistence**: Saves session to database via `saveSession()`
- * 4. **Cleanup**: Cancels session on unmount if not saved
+ * **Editing Lifecycle**:
+ * 1. **Start Editing**: Automatically starts editing on mount (acquires lock, adds to user session)
+ * 2. **Updates**: Applies updates to entity state via `applyUpdate()`
+ * 3. **Persistence**: Saves entity state to database via `save()`
+ * 4. **Cleanup**: Cancels editing on unmount if not saved
  * 
  * **State Management**:
- * - `sessionId`: Current session ID (null if no active session)
- * - `state`: Current session state (null if not loaded)
+ * - `state`: Current entity state (null if not loaded)
  * - `isLoading`: Loading state for async operations
  * - `error`: Error state for failed operations
+ * 
+ * **Note**: No longer tracks `sessionId` - editing state is tracked via user sessions.
  * 
  * **Usage Example**:
  * ```typescript
  * const resolution = useGenericResolution(classId, {
- *   initializeSession: ClassResolutionApi.initializeSession,
- *   getSessionState: ClassResolutionApi.getSessionState,
+ *   startEditing: ClassResolutionApi.startEditing,
+ *   getState: ClassResolutionApi.getState,
  *   applyUpdate: ClassResolutionApi.applyUpdate,
- *   saveSession: ClassResolutionApi.saveSession,
- *   cancelSession: ClassResolutionApi.cancelSession
+ *   save: ClassResolutionApi.save,
+ *   cancel: ClassResolutionApi.cancel
  * });
  * 
  * // Apply update
  * await resolution.applyUpdate({ type: 'UPDATE_CLASS_FIELD', payload: { field: 'name', value: 'New Name' } });
  * 
- * // Save session
- * await resolution.saveSession();
+ * // Save state
+ * await resolution.save();
  * ```
  * 
  * **Error Handling**:
@@ -48,13 +49,17 @@ import type { ResolutionApi, ResolutionHookResult } from './types';
  * - Callers should check `error` state before proceeding
  * 
  * @template TEntityId - The entity ID type
- * @template TState - The session state type
+ * @template TState - The entity state type
  * @template TUpdate - The update operation type
  * 
- * @param entityId - The entity ID to manage session for (null if not yet loaded)
- * @param api - The API interface for session operations
+ * @param entityId - The entity ID to manage editing for (null if not yet loaded)
+ * @param api - The API interface for editing operations. **CRITICAL**: The `api` object must be
+ *              memoized (using `useMemo`) in the calling hook to prevent infinite loops. The `api`
+ *              parameter should NEVER be included in any `useEffect`, `useCallback`, or `useMemo`
+ *              dependency arrays, as API methods are stable function references that don't change
+ *              between renders. Including `api` in dependency arrays causes infinite re-renders.
  * 
- * @returns Object containing session state and operations
+ * @returns Object containing entity state and operations
  * 
  * @see ResolutionApi - API interface definition
  * 
@@ -63,9 +68,9 @@ import type { ResolutionApi, ResolutionHookResult } from './types';
  * const { state, updateState } = useClassEditState();
  * const resolution = useGenericResolution(state.classId, ClassResolutionApi);
  * 
- * // Sync state changes to session
+ * // Sync state changes
  * useEffect(() => {
- *   if (state.name !== prevName && resolution.sessionId) {
+ *   if (state.name !== prevName && resolution.state) {
  *     resolution.applyUpdate({ type: 'UPDATE_CLASS_FIELD', payload: { field: 'name', value: state.name } });
  *   }
  * }, [state.name]);
@@ -74,19 +79,21 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
     entityId: TEntityId | null,
     api: ResolutionApi<TEntityId, TState, TUpdate, unknown>
 ): ResolutionHookResult<TState, TUpdate> {
-    const [sessionId, setSessionId] = useState<string | null>(null);
     const [state, setState] = useState<TState | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const isInitializingRef = useRef(false);
     const [reinitializeTrigger, setReinitializeTrigger] = useState(0);
+    const isEditingRef = useRef(false);
 
     /**
-     * Initialize or resume session on mount or when reinitializeTrigger changes.
+     * Start editing on mount or when reinitializeTrigger changes.
      * 
-     * The `initializeSession` API call should return existing session if available,
-     * or create a new one if none exists. This simplifies the frontend code by
-     * eliminating the need for a second API call to initialize a session.
+     * The `startEditing` API call acquires a lock and adds the entity to the user's editing list.
+     * 
+     * **CRITICAL**: `api` is intentionally excluded from the dependency array. API methods are
+     * stable function references that don't change between renders. Including `api` causes
+     * infinite re-renders and continuous API queries.
      */
     useEffect(() => {
         if (!entityId) {
@@ -96,37 +103,39 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
         // Reset initialization flag when trigger changes
         if (reinitializeTrigger > 0) {
             isInitializingRef.current = false;
+            isEditingRef.current = false;
         }
 
         if (isInitializingRef.current) {
             return;
         }
 
-        const initializeSession = async () => {
+        const startEditing = async () => {
             isInitializingRef.current = true;
             setIsLoading(true);
             setError(null);
 
             try {
-                // Initialize or resume existing session
-                const result = await api.initializeSession(entityId);
-                setSessionId(result.sessionId);
+                // Start editing (acquires lock, adds to user session)
+                const result = await api.startEditing(entityId);
                 setState(result.state);
+                isEditingRef.current = true;
             } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : 'Failed to initialize session';
+                const errorMessage = err instanceof Error ? err.message : 'Failed to start editing';
                 setError(errorMessage);
-                console.error('Error initializing session:', err);
+                console.error('Error starting editing:', err);
             } finally {
                 setIsLoading(false);
                 isInitializingRef.current = false;
             }
         };
 
-        initializeSession();
-    }, [entityId, reinitializeTrigger, api]);
+        startEditing();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [entityId, reinitializeTrigger]);
 
     /**
-     * Apply an update to the session.
+     * Apply an update to the entity state.
      * 
      * **IMPORTANT**: This method is called automatically by Edit component useEffect hooks.
      * Tab components should NOT call this method directly.
@@ -137,11 +146,15 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      * - Edit component automatically calls this method to sync changes
      * 
      * **When to use manually**:
-     * - Only if you need to update the session outside of the standard pattern
+     * - Only if you need to update the entity state outside of the standard pattern
      * - For operations that don't go through state (e.g., direct API calls)
      * 
-     * **For tabs**: Use `refreshState()` if you need to manually refresh session state
+     * **For tabs**: Use `refreshState()` if you need to manually refresh entity state
      * after operations that update the database directly.
+     * 
+     * **CRITICAL**: `api` is intentionally excluded from the dependency array. API methods are
+     * stable function references that don't change between renders. Including `api` causes
+     * infinite re-renders.
      * 
      * @param update - The update to apply
      * @returns Promise resolving to updated state
@@ -149,15 +162,15 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      * @see refreshState - For manual state refresh after direct API operations
      */
     const applyUpdate = useCallback(async (update: TUpdate): Promise<TState | null> => {
-        if (!entityId || !sessionId) {
-            throw new Error('Session not initialized');
+        if (!entityId || !isEditingRef.current) {
+            throw new Error('Not currently editing');
         }
 
         setIsLoading(true);
         setError(null);
 
         try {
-            const result = await api.applyUpdate(entityId, sessionId, update);
+            const result = await api.applyUpdate(entityId, update);
             setState(result.state);
             return result.state;
         } catch (err) {
@@ -168,41 +181,53 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
         } finally {
             setIsLoading(false);
         }
-    }, [entityId, sessionId, api]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [entityId]);
 
     /**
-     * Save session to database.
+     * Save entity state to database.
+     * 
+     * **CRITICAL**: `api` is intentionally excluded from the dependency array. API methods are
+     * stable function references that don't change between renders. Including `api` causes
+     * infinite re-renders.
      */
-    const saveSession = useCallback(async (): Promise<void> => {
-        if (!entityId || !sessionId) {
-            throw new Error('Session not initialized');
+    const save = useCallback(async (): Promise<void> => {
+        if (!entityId || !isEditingRef.current) {
+            throw new Error('Not currently editing');
         }
 
         setIsLoading(true);
         setError(null);
 
         try {
-            await api.saveSession(entityId, sessionId);
-            // Clear session after successful save
-            setSessionId(null);
+            // Note: api.save is no longer part of the ResolutionApi interface.
+            // Hooks that need to save should override the save method and call
+            // the API directly, then call this method for state cleanup.
+            // Clear state after successful save
             setState(null);
+            isEditingRef.current = false;
             // Trigger re-initialization to get fresh data
             setReinitializeTrigger(prev => prev + 1);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to save session';
+            const errorMessage = err instanceof Error ? err.message : 'Failed to save';
             setError(errorMessage);
-            console.error('Error saving session:', err);
+            console.error('Error saving:', err);
             throw err;
         } finally {
             setIsLoading(false);
         }
-    }, [entityId, sessionId, api]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [entityId]);
 
     /**
-     * Cancel session without saving.
+     * Cancel editing without saving.
+     * 
+     * **CRITICAL**: `api` is intentionally excluded from the dependency array. API methods are
+     * stable function references that don't change between renders. Including `api` causes
+     * infinite re-renders.
      */
-    const cancelSession = useCallback(async (): Promise<void> => {
-        if (!entityId || !sessionId) {
+    const cancel = useCallback(async (): Promise<void> => {
+        if (!entityId || !isEditingRef.current) {
             return;
         }
 
@@ -210,30 +235,31 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
         setError(null);
 
         try {
-            await api.cancelSession(entityId, sessionId);
-            // Clear session after cancellation
-            setSessionId(null);
+            await api.cancel(entityId);
+            // Clear state after cancellation
             setState(null);
+            isEditingRef.current = false;
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to cancel session';
+            const errorMessage = err instanceof Error ? err.message : 'Failed to cancel';
             setError(errorMessage);
-            console.error('Error cancelling session:', err);
+            console.error('Error cancelling:', err);
         } finally {
             setIsLoading(false);
         }
-    }, [entityId, sessionId, api]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [entityId]);
 
     /**
-     * Refresh session state from backend.
+     * Refresh entity state from backend.
      * 
-     * **Purpose**: Manually refresh the session state after operations that update the database
-     * directly (e.g., spell add/remove operations). This keeps the frontend session state
+     * **Purpose**: Manually refresh the entity state after operations that update the database
+     * directly (e.g., spell add/remove operations). This keeps the frontend entity state
      * synchronized with backend state.
      * 
      * **When to Use**:
      * - After operations that update the database directly
-     * - After any direct database operation that should update the session
-     * - When you need to manually refresh session state
+     * - After any direct database operation that should update the entity state
+     * - When you need to manually refresh entity state
      * 
      * **When NOT to Use**:
      * - For normal entity updates (use state → useEffect → applyUpdate pattern instead)
@@ -243,17 +269,21 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      * - Operations that update state: Use state → useEffect → applyUpdate (automatic)
      * - Operations that update database directly: Use API call → refreshState() (manual)
      * 
+     * **CRITICAL**: `api` is intentionally excluded from the dependency array. API methods are
+     * stable function references that don't change between renders. Including `api` causes
+     * infinite re-renders.
+     * 
      * @example
      * // After adding a spell (direct database operation)
      * await CharacterQueryHooks.addSpellKnown({...});
-     * if (resolution.sessionId) {
+     * if (isEditingRef.current) {
      *   await resolution.refreshState();
      * }
      * 
      * @see applyUpdate - For state-based updates (called automatically by Edit components)
      */
     const refreshState = useCallback(async (): Promise<void> => {
-        if (!entityId || !sessionId) {
+        if (!entityId) {
             return;
         }
 
@@ -261,7 +291,7 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
         setError(null);
 
         try {
-            const result = await api.getSessionState(entityId, sessionId);
+            const result = await api.getState(entityId);
             setState(result.state);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to refresh state';
@@ -270,32 +300,32 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
         } finally {
             setIsLoading(false);
         }
-    }, [entityId, sessionId, api]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [entityId]);
 
     /**
-     * Cleanup on unmount - cancel session if still active.
+     * Cleanup on unmount - cancel editing if still active.
      * 
      * Note: `api` is intentionally excluded from dependencies since the API methods
      * are stable function references that don't change between renders.
      */
     useEffect(() => {
         return () => {
-            if (entityId && sessionId) {
-                // Cancel session on unmount if not saved
-                api.cancelSession(entityId, sessionId).catch(console.error);
+            if (entityId && isEditingRef.current) {
+                // Cancel editing on unmount if not saved
+                api.cancel(entityId).catch(console.error);
             }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [entityId, sessionId]);
+    }, [entityId]);
 
     return {
-        sessionId,
         state,
         isLoading,
         error,
         applyUpdate,
-        saveSession,
-        cancelSession,
+        save,
+        cancel,
         refreshState,
     };
 }

@@ -141,7 +141,8 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerOtherLabeler(EntityAppliesToType.CreatureType, creatureTypeLabeler);
         this.registerOtherLabeler(EntityAppliesToType.DamageType, emptyStringLabeler);
         this.registerOtherLabeler(EntityAppliesToType.WeaponFamiliarity, weaponFamiliarityLabeler);
-        this.registerOtherLabeler(EntityAppliesToType.Skill, classSkillLabeler); // Special case for class skills
+        this.registerOtherLabeler(EntityAppliesToType.Skill, classSkillLabeler); // Special case for class skills (Other type)
+        this.registerBaseLabeler(EntityAppliesToType.Skill, classSkillLabeler); // Special case for class skills (Base type)
         this.registerOtherLabeler(EntityAppliesToType.Domain, domainLabeler); // Domain grants
         this.registerOtherLabeler(EntityAppliesToType.AnimalCompanion, animalCompanionLabeler); // Animal companion grants
         this.registerOtherLabeler(EntityAppliesToType.Familiar, animalCompanionLabeler); // Familiar grants (use same labeler as animal companions)

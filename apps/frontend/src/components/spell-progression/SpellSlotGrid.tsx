@@ -3,8 +3,8 @@ import React, { useCallback, useMemo } from 'react';
 import { CreateSpellcastingProgressionRequest } from '@shared/schema';
 
 export interface SpellSlotGridProps {
-    /** Spell progression data for all levels */
-    progression: CreateSpellcastingProgressionRequest[];
+    /** Spell feature data for all levels */
+    feature: CreateSpellcastingProgressionRequest[];
     /** Callback when a level's slots change */
     onLevelChange: (level: number, slots: { spellLevel: number; slotsPerDay: number }[]) => void;
     /** Whether the grid is read-only */
@@ -14,7 +14,7 @@ export interface SpellSlotGridProps {
 }
 
 export const SpellSlotGrid: React.FC<SpellSlotGridProps> = ({
-    progression,
+    feature,
     onLevelChange,
     readOnly = false,
     gridId = 'default'
@@ -25,7 +25,7 @@ export const SpellSlotGrid: React.FC<SpellSlotGridProps> = ({
 
         for (let classLevel = 1; classLevel <= 20; classLevel++) {
             const row: (number | null)[] = [];
-            const levelData = progression[classLevel - 1];
+            const levelData = feature[classLevel - 1];
 
             for (let spellLevel = 0; spellLevel <= 9; spellLevel++) {
                 const slot = levelData?.slots?.find(s => s.spellLevel === spellLevel);
@@ -36,7 +36,7 @@ export const SpellSlotGrid: React.FC<SpellSlotGridProps> = ({
         }
 
         return grid;
-    }, [progression]);
+    }, [feature]);
 
     const handleCellChange = useCallback((classLevel: number, spellLevel: number, value: string) => {
         if (readOnly) return;
@@ -46,7 +46,7 @@ export const SpellSlotGrid: React.FC<SpellSlotGridProps> = ({
             return; // Invalid value
         }
 
-        const currentSlots = progression[classLevel - 1]?.slots || [];
+        const currentSlots = feature[classLevel - 1]?.slots || [];
         let newSlots = [...currentSlots];
 
         if (numValue === null) {
@@ -63,7 +63,7 @@ export const SpellSlotGrid: React.FC<SpellSlotGridProps> = ({
         }
 
         onLevelChange(classLevel, newSlots);
-    }, [progression, onLevelChange, readOnly]);
+    }, [feature, onLevelChange, readOnly]);
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent, classLevel: number, spellLevel: number) => {
         if (readOnly) return;

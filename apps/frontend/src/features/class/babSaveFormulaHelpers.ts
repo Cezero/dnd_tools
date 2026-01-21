@@ -2,8 +2,8 @@ import type { CreateFeatureFormulaParamsRequest } from '@shared/schema';
 import { FormulaId, ProgressionType } from '@shared/static-data';
 
 /**
- * Generate formula parameters for BAB progression based on ProgressionType
- * Note: startLevel comes from the progression level, not from formula params
+ * Generate formula parameters for BAB feature based on ProgressionType
+ * Note: startLevel comes from the feature level, not from formula params
  */
 export function generateBABFormulaParams(
     progressionType: typeof ProgressionType.good | typeof ProgressionType.average | typeof ProgressionType.poor
@@ -21,6 +21,7 @@ export function generateBABFormulaParams(
             valuesRepresent: null,
             cumulative: false,
             includeProgressionLevel: true,
+            featureLevelZero: false,
         };
     } else if (progressionType === ProgressionType.average) {
         // Average BAB: floor(3 × level / 4) (LEVEL_TIMES_VALUE with scalingValue=0.75)
@@ -35,6 +36,7 @@ export function generateBABFormulaParams(
             valuesRepresent: null,
             cumulative: false,
             includeProgressionLevel: true,
+            featureLevelZero: false,
         };
     } else {
         // Poor BAB: floor(level / 2) (LEVEL_TIMES_VALUE with scalingValue=0.5)
@@ -49,13 +51,14 @@ export function generateBABFormulaParams(
             valuesRepresent: null,
             cumulative: false,
             includeProgressionLevel: true,
+            featureLevelZero: false,
         };
     }
 }
 
 /**
- * Generate formula parameters for saving throw progression based on ProgressionType
- * Note: startLevel comes from the progression level, not from formula params
+ * Generate formula parameters for saving throw feature based on ProgressionType
+ * Note: startLevel comes from the feature level, not from formula params
  */
 export function generateSaveFormulaParams(
     progressionType: typeof ProgressionType.good | typeof ProgressionType.poor
@@ -74,6 +77,7 @@ export function generateSaveFormulaParams(
             valuesRepresent: null,
             cumulative: false,
             includeProgressionLevel: true,
+            featureLevelZero: false,
         };
     } else {
         // Poor Save: floor(level / 3) (LEVEL_DIVIDED_BY)
@@ -89,6 +93,7 @@ export function generateSaveFormulaParams(
             valuesRepresent: null,
             cumulative: false,
             includeProgressionLevel: true,
+            featureLevelZero: false,
         };
     }
 }

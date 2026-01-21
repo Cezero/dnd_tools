@@ -8,7 +8,7 @@ import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { getSourceDisplay } from '@/services/cache';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import type { FeatureProgression } from '@shared/schema';
+import type { FeatureWithRelations } from '@shared/schema';
 import { FEAT_TYPES, EDITION_MAP, FeatureSourceType, DisplayType } from '@shared/static-data';
 
 import { formatFeatureEntity } from './FeatUtil';
@@ -28,15 +28,15 @@ export function FeatDetail() {
         enabled: !!featId
     });
 
-    // Extract feature data from feat.featureProgressions (backend includes it)
-    const featWithProgressions = feat as (typeof feat & { featureProgressions?: FeatureProgression[] }) | undefined;
-    const featProgression = featWithProgressions?.featureProgressions?.find((p: FeatureProgression) =>
+    // Extract feature data from feat.features (backend includes it)
+    const featWithProgressions = feat as (typeof feat & { features?: FeatureWithRelations[] }) | undefined;
+    const featProgression = featWithProgressions?.features?.find((p: FeatureWithRelations) =>
         p.sourceType === FeatureSourceType.Feat && p.featId === featId
-    ) || featWithProgressions?.featureProgressions?.[0] || null;
+    ) || featWithProgressions?.features?.[0] || null;
 
-    const feature = featProgression?.feature || null;
+    const feature = featProgression || null;
 
-    // Precache all entities referenced in feature progressions (including prerequisites)
+    // Precache all entities referenced in feature features (including prerequisites)
     const featProgressions = featProgression ? [featProgression] : [];
     const { isComplete: entitiesPrecached } = usePrecacheFeatureEntities(featProgressions);
 
@@ -51,7 +51,7 @@ export function FeatDetail() {
 
         const formatPrerequisites = async () => {
             try {
-                // Use display strategy to format the progression (includes prerequisite formatting in Phase 6)
+                // Use display strategy to format the feature (includes prerequisite formatting in Phase 6)
                 const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
                 const displayResult = strategy.format(featProgression);
 

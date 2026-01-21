@@ -1,12 +1,12 @@
-import { FeatureProgression } from '@shared/schema';
+import { FeatureWithRelations } from '@shared/schema';
 import { EntityAppliesToType, FeaturePrerequisiteType } from '@shared/static-data';
 
 /**
- * Extracts all entity IDs from feature progressions that need precaching for name resolution.
- * This includes entities referenced in feature progressions and prerequisites.
+ * Extracts all entity IDs from feature features that need precaching for name resolution.
+ * This includes entities referenced in feature features and prerequisites.
  */
 export function extractEntityIdsForPrecaching(
-    progressions: FeatureProgression[]
+    features: FeatureWithRelations[]
 ): {
     featIds: Set<number>;
     featureIds: Set<number>;
@@ -24,10 +24,10 @@ export function extractEntityIdsForPrecaching(
     const skillIds = new Set<number>();
     const raceIds = new Set<number>();
 
-    for (const progression of progressions) {
+    for (const feature of features) {
         // Extract entity IDs from feature entities
-        if (progression.entities) {
-            for (const entity of progression.entities) {
+        if (feature.entities) {
+            for (const entity of feature.entities) {
                 if (entity.appliesToId) {
                     switch (entity.appliesTo) {
                         case EntityAppliesToType.Feat:
@@ -54,8 +54,8 @@ export function extractEntityIdsForPrecaching(
         }
 
         // Extract entity IDs from prerequisites
-        if (progression.feature?.prerequisites) {
-            for (const prereq of progression.feature.prerequisites) {
+        if (feature.prerequisites) {
+            for (const prereq of feature.prerequisites) {
                 if (prereq.appliesToId) {
                     switch (prereq.type) {
                         case FeaturePrerequisiteType.Feat:

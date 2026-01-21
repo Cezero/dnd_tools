@@ -2,7 +2,7 @@ import type {
     CharacterWithAllDetailsResponse,
     CharacterItem,
     ItemWithDetails,
-    FeatureProgression,
+    FeatureWithRelations,
     CharacterFeatureChoice,
 } from '@shared/schema';
 
@@ -248,7 +248,7 @@ export interface FeatBenefitContext {
  */
 export interface CalculationServiceInput {
     character: CharacterWithAllDetailsResponse;
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     items?: ItemWithDetails[];
     classDetailsMap?: Map<number, unknown>;
     context?: CombatCalculationContext | CalculationContext;

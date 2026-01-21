@@ -18,7 +18,7 @@ import type {
 
 
 /**
- * Pure generator for progression values across level ranges
+ * Pure generator for feature values across level ranges
  */
 export class ProgressionGeneratorImpl implements ProgressionGenerator {
     generateValues(params: ProgressionGeneratorParams): Array<ProgressionValue> {
@@ -158,7 +158,7 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
             console.error('No original entity provided for createModifiedEntity');
             return {
                 id: 0,
-                progressionId: 0,
+                featureId: 0,
                 type: EntityType.Bonus,
                 value: typeof value === 'string' ? 0 : value as number, // Handle string case
                 appliesToId: null,
@@ -251,7 +251,7 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
     }
 
     /**
-     * Generate progression values for a level range with custom context
+     * Generate feature values for a level range with custom context
      */
     generateValuesWithContext(
         formula: FormulaParamsData,

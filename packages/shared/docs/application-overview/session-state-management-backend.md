@@ -66,7 +66,7 @@ The update application process follows this flow:
 flowchart TD
     Start([Update Request]) --> Validate{Validate<br/>Session?}
     Validate -->|Invalid| Error([Return Error])
-    Validate -->|Valid| GetSession[Get Session from SQLite]
+    Validate -->|Valid| GetSession[Get Session from Redis]
     GetSession --> GetState[Extract Current State]
     GetState --> ApplyUpdate[Apply Update via UpdateApplier]
     ApplyUpdate --> UpdateType{Update Type?}
@@ -87,7 +87,7 @@ flowchart TD
     UpdateEntity --> MergeState
     RemoveEntity --> MergeState
     
-    MergeState --> SaveSession[Save Updated State to SQLite]
+    MergeState --> SaveSession[Save Updated State to Redis]
     SaveSession --> ExtendExpiry[Extend Session Expiry]
     ExtendExpiry --> ReturnState([Return Updated State])
     
@@ -131,7 +131,7 @@ Applies an update to the session state.
 
 #### `saveSession(req, res, next, config)`
 
-Saves session to MySQL and deletes from SQLite.
+Saves session to MySQL and deletes from Redis.
 
 #### `cancelSession(req, res, next, config)`
 

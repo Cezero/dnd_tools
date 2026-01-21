@@ -1,51 +1,51 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 
 import { useGenericResolution } from '@/lib/hooks/useGenericResolution';
 import { RaceResolutionApi } from '@/services/api/RaceResolutionApi';
 import type { RaceEditState, RaceUpdate } from '@shared/schema';
+import type { ResolutionApi } from '@/lib/hooks/types';
 
 /**
- * Hook for managing race editing sessions.
+ * Hook for managing race editing.
  * 
  * **Implementation Note**: This hook is a thin wrapper around `useGenericResolution`
- * that provides Race-specific API configuration. All session management logic
+ * that provides Race-specific API configuration. All editing management logic
  * is handled by the generic hook.
  * 
- * Handles session lifecycle: initialize, resume, update, save, cancel.
+ * **CRITICAL**: The `api` object is memoized using `useMemo` to prevent infinite loops.
+ * The `api` object must be stable across renders - if it's recreated on every render,
+ * it will cause `useGenericResolution`'s initialization effect to run repeatedly, causing
+ * infinite API queries. The `api` object should NEVER be included in any dependency arrays.
  * 
- * @param raceId - The race ID to manage session for (null if not yet loaded)
- * @returns Object containing session state and operations
+ * @param raceId - The race ID to manage editing for (null if not yet loaded)
+ * @returns Object containing race state and operations
  * 
  * @see useGenericResolution - Generic implementation
  */
 export function useRaceResolution(raceId: number | null) {
     // Memoize API object to prevent unnecessary re-renders and effect re-runs
-    const api = useMemo(
+    const api: ResolutionApi<number, RaceEditState, RaceUpdate, unknown> = useMemo(
         () => ({
-            initializeSession: async (id: number) => {
-                const result = await RaceResolutionApi.initializeSession(id);
-                return {
-                    sessionId: result.sessionId,
-                    state: result.raceState
-                };
-            },
-            getSessionState: async (id: number, sessionId: string) => {
-                const result = await RaceResolutionApi.getSessionState(id, sessionId);
+            startEditing: async (id: number) => {
+                const result = await RaceResolutionApi.startEditing(id);
                 return {
                     state: result.raceState
                 };
             },
-            applyUpdate: async (id: number, sessionId: string, update: RaceUpdate) => {
-                const result = await RaceResolutionApi.applyUpdate(id, sessionId, update);
+            getState: async (id: number) => {
+                const result = await RaceResolutionApi.getState(id);
                 return {
                     state: result.raceState
                 };
             },
-            saveSession: async (id: number, sessionId: string) => {
-                await RaceResolutionApi.saveSession(id, sessionId);
-            },
-            cancelSession: async (id: number, sessionId: string) => {
-                await RaceResolutionApi.cancelSession(id, sessionId);
+        applyUpdate: async (id: number, update: RaceUpdate) => {
+            const result = await RaceResolutionApi.applyUpdate(id, update);
+            return {
+                state: result.raceState
+            };
+        },
+        cancel: async (id: number) => {
+                await RaceResolutionApi.cancel(id);
             }
         }),
         []
@@ -53,14 +53,27 @@ export function useRaceResolution(raceId: number | null) {
 
     const resolution = useGenericResolution<number, RaceEditState, RaceUpdate>(raceId, api);
 
+    // Override save to call API directly, then use genericResolution.save() for cleanup
+    // This avoids needing to provide save in the api object
+    const save = useCallback(async (): Promise<void> => {
+        if (!raceId) {
+            throw new Error('Cannot save: raceId is null');
+        }
+        
+        // Call API directly (syncs state from Redis to MySQL)
+        await RaceResolutionApi.save(raceId);
+        
+        // Call genericResolution.save() for state cleanup (api.save is not provided, so no duplicate API call)
+        await resolution.save();
+    }, [raceId, resolution]);
+
     return {
-        sessionId: resolution.sessionId,
         raceState: resolution.state,
         isLoading: resolution.isLoading,
         error: resolution.error,
         applyUpdate: resolution.applyUpdate,
-        saveSession: resolution.saveSession,
-        cancelSession: resolution.cancelSession,
+        save,
+        cancel: resolution.cancel,
         refreshState: resolution.refreshState,
     };
 }

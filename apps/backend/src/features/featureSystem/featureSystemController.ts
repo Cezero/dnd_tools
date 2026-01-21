@@ -3,25 +3,37 @@ import { Response, NextFunction } from 'express';
 import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
 import {
     GetAllFeaturesResponse,
-    CreateFeatureRequest,
-    UpdateFeatureRequest,
+    CreateFeatureBasicRequest,
+    UpdateFeatureBasicRequest,
+    UpdateFeature,
     FeatureIdParamRequest,
     EditionIdParamRequest,
     FeatureQueryRequest,
     GetFeatureResponse,
     CreateResponse,
     UpdateResponse,
-    CreateFeatureProgressionRequest,
-    UpdateFeatureProgressionsRequest,
-    GetFeatureProgressionsResponse,
+    CreateFeatureRequest,
+    UpdateFeaturesRequest,
+    GetFeaturesResponse,
     GetFeatureListResponse,
     CloneClassFeaturesRequest,
-    ForkProgressionRequest,
-    ForkProgressionResponse,
+    ForkFeatureRequest,
+    ForkFeatureResponse,
     FeatureCacheResponse,
 } from '@shared/schema';
 
+import { EntityLockService } from '../shared/entityState/EntityLockService';
+
 import { featureSystemService } from './featureSystemService.js';
+
+let entityLockServiceInstance: EntityLockService | null = null;
+
+function getEntityLockService(): EntityLockService {
+    if (!entityLockServiceInstance) {
+        entityLockServiceInstance = new EntityLockService();
+    }
+    return entityLockServiceInstance;
+}
 
 /**
  * Fetches all features from the database.
@@ -48,6 +60,27 @@ export async function GetFeatureCache(req: ValidatedNoInput<FeatureCacheResponse
 }
 
 /**
+ * Gets the lock status for a feature.
+ * 
+ * Returns whether the feature is currently locked and, if so, which user holds the lock.
+ * This is a read-only operation that doesn't require authentication.
+ */
+export async function GetFeatureLockStatus(
+    req: ValidatedParamsT<FeatureIdParamRequest>,
+    res: Response,
+    _next: NextFunction
+) {
+    const lockService = getEntityLockService();
+    const lockedBy = await lockService.checkLock('feature', req.params.id);
+
+    if (lockedBy === null) {
+        res.json({ locked: false });
+    } else {
+        res.json({ locked: true, lockedBy });
+    }
+}
+
+/**
  * Fetches a single feature by its ID.
  */
 export async function GetFeatureById(req: ValidatedParamsT<FeatureIdParamRequest, GetFeatureResponse>, res: Response, _next: NextFunction) {
@@ -64,23 +97,15 @@ export async function GetFeatureById(req: ValidatedParamsT<FeatureIdParamRequest
 /**
  * Creates a new feature.
  */
-export async function CreateFeature(req: ValidatedBodyT<CreateFeatureRequest, CreateResponse>, res: Response, _next: NextFunction) {
+export async function CreateFeature(req: ValidatedBodyT<CreateFeatureBasicRequest, CreateResponse>, res: Response, _next: NextFunction) {
     const result = await featureSystemService.createFeature(req.body);
     res.status(201).json(result);
 }
 
 /**
- * Updates an existing feature by slug.
- */
-export async function UpdateFeature(req: ValidatedParamsBodyT<FeatureIdParamRequest, UpdateFeatureRequest, UpdateResponse>, res: Response, _next: NextFunction) {
-    const result = await featureSystemService.updateFeature(req.params, req.body);
-    res.status(200).json(result);
-}
-
-/**
  * Updates an existing feature by ID.
  */
-export async function UpdateFeatureById(req: ValidatedParamsBodyT<FeatureIdParamRequest, UpdateFeatureRequest, UpdateResponse>, res: Response, _next: NextFunction) {
+export async function UpdateFeatureById(req: ValidatedParamsBodyT<FeatureIdParamRequest, UpdateFeature, UpdateResponse>, res: Response, _next: NextFunction) {
     const result = await featureSystemService.updateFeature(req.params, req.body);
     res.status(200).json(result);
 }
@@ -102,67 +127,67 @@ export async function DeleteFeatureById(req: ValidatedParamsT<FeatureIdParamRequ
 }
 
 /**
- * Creates feature progressions with all related entities.
+ * Creates features with all related entities.
  * Used for bulk operations when creating/updating classes and races.
  */
-export async function CreateFeatureProgressionWithRelations(req: ValidatedBodyT<CreateFeatureProgressionRequest, CreateResponse>, res: Response, _next: NextFunction) {
-    const result = await featureSystemService.createFeatureProgressionWithRelations(req.body);
+export async function CreateFeatureWithRelations(req: ValidatedBodyT<CreateFeatureRequest, CreateResponse>, res: Response, _next: NextFunction) {
+    const result = await featureSystemService.createFeatureWithRelations(req.body);
     res.status(201).json(result);
 }
 
 /**
- * Updates feature progressions for a specific feature.
+ * Updates features for a specific feature.
  */
-export async function UpdateFeatureProgressions(req: ValidatedParamsBodyT<FeatureIdParamRequest, UpdateFeatureProgressionsRequest, UpdateResponse>, res: Response, _next: NextFunction) {
-    const result = await featureSystemService.updateFeatureProgressions(req.params.id, req.body.progressions);
+export async function UpdateFeatures(req: ValidatedParamsBodyT<FeatureIdParamRequest, UpdateFeaturesRequest, UpdateResponse>, res: Response, _next: NextFunction) {
+    const result = await featureSystemService.updateFeatures(req.params.id, req.body.features);
     res.status(200).json(result);
 }
 
 /**
- * Gets all feature progressions for a specific feature.
+ * Gets all features for a specific feature.
  */
-export async function GetFeatureProgressions(req: ValidatedParamsT<FeatureIdParamRequest, GetFeatureProgressionsResponse>, res: Response, _next: NextFunction) {
-    const progressions = await featureSystemService.getFeatureProgressions(req.params.id);
-    res.status(200).json(progressions);
+export async function GetFeatures(req: ValidatedParamsT<FeatureIdParamRequest, GetFeaturesResponse>, res: Response, _next: NextFunction) {
+    const features = await featureSystemService.getFeatures(req.params.id);
+    res.status(200).json(features);
 }
 
 /**
- * Gets feature progressions for a specific feat.
+ * Gets features for a specific feat.
  */
-export async function GetFeatureProgressionsByFeatId(req: ValidatedParamsT<{ id: number }, GetFeatureProgressionsResponse>, res: Response, _next: NextFunction) {
-    const progressions = await featureSystemService.getFeatureProgressionsByFeatIds([req.params.id]);
-    res.status(200).json(progressions);
+export async function GetFeaturesByFeatId(req: ValidatedParamsT<{ id: number }, GetFeaturesResponse>, res: Response, _next: NextFunction) {
+    const features = await featureSystemService.getFeaturesByFeatIds([req.params.id]);
+    res.status(200).json(features);
 }
 
 /**
- * Gets feature progressions for a specific edition.
+ * Gets features for a specific edition.
  */
-export async function GetFeatureProgressionsByEditionId(req: ValidatedParamsT<EditionIdParamRequest, GetFeatureProgressionsResponse>, res: Response, _next: NextFunction) {
-    const progressions = await featureSystemService.getFeatureProgressionsByEditionId(req.params.editionId);
-    res.status(200).json(progressions);
+export async function GetFeaturesByEditionId(req: ValidatedParamsT<EditionIdParamRequest, GetFeaturesResponse>, res: Response, _next: NextFunction) {
+    const features = await featureSystemService.getFeaturesByEditionId(req.params.editionId);
+    res.status(200).json(features);
 }
 
 /**
- * Clones feature progressions from a source class to a target class.
+ * Clones features from a source class to a target class.
  * Used for creating variant classes by copying base class features.
  */
 export async function CloneClassFeatures(req: ValidatedBodyT<CloneClassFeaturesRequest, UpdateResponse>, res: Response, _next: NextFunction) {
     await featureSystemService.cloneClassFeatures(
         req.body.sourceClassId,
         req.body.targetClassId,
-        req.body.forkProgressions ?? false
+        req.body.forkFeatures ?? false
     );
     res.status(200).json({ message: 'Class features cloned successfully' });
 }
 
 /**
- * Forks a shared progression to make it class-specific.
- * Creates a copy of the progression linked directly to the class.
+ * Forks a shared feature to make it class-specific.
+ * Creates a copy of the feature linked directly to the class.
  */
-export async function ForkProgressionForClass(req: ValidatedBodyT<ForkProgressionRequest, ForkProgressionResponse>, res: Response, _next: NextFunction) {
-    const forkedProgressionId = await featureSystemService.forkProgressionForClass(
-        req.body.progressionId,
+export async function ForkFeatureForClass(req: ValidatedBodyT<ForkFeatureRequest, ForkFeatureResponse>, res: Response, _next: NextFunction) {
+    const forkedFeatureId = await featureSystemService.forkFeatureForClass(
+        req.body.featureId,
         req.body.classId
     );
-    res.status(200).json({ forkedProgressionId });
+    res.status(200).json({ forkedFeatureId });
 } 

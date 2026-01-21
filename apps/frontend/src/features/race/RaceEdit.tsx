@@ -9,16 +9,16 @@ import { isEqual } from 'lodash';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
-import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
+import { useFeatureStateStore } from '@/lib/stores/FeatureStateStore';
 import {
     ValidatedForm,
     useValidatedForm
 } from '@/components/forms';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, CreateRaceRequest, type RaceEditState } from '@shared/schema';
-import type { SourceMap } from '@shared/schema';
-import { EntityAppliesToType, SpecialFeatureId, EntityType, FeatureSourceType, RaceUpdateType } from '@shared/static-data';
+import { UpdateRaceSchema, BaseRaceSchema, Feature, FeatureWithRelations, CreateRaceRequest, type RaceEditState, SourceMap } from '@shared/schema';
+import { EntityAppliesToType, EntityType, FeatureSourceType, RaceUpdateType } from '@shared/static-data';
 
 import { RaceApi } from './RaceApi';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
@@ -53,6 +53,7 @@ export function RaceEdit() {
     const raceId = id !== 'new' ? parseInt(id) : null;
     const resolution = useRaceResolution(raceId);
     const { state, updateState } = useRaceEditState();
+    const featureStateStore = useFeatureStateStore();
 
     // UI-only state (not part of race edit state)
     const [message, setMessage] = useState('');
@@ -78,6 +79,79 @@ export function RaceEdit() {
 
     const CurrentTabComponent = tabs.find(tab => tab.id === state.activeTab)?.component;
 
+    // Load features from FeatureStateStore using featureIds
+    const [loadedFeatures, setLoadedFeatures] = useState<FeatureWithRelations[]>([]);
+    const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
+    const prevFeatureIdsRef = useRef<number[]>([]);
+
+    useEffect(() => {
+        // Only reload if featureIds actually changed
+        const featureIdsChanged =
+            prevFeatureIdsRef.current.length !== state.featureIds.length ||
+            prevFeatureIdsRef.current.some((id, index) => id !== state.featureIds[index]);
+
+        if (!featureIdsChanged && prevFeatureIdsRef.current.length > 0) {
+            return;
+        }
+
+        const loadFeatures = async () => {
+            if (state.featureIds.length === 0) {
+                setLoadedFeatures([]);
+                prevFeatureIdsRef.current = [];
+                return;
+            }
+
+            setIsLoadingFeatures(true);
+            try {
+                const features: FeatureWithRelations[] = [];
+                const validFeatureIds: number[] = [];
+                const missingFeatureIds: number[] = [];
+
+                for (const featureId of state.featureIds) {
+                    try {
+                        // For read-only viewing, use loadFeatureData to avoid creating sessions
+                        const featureData = await featureStateStore.loadFeatureData(featureId);
+                        if (featureData) {
+                            features.push(featureData);
+                            validFeatureIds.push(featureId);
+                        }
+                    } catch (error) {
+                        // Handle missing features gracefully
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (errorMessage.includes('not found') || errorMessage.includes('Not Found')) {
+                            console.warn(`Feature ${featureId} not found, removing from race feature list`);
+                            missingFeatureIds.push(featureId);
+                        } else {
+                            // Re-throw unexpected errors
+                            throw error;
+                        }
+                    }
+                }
+
+                setLoadedFeatures(features);
+                prevFeatureIdsRef.current = [...validFeatureIds];
+
+                // Remove missing feature IDs from state if any were found
+                if (missingFeatureIds.length > 0) {
+                    const updatedFeatureIds = state.featureIds.filter(id => !missingFeatureIds.includes(id));
+                    if (updatedFeatureIds.length !== state.featureIds.length) {
+                        updateState({
+                            type: RaceEditStateUpdateType.SET_FEATURE_IDS,
+                            payload: { featureIds: updatedFeatureIds }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading features:', error);
+            } finally {
+                setIsLoadingFeatures(false);
+            }
+        };
+
+        loadFeatures();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.featureIds]); // Only depend on featureIds, not featureStateStore
+
     // Derive formData from state (single source of truth)
     // This is used for form validation only - tabs should use state directly
     const formData = useMemo((): RaceFormData => ({
@@ -86,7 +160,8 @@ export function RaceEdit() {
         isVisible: state.isVisible,
         description: state.description,
         sourceBookInfo: state.sourceBookInfo,
-        features: state.featureProgressions.length > 0 ? state.featureProgressions : null,
+        // Features are managed independently, so formData doesn't need featureIds
+        // The form validation will work without it
         ...(id !== 'new' && state.raceId ? { id: state.raceId } : {})
     }), [state, id]);
 
@@ -222,8 +297,8 @@ export function RaceEdit() {
         if (!isEqual(sessionState.sourceBookInfo, state.sourceBookInfo)) {
             updates.push({ type: RaceEditStateUpdateType.SET_SOURCE_BOOK_INFO, payload: { sourceBookInfo: sessionState.sourceBookInfo } });
         }
-        if (!isEqual(sessionState.featureProgressions, state.featureProgressions)) {
-            updates.push({ type: RaceEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: sessionState.featureProgressions } });
+        if (!isEqual(sessionState.featureIds, state.featureIds)) {
+            updates.push({ type: RaceEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: sessionState.featureIds } });
         }
 
         // Apply all updates (React will batch these automatically)
@@ -240,7 +315,7 @@ export function RaceEdit() {
             isVisible: sessionState.isVisible,
             description: sessionState.description,
             sourceBookInfo: sessionState.sourceBookInfo,
-            features: sessionState.featureProgressions.length > 0 ? sessionState.featureProgressions : null,
+            // Features are managed independently via featureIds, not in formData
             ...(raceId && { id: raceId })
         });
 
@@ -286,10 +361,10 @@ export function RaceEdit() {
      * **Important**: This only syncs user-initiated changes, not changes from backend sync.
      */
     useEffect(() => {
-        const { sessionId, applyUpdate } = resolution;
+        const { applyUpdate } = resolution;
 
-        // Only sync if session is initialized and we have a race ID
-        if (!raceId || !sessionId) {
+        // Only sync if race state is loaded and we have a race ID
+        if (!raceId || !resolution.raceState) {
             return;
         }
 
@@ -387,89 +462,64 @@ export function RaceEdit() {
             description: state.description,
             sourceBookInfo: state.sourceBookInfo,
         };
-    }, [raceId, resolution.sessionId, resolution.applyUpdate, state.name, state.editionId, state.isVisible, state.description, state.sourceBookInfo]);
+    }, [raceId, resolution.raceState, resolution.applyUpdate, state.name, state.editionId, state.isVisible, state.description, state.sourceBookInfo]);
 
-    // Track previous progressions to detect changes
-    const prevProgressionsRef = useRef<FeatureProgression[]>([]);
+    // Track previous features to detect changes
+    const prevFeaturesRef = useRef<number[]>([]);
 
     /**
-     * Sync feature progressions to backend session.
+     * Sync feature features to backend session.
      * 
-     * Detects ADD/UPDATE/REMOVE operations by comparing previous and current progressions.
+     * Detects ADD/UPDATE/REMOVE operations by comparing previous and current features.
      */
     useEffect(() => {
-        const { sessionId, applyUpdate } = resolution;
+        const { applyUpdate } = resolution;
 
-        if (!raceId || !sessionId) {
+        if (!raceId || !resolution.raceState) {
             return;
         }
 
-        const prevProgressions = prevProgressionsRef.current;
-        const currentProgressions = state.featureProgressions;
+        const prevFeatureIds = prevFeaturesRef.current;
+        const currentFeatureIds = state.featureIds;
 
         // Initialize ref on first sync (don't send updates on initial load)
-        if (prevProgressions.length === 0 && currentProgressions.length > 0) {
-            prevProgressionsRef.current = [...currentProgressions];
+        if (prevFeatureIds.length === 0 && currentFeatureIds.length > 0) {
+            prevFeaturesRef.current = [...currentFeatureIds];
             return;
         }
 
-        // Detect removed progressions
-        const removedProgressions = prevProgressions.filter(prev =>
-            !currentProgressions.some(curr => curr.id === prev.id)
+        // Detect removed features (unlinked)
+        const removedFeatureIds = prevFeatureIds.filter(prevId =>
+            !currentFeatureIds.includes(prevId)
         );
-        removedProgressions.forEach(progression => {
-            if (progression.id) {
-                applyUpdate({
-                    type: RaceUpdateType.RemoveProgression,
-                    payload: { progressionId: progression.id }
-                }).catch(error => {
-                    console.error('Failed to sync progression removal:', error);
-                });
-            }
-        });
-
-        // Detect added progressions
-        const addedProgressions = currentProgressions.filter(curr => {
-            if (curr.id) {
-                const wasInPrevious = prevProgressions.some(prev => prev.id === curr.id);
-                if (wasInPrevious) return false;
-                // Check if this was a null-ID progression that got an ID assigned
-                const wasNullIdProgression = prevProgressions.some(prev =>
-                    !prev.id && prev.featureId === curr.featureId && prev.level === curr.level
-                );
-                if (wasNullIdProgression) return false; // Was updated, not added
-            }
-            // New progression (null ID or not in previous list)
-            return !prevProgressions.some(prev =>
-                !prev.id && !curr.id && prev.featureId === curr.featureId && prev.level === curr.level
-            );
-        });
-        addedProgressions.forEach(progression => {
+        removedFeatureIds.forEach(featureId => {
             applyUpdate({
-                type: RaceUpdateType.AddProgression,
-                payload: { progression }
+                type: RaceUpdateType.UnlinkFeature,
+                payload: { featureId }
             }).catch(error => {
-                console.error('Failed to sync progression addition:', error);
+                console.error('Failed to sync feature unlink:', error);
             });
         });
 
-        // Detect updated progressions (same ID, different content)
-        currentProgressions.forEach(curr => {
-            if (!curr.id) return; // Skip null-ID progressions (handled as adds)
-            const prev = prevProgressions.find(p => p.id === curr.id);
-            if (prev && !isEqual(prev, curr)) {
-                applyUpdate({
-                    type: RaceUpdateType.UpdateProgression,
-                    payload: { progressionId: curr.id, progression: curr }
-                }).catch(error => {
-                    console.error('Failed to sync progression update:', error);
-                });
-            }
+        // Detect added features (linked)
+        const addedFeatureIds = currentFeatureIds.filter(currId =>
+            !prevFeatureIds.includes(currId)
+        );
+        addedFeatureIds.forEach(featureId => {
+            applyUpdate({
+                type: RaceUpdateType.LinkFeature,
+                payload: { featureId }
+            }).catch(error => {
+                console.error('Failed to sync feature link:', error);
+            });
         });
 
+        // Note: Feature updates are handled by the feature state system, not here
+        // Features are managed independently, so we only sync linking/unlinking
+
         // Update ref
-        prevProgressionsRef.current = [...currentProgressions];
-    }, [raceId, resolution, state.featureProgressions]);
+        prevFeaturesRef.current = [...currentFeatureIds];
+    }, [raceId, resolution, state.featureIds]);
 
     useEffect(() => {
         if (location.state?.newFeature) {
@@ -482,30 +532,33 @@ export function RaceEdit() {
      */
     const _handleDeleteFeature = useCallback(async (featureId: number) => {
         if (window.confirm('Are you sure you want to remove this feature from the race?')) {
-            const progressionsToRemove = state.featureProgressions.filter(feature => feature.featureId === featureId);
-            progressionsToRemove.forEach(prog => {
-                if (prog.id) {
-                    updateState({ type: RaceEditStateUpdateType.REMOVE_FEATURE_PROGRESSION, payload: { progressionId: prog.id } });
-                }
-            });
+            // For race, we just unlink the feature
+            updateState({ type: RaceEditStateUpdateType.UNLINK_FEATURE, payload: { featureId } });
             setMessage('Feature removed successfully from race!');
         }
-    }, [state.featureProgressions, updateState]);
+    }, [state.featureIds, updateState]);
 
     /**
      * Handles adding a language to the race via the feature system using FeatureEntity approach.
      */
     const handleAddLanguage = useCallback((languageId: number, isAutomatic: boolean) => {
-        const prev = state.featureProgressions;
-        const featureId = isAutomatic ?
-            SpecialFeatureId.AutomaticLanguage :
-            SpecialFeatureId.BonusLanguage;
+        // Features are now managed independently via feature state system
+        // Language features need to be created/edited via FeatureEditForm
+        // For now, this needs to be refactored to work with featureIds
+        // TODO: Refactor language handling to work with independent feature state system
+        console.warn('handleAddLanguage needs refactoring for independent feature state system');
+        // TODO: Refactor to work with featureIds and FeatureStateStore
+        return;
+        /* Old code - needs refactoring
+        const appliesToType = isAutomatic ? EntityAppliesToType.AutomaticLanguage : EntityAppliesToType.BonusLanguage;
+        const prev = loadedFeatures;
 
         // Check if this language is already added
         const existingLanguageEntity = prev.some(fp =>
-            fp.featureId === featureId &&
+            fp.sourceType === FeatureSourceType.Race &&
             fp.entities?.some(entity =>
-                entity.appliesTo === (isAutomatic ? EntityAppliesToType.AutomaticLanguage : EntityAppliesToType.BonusLanguage) &&
+                entity.type === EntityType.Base &&
+                entity.appliesTo === appliesToType &&
                 entity.appliesToId === languageId
             )
         );
@@ -515,26 +568,24 @@ export function RaceEdit() {
             return;
         }
 
-        // Find existing language progression or create new one
+        // Find existing language feature or create new one
         let languageProgression = prev.find(fp =>
-            fp.featureId === featureId
+            fp.sourceType === FeatureSourceType.Race &&
+            fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === appliesToType)
         );
 
         if (!languageProgression) {
-            // Create new language progression
+            // Create new language feature
+            const tempFeatureId = Math.floor(Date.now() + Math.random() * 1000);
             languageProgression = {
-                id: null, // Backend will generate ID
-                level: 1,
-                domainId: null, // Set domainId to null for race-based progressions
-                featureId: featureId,
+                id: tempFeatureId, // Temporary ID for frontend state
+                slug: isAutomatic ? 'automatic-languages' : 'bonus-languages',
+                name: isAutomatic ? 'Automatic Languages' : 'Bonus Languages',
+                description: isAutomatic ? 'Automatic language feature' : 'Bonus language feature',
+                displayInCharacterSheet: true,
                 sourceType: FeatureSourceType.Race,
-                feature: {
-                    id: featureId,
-                    name: isAutomatic ? 'Automatic Language' : 'Bonus Language',
-                    description: isAutomatic ? 'Automatic language feature' : 'Bonus language feature',
-                    slug: isAutomatic ? 'automatic-language' : 'bonus-language',
-                    displayInCharacterSheet: true,
-                },
+                level: 1,
+                domainId: null, // Set domainId to null for race-based features
                 entities: []
             };
         }
@@ -542,10 +593,10 @@ export function RaceEdit() {
         // Add language modifier
         const languageEntity = {
             id: null, // Backend will generate ID
-            progressionId: languageProgression.id,
-            type: EntityType.Other,
+            featureId: languageProgression.id,
+            type: EntityType.Base, // Use Base type for languages
             value: 0,
-            appliesTo: isAutomatic ? EntityAppliesToType.AutomaticLanguage : EntityAppliesToType.BonusLanguage,
+            appliesTo: appliesToType,
             appliesToId: languageId,
             appliesToSubId: null,
             bonusType: null,
@@ -555,9 +606,10 @@ export function RaceEdit() {
             displayInDetail: true,
         };
 
-        // Update the existing progression or add a new one
+        // Update the existing feature or add a new one
         const updatedProgressions = prev.map(fp => {
-            if (fp.featureId === featureId) {
+            if (fp.sourceType === FeatureSourceType.Race &&
+                fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === appliesToType)) {
                 return {
                     ...fp,
                     entities: [...(fp.entities || []), languageEntity]
@@ -566,163 +618,165 @@ export function RaceEdit() {
             return fp;
         });
 
-        // If no existing progression was found, add the new one with the language modifier
-        if (!prev.some(fp => fp.featureId === featureId)) {
+        // If no existing feature was found, add the new one with the language modifier
+        if (!prev.some(fp =>
+            fp.sourceType === FeatureSourceType.Race &&
+            fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === appliesToType)
+        )) {
             languageProgression.entities = [languageEntity];
             updatedProgressions.push(languageProgression);
         }
 
-        updateState({ type: RaceEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: updatedProgressions } });
-    }, [state.featureProgressions, updateState]);
+        // Features are now managed independently - this needs refactoring
+        // TODO: Refactor language feature handling to work with independent feature state system
+        console.warn('Language feature handling needs refactoring for independent feature state system');
+        */
+    }, [state.featureIds, updateState]);
 
     /**
      * Handles adding a feature to the race.
      * 
      * **Backend-Managed IDs Pattern**: The backend now handles all ID generation.
-     * For new progressions, we set id to null and let the backend generate IDs.
+     * For new features, we set id to null and let the backend generate IDs.
      */
     const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
         try {
-            // Fetch the feature's existing progressions to copy entities
-            const existingProgressions = await FeatureSystemApi.getFeatureProgressions(undefined, { id: feature.id });
+            // Fetch the feature's existing features to copy entities
+            const existingProgressions = await FeatureSystemApi.getFeatures(undefined, { id: feature.id });
 
-            // Find the first progression with entities to copy, or use empty entities
+            // Find the first feature with entities to copy, or use empty entities
             const sourceProgression = existingProgressions.find(p => p.entities && p.entities.length > 0);
             const entitiesToCopy = sourceProgression?.entities || [];
 
-            const newProgression: FeatureProgression = {
-                id: null, // Backend will generate ID
+            const newProgression: FeatureWithRelations = {
+                id: feature.id,
                 sourceType: FeatureSourceType.Race,
-                domainId: null, // Set domainId to null for race-based progressions
+                domainId: null, // Set domainId to null for race-based features
                 level: 1, // Default to level 1
-                featureId: feature.id,
-                feature: {
-                    id: feature.id,
-                    name: feature.name,
-                    description: feature.description,
-                    slug: feature.slug,
-                    displayInCharacterSheet: sourceProgression?.feature?.displayInCharacterSheet ?? true,
-                    prerequisites: sourceProgression?.feature?.prerequisites || []
-                },
+                name: feature.name,
+                description: feature.description,
+                slug: feature.slug,
+                displayInCharacterSheet: sourceProgression?.displayInCharacterSheet ?? true,
+                prerequisites: sourceProgression?.prerequisites || [],
                 entities: entitiesToCopy.map(entity => ({
                     ...entity,
                     id: null, // Backend will generate ID
-                    progressionId: null // Will be set when progression is saved
+                    featureId: null // Will be set when feature is saved
                 }))
             };
 
-            updateState({ type: RaceEditStateUpdateType.ADD_FEATURE_PROGRESSION, payload: { progression: newProgression } });
+            updateState({ type: RaceEditStateUpdateType.LINK_FEATURE, payload: { featureId: newProgression.id } });
         } catch (error) {
-            console.error('Failed to fetch feature progressions:', error);
-            // Fallback to creating progression without entities
-            const newProgression: FeatureProgression = {
-                id: null, // Backend will generate ID
+            console.error('Failed to fetch feature features:', error);
+            // Fallback to creating feature without entities
+            const newProgression: FeatureWithRelations = {
+                id: feature.id,
                 sourceType: FeatureSourceType.Race,
-                domainId: null, // Set domainId to null for race-based progressions
+                domainId: null, // Set domainId to null for race-based features
                 level: 1,
-                featureId: feature.id,
-                feature: {
-                    id: feature.id,
-                    name: feature.name,
-                    description: feature.description,
-                    slug: feature.slug,
-                    displayInCharacterSheet: true,
-                },
+                name: feature.name,
+                description: feature.description,
+                slug: feature.slug,
+                displayInCharacterSheet: true,
                 entities: []
             };
-            updateState({ type: RaceEditStateUpdateType.ADD_FEATURE_PROGRESSION, payload: { progression: newProgression } });
+            updateState({ type: RaceEditStateUpdateType.LINK_FEATURE, payload: { featureId: newProgression.id } });
         }
     }, [updateState]);
 
-    /**
-     * Handles removing a feature progression from the race.
-     */
-    const handleRemoveProgression = useCallback((progressionId: number) => {
-        updateState({ type: RaceEditStateUpdateType.REMOVE_FEATURE_PROGRESSION, payload: { progressionId } });
-    }, [updateState]);
+    // Handlers are already defined above - these duplicates should be removed
 
     /**
-     * Handles updating an existing feature progression.
+     * Handles editing a feature feature.
      */
-    const handleUpdateProgression = useCallback((oldProgression: FeatureProgression, updatedProgression: FeatureProgression) => {
-        if (oldProgression.id) {
-            updateState({ type: RaceEditStateUpdateType.UPDATE_FEATURE_PROGRESSION, payload: { progressionId: oldProgression.id, progression: updatedProgression } });
-        } else {
-            // If no ID, just add as new
-            updateState({ type: RaceEditStateUpdateType.ADD_FEATURE_PROGRESSION, payload: { progression: updatedProgression } });
-        }
-    }, [updateState]);
-
-    /**
-     * Handles adding a new feature progression.
-     */
-    const handleAddProgression = useCallback((progression: FeatureProgression) => {
-        updateState({ type: RaceEditStateUpdateType.ADD_FEATURE_PROGRESSION, payload: { progression } });
-    }, [updateState]);
-
-    /**
-     * Handles editing a feature progression.
-     */
-    const handleEditProgression = useCallback((progression: FeatureProgression) => {
-        updateState({ type: RaceEditStateUpdateType.SET_EDITING_PROGRESSION, payload: { editingProgression: progression } });
-        updateState({ type: RaceEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+    const handleEditProgression = useCallback((feature: FeatureWithRelations) => {
+        updateState({ type: RaceEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: feature.id } });
     }, [updateState]);
 
     /**
      * Handles the removal of a language from the race using FeatureEntity approach.
      */
     const handleRemoveLanguage = useCallback((languageId: number) => {
-        const prev = state.featureProgressions;
-        // Remove the language modifier from both automatic and bonus language progressions
+        // Features are now managed independently - need to refactor
+        // TODO: Refactor to work with featureIds and FeatureStateStore
+        console.warn('handleRemoveLanguage needs refactoring for independent feature state system');
+        return;
+        /* Old code - needs refactoring
+        const prev = loadedFeatures;
+        // Remove the language modifier from both automatic and bonus language features
         const updatedProgressions = prev.map(fp => {
-            if (fp.featureId === SpecialFeatureId.AutomaticLanguage || fp.featureId === SpecialFeatureId.BonusLanguage) {
+            if (fp.sourceType === FeatureSourceType.Race &&
+                fp.entities?.some(e =>
+                    e.type === EntityType.Base &&
+                    (e.appliesTo === EntityAppliesToType.AutomaticLanguage || e.appliesTo === EntityAppliesToType.BonusLanguage)
+                )) {
                 return {
                     ...fp,
                     entities: fp.entities?.filter(entity =>
-                        !((entity.appliesTo === EntityAppliesToType.AutomaticLanguage || entity.appliesTo === EntityAppliesToType.BonusLanguage) && entity.appliesToId === languageId)
+                        !(entity.type === EntityType.Base &&
+                            (entity.appliesTo === EntityAppliesToType.AutomaticLanguage || entity.appliesTo === EntityAppliesToType.BonusLanguage) &&
+                            entity.appliesToId === languageId)
                     ) || []
                 };
             }
             return fp;
         });
 
-        // Remove empty language progressions
+        // Remove empty language features
         const filteredProgressions = updatedProgressions.filter(fp => {
-            if (fp.featureId === SpecialFeatureId.AutomaticLanguage || fp.featureId === SpecialFeatureId.BonusLanguage) {
+            if (fp.sourceType === FeatureSourceType.Race &&
+                fp.entities?.some(e =>
+                    e.type === EntityType.Base &&
+                    (e.appliesTo === EntityAppliesToType.AutomaticLanguage || e.appliesTo === EntityAppliesToType.BonusLanguage)
+                )) {
                 return fp.entities && fp.entities.length > 0;
             }
             return true;
         });
 
-        updateState({ type: RaceEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: filteredProgressions } });
-    }, [state.featureProgressions, updateState]);
+        // Update featureIds based on filtered features
+        const updatedFeatureIds = filteredProgressions.map(f => f.id).filter((id): id is number => id !== null);
+        updateState({ type: RaceEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
+        */
+    }, [loadedFeatures, updateState]);
 
     /**
      * Handles changes to an ability adjustment for the race via the feature system.
      */
     const handleAbilityChange = useCallback((abilityId: number, parsedValue: number) => {
-        const prev = state.featureProgressions;
-        // Find existing ability adjustment feature (any ability adjustment feature)
+        // Features are now managed independently - need to refactor
+        // TODO: Refactor to work with featureIds and FeatureStateStore
+        console.warn('handleAbilityChange needs refactoring for independent feature state system');
+        return;
+        /* Old code - needs refactoring
+        const prev = loadedFeatures;
+        // Find existing ability adjustment feature (race feature with Base ability entities)
         const existingAbilityFeature = prev.find(fp =>
-            fp.featureId === SpecialFeatureId.AbilityAdjustment
+            fp.sourceType === FeatureSourceType.Race &&
+            fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability)
         );
 
-        let updatedFeatures: FeatureProgression[];
+        let updatedFeatures: FeatureWithRelations[];
 
         if (existingAbilityFeature) {
             // Check if this specific ability already has a modifier
             const existingEntity = existingAbilityFeature.entities?.find(e =>
-                e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId
+                e.type === EntityType.Base &&
+                e.appliesTo === EntityAppliesToType.Ability &&
+                e.appliesToId === abilityId
             );
 
             if (existingEntity) {
                 // Update existing entity
                 updatedFeatures = prev.map(fp =>
-                    fp.featureId === SpecialFeatureId.AbilityAdjustment
+                    fp.sourceType === FeatureSourceType.Race &&
+                        fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability)
                         ? {
                             ...fp,
                             entities: fp.entities?.map(e =>
-                                e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId
+                                e.type === EntityType.Base &&
+                                    e.appliesTo === EntityAppliesToType.Ability &&
+                                    e.appliesToId === abilityId
                                     ? { ...e, value: parsedValue }
                                     : e
                             ) || []
@@ -732,13 +786,14 @@ export function RaceEdit() {
             } else if (parsedValue !== 0) {
                 // Add new entity to existing ability adjustment feature
                 updatedFeatures = prev.map(fp =>
-                    fp.featureId === SpecialFeatureId.AbilityAdjustment
+                    fp.sourceType === FeatureSourceType.Race &&
+                        fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability)
                         ? {
                             ...fp,
                             entities: [...(fp.entities || []), {
                                 id: null, // Backend will generate ID
-                                progressionId: fp.id,
-                                type: EntityType.Bonus,
+                                featureId: fp.id,
+                                type: EntityType.Base, // Use Base type for ability adjustments
                                 value: parsedValue,
                                 appliesTo: EntityAppliesToType.Ability,
                                 appliesToId: abilityId,
@@ -755,11 +810,14 @@ export function RaceEdit() {
             } else {
                 // Remove modifier if value is 0
                 updatedFeatures = prev.map(fp =>
-                    fp.featureId === SpecialFeatureId.AbilityAdjustment
+                    fp.sourceType === FeatureSourceType.Race &&
+                        fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability)
                         ? {
                             ...fp,
                             entities: fp.entities?.filter(e =>
-                                !(e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId)
+                                !(e.type === EntityType.Base &&
+                                    e.appliesTo === EntityAppliesToType.Ability &&
+                                    e.appliesToId === abilityId)
                             ) || []
                         }
                         : fp
@@ -767,24 +825,21 @@ export function RaceEdit() {
             }
         } else if (parsedValue !== 0) {
             // Create new ability adjustment feature with this modifier
-            // Backend-Managed IDs Pattern: Set id to null for new progression
-            const newAbilityFeature: FeatureProgression = {
-                id: null, // Backend will generate ID
-                domainId: null, // Set domainId to null for race-based progressions
-                level: 1,
-                featureId: SpecialFeatureId.AbilityAdjustment,
+            // Backend-Managed IDs Pattern: Set id to null for new feature
+            const tempFeatureId = Math.floor(Date.now() + Math.random() * 1000);
+            const newAbilityFeature: FeatureWithRelations = {
+                id: tempFeatureId, // Temporary ID for frontend state
+                slug: 'ability-adjustments',
+                name: 'Ability Adjustments',
+                description: 'Racial ability score adjustments',
+                displayInCharacterSheet: true,
                 sourceType: FeatureSourceType.Race,
-                feature: {
-                    id: SpecialFeatureId.AbilityAdjustment,
-                    slug: 'ability-adjustment',
-                    name: 'Ability Adjustment',
-                    description: 'Racial ability score adjustments',
-                    displayInCharacterSheet: true,
-                },
+                level: 1,
+                domainId: null, // Set domainId to null for race-based features
                 entities: [{
                     id: null, // Backend will generate ID
-                    progressionId: null,
-                    type: EntityType.Bonus,
+                    featureId: null,
+                    type: EntityType.Base, // Use Base type for ability adjustments
                     value: parsedValue,
                     appliesTo: EntityAppliesToType.Ability,
                     appliesToId: abilityId,
@@ -802,8 +857,11 @@ export function RaceEdit() {
             return;
         }
 
-        updateState({ type: RaceEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: updatedFeatures } });
-    }, [state.featureProgressions, updateState]);
+        // Features are now managed independently - need to extract featureIds
+        const updatedFeatureIds = updatedFeatures.map(f => f.id).filter((id): id is number => id !== null);
+        updateState({ type: RaceEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
+        */
+    }, [loadedFeatures, updateState]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -828,16 +886,9 @@ export function RaceEdit() {
                     isVisible: state.isVisible,
                     description: state.description,
                     sourceBookInfo: state.sourceBookInfo,
-                    features: state.featureProgressions.map(prog => {
-                        const { classes: _classes, races: _races, ...progressionData } = prog;
-                        return {
-                            ...progressionData,
-                            entities: prog.entities?.map(entity => {
-                                const { progressionId: __, ...entityData } = entity;
-                                return entityData;
-                            }) || [],
-                        };
-                    })
+                    // Features are managed independently via featureIds
+                    // The backend will handle feature linking via syncRaceFeatures
+                    features: null
                 };
 
                 const newRace = await RaceApi.createRace(raceData);
@@ -849,13 +900,13 @@ export function RaceEdit() {
                 });
                 setTimeout(() => navigate(`/races/${newRace.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
-                // For existing races, use session save
-                if (!resolution.sessionId) {
-                    setError('Session not initialized. Please wait for the session to load.');
+                // For existing races, use state save
+                if (!resolution.raceState) {
+                    setError('Race state not loaded. Please wait for the state to load.');
                     return;
                 }
 
-                await resolution.saveSession();
+                await resolution.save();
                 setMessage('Race updated successfully!');
 
                 // Invalidate race caches
@@ -977,12 +1028,14 @@ export function RaceEdit() {
                             <CurrentTabComponent
                                 state={state}
                                 updateState={updateState}
-                                formData={formData}
-                                setFormData={setFormData}
                                 validation={form.validation}
                                 isLoading={isLoading}
-                                featureProgressions={state.featureProgressions}
-                                setFeatureProgressions={(progressions) => updateState({ type: RaceEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: progressions } })}
+                                features={[]} // Features are loaded by FeaturesManager from FeatureStateStore
+                                setFeatures={(features) => {
+                                    // Update featureIds based on the features
+                                    const updatedFeatureIds = features.map(f => f.id).filter((id): id is number => id !== null);
+                                    updateState({ type: RaceEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
+                                }}
                                 raceId={id !== 'new' ? parseInt(id) : undefined}
                                 isFeatureAssocOpen={state.isFeatureAssocOpen}
                                 setIsFeatureAssocOpen={(open) => updateState({ type: RaceEditStateUpdateType.SET_IS_FEATURE_ASSOC_OPEN, payload: { isFeatureAssocOpen: open } })}
@@ -990,7 +1043,9 @@ export function RaceEdit() {
                                 onRemoveLanguage={handleRemoveLanguage}
                                 onAbilityChange={handleAbilityChange}
                                 onAddFeature={handleAddFeature}
-                                onRemoveProgression={handleRemoveProgression}
+                                onRemoveProgression={(featureId: number) => {
+                                    updateState({ type: RaceEditStateUpdateType.UNLINK_FEATURE, payload: { featureId } });
+                                }}
                                 onEditProgression={handleEditProgression}
                             />
                         )}
@@ -1023,30 +1078,54 @@ export function RaceEdit() {
                     updateState({ type: RaceEditStateUpdateType.SET_IS_FEATURE_ASSOC_OPEN, payload: { isFeatureAssocOpen: false } });
                 }}
                 onSave={() => { }}
-                initialSelectedFeatureIds={state.featureProgressions.map(f => f.featureId.toString())}
+                initialSelectedFeatureIds={state.featureIds.map(id => String(id))}
                 raceId={id !== 'new' ? parseInt(id) : 0}
             />
 
-            {/* Feature Progression Dialog */}
-            <FeatureProgressionDetailEdit
-                isOpen={state.isProgressionDialogOpen}
+            {/* Feature Edit Dialog */}
+            <FeatureEditForm
+                isOpen={state.editingFeatureId !== null}
                 onClose={() => {
-                    updateState({ type: RaceEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: false } });
-                    updateState({ type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE, payload: { preSelectedFeature: undefined } });
+                    updateState({ type: RaceEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: null } });
                 }}
-                progression={state.editingProgression}
-                onSave={(progression) => {
-                    if (state.editingProgression) {
-                        handleUpdateProgression(state.editingProgression, progression);
-                    } else {
-                        handleAddProgression(progression);
+                featureId={
+                    // Ensure featureId is never 0 - treat 0 as invalid and use 'new' instead
+                    state.editingFeatureId !== null && state.editingFeatureId > 0
+                        ? state.editingFeatureId
+                        : state.preSelectedFeatureId !== undefined && state.preSelectedFeatureId > 0
+                            ? state.preSelectedFeatureId
+                            : 'new'
+                }
+                onSave={async (feature: Feature, features: FeatureWithRelations[], featureId: number) => {
+                    const featureWithRelations = features[0] || feature as FeatureWithRelations;
+                    
+                    // Ensure the featureId is in the race's feature list
+                    // The feature was already saved via state system, we just need to track its ID
+                    // The useEffect hook will automatically sync the link to the backend
+                    if (!state.featureIds.includes(featureId)) {
+                        // Add the feature ID to the race's feature list
+                        updateState({ type: RaceEditStateUpdateType.LINK_FEATURE, payload: { featureId } });
                     }
-                    updateState({ type: RaceEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: false } });
-                    updateState({ type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE, payload: { preSelectedFeature: undefined } });
+                    
+                    // Refresh session state to get updated feature data from backend
+                    if (state.editingFeatureId !== null && resolution.refreshState) {
+                        await resolution.refreshState();
+                    }
+                    
+                    updateState({ type: RaceEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: null } });
+                    updateState({ type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID, payload: { preSelectedFeatureId: undefined } });
                 }}
-                preSelectedFeature={state.preSelectedFeature}
-                showSourceTypeSelector={false}
-                editionId={state.editionId}
+                mode="modal"
+                context={
+                    raceId
+                        ? {
+                            sourceType: FeatureSourceType.Race,
+                            parentId: raceId,
+                            parentType: 'race',
+                            editionId: state.editionId ?? null
+                        }
+                        : undefined
+                }
             />
         </div>
     );

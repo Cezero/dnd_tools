@@ -1,6 +1,6 @@
 import type {
     CharacterWithAllDetailsResponse,
-    FeatureProgression,
+    FeatureWithRelations,
     ItemWithDetails,
     CharacterItem,
     DnDClass,
@@ -73,7 +73,7 @@ export interface CombatValuesResult extends CalculationResult<CombatValuesBreakd
  */
 export function getCombatValues(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     context: CombatCalculationContext,
     classDetailsMap: Map<number, DnDClass>
 ): CombatValuesResult[] {
@@ -135,7 +135,7 @@ export function getCombatValues(
  */
 function calculateSingleWeaponAttack(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     weaponItem: ItemWithDetails | CharacterItem | null,
     otherItem: ItemWithDetails | CharacterItem | null | undefined,
     isOffHand: boolean,
@@ -356,7 +356,7 @@ function calculateSingleWeaponAttack(
  */
 function calculateUnarmedStrike(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     classDetailsMap: Map<number, DnDClass>
 ): CombatValuesResult {
     const bab = getCharacterBAB(character, classDetailsMap, resolvedProgressions);

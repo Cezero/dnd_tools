@@ -28,7 +28,7 @@ export function DomainDisplay({
     fromListParams: _fromListParams = ''
 }: DomainDisplayProps): React.JSX.Element {
     const { getSpellNameFromCache, getSpellSummaryFromCache, getDeityNameFromCache } = useCacheFunctions();
-    // Precache all entities referenced in feature progressions
+    // Precache all entities referenced in feature features
     usePrecacheFeatureEntities(domain?.features);
 
     const innerCellContentClasses = showHeader ? "p-3 bg-content border-content rounded-lg border w-full" : "";
@@ -73,7 +73,7 @@ export function DomainDisplay({
                                                     <div key={levelEntry.level} className="space-y-2">
                                                         {levelEntry.items?.map((item, index) => {
                                                             // Find the corresponding feature for this item
-                                                            const feature = actualFeatures.find(f => f.featureId === item.featureId);
+                                                            const feature = actualFeatures.find(f => f.id === item.featureId);
                                                             if (!feature) {
                                                                 return null;
                                                             }
@@ -81,12 +81,12 @@ export function DomainDisplay({
                                                             return (
                                                                 <div key={`item-${index}`}>
                                                                     <div className="text-sm">
-                                                                        <ProcessMarkdown markdown={feature.feature?.description || ''} id={`feature-${feature.id}`} userVars={{
+                                                                        <ProcessMarkdown markdown={feature.description || ''} id={`feature-${feature.id}`} userVars={{
                                                                             domainname: domain.name,
                                                                             domainnamelower: domain.name.toLowerCase(),
                                                                         }} />
                                                                         {item.formattedValue && (
-                                                                            <div className="mt-2 ml-2"><strong>{feature.feature?.name}:</strong><span className="ml-2">{item.formattedValue}</span></div>
+                                                                            <div className="mt-2 ml-2"><strong>{feature.name}:</strong><span className="ml-2">{item.formattedValue}</span></div>
                                                                         )}
                                                                     </div>
                                                                 </div>

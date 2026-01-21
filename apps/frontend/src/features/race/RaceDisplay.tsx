@@ -6,8 +6,8 @@ import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtr
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { useCacheFunctions, getSourceDisplay } from '@/services/cache';
-import { Race } from '@shared/schema';
-import { DisplayType, SIZE_MAP, EDITION_MAP, SpecialFeatureId } from '@shared/static-data';
+import { Race, FeatureWithRelations } from '@shared/schema';
+import { DisplayType, SIZE_MAP, EDITION_MAP, EntityType, EntityAppliesToType, FeatureSourceType } from '@shared/static-data';
 
 
 interface RaceDisplayProps {
@@ -18,6 +18,8 @@ interface RaceDisplayProps {
     onEdit?: () => void;
     isAdmin?: boolean;
     fromListParams?: string;
+    lockStatus?: { locked: boolean; lockedBy?: number };
+    currentUserId?: number;
 }
 
 export function RaceDisplay({
@@ -27,12 +29,14 @@ export function RaceDisplay({
     onBack,
     onEdit,
     isAdmin = false,
-    fromListParams: _fromListParams = ''
+    fromListParams: _fromListParams = '',
+    lockStatus,
+    currentUserId
 }: RaceDisplayProps): React.JSX.Element {
-    // Precache all entities referenced in feature progressions
+    // Precache all entities referenced in feature features
     usePrecacheFeatureEntities(race?.features);
 
-    // Extract mechanics from feature progressions
+    // Extract mechanics from feature features
     const mechanics = useMemo(() => {
         if (race.features && race.features.length > 0) {
             const raceId = (race as { id?: number }).id;
@@ -56,7 +60,7 @@ export function RaceDisplay({
         automaticLanguages: string[];
         bonusLanguages: string[];
         abilityAdjustments: string[];
-        otherFeatures: Array<{ formattedValue?: string; descriptionLevel?: number; level?: number; feature: { id: number; featureId: number; feature?: { name?: string; description?: string } } }>;
+        otherFeatures: Array<{ formattedValue?: string; descriptionLevel?: number; level?: number; feature: FeatureWithRelations }>;
     }>({ automaticLanguages: [], bonusLanguages: [], abilityAdjustments: [], otherFeatures: [] });
 
     // Only update formatted results when race actually changes
@@ -73,19 +77,31 @@ export function RaceDisplay({
         const automaticLanguages: string[] = [];
         const bonusLanguages: string[] = [];
         const abilityAdjustments: string[] = [];
-        const otherFeatures: Array<{ formattedValue?: string; descriptionLevel?: number; level?: number; feature: { id: number; featureId: number; feature?: { name?: string; description?: string } } }> = [];
+        const otherFeatures: Array<{ formattedValue?: string; descriptionLevel?: number; level?: number; feature: FeatureWithRelations }> = [];
 
         for (const levelEntry of formattedResult.levelEntries) {
             for (const item of levelEntry.items || []) {
                 // Find the corresponding feature to determine its type
-                const feature = race.features?.find(f => f.featureId === item.featureId);
-                if (!feature) continue;
+                const foundFeature = race.features?.find(f => f.id === item.featureId);
+                if (!foundFeature) continue;
 
-                if (feature.featureId === SpecialFeatureId.AutomaticLanguage && item.formattedValue) {
+                // Check entity type and appliesTo to identify language and ability adjustment features
+                const feature = foundFeature; // FeatureWithRelations is now the unified Feature model
+                const hasAutomaticLanguage = feature?.entities?.some(e => 
+                    e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.AutomaticLanguage
+                );
+                const hasBonusLanguage = feature?.entities?.some(e => 
+                    e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.BonusLanguage
+                );
+                const hasAbilityAdjustment = feature?.entities?.some(e => 
+                    e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability
+                );
+
+                if (hasAutomaticLanguage && item.formattedValue) {
                     automaticLanguages.push(item.formattedValue);
-                } else if (feature.featureId === SpecialFeatureId.BonusLanguage && item.formattedValue) {
+                } else if (hasBonusLanguage && item.formattedValue) {
                     bonusLanguages.push(item.formattedValue);
-                } else if (feature.featureId === SpecialFeatureId.AbilityAdjustment && item.formattedValue) {
+                } else if (hasAbilityAdjustment && item.formattedValue) {
                     abilityAdjustments.push(item.formattedValue);
                 } else {
                     otherFeatures.push({ ...item, feature });
@@ -189,7 +205,7 @@ export function RaceDisplay({
                                             <div className="text-sm">
                                                 {shouldShowDescription ? (
                                                     // Show full description for first occurrence
-                                                    <ProcessMarkdown markdown={item.feature?.feature?.description || ''} id={`feature-${item.feature?.id}`} userVars={{
+                                                    <ProcessMarkdown markdown={item.feature?.description || ''} id={`feature-${item.feature?.id}`} userVars={{
                                                         racename: race.name,
                                                         racenamelower: race.name.toLowerCase(),
                                                         raceplural: pluralize(race.name),
@@ -197,7 +213,7 @@ export function RaceDisplay({
                                                     }} />
                                                 ) : (
                                                     // Show just the feature name for subsequent occurrences
-                                                    <strong>{item.feature?.feature?.name}</strong>
+                                                    <strong>{item.feature?.name}</strong>
                                                 )}
                                                 {item.formattedValue && (
                                                     <span className="ml-2">{item.formattedValue}</span>
@@ -222,13 +238,24 @@ export function RaceDisplay({
                                 </button>
                             )}
                             {isAdmin && onEdit && (
-                                <button
-                                    type="button"
-                                    onClick={onEdit}
-                                    className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500"
-                                >
-                                    Edit Race
-                                </button>
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={onEdit}
+                                        disabled={lockStatus?.locked && lockStatus.lockedBy !== currentUserId}
+                                        className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                        title={lockStatus?.locked && lockStatus.lockedBy !== currentUserId
+                                            ? `Currently locked by User ${lockStatus.lockedBy}`
+                                            : 'Edit race'}
+                                    >
+                                        Edit Race
+                                    </button>
+                                    {lockStatus?.locked && lockStatus.lockedBy !== currentUserId && (
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 ml-4">
+                                            Currently locked by User {lockStatus.lockedBy}
+                                        </p>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}

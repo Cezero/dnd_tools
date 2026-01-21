@@ -8,14 +8,14 @@ import {
     CreateResponse,
     UpdateResponse,
     RaceCacheResponse,
-    CreateFeatureProgressionRequest,
+    CreateFeatureRequest,
 } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
 import type { RaceService } from './types';
-import { featureSystemService } from '../featureSystem/featureSystemService';
-import type { FeatureProgressionContext } from '../featureSystem/types';
 import { extractRaceMechanicsFromProgressions } from '../../utils/raceMechanicsExtractor';
+import { featureSystemService } from '../featureSystem/featureSystemService';
+import type { FeatureContext } from '../featureSystem/types';
 
 const prisma = new PrismaClient();
 
@@ -36,10 +36,10 @@ export const raceService: RaceService = {
             prisma.race.count(),
         ]);
 
-        // Get feature progressions for all races and extract mechanics for summary
+        // Get feature features for all races and extract mechanics for summary
         const racesWithMechanics = await Promise.all(
             races.map(async (race) => {
-                const features = await featureSystemService.getFeatureProgressionsByRaceId(race.id);
+                const features = await featureSystemService.getFeaturesByRaceId(race.id);
                 const mechanics = extractRaceMechanicsFromProgressions(features, race.id);
 
                 return {
@@ -59,7 +59,7 @@ export const raceService: RaceService = {
 
     async getRaceById(
         id: RaceIdParamRequest,
-        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+        characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
     ): Promise<Race | null> {
         const race = await prisma.race.findUnique({
             where: { id: id.id },
@@ -72,11 +72,11 @@ export const raceService: RaceService = {
             return null;
         }
 
-        // Get feature progressions using the new architecture
-        // Pass character feature choices to enrich progressions with choice data
-        const features = await featureSystemService.getFeatureProgressionsByRaceId(id.id, characterFeatureChoices);
+        // Get feature features using the new architecture
+        // Pass character feature choices to enrich features with choice data
+        const features = await featureSystemService.getFeaturesByRaceId(id.id, characterFeatureChoices);
 
-        // Combine race data with enriched feature progressions
+        // Combine race data with enriched feature features
         const transformedRace = {
             ...race,
             features,
@@ -100,14 +100,18 @@ export const raceService: RaceService = {
             },
         });
 
-        // Create feature progressions using consolidated feature system service
-        // Convert UpdateFeatureProgression[] to CreateFeatureProgressionRequest[] by providing defaults
+        // Create feature features using consolidated feature system service
+        // Convert UpdateFeature[] to CreateFeatureRequest[] by providing defaults
         if (features && features.length > 0) {
-            const context: FeatureProgressionContext = { raceId: result.id };
-            const createProgressions: CreateFeatureProgressionRequest[] = features.map(prog => ({
+            const context: FeatureContext = { raceId: result.id };
+            const createProgressions: CreateFeatureRequest[] = features.map(prog => ({
+                name: prog.name ?? '',
+                slug: prog.slug ?? '',
+                description: prog.description ?? '',
+                summary: prog.summary ?? null,
+                displayInCharacterSheet: prog.displayInCharacterSheet ?? true,
                 level: prog.level ?? 1,
                 sourceType: prog.sourceType ?? FeatureSourceType.Race,
-                featureId: prog.featureId!,
                 domainId: prog.domainId ?? null,
                 featId: prog.featId ?? null,
                 companionId: prog.companionId ?? null,
@@ -115,7 +119,7 @@ export const raceService: RaceService = {
                 entities: prog.entities,
                 displayConditions: prog.displayConditions,
             }));
-            await featureSystemService.createMultipleFeatureProgressions(createProgressions, context);
+            await featureSystemService.createMultipleFeatures(createProgressions, context);
         }
 
         return { id: result.id.toString(), message: 'Race created successfully' };
@@ -125,10 +129,6 @@ export const raceService: RaceService = {
         const { features, ...raceData } = data;
 
         await prisma.$transaction(async (tx) => {
-            // Delete existing feature progressions using consolidated feature system service
-            const deleteContext: FeatureProgressionContext = { raceId: id.id };
-            await featureSystemService.deleteFeatureProgressionsForContext(deleteContext, tx);
-
             // Delete existing race source maps
             await tx.raceSourceMap.deleteMany({ where: { raceId: id.id } });
 
@@ -146,22 +146,50 @@ export const raceService: RaceService = {
                 }
             });
 
-            // Create new feature progressions using consolidated feature system service
-            // Convert UpdateFeatureProgression[] to CreateFeatureProgressionRequest[] by providing defaults
+            // Sync FeatureRaceMap links
+            // Features are already saved via state system, we only need to sync the links
             if (features && features.length > 0) {
-                const createContext: FeatureProgressionContext = { raceId: id.id };
-                const createProgressions: CreateFeatureProgressionRequest[] = features.map(prog => ({
-                    level: prog.level ?? 1,
-                    sourceType: prog.sourceType ?? FeatureSourceType.Race,
-                    featureId: prog.featureId!,
-                    domainId: prog.domainId ?? null,
-                    featId: prog.featId ?? null,
-                    companionId: prog.companionId ?? null,
-                    editionId: prog.editionId ?? null,
-                    entities: prog.entities,
-                    displayConditions: prog.displayConditions,
-                }));
-                await featureSystemService.createMultipleFeatureProgressions(createProgressions, createContext, tx);
+                console.log(`[RaceService] Syncing FeatureRaceMap for race ${id.id} with ${features.length} features`);
+
+                // Extract feature IDs from the features array
+                // Features should have id fields (they were already saved via state system)
+                const featureIds: number[] = [];
+                for (const feature of features) {
+                    if (feature.id && typeof feature.id === 'number') {
+                        featureIds.push(feature.id);
+                    }
+                }
+
+                console.log(`[RaceService] Extracted ${featureIds.length} feature IDs: ${featureIds.join(', ')}`);
+
+                // Verify all feature IDs exist in database
+                if (featureIds.length > 0) {
+                    const existingFeatures = await tx.feature.findMany({
+                        where: { id: { in: featureIds } },
+                        select: { id: true }
+                    });
+
+                    const foundIds = new Set(existingFeatures.map(f => f.id));
+                    const missingIds = featureIds.filter(id => !foundIds.has(id));
+
+                    if (missingIds.length > 0) {
+                        console.error(`[RaceService] WARNING: ${missingIds.length} feature IDs not found in database: ${missingIds.join(', ')}`);
+                        // Filter out missing IDs
+                        const validFeatureIds = featureIds.filter(id => foundIds.has(id));
+                        await featureSystemService.syncRaceFeatures(id.id, validFeatureIds, tx);
+                    } else {
+                        // All IDs are valid, sync links
+                        await featureSystemService.syncRaceFeatures(id.id, featureIds, tx);
+                    }
+                } else {
+                    console.warn(`[RaceService] No valid feature IDs found in features array`);
+                    // Sync to empty list (removes all links for this race)
+                    await featureSystemService.syncRaceFeatures(id.id, [], tx);
+                }
+            } else {
+                // No features provided - sync to empty list (removes all links for this race)
+                console.log(`[RaceService] No features provided for race ${id.id}, removing all FeatureRaceMap entries`);
+                await featureSystemService.syncRaceFeatures(id.id, [], tx);
             }
         });
 

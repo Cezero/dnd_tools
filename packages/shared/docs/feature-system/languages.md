@@ -16,26 +16,24 @@ Languages in the D&D Tools system are implemented using the **Feature System** w
    -- Examples: "Automatic Languages", "Bonus Languages"
    ```
 
-2. **`FeatureProgression`** - Links the feature to a specific race or class
+2. **`Feature`** - Unified feature model that links to a specific race or class (via FeatureRaceMap or FeatureClassMap)
    ```sql
    -- Language progression for a race or class
-   featureId: SpecialFeatureId.AutomaticLanguage (3) or any unique ID for bonus languages
-   raceId/classId: The race or class that gets these languages
+   featureId: Normal feature ID (e.g., "Elf Automatic Languages")
    level: 1 (languages are level 1 features)
-   sourceType: 2 (Race) or 1 (Class)
-   appliesToType: FeatureAppliesToType.Language (2)
-   appliesTo: null (container progression)
+   sourceType: FeatureSourceType.Race (0) or FeatureSourceType.Class (1)
+   -- Linked via FeatureRaceMap or FeatureClassMap
    ```
 
 3. **`FeatureEntity`** - Individual language grants within the language feature
    ```sql
-   -- Each language is a modifier
-   featureProgressionId: Links to the FeatureProgression
-   type: EntityType.Other (not a bonus, just granting language)
+   -- Each language is an entity with EntityType.Base
+   featureId: Links to the Feature
+   type: EntityType.Base (4) -- Base type for race mechanics
    appliesTo: EntityAppliesToType.BonusLanguage (14) or EntityAppliesToType.AutomaticLanguage (15)
    appliesToId: The specific language ID
    value: 0 (no bonus value - just granting language)
-   bonusType: null
+   bonusType: null (Base entities don't use bonus types)
    -- No conditions or choice keys needed
    ```
 
@@ -50,29 +48,33 @@ Automatic languages are **unconditional grants** that every character knows by d
 ```typescript
 // Automatic languages for Elves
 {
-    sourceType: 2, // Race
+    sourceType: FeatureSourceType.Race, // 0
     level: 1,
-    featureId: SpecialFeatureId.AutomaticLanguage, // 3
-    appliesToType: FeatureAppliesToType.Language,
-    appliesTo: null,
-    modifiers: [
+    featureId: 2001, // Normal feature ID for "Elf Automatic Languages"
+    feature: {
+        name: "Elf Automatic Languages",
+        slug: "race-2-automatic-languages",
+        description: "Automatic languages for Elf",
+        displayInCharacterSheet: true
+    },
+    entities: [
         {
-            type: EntityType.Other,
-            appliesTo: ModifierAppliesToType.AutomaticLanguage, // 15
+            type: EntityType.Base, // 4
+            appliesTo: EntityAppliesToType.AutomaticLanguage, // 15
             appliesToId: LANGUAGE_MAP.COMMON,
+            appliesToSubId: null,
             value: 0, // No bonus, just granting language
             bonusType: null
         },
         {
-            type: EntityType.Other,
-            appliesTo: ModifierAppliesToType.AutomaticLanguage, // 15
+            type: EntityType.Base,
+            appliesTo: EntityAppliesToType.AutomaticLanguage, // 15
             appliesToId: LANGUAGE_MAP.ELVEN,
+            appliesToSubId: null,
             value: 0,
             bonusType: null
         }
-    ],
-    choices: [],
-    effects: []
+    ]
 }
 ```
 
@@ -85,16 +87,21 @@ Bonus languages are **available for selection** based on Intelligence modifier. 
 ```typescript
 // Bonus languages for Elves
 {
-    sourceType: 2, // Race
+    sourceType: FeatureSourceType.Race, // 0
     level: 1,
-    featureId: SpecialFeatureId.BonusLanguage, // 4
-    appliesToType: FeatureAppliesToType.Language,
-    appliesTo: null,
-    modifiers: [
+    featureId: 2002, // Normal feature ID for "Elf Bonus Languages"
+    feature: {
+        name: "Elf Bonus Languages",
+        slug: "race-2-bonus-languages",
+        description: "Bonus languages for Elf",
+        displayInCharacterSheet: true
+    },
+    entities: [
         {
-            type: EntityType.Other,
-            appliesTo: ModifierAppliesToType.BonusLanguage, // 14
+            type: EntityType.Base, // 4
+            appliesTo: EntityAppliesToType.BonusLanguage, // 14
             appliesToId: LANGUAGE_MAP.DRACONIC,
+            appliesToSubId: null,
             value: 0,
             bonusType: null
         },
@@ -186,7 +193,7 @@ Similar to `ClassSkillService`, a `LanguageService` would provide functions for 
 
 #### **1. getAutomaticLanguages() - Extract automatic languages**
 ```typescript
-getAutomaticLanguages(progressions: FeatureProgressionWithRelations[]): number[] {
+getAutomaticLanguages(progressions: FeatureProgression[]): number[] {
     return progressions
         .flatMap(prog =>
             prog.modifiers
@@ -199,7 +206,7 @@ getAutomaticLanguages(progressions: FeatureProgressionWithRelations[]): number[]
 
 #### **2. getBonusLanguages() - Extract available bonus languages**
 ```typescript
-getBonusLanguages(progressions: FeatureProgressionWithRelations[]): number[] {
+getBonusLanguages(progressions: FeatureProgression[]): number[] {
     return progressions
         .flatMap(prog =>
             prog.modifiers
@@ -215,7 +222,7 @@ getBonusLanguages(progressions: FeatureProgressionWithRelations[]): number[] {
 
 #### **3. getClassBonusLanguages() - Extract class-granted bonus languages**
 ```typescript
-getClassBonusLanguages(progressions: FeatureProgressionWithRelations[]): number[] {
+getClassBonusLanguages(progressions: FeatureProgression[]): number[] {
     return progressions
         .filter(prog => this.isClassBonusLanguageFeature(prog))
         .flatMap(prog =>
@@ -232,7 +239,7 @@ getClassBonusLanguages(progressions: FeatureProgressionWithRelations[]): number[
 
 #### **4. getClassAutomaticLanguages() - Extract class-granted automatic languages**
 ```typescript
-getClassAutomaticLanguages(progressions: FeatureProgressionWithRelations[]): number[] {
+getClassAutomaticLanguages(progressions: FeatureProgression[]): number[] {
     return progressions
         .filter(prog => this.isClassLanguageFeature(prog))
         .flatMap(prog =>
@@ -249,7 +256,7 @@ getClassAutomaticLanguages(progressions: FeatureProgressionWithRelations[]): num
 
 #### **5. isClassLanguageFeature() - Identify class language features**
 ```typescript
-isClassLanguageFeature(progression: FeatureProgressionWithRelations): boolean {
+isClassLanguageFeature(progression: FeatureProgression): boolean {
     return progression.sourceType === FeatureSourceType.Class &&
            progression.appliesToType === FeatureAppliesToType.Language;
 }
@@ -257,7 +264,7 @@ isClassLanguageFeature(progression: FeatureProgressionWithRelations): boolean {
 
 #### **6. isClassBonusLanguageFeature() - Identify class bonus language features**
 ```typescript
-isClassBonusLanguageFeature(progression: FeatureProgressionWithRelations): boolean {
+isClassBonusLanguageFeature(progression: FeatureProgression): boolean {
     return this.isClassLanguageFeature(progression) &&
            progression.modifiers?.some(mod => mod.appliesTo === ModifierAppliesToType.BonusLanguage);
 }
@@ -270,40 +277,52 @@ isClassBonusLanguageFeature(progression: FeatureProgressionWithRelations): boole
 The `raceService` handles languages as part of the bulk feature operations:
 
 1. **Creating/Updating Races**: Languages are included in the `features` array
-2. **Database Storage**: Creates appropriate `FeatureProgression` and `FeatureEntity` records
+2. **Database Storage**: Creates appropriate `Feature` and `FeatureEntity` records
 3. **No Individual CRUD**: Languages cannot be modified individually
 
 ### **Example Backend Data Structure**
 
 ```typescript
-// FeatureProgression for automatic languages
+// Feature for automatic languages
+{
+    id: 2001,
+    slug: "race-2-automatic-languages",
+    name: "Elf Automatic Languages",
+    description: "Automatic languages for Elf",
+    displayInCharacterSheet: true
+}
+
+// Feature for automatic languages
 {
     id: 123,
-    featureId: SpecialFeatureId.AutomaticLanguage, // 3
-    raceId: 2, // Elf race
+    featureId: 2001, // Normal feature ID
+    sourceType: FeatureSourceType.Race, // 0
     level: 1,
-    appliesToType: FeatureAppliesToType.Language,
-    appliesTo: null,
-    modifiers: [
+    // Linked via FeatureRaceMap to raceId: 2
+    entities: [
         {
             id: 456,
-            type: EntityType.Other,
-            appliesTo: ModifierAppliesToType.Language, // 14
+            type: EntityType.Base, // 4
+            appliesTo: EntityAppliesToType.AutomaticLanguage, // 15
             appliesToId: LANGUAGE_MAP.COMMON,
+            appliesToSubId: null,
             value: 0,
             bonusType: null
         },
         {
             id: 457,
-            type: EntityType.Other,
-            appliesTo: ModifierAppliesToType.Language, // 14
+            type: EntityType.Base,
+            appliesTo: EntityAppliesToType.AutomaticLanguage, // 15
             appliesToId: LANGUAGE_MAP.ELVEN,
+            appliesToSubId: null,
             value: 0,
             bonusType: null
         }
     ]
 }
 ```
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+read_file
 
 ## Frontend UI Integration
 
@@ -375,7 +394,7 @@ const maxBonusLanguages = Math.max(0, intModifier);
 ## Key Design Principles
 
 ### **1. Container Pattern**
-- One `FeatureProgression` contains multiple `FeatureEntity` records for languages
+- One `Feature` contains multiple `FeatureEntity` records for languages
 - Each entity represents a different language
 - The progression acts as a container for all languages of a type
 
@@ -412,11 +431,15 @@ const elfRace = {
     features: [
         // Automatic languages
         {
-            sourceType: 2, // Race
+            sourceType: FeatureSourceType.Race, // 0
             level: 1,
-            featureId: SpecialFeatureId.AutomaticLanguage, // 3
-            appliesToType: FeatureAppliesToType.Language,
-            appliesTo: null,
+            featureId: null, // Backend will create feature
+            feature: {
+                name: "Elf Automatic Languages",
+                slug: "race-2-automatic-languages",
+                description: "Automatic languages for Elf",
+                displayInCharacterSheet: true
+            },
             modifiers: [
                 {
                     type: EntityType.Other,
@@ -438,11 +461,15 @@ const elfRace = {
         },
         // Bonus languages
         {
-            sourceType: 2, // Race
+            sourceType: FeatureSourceType.Race, // 0
             level: 1,
-            featureId: SpecialFeatureId.BonusLanguage, // 4
-            appliesToType: FeatureAppliesToType.Language,
-            appliesTo: null,
+            featureId: null, // Backend will create feature
+            feature: {
+                name: "Elf Bonus Languages",
+                slug: "race-2-bonus-languages",
+                description: "Bonus languages for Elf",
+                displayInCharacterSheet: true
+            },
             modifiers: [
                 {
                     type: EntityType.Other,
@@ -564,8 +591,11 @@ await ClassService.createClass(clericClass);
 ```typescript
 // Get all automatic language progressions
 const automaticLanguageProgressions = progressions.filter(prog =>
-    prog.featureId === SpecialFeatureId.AutomaticLanguage &&
-    prog.appliesToType === FeatureAppliesToType.Language
+    prog.sourceType === FeatureSourceType.Race &&
+    prog.entities?.some(e => 
+        e.type === EntityType.Base && 
+        e.appliesTo === EntityAppliesToType.AutomaticLanguage
+    )
 );
 
 // Get language IDs from modifiers
@@ -592,7 +622,7 @@ const isLanguageAvailable = (languageId: number, intModifier: number): boolean =
 ### **Getting Combined Bonus Languages**
 ```typescript
 const getCombinedBonusLanguages = (
-    raceProgressions: FeatureProgressionWithRelations[],
+    raceProgressions: FeatureProgression[],
     classProgressions: FeatureProgressionWithRelations[]
 ): number[] => {
     // Get racial bonus languages

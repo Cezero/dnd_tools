@@ -42,8 +42,8 @@ export function EquipmentTab({
 
     // Extract proficiencies from resolved features
     const proficiencies = useMemo(() => {
-        return extractProficiencies(resolvedData.progressions);
-    }, [resolvedData.progressions]);
+        return extractProficiencies(resolvedData.features);
+    }, [resolvedData.features]);
 
     const handleGenerateRandomGold = useCallback(async () => {
         if (!state.classId || !isDiceReady) {

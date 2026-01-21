@@ -1,4 +1,4 @@
-import type { DnDClass, FeatureProgression } from '@shared/schema';
+import type { DnDClass, FeatureWithRelations } from '@shared/schema';
 
 import { GestaltFeatureFilter } from './gestaltFeatureFilter';
 
@@ -31,7 +31,7 @@ export class GestaltClassService {
             // Merged features with source tracking and filtering of overlapping mechanics
             features: this.mergeFeatures(primaryClass.features || [], secondaryClass.features || [], primaryClass.name, secondaryClass.name),
 
-            // Merged spellcasting progressions
+            // Merged spellcasting features
             spellcastingProgression: [
                 ...(primaryClass.spellcastingProgression || []),
                 ...(secondaryClass.spellcastingProgression || [])
@@ -47,15 +47,15 @@ export class GestaltClassService {
      * Merge features from both classes with source tracking and filtering of overlapping mechanics.
      * 
      * For gestalt characters, overlapping class-mechanics features (BAB, saves, hit die, skill points)
-     * are filtered to keep only the best progression according to gestalt rules.
+     * are filtered to keep only the best feature according to gestalt rules.
      */
     private static mergeFeatures(
-        primaryFeatures: FeatureProgression[],
-        secondaryFeatures: FeatureProgression[],
+        primaryFeatures: FeatureWithRelations[],
+        secondaryFeatures: FeatureWithRelations[],
         primaryClassName: string,
         secondaryClassName: string
-    ): (FeatureProgression & { sourceClassName?: string })[] {
-        // Filter overlapping mechanics to keep only the best progression
+    ): (FeatureWithRelations & { sourceClassName?: string })[] {
+        // Filter overlapping mechanics to keep only the best feature
         const filteredFeatures = GestaltFeatureFilter.filterOverlappingMechanics(
             primaryFeatures,
             secondaryFeatures

@@ -84,7 +84,7 @@ export async function GetFeatCache(req: ValidatedNoInput<FeatCacheResponse>, res
 }
 
 /**
- * Fetches all feats with full data (including feature progressions).
+ * Fetches all feats with full data (including feature features).
  */
 export async function GetAllFeatsFull(req: ValidatedNoInput<FeatQueryResponse>, res: Response) {
     const feats = await featService.getAllFeatsFull();
@@ -97,17 +97,17 @@ export async function GetAllFeatsFull(req: ValidatedNoInput<FeatQueryResponse>, 
  * This endpoint returns a lightweight schema containing only:
  * - id: from Feat.id
  * - name: from Feat.name
- * - description: from the associated Feature.description (via FeatureProgression)
- * - summary: from the associated Feature.summary (via FeatureProgression)
+ * - description: from the associated Feature.description (via FeatureWithRelations)
+ * - summary: from the associated Feature.summary (via FeatureWithRelations)
  * 
  * IMPORTANT: This is a composite response where:
  * - id and name come from the Feat table
  * - description and summary come from the associated Feature table
  * 
  * If a feat has no associated feature, description and summary will be null.
- * If a feat has multiple feature progressions, the first one's feature is used.
+ * If a feat has multiple feature features, the first one's feature is used.
  * 
- * This endpoint is optimized for list views where full feat data and progressions
+ * This endpoint is optimized for list views where full feat data and features
  * are not needed, but feature description/summary are required for display.
  */
 export async function GetAllFeatsWithFeatureInfo(req: ValidatedNoInput<GetAllFeatsWithFeatureInfoResponse>, res: Response) {

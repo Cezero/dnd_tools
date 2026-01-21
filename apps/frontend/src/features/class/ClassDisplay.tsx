@@ -16,9 +16,9 @@ import {
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
-    SpecialFeatureId,
     CASTING_TYPE_MAP,
     EntityAppliesToType,
+    EntityType,
     FeatureSourceType,
 } from '@shared/static-data';
 
@@ -30,6 +30,8 @@ interface ClassDisplayProps {
     onEdit?: () => void;
     isAdmin?: boolean;
     fromListParams?: string;
+    lockStatus?: { locked: boolean; lockedBy?: number };
+    currentUserId?: number;
 }
 
 export function ClassDisplay({
@@ -39,15 +41,17 @@ export function ClassDisplay({
     onBack,
     onEdit,
     isAdmin = false,
-    fromListParams: _fromListParams = ''
+    fromListParams: _fromListParams = '',
+    lockStatus,
+    currentUserId
 }: ClassDisplayProps): React.JSX.Element {
     const queryClient = useQueryClient();
     const { getSpellNameFromCache } = useCacheFunctions();
 
-    // Precache all entities referenced in feature progressions
+    // Precache all entities referenced in feature features
     usePrecacheFeatureEntities(cls?.features);
 
-    // Extract mechanics from feature progressions
+    // Extract mechanics from feature features
     const mechanics = useMemo(() => {
         if (cls.features && cls.features.length > 0) {
             const classId = (cls as { id?: number }).id;
@@ -64,13 +68,13 @@ export function ClassDisplay({
         };
     }, [cls]);
 
-    // Extract casting ability and type from feature progressions
+    // Extract casting ability and type from feature features
     const castingInfo = useMemo(() => {
         if (!cls.features) {
             return { castingAbilityId: null, castingType: null };
         }
         const classId = (cls as { id?: number }).id;
-        // Find level 1 class progression
+        // Find level 1 class feature
         const classLevel1Progression = cls.features.find(
             p => p.sourceType === FeatureSourceType.Class &&
                 (classId ? (p as { classes?: Array<{ classId: number }> }).classes?.some(c => c.classId === classId) : true) &&
@@ -128,20 +132,19 @@ export function ClassDisplay({
                     </div>
 
                     <div className="mt-4">
-                        <h3 className="text-lg font-semibold mb-2">Class Progression</h3>
+                        <h3 className="text-lg font-semibold mb-2">Class Feature</h3>
                         {(() => {
+                            const classId = (cls as { id?: number }).id;
                             const progressionConfig = {
-                                babProgression: mechanics.babProgression ?? 0,
-                                fortProgression: mechanics.fortProgression ?? 0,
-                                refProgression: mechanics.refProgression ?? 0,
-                                willProgression: mechanics.willProgression ?? 0,
+                                features: cls.features || [],
+                                classId,
                                 spellcastingProgression: cls.spellcastingProgression !== null ? cls.spellcastingProgression : undefined,
                                 spellsKnownProgression: cls.spellsKnownProgression !== null ? cls.spellsKnownProgression : undefined,
                             };
-                            const progression = generateClassProgression(progressionConfig);
+                            const feature = generateClassProgression(progressionConfig);
                             return (
                                 <ClassProgressionTable
-                                    progression={progression}
+                                    feature={feature}
                                     className="mt-2"
                                 />
                             );
@@ -150,8 +153,9 @@ export function ClassDisplay({
 
                     {/* Class Skills Section */}
                     {(() => {
-                        const classSkillProgressions = cls.features?.filter(progression =>
-                            progression.featureId === SpecialFeatureId.ClassSkill
+                        const classSkillProgressions = cls.features?.filter(feature =>
+                            feature.sourceType === FeatureSourceType.Class &&
+                            feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)
                         ) || [];
 
                         if (classSkillProgressions.length > 0) {
@@ -174,9 +178,10 @@ export function ClassDisplay({
 
                     {/* Class Proficiencies Section */}
                     {(() => {
-                        // Find all proficiency progressions (should be only one, but be defensive)
-                        const proficiencyProgressions = cls.features?.filter(progression =>
-                            progression.featureId === SpecialFeatureId.ClassProficiency
+                        // Find all proficiency features (should be only one, but be defensive)
+                        const proficiencyProgressions = cls.features?.filter(feature =>
+                            feature.sourceType === FeatureSourceType.Class &&
+                            feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency)
                         ) || [];
 
                         if (proficiencyProgressions.length > 0) {
@@ -200,15 +205,17 @@ export function ClassDisplay({
 
                     {/* Class Features Section */}
                     {(() => {
-                        // Filter out progressions that contain skills and proficiencies
-                        const actualFeatures = cls.features?.filter(progression => {
-                            // Check if this progression contains class skills
-                            const hasClassSkills = progression.featureId === SpecialFeatureId.ClassSkill;
+                        // Filter out features that contain skills and proficiencies
+                        const actualFeatures = cls.features?.filter(feature => {
+                            // Check if this feature contains class skills
+                            const hasClassSkills = feature.sourceType === FeatureSourceType.Class &&
+                                feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill);
 
-                            // Check if this progression contains proficiencies
-                            const hasProficiencies = progression.featureId === SpecialFeatureId.ClassProficiency;
+                            // Check if this feature contains proficiencies
+                            const hasProficiencies = feature.sourceType === FeatureSourceType.Class &&
+                                feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency);
 
-                            // Exclude progressions with skills or proficiencies
+                            // Exclude features with skills or proficiencies
                             return !hasClassSkills && !hasProficiencies;
                         }) || [];
 
@@ -228,7 +235,7 @@ export function ClassDisplay({
                                                 <div className="space-y-2">
                                                     {levelEntry.items?.map((item, index) => {
                                                         // Find the corresponding feature for this item
-                                                        const feature = actualFeatures.find(f => f.featureId === item.featureId);
+                                                        const feature = actualFeatures.find(f => f.id === item.featureId);
                                                         if (!feature) {
                                                             return null;
                                                         }
@@ -240,7 +247,7 @@ export function ClassDisplay({
                                                                 <div className="text-sm">
                                                                     {shouldShowDescription ? (
                                                                         // Show full description for first occurrence
-                                                                        <ProcessMarkdown markdown={feature.feature.description} id={`feature-${feature.featureId}`}
+                                                                        <ProcessMarkdown markdown={feature.description || ''} id={`feature-${feature.id}`}
                                                                             userVars={{
                                                                                 classname: cls.name.toLowerCase(),
                                                                                 classplural: pluralize(cls.name),
@@ -249,7 +256,7 @@ export function ClassDisplay({
                                                                         />
                                                                     ) : (
                                                                         // Show just the feature name for subsequent occurrences
-                                                                        <strong>{feature.feature.name}</strong>
+                                                                        <strong>{feature.name}</strong>
                                                                     )}
                                                                     {item.formattedValue && (
                                                                         <span className="ml-2">{item.formattedValue}</span>
@@ -281,13 +288,24 @@ export function ClassDisplay({
                                 </button>
                             )}
                             {isAdmin && onEdit && (
-                                <button
-                                    type="button"
-                                    onClick={onEdit}
-                                    className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500"
-                                >
-                                    Edit Class
-                                </button>
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={onEdit}
+                                        disabled={lockStatus?.locked && lockStatus.lockedBy !== currentUserId}
+                                        className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                        title={lockStatus?.locked && lockStatus.lockedBy !== currentUserId
+                                            ? `Currently locked by User ${lockStatus.lockedBy}`
+                                            : 'Edit class'}
+                                    >
+                                        Edit Class
+                                    </button>
+                                    {lockStatus?.locked && lockStatus.lockedBy !== currentUserId && (
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 ml-4">
+                                            Currently locked by User {lockStatus.lockedBy}
+                                        </p>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}

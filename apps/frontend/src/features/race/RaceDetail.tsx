@@ -1,34 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import React from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { Race } from '@shared/schema';
-
 import { RaceApi } from './RaceApi';
+import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
+
 import { RaceDisplay } from './RaceDisplay';
 
 export function RaceDetail() {
     const { id } = useParams();
-    const [race, setRace] = useState<Race | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const { isAdmin } = useAuthAuto();
+    const { isAdmin, user } = useAuthAuto();
     const navigate = useNavigate();
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
 
-    useEffect(() => {
-        const Initialize = async () => {
-            try {
-                const data = await RaceApi.getRaceById(undefined, { id: parseInt(id!) });
-                setRace(data);
-                setIsLoading(false);
-            } catch (error) {
-                console.error('Failed to initialize or fetch race:', error);
-                setIsLoading(false);
-            }
-        };
-        Initialize();
-    }, [id, location.state]);
+    const raceId = id ? parseInt(id) : null;
+
+    // Fetch race data using TanStack Query (from database)
+    const { data: race, isLoading, error } = useQuery({
+        queryKey: RaceQueryHooks.getRaceByIdQueryKey(raceId!),
+        queryFn: () => RaceQueryHooks.getRaceById(raceId!),
+        enabled: !!raceId,
+    });
+
+    // Fetch lock status (only for admin users)
+    const { data: lockStatus } = useQuery({
+        queryKey: ['race', 'lock-status', raceId],
+        queryFn: () => RaceApi.getRaceLockStatus(undefined, { id: raceId! }),
+        enabled: !!raceId && isAdmin,
+    });
 
     const handleBack = () => {
         navigate(`/races${fromListParams ? `?${fromListParams}` : ''}`);
@@ -48,11 +49,11 @@ export function RaceDetail() {
         </div>
     );
 
-    if (!race) return (
+    if (error || !race) return (
         <div className="pt-8">
             <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
                 <div className="p-3 bg-content border-content rounded-lg border w-full">
-                    Race not found
+                    {error ? 'Error loading race' : 'Race not found'}
                 </div>
             </div>
         </div>
@@ -67,6 +68,8 @@ export function RaceDetail() {
             onEdit={handleEdit}
             isAdmin={isAdmin}
             fromListParams={fromListParams}
+            lockStatus={lockStatus}
+            currentUserId={user?.id}
         />
     );
 }

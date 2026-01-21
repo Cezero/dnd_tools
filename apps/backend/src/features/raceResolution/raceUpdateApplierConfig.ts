@@ -1,14 +1,19 @@
-import type { FeatureEntity } from '@shared/schema';
 import { RaceUpdateType } from '@shared/static-data';
 
-import type { UpdateApplierConfig } from '../shared/session/GenericUpdateApplier';
 import type { RaceEditState, RaceUpdate } from './types';
+import type { UpdateApplierConfig } from '../shared/session/GenericUpdateApplier';
 
 /**
  * Configuration for applying Race updates to state.
  * 
  * Provides strategy functions for all Race update types, allowing the generic
  * update applier to handle Race-specific update logic.
+ * 
+ * **Note**: Features are now managed independently via the feature state system.
+ * Race updates only handle feature linking/unlinking (updating FeatureRaceMap)
+ * and race-specific fields. Feature entities are managed through the feature state system.
+ * 
+ * @see packages/shared/docs/race-system/backend-implementation.md - Full documentation
  */
 export const raceUpdateApplierConfig: UpdateApplierConfig<RaceEditState, RaceUpdate> = {
     /**
@@ -40,126 +45,42 @@ export const raceUpdateApplierConfig: UpdateApplierConfig<RaceEditState, RaceUpd
     },
 
     /**
-     * Checks if an update is a progression update.
+     * Checks if an update is a feature update.
+     * 
+     * For races, this is not applicable since features are managed independently.
+     * This method always returns false.
      */
-    isProgressionUpdate: (update) => {
-        return update.type === RaceUpdateType.AddProgression ||
-            update.type === RaceUpdateType.UpdateProgression ||
-            update.type === RaceUpdateType.RemoveProgression;
-    },
+    isProgressionUpdate: () => false,
 
     /**
-     * Applies a progression update to the race state.
+     * Applies a feature update to the race state.
+     * 
+     * Not applicable for races since features are managed independently.
      */
-    applyProgressionUpdate: (state, update) => {
-        switch (update.type) {
-            case RaceUpdateType.AddProgression:
-                return {
-                    ...state,
-                    featureProgressions: [...state.featureProgressions, update.payload.progression]
-                };
-
-            case RaceUpdateType.UpdateProgression: {
-                const index = state.featureProgressions.findIndex(p => p.id === update.payload.progressionId);
-                if (index === -1) return state;
-
-                return {
-                    ...state,
-                    featureProgressions: [
-                        ...state.featureProgressions.slice(0, index),
-                        { ...state.featureProgressions[index], ...update.payload.progression },
-                        ...state.featureProgressions.slice(index + 1)
-                    ]
-                };
-            }
-
-            case RaceUpdateType.RemoveProgression:
-                return {
-                    ...state,
-                    featureProgressions: state.featureProgressions.filter(p => p.id !== update.payload.progressionId)
-                };
-
-            default:
-                return state;
-        }
-    },
+    applyProgressionUpdate: (state) => state,
 
     /**
      * Checks if an update is an entity update.
+     * 
+     * For races, this is not applicable since feature entities are managed
+     * through the feature state system. This method always returns false.
      */
-    isEntityUpdate: (update) => {
-        return update.type === RaceUpdateType.AddEntity ||
-            update.type === RaceUpdateType.UpdateEntity ||
-            update.type === RaceUpdateType.RemoveEntity;
-    },
+    isEntityUpdate: () => false,
 
     /**
      * Applies an entity update to the race state.
+     * 
+     * Not applicable for races since feature entities are managed through
+     * the feature state system.
      */
-    applyEntityUpdate: (state, update) => {
-        switch (update.type) {
-            case RaceUpdateType.AddEntity: {
-                const progressionIndex = state.featureProgressions.findIndex(p => p.id === update.payload.progressionId);
-                if (progressionIndex === -1) return state;
-
-                const progression = state.featureProgressions[progressionIndex];
-                // Ensure the entity has the correct progressionId
-                const entityWithProgressionId: FeatureEntity = {
-                    ...update.payload.entity,
-                    progressionId: update.payload.progressionId
-                };
-                return {
-                    ...state,
-                    featureProgressions: [
-                        ...state.featureProgressions.slice(0, progressionIndex),
-                        {
-                            ...progression,
-                            entities: [...(progression.entities || []), entityWithProgressionId]
-                        },
-                        ...state.featureProgressions.slice(progressionIndex + 1)
-                    ]
-                };
-            }
-
-            case RaceUpdateType.UpdateEntity: {
-                return {
-                    ...state,
-                    featureProgressions: state.featureProgressions.map(progression => {
-                        const entityIndex = progression.entities?.findIndex(e => e.id === update.payload.entityId);
-                        if (entityIndex === undefined || entityIndex === -1) return progression;
-
-                        return {
-                            ...progression,
-                            entities: [
-                                ...(progression.entities || []).slice(0, entityIndex),
-                                { ...progression.entities![entityIndex], ...update.payload.entity },
-                                ...(progression.entities || []).slice(entityIndex + 1)
-                            ]
-                        };
-                    })
-                };
-            }
-
-            case RaceUpdateType.RemoveEntity:
-                return {
-                    ...state,
-                    featureProgressions: state.featureProgressions.map(progression => ({
-                        ...progression,
-                        entities: (progression.entities || []).filter(e => e.id !== update.payload.entityId)
-                    }))
-                };
-
-            default:
-                return state;
-        }
-    },
+    applyEntityUpdate: (state) => state,
 
     /**
      * Checks if an update is a special update (race-specific).
      */
     isSpecialUpdate: (update) => {
-        return update.type === RaceUpdateType.LinkProgression ||
-            update.type === RaceUpdateType.UnlinkProgression;
+        return update.type === RaceUpdateType.LinkFeature ||
+            update.type === RaceUpdateType.UnlinkFeature;
     },
 
     /**
@@ -167,11 +88,22 @@ export const raceUpdateApplierConfig: UpdateApplierConfig<RaceEditState, RaceUpd
      */
     applySpecialUpdate: (state, update) => {
         switch (update.type) {
-            case RaceUpdateType.LinkProgression:
-            case RaceUpdateType.UnlinkProgression:
-                // These operations are handled at the database level, not in state
-                // State will be updated after the database operation completes
-                return state;
+            case RaceUpdateType.LinkFeature:
+                // Add feature ID to featureIds array if not already present
+                if (state.featureIds.includes(update.payload.featureId)) {
+                    return state;
+                }
+                return {
+                    ...state,
+                    featureIds: [...state.featureIds, update.payload.featureId]
+                };
+
+            case RaceUpdateType.UnlinkFeature:
+                // Remove feature ID from featureIds array
+                return {
+                    ...state,
+                    featureIds: state.featureIds.filter(id => id !== update.payload.featureId)
+                };
 
             default:
                 return state;

@@ -23,6 +23,7 @@ export function buildFormulaParams(
         startLevel,
         scalingValue,
         baseValue: modifierValue !== undefined ? modifierValue : 1, // Add baseValue for Ability-based formulas
+        startingValue: formula.startingValue ?? undefined, // Convert null to undefined for startingValue
         context // Pass context to formulas
     };
 

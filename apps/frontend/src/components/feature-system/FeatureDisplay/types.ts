@@ -1,19 +1,18 @@
-import { Feature, FeatureProgression } from '@shared/schema';
+import { Feature, FeatureWithRelations } from '@shared/schema';
 
 export interface FeatureDisplayProps {
     feature: Feature;
-    progressions: FeatureProgression[];
-    onEditProgression?: (progression: FeatureProgression) => void;
+    features: FeatureWithRelations[];
+    onEditProgression?: (feature: FeatureWithRelations) => void;
     onRemoveProgression?: (progressionId: number) => void;
     onAddProgression?: (feature: Feature) => void;
     showAddProgressionButton?: boolean;
     className?: string;
-    onEditFeature?: (featureId: number) => void;
     parentType?: 'class' | 'race';
     parentId?: number;
 }
 
 export interface FeatureDisplayData {
     feature: Feature;
-    progressions: FeatureProgression[];
+    features: FeatureWithRelations[];
 }

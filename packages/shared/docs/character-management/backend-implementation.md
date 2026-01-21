@@ -168,8 +168,8 @@ Routes for in-game character interaction and tracking:
   - **Response**: Array of `CharacterFeatureUses`
   - **Controller**: `GetCharacterUses`
 
-- **`POST /characters/:id/uses/:progressionId/:entityId`**: Update feature uses
-  - **Parameters**: `id` (character ID), `progressionId` (feature progression ID), `entityId` (feature entity ID)
+- **`POST /characters/:id/uses/:featureId/:entityId`**: Update feature uses
+  - **Parameters**: `id` (character ID), `featureId` (feature ID), `entityId` (feature entity ID)
   - **Body**: `UpdateFeatureUsesRequest` (delta: number)
   - **Response**: Updated `CharacterFeatureUses`
   - **Controller**: `UpdateFeatureUses`

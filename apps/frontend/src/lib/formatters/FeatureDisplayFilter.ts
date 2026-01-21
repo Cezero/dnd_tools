@@ -1,4 +1,4 @@
-import type { FeatureProgression, Feature, FeatureProgressionCondition, CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { FeatureWithRelations, Feature, FeatureCondition, CharacterWithAllDetailsResponse } from '@shared/schema';
 import { FeatureEntityConditionType } from '@shared/static-data';
 
 /**
@@ -9,19 +9,19 @@ export class FeatureDisplayFilter {
      * Determines if a feature should be displayed on character sheets
      */
     static shouldDisplayFeature(
-        feature: Feature,
-        progression: FeatureProgression,
+        baseFeature: Feature,
+        featureWithRelations: FeatureWithRelations,
         character: CharacterWithAllDetailsResponse
     ): boolean {
         // Check displayInCharacterSheet flag
-        if (feature.displayInCharacterSheet === false) {
+        if (baseFeature.displayInCharacterSheet === false) {
             return false;
         }
 
-        // Check feature progression display conditions
-        if (progression.displayConditions && progression.displayConditions.length > 0) {
+        // Check feature feature display conditions
+        if (featureWithRelations.displayConditions && featureWithRelations.displayConditions.length > 0) {
             const shouldDisplay = this.evaluateDisplayConditions(
-                progression.displayConditions,
+                featureWithRelations.displayConditions,
                 character
             );
             if (!shouldDisplay) {
@@ -33,10 +33,10 @@ export class FeatureDisplayFilter {
     }
 
     /**
-     * Evaluates display conditions for a feature progression
+     * Evaluates display conditions for a feature feature
      */
     private static evaluateDisplayConditions(
-        conditions: FeatureProgressionCondition[],
+        conditions: FeatureCondition[],
         character: CharacterWithAllDetailsResponse
     ): boolean {
         // All conditions must be met (AND logic)
@@ -49,7 +49,7 @@ export class FeatureDisplayFilter {
      * Evaluates a single display condition
      */
     private static evaluateCondition(
-        condition: FeatureProgressionCondition,
+        condition: FeatureCondition,
         _character: CharacterWithAllDetailsResponse
     ): boolean {
         switch (condition.conditionType) {

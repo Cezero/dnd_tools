@@ -1,7 +1,7 @@
+import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
 import { extractSaveProgression } from '@/lib/feature-extraction/classMechanicsExtractor';
-import type { CharacterWithAllDetailsResponse, FeatureProgression, DnDClass } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations, DnDClass } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, ABILITY_MAP, ProgressionType, EntityAppliesToType, EntityType, SavingThrowId, FeatureSourceType } from '@shared/static-data';
-import { getSaveProgression } from '@shared/utils';
 
 import { getAbilityScore } from './abilityScore';
 import type { CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
@@ -32,12 +32,12 @@ export interface SavingThrowBreakdownMap extends BreakdownMap {
  * Get saving throw modifier
  * 
  * Uses pre-resolved formula values from backend when available (resolvedFormulaValues map).
- * Falls back to extracting ProgressionType and using getSaveProgression for backward compatibility.
+ * Falls back to calculating directly from formula entities if resolved values not available.
  */
 export function getSavingThrow(
     character: CharacterWithAllDetailsResponse,
     saveType: number,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     classDetailsMap: Map<number, DnDClass>,
     resolvedFormulaValues?: Record<string, number>
 ): CalculationResult<SavingThrowBreakdownMap> {
@@ -73,15 +73,15 @@ export function getSavingThrow(
 
     // Try to use pre-resolved values first
     if (resolvedFormulaValues) {
-        // Find save entities for this save type in resolved progressions
-        const saveEntities: Array<{ entityId: number; progression: FeatureProgression }> = [];
-        for (const progression of resolvedProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        // Find save entities for this save type in resolved features
+        const saveEntities: Array<{ entityId: number; feature: FeatureWithRelations }> = [];
+        for (const feature of resolvedProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (entity.appliesTo === EntityAppliesToType.SavingThrow &&
                         entity.appliesToId === savingThrowId &&
                         entity.formulaParams) {
-                        saveEntities.push({ entityId: entity.id, progression });
+                        saveEntities.push({ entityId: entity.id, feature });
                     }
                 }
             }
@@ -97,15 +97,15 @@ export function getSavingThrow(
         }
     }
 
-    // Fallback to old method for backward compatibility if no resolved values found
+    // Fallback: if no resolved values found
     if (baseSave === 0) {
         if (isGestalt) {
-            // For gestalt, backend has already filtered to include only the best save progression
-            // Use total character level with the best progression from resolved progressions
+            // For gestalt, backend has already filtered to include only the best save feature
+            // Use total character level with the best feature from resolved features
             const totalLevel = character.advancements.length;
 
             if (resolvedProgressions && resolvedProgressions.length > 0) {
-                // Find the best save progression from resolved progressions
+                // Find the best save feature from resolved features
                 // For gestalt, filter by sourceType and EntityType instead of feature slug
                 const classProgressions = resolvedProgressions.filter(p =>
                     p.sourceType === FeatureSourceType.Class &&
@@ -117,11 +117,21 @@ export function getSavingThrow(
                 );
 
                 if (classProgressions.length > 0) {
-                    // Extract save progression from class progressions (should be the merged/best one)
-                    const progression = extractSaveProgression(classProgressions, savingThrowId);
-                    if (progression !== null && progression !== undefined) {
-                        if (progression === ProgressionType.good || progression === ProgressionType.poor) {
-                            baseSave = getSaveProgression(totalLevel, progression);
+                    // Calculate save directly from formula entities
+                    for (const feature of classProgressions) {
+                        if (feature.entities) {
+                            for (const entity of feature.entities) {
+                                if (entity.type === EntityType.Base &&
+                                    entity.appliesTo === EntityAppliesToType.SavingThrow &&
+                                    entity.appliesToId === savingThrowId &&
+                                    entity.formulaParams) {
+                                    const saveValue = applyFeatureFormula(entity, character, totalLevel);
+                                    if (saveValue !== null && saveValue !== undefined) {
+                                        baseSave = saveValue;
+                                        break; // Only use first matching entity per feature
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -134,12 +144,12 @@ export function getSavingThrow(
                 classLevelCounts.set(advancement.classId, currentLevel + 1);
             }
 
-            // Calculate base save from class progressions
+            // Calculate base save from class features
             for (const [classId, level] of classLevelCounts.entries()) {
                 const classDetails = classDetailsMap.get(classId);
                 if (!classDetails) continue;
 
-                // Extract progression from resolved progressions (filter by sourceType and EntityType)
+                // Calculate save directly from formula entities
                 const classProgressions = resolvedProgressions.filter(p =>
                     p.sourceType === FeatureSourceType.Class &&
                     p.classes?.some(c => c.classId === classId) &&
@@ -149,15 +159,22 @@ export function getSavingThrow(
                         e.appliesToId === savingThrowId
                     )
                 );
-                const progression = extractSaveProgression(classProgressions, savingThrowId, classId);
 
-                // Check for progression value - must check !== undefined, not truthy (0 is valid for good)
-                if (progression !== undefined && progression !== null) {
-                    // Use existing getSaveProgression utility function
-                    if (progression === ProgressionType.good || progression === ProgressionType.poor) {
-                        baseSave += getSaveProgression(level, progression);
+                for (const feature of classProgressions) {
+                    if (feature.entities) {
+                        for (const entity of feature.entities) {
+                            if (entity.type === EntityType.Base &&
+                                entity.appliesTo === EntityAppliesToType.SavingThrow &&
+                                entity.appliesToId === savingThrowId &&
+                                entity.formulaParams) {
+                                const saveValue = applyFeatureFormula(entity, character, level);
+                                if (saveValue !== null && saveValue !== undefined) {
+                                    baseSave += saveValue;
+                                    break; // Only use first matching entity per feature
+                                }
+                            }
+                        }
                     }
-                    // progression === 1 (average) is not used in D&D 3.5, skip it
                 }
             }
         }

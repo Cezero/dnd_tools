@@ -112,12 +112,12 @@ The central service for all companion management operations, providing comprehen
 
 **Business Logic**:
 1. Loads companion with related monster data
-2. Retrieves feature progressions using `featureSystemService.getFeatureProgressionsByCompanionId()`
-3. Combines companion data with feature progressions
+2. Retrieves features using `featureSystemService.getFeatureProgressionsByCompanionId()` (method name maintained for backward compatibility, operates on unified Feature model)
+3. Combines companion data with features
 4. Returns complete companion object with features
 
 **Integration Points**:
-- **Feature System**: Uses `featureSystemService.getFeatureProgressionsByCompanionId()` to retrieve companion benefit progressions
+- **Feature System**: Uses `featureSystemService.getFeatureProgressionsByCompanionId()` to retrieve companion benefit features (sourceType: Companion, companionId set) - operates on unified Feature model
 - **Monster System**: Includes monster data for companion display
 
 **Source File**: `apps/backend/src/features/companion/companionService.ts`
@@ -433,10 +433,11 @@ The companion routes follow the shared [RESTful API Structure](../application-ov
 The companion service integrates with the feature system for companion benefit management:
 
 **Integration Pattern**:
-- Companion benefits are managed through feature progressions
+- Companion benefits are managed through features (unified Feature model)
 - Uses FeatureSourceType.Companion to identify companion-granted features
-- Feature progressions are retrieved through `featureSystemService.getFeatureProgressionsByCompanionId()`
-- Companion benefits use SpecialFeatureId.CompanionBenefit for identification
+- Features are retrieved through `featureSystemService.getFeatureProgressionsByCompanionId()` (method name maintained for backward compatibility)
+- Companion benefits use distinct named features (e.g., "Cat Familiar Benefit", "Owl Familiar Benefit")
+- All progressions with `sourceType: FeatureSourceType.Companion` are automatically included with characters
 
 **Benefits**:
 - **Consistency**: Companion benefits use same system as class and race features

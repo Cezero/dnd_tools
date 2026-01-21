@@ -1,4 +1,4 @@
-import { EntityAppliesToType, EntityType, SpecialFeatureId } from '@shared/static-data';
+import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import {
     DamageFormatter,
@@ -70,7 +70,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         entityType: EntityType,
         formatter: BaseFormatter,
         appliesToId?: EntityAppliesToType,
-        featureId?: SpecialFeatureId
+        featureId?: number
     ): void {
         const key = generateKey(entityType, appliesToId, featureId);
         this.formatters.set(key, formatter);
@@ -108,7 +108,9 @@ export class FormatterRegistry implements IFormatterRegistry {
     }
 
     registerProficiencyFormatter(appliesToType: EntityAppliesToType, formatter: BaseFormatter): void {
+        // Register for both Other and Base types (both can be used with Proficiency)
         this.registerFormatter(EntityType.Other, formatter, appliesToType);
+        this.registerFormatter(EntityType.Base, formatter, appliesToType);
     }
 
     // Entity formatter convenience wrapper
@@ -216,6 +218,8 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerBaseFormatter(EntityAppliesToType.SpellcastingProgression, spellcastingProgressionFormatter);
         // MovementSpeed is compatible with both Quantity (bonuses) and Base (base race speed)
         this.registerBaseFormatter(EntityAppliesToType.MovementSpeed, movementSpeedFormatter);
+        // Skill is compatible with both Other (skill grants) and Base (class skills)
+        this.registerBaseFormatter(EntityAppliesToType.Skill, emptyStringFormatter);
 
         // Proficiency-compatible types
         this.registerProficiencyFormatter(EntityAppliesToType.Proficiency, proficiencyFormatter);

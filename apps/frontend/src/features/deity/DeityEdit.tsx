@@ -471,8 +471,7 @@ export function DeityEdit() {
                                     }}
                                     options={raceOptions
                                         .filter(r => !(formData.raceIds || []).includes(r.id))
-                                        .sort((a, b) => a.name.localeCompare(b.name))
-                                        .map(r => ({ id: r.id, name: r.name }))}
+                                        .sort((a, b) => a.name.localeCompare(b.name))}
                                     disabled={isLoadingOptions}
                                     placeholder="Add Race"
                                 />
@@ -516,8 +515,7 @@ export function DeityEdit() {
                                     }}
                                     options={domainOptions
                                         .filter(d => !(formData.domainIds || []).includes(d.id))
-                                        .sort((a, b) => a.name.localeCompare(b.name))
-                                        .map(d => ({ id: d.id, name: d.name }))}
+                                        .sort((a, b) => a.name.localeCompare(b.name))}
                                     disabled={isLoadingOptions}
                                     placeholder="Add"
                                 />
@@ -562,8 +560,7 @@ export function DeityEdit() {
                                     }}
                                     options={weapons
                                         .filter(w => !(formData.favoredWeaponIds || []).includes(w.id))
-                                        .sort((a, b) => a.name.localeCompare(b.name))
-                                        .map(w => ({ id: w.id, name: w.name }))}
+                                        .sort((a, b) => a.name.localeCompare(b.name))}
                                     placeholder="Add"
                                 />
                             </div>

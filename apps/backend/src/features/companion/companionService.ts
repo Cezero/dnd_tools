@@ -33,7 +33,7 @@ const prisma = new PrismaClient();
  * - Character companions: User-managed companion instances linked to specific characters
  * 
  * Integration Points:
- * - Feature System: Companion benefits managed through feature progressions
+ * - Feature System: Companion benefits managed through feature features
  * - Monster System: Companions link to monsters for statblock data
  * - Trick System: Character companions can learn tricks
  * - Character System: Character ownership validation in controller layer
@@ -76,22 +76,22 @@ export const companionService: CompanionService = {
     },
 
     /**
-     * Retrieves a specific companion definition by ID with complete details including feature progressions.
+     * Retrieves a specific companion definition by ID with complete details including feature features.
      * 
      * Design Decision: Lightweight Schema Pattern
      * - Returns only monsterId, not nested monster object
      * - Frontend resolves monster names from pre-populated monsters-cache
      * - Reduces payload size and ensures consistent data resolution
      * 
-     * Integrates with feature system service to retrieve companion benefit feature progressions,
+     * Integrates with feature system service to retrieve companion benefit feature features,
      * ensuring companion benefits are properly loaded. Combines companion data with feature
-     * progressions for complete response.
+     * features for complete response.
      * 
      * @param query - CompanionIdParamRequest with companion ID
      * @returns Promise resolving to GetCompanionResponse with complete companion data including
-     *          feature progressions, or null if not found
+     *          feature features, or null if not found
      * 
-     * @see featureSystemService.getFeatureProgressionsByCompanionId for feature retrieval
+     * @see featureSystemService.getFeaturesByCompanionId for feature retrieval
      * @see [Cache-Based ID Maps](../../../../shared/docs/application-overview/cache-based-id-maps.md)
      * @see [Lightweight Schema Pattern](../../../../shared/docs/application-overview/validation-schemas.md#lightweight-response-schemas)
      */
@@ -104,10 +104,10 @@ export const companionService: CompanionService = {
             return null;
         }
 
-        // Get feature progressions using the feature system service
-        const features = await featureSystemService.getFeatureProgressionsByCompanionId(query.id);
+        // Get feature features using the feature system service
+        const features = await featureSystemService.getFeaturesByCompanionId(query.id);
 
-        // Combine companion data with feature progressions
+        // Combine companion data with feature features
         return {
             ...companion,
             features,

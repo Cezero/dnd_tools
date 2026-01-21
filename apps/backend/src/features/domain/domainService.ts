@@ -7,7 +7,7 @@ import {
     CreateResponse,
     UpdateResponse,
     Domain,
-    CreateFeatureProgressionRequest,
+    CreateFeatureRequest,
     DomainCacheResponse,
 } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
@@ -85,8 +85,8 @@ export const domainService: DomainService = {
         // Transform to match schema - return only IDs
         const deityIds = domain.deityDomains.map(deityDomain => deityDomain.deityId);
 
-        // Get feature progressions for this domain
-        const features = await featureSystemService.getFeatureProgressionsByDomainId(query.id);
+        // Get feature features for this domain
+        const features = await featureSystemService.getFeaturesByDomainId(query.id);
 
         return {
             ...domain,
@@ -125,10 +125,10 @@ export const domainService: DomainService = {
                 });
             }
 
-            // Create feature progressions using consolidated feature system service
+            // Create feature features using consolidated feature system service
             if (features && features.length > 0) {
                 const context = { domainId: domainResult.id, sourceType: FeatureSourceType.Domain };
-                await featureSystemService.createMultipleFeatureProgressions(features, context, tx);
+                await featureSystemService.createMultipleFeatures(features, context, tx);
             }
 
             return domainResult;
@@ -175,16 +175,16 @@ export const domainService: DomainService = {
                 }
             }
 
-            // Update feature progressions using delete & recreate pattern
+            // Update feature features using delete & recreate pattern
             if (features !== undefined && features !== null) {
-                // Delete existing feature progressions
+                // Delete existing feature features
                 const deleteContext = { domainId: query.id, sourceType: FeatureSourceType.Domain };
-                await featureSystemService.deleteFeatureProgressionsForContext(deleteContext, tx);
+                await featureSystemService.deleteFeaturesForContext(deleteContext, tx);
 
-                // Create new feature progressions
+                // Create new feature features
                 if (features.length > 0) {
                     const createContext = { domainId: query.id, sourceType: FeatureSourceType.Domain };
-                    await featureSystemService.createMultipleFeatureProgressions(features as CreateFeatureProgressionRequest[], createContext, tx);
+                    await featureSystemService.createMultipleFeatures(features as CreateFeatureRequest[], createContext, tx);
                 }
             }
         });

@@ -11,7 +11,7 @@ import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 import type { Domain, GetSpellResponse, GetFeatureResponse, GetCompanionResponse, GetFeatByIdResponse } from '@shared/schema';
-import { EntityAppliesToType, COMPANION_TYPE_MAP, SpecialFeatureId, FeatureSourceType } from '@shared/static-data';
+import { EntityAppliesToType, COMPANION_TYPE_MAP, FeatureSourceType } from '@shared/static-data';
 
 import type { SelectedEntityDisplayProps } from './components/types';
 
@@ -154,9 +154,9 @@ function FeatDisplayWrapper({ featId, showHeader: _showHeader }: { featId: numbe
         );
     }
 
-    // Extract description/summary from feature progressions
-    const featDescription = feat.featureProgressions?.[0]?.feature?.description || null;
-    const featSummary = feat.featureProgressions?.[0]?.feature?.summary || null;
+    // Extract description/summary from feature features
+    const featDescription = feat.features?.[0]?.description || null;
+    const featSummary = feat.features?.[0]?.summary || null;
     const displayText = featSummary || featDescription;
 
     return (
@@ -353,9 +353,10 @@ function CompanionDisplayWrapper({ companionId, choiceType, showHeader: _showHea
         : `Companion ${companion.id}`;
     const companionTypeName = COMPANION_TYPE_MAP[companion.type]?.name || (choiceType === EntityAppliesToType.Familiar ? 'Familiar' : 'Animal Companion');
 
-    // Find the companion benefit progression from the companion's features
+    // Find the companion benefit feature from the companion's features
+    // All features with sourceType: FeatureSourceType.Companion should be included
     const benefitProgression = companion.features?.find(
-        p => p.featureId === SpecialFeatureId.CompanionBenefit && p.sourceType === FeatureSourceType.Companion
+        p => p.sourceType === FeatureSourceType.Companion
     ) || null;
 
     return (
@@ -379,8 +380,8 @@ function CompanionDisplayWrapper({ companionId, choiceType, showHeader: _showHea
                 <div className="mt-3">
                     <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200 mb-2">Benefits:</p>
                     <FeatureDisplay
-                        feature={benefitProgression.feature}
-                        progressions={[benefitProgression]}
+                        feature={benefitProgression}
+                        features={[benefitProgression]}
                         showAddProgressionButton={false}
                     />
                 </div>

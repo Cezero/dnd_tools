@@ -4,13 +4,13 @@ import { numericParam, optionalBooleanParam, commonValidations } from './common.
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 import { CastingType, ProgressionType } from '@shared/static-data';
-import { CreateFeatureProgressionRequestSchema, FeatureProgressionResponseSchema, UpdateFeatureProgressionSchema } from './feature.js';
+import { CreateFeatureRequestSchema, FeatureResponseSchema, UpdateFeatureSchema } from './feature.js';
 import { CreateSpellcastingProgressionSchema, SpellcastingProgressionWithSlotsSchema } from './spellcasting.js';
 
 // Simplified schema for character feature choices (for enriching progressions)
 // Shared between class and race endpoints
 export const CharacterFeatureChoiceForEnrichmentSchema = z.object({
-    progressionId: commonValidations.positiveInt('Progression ID'),
+    featureId: commonValidations.positiveInt('Feature ID'),
     featureEntityId: commonValidations.positiveInt('Feature entity ID'),
     appliesToId: commonValidations.positiveInt('Applies to ID').nullable(),
     appliesToSubId: z.number().int().nullable(),
@@ -30,7 +30,7 @@ export const BaseClassSchema = z.object({
     isDivine: z.boolean().default(false),
     description: commonValidations.description(10000).nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureProgressionResponseSchema).nullable(),
+    features: z.array(FeatureResponseSchema).nullable(),
     spellcastingProgression: z.array(SpellcastingProgressionWithSlotsSchema).optional().nullable(),
     spellsKnownProgression: z.array(SpellcastingProgressionWithSlotsSchema).optional().nullable(),
 });
@@ -87,7 +87,7 @@ export const UpdateClassSchema = BaseClassSchema.omit({
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
-    features: z.array(UpdateFeatureProgressionSchema).nullable(),
+    features: z.array(UpdateFeatureSchema).nullable(),
     spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 }).partial();
@@ -97,7 +97,7 @@ export const CreateClassSchema = BaseClassSchema.omit({
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
-    features: z.array(UpdateFeatureProgressionSchema).nullable(),
+    features: z.array(UpdateFeatureSchema).nullable(),
     spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 });

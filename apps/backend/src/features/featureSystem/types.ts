@@ -1,25 +1,27 @@
 import type { Prisma } from '@shared/prisma-client';
 import type {
     GetAllFeaturesResponse,
-    CreateFeatureRequest,
-    UpdateFeatureRequest,
+    CreateFeatureBasicRequest,
+    UpdateFeatureBasicRequest,
+    UpdateFeature,
     GetFeatureResponse,
     CreateResponse,
     UpdateResponse,
-    CreateFeatureProgressionRequest,
-    UpdateFeatureProgression,
-    FeatureProgression,
+    CreateFeatureRequest,
+    FeatureWithRelations,
     GetFeatureListResponse,
     FeatureCacheResponse,
 } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
-// Context type for feature progression operations
-export interface FeatureProgressionContext {
+// Context type for feature operations
+export interface FeatureContext {
     classId?: number;
     raceId?: number;
     domainId?: number;
     featId?: number;
+    companionId?: number;
+    editionId?: number;
     sourceType?: FeatureSourceType;
 }
 
@@ -28,27 +30,27 @@ export interface FeatureSystemService {
     getFeatureList(sourceTypes?: number[]): Promise<GetFeatureListResponse>;
     getFeatureCache(): Promise<FeatureCacheResponse>;
     getFeatureById(query: { id: number }): Promise<GetFeatureResponse | null>;
-    createFeature(data: CreateFeatureRequest): Promise<CreateResponse>;
-    updateFeature(query: { id: number }, data: UpdateFeatureRequest): Promise<UpdateResponse>;
+    createFeature(data: CreateFeatureBasicRequest): Promise<CreateResponse>;
+    updateFeature(query: { id: number }, data: UpdateFeature): Promise<UpdateResponse>;
     deleteFeature(query: { id: number }): Promise<UpdateResponse>;
-    createFeatureProgressionWithRelations(data: CreateFeatureProgressionRequest): Promise<CreateResponse>;
-    createMultipleFeatureProgressions(progressions: CreateFeatureProgressionRequest[], context: FeatureProgressionContext, tx?: Prisma.TransactionClient): Promise<void>;
-    deleteFeatureProgressionsForContext(context: FeatureProgressionContext, tx?: Prisma.TransactionClient): Promise<void>;
-    updateFeatureProgressions(featureId: number, progressions: UpdateFeatureProgression[]): Promise<UpdateResponse>;
-    getFeatureProgressions(featureId: number): Promise<FeatureProgression[]>;
+    createFeatureWithRelations(data: CreateFeatureRequest): Promise<CreateResponse>;
+    createMultipleFeatures(features: CreateFeatureRequest[], context: FeatureContext, tx?: Prisma.TransactionClient): Promise<void>;
+    deleteFeaturesForContext(context: FeatureContext, tx?: Prisma.TransactionClient): Promise<void>;
+    updateFeatures(featureId: number, features: UpdateFeature[]): Promise<UpdateResponse>;
+    getFeatures(featureId: number): Promise<FeatureWithRelations[]>;
 
-    // NEW: Core methods for smart population
-    getFeatureProgressionsByIds(progressionIds: number[], characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>, includeClassRaceInfo?: boolean): Promise<FeatureProgression[]>;
-    getFeatureProgressionsByClassId(classId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
-    getFeatureProgressionsByRaceId(raceId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
-    getFeatureProgressionsByDomainId(domainId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
-    getFeatureProgressionsByFeatIds(featIds: number[], characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
-    getFeatureProgressionsByCompanionId(companionId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
-    getFeatureProgressionsByEditionId(editionId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
-    getFeatureProgressionById(progressionId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression | null>;
-    cloneClassFeatures(sourceClassId: number, targetClassId: number, forkProgressions?: boolean): Promise<void>;
-    forkProgressionForClass(progressionId: number, classId: number): Promise<number>;
-    syncClassFeatureProgressions(classId: number, progressionIds: number[], tx: Prisma.TransactionClient): Promise<number[]>;
-    syncRaceFeatureProgressions(raceId: number, progressionIds: number[], tx: Prisma.TransactionClient): Promise<number[]>;
-    cleanupOrphanedProgressions(orphanedProgressionIds: number[]): Promise<void>;
+    // Core methods for smart population
+    getFeaturesByIds(featureIds: number[], characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>, includeClassRaceInfo?: boolean): Promise<FeatureWithRelations[]>;
+    getFeaturesByClassId(classId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
+    getFeaturesByRaceId(raceId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
+    getFeaturesByDomainId(domainId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
+    getFeaturesByFeatIds(featIds: number[], characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
+    getFeaturesByCompanionId(companionId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
+    getFeaturesByEditionId(editionId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
+    getFeatureByIdWithChoices(featureId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations | null>;
+    cloneClassFeatures(sourceClassId: number, targetClassId: number, forkFeatures?: boolean): Promise<void>;
+    forkFeatureForClass(featureId: number, classId: number): Promise<number>;
+    syncClassFeatures(classId: number, featureIds: number[], tx: Prisma.TransactionClient): Promise<number[]>;
+    syncRaceFeatures(raceId: number, featureIds: number[], tx: Prisma.TransactionClient): Promise<number[]>;
+    cleanupOrphanedFeatures(orphanedFeatureIds: number[]): Promise<void>;
 } 

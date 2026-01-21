@@ -1,4 +1,4 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations } from '@shared/schema';
 import { EntityAppliesToType } from '@shared/static-data';
 
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
@@ -14,7 +14,7 @@ import { buildBreakdownString } from './breakdownBuilder';
  * 
  * @param character - The character to calculate bonuses for
  * @param appliesTo - The EntityAppliesToType this calculation applies to
- * @param resolvedProgressions - Resolved feature progressions for the character
+ * @param resolvedProgressions - Resolved feature features for the character
  * @param context - Optional context for feat benefit resolution (e.g., abilityId, itemId)
  * @returns Object containing feat bonus, feature bonus, and the raw benefit arrays
  * 
@@ -30,7 +30,7 @@ import { buildBreakdownString } from './breakdownBuilder';
 export function resolveStandardBonuses(
     character: CharacterWithAllDetailsResponse,
     appliesTo: EntityAppliesToType,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     context?: FeatBenefitContext | { abilityId?: number }
 ): {
     featBonus: number;

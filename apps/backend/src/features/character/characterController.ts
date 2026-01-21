@@ -329,7 +329,7 @@ export async function ReorderCharacterAttackDefinitions(req: ValidatedParamsBody
  * **DEPRECATED**: This endpoint is deprecated. Spell selection data is now included in the
  * resolved character response (ResolvedCharacterResult) as part of character resolution.
  * 
- * Spell selection data depends on resolved progressions, class choices, domain choices, and
+ * Spell selection data depends on resolved features, class choices, domain choices, and
  * feat choices - all of which are part of the resolved character. Using the resolved character
  * response is architecturally correct and eliminates the need for this separate API call.
  * 
@@ -340,7 +340,7 @@ export async function GetCharacterSpellSelection(req: ValidatedParamsT<Character
     try {
         const classId = req.params.classId;
         // Note: This endpoint is deprecated. Spell selection data should come from resolved character response.
-        // Passing undefined for resolved progressions - this endpoint should not be used for new code.
+        // Passing undefined for resolved features - this endpoint should not be used for new code.
         const result = await characterService.getAvailableSpellsForClass(req.params.id, classId, undefined);
 
         // Transform to response format
@@ -378,8 +378,8 @@ export async function GetCharacterSpellSelection(req: ValidatedParamsT<Character
 
 export async function AddSpellKnown(req: ValidatedBodyT<AddSpellKnownRequest>, res: Response, _next: NextFunction) {
     try {
-        // TODO: Fetch resolved progressions if needed for spellbook class validation
-        // For now, pass undefined - frontend should provide resolved progressions for free grant validation
+        // TODO: Fetch resolved features if needed for spellbook class validation
+        // For now, pass undefined - frontend should provide resolved features for free grant validation
         const result = await characterService.addSpellKnown(
             req.body.characterId,
             req.body.classId,
@@ -421,8 +421,8 @@ export async function GetCharacterUses(req: ValidatedParamsT<CharacterIdParamReq
     res.json(uses);
 }
 
-export async function UpdateFeatureUses(req: ValidatedParamsBodyT<CharacterIdParamRequest & { progressionId: number; entityId: number }, UpdateFeatureUsesRequest>, res: Response, _next: NextFunction) {
-    const result = await characterService.updateFeatureUses(req.params.id, req.params.progressionId, req.params.entityId, req.body.delta);
+export async function UpdateFeatureUses(req: ValidatedParamsBodyT<CharacterIdParamRequest & { featureId: number; entityId: number }, UpdateFeatureUsesRequest>, res: Response, _next: NextFunction) {
+    const result = await characterService.updateFeatureUses(req.params.id, req.params.featureId, req.params.entityId, req.body.delta);
     res.json(result);
 }
 

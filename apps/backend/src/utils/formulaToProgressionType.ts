@@ -3,7 +3,7 @@ import { FormulaId, ProgressionType } from '@shared/static-data';
 
 /**
  * Reverse lookup: Determine BAB ProgressionType from formula params
- * Used for backward compatibility when extracting mechanics for display/editing
+ * Used when extracting mechanics for display/editing
  */
 export function getBABProgressionTypeFromFormula(
     formulaParams: FeatureFormulaParams | null | undefined,
@@ -35,7 +35,7 @@ export function getBABProgressionTypeFromFormula(
 
 /**
  * Reverse lookup: Determine Save ProgressionType from formula params
- * Used for backward compatibility when extracting mechanics for display/editing
+ * Used when extracting mechanics for display/editing
  */
 export function getSaveProgressionTypeFromFormula(
     formulaParams: FeatureFormulaParams | null | undefined

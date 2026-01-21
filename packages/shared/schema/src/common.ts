@@ -303,3 +303,14 @@ export const CreateResponseSchema = z.object({
 
 export type UpdateResponse = z.infer<typeof UpdateResponseSchema>;
 export type CreateResponse = z.infer<typeof CreateResponseSchema>;
+
+/**
+ * Schema for entity lock status response.
+ * Used to indicate whether an entity is locked and by which user.
+ */
+export const EntityLockStatusSchema = z.object({
+    locked: z.boolean(),
+    lockedBy: z.number().int().positive().optional(),
+});
+
+export type EntityLockStatus = z.infer<typeof EntityLockStatusSchema>;

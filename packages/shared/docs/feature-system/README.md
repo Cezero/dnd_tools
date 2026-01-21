@@ -8,6 +8,23 @@ The Feature System is the core mechanism for defining and managing character abi
 
 The system enables complex character customization by allowing features to scale with level, provide player choices, and integrate with other game systems like spellcasting and character progression. The system also supports variant class feature overrides through the variant class system.
 
+### **Unified Feature Model**
+
+**Migration Note**: The Feature and FeatureProgression models have been merged into a single `Feature` model. The new `Feature` model includes all fields that were previously split between `Feature` and `FeatureProgression`:
+- Core feature fields: `id`, `slug`, `name`, `description`, `summary`, `displayInCharacterSheet`
+- Progression fields: `sourceType`, `level`, `domainId`, `featId`, `companionId`, `editionId`
+- Relationships: `classes` (via `FeatureClassMap`), `races` (via `FeatureRaceMap`), `entities`, `prerequisites`, etc.
+
+**Type Alias**: `FeatureProgression` is maintained as a type alias for `FeatureWithRelationsSchema` for backward compatibility in TypeScript code, but the database model is now unified as `Feature`.
+
+**Related Models**: 
+- `FeatureClassMap` (replaces `FeatureProgressionClassMap`)
+- `FeatureRaceMap` (replaces `FeatureProgressionRaceMap`)
+- `FeatureCondition` (replaces `FeatureProgressionCondition`)
+- `FeatureEntity.featureId` (replaces `FeatureEntity.progressionId`)
+- `CharacterFeatureChoice.featureId` (replaces `CharacterFeatureChoice.progressionId`)
+- `CharacterFeatureUses.featureId` (replaces `CharacterFeatureUses.progressionId`)
+
 ### **Variant Class Integration**
 
 The Feature System integrates with the [Variant Class System](../variant-class-system/README.md) to support feature modifications for variant classes. The integration uses context objects to properly link variant features to their override records, maintaining referential integrity throughout the system.
@@ -74,15 +91,13 @@ This documentation follows a layered approach, with each layer building upon the
 
 ### **Feature Components**
 
-**Features**: Core definitions with names, descriptions, and prerequisites that represent character abilities or traits.
+**Features**: Unified feature definitions that combine core feature information (name, description, prerequisites) with progression details (level, source type, source references). Features define when and how character abilities are acquired, including modifiers and choices.
 
-**Feature Progressions**: Level-based feature grants that define when and how features are acquired, including modifiers and choices.
+**Modifiers**: Numerical bonuses, quantities, and replacements that provide mechanical benefits to characters, defined through FeatureEntity records.
 
-**Modifiers**: Numerical bonuses, quantities, and replacements that provide mechanical benefits to characters.
+**Choices**: Player selections for feats, features, or other options that allow character customization, tracked via CharacterFeatureChoice records.
 
-**Choices**: Player selections for feats, features, or other options that allow character customization.
-
-**Special Effects**: Unique abilities like proficiencies, favored enemies, and other non-numeric effects.
+**Special Effects**: Unique abilities like proficiencies, favored enemies, and other non-numeric effects, defined through FeatureEntity records with appropriate entity types.
 
 ### **System Integration**
 
@@ -94,37 +109,40 @@ This documentation follows a layered approach, with each layer building upon the
 
 **Character Integration**: Features applied to character statistics and abilities during character creation and advancement.
 
-### **Reusable Feature Progressions**
+### **Reusable Features**
 
-Feature progressions can be shared across multiple classes via a many-to-many relationship, enabling efficient variant class creation and data reuse.
+Features can be shared across multiple classes or races via many-to-many relationships, enabling efficient variant class creation and data reuse.
 
-**Many-to-Many Relationship:**
-- `FeatureProgressionClassMap` - Junction table linking progressions to classes
-- Progressions can be linked to multiple classes simultaneously
-- Supports both direct `classId` (class-specific) and shared (via `FeatureProgressionClassMap`) patterns
+**Many-to-Many Relationships:**
+- `FeatureClassMap` - Junction table linking features to classes
+- `FeatureRaceMap` - Junction table linking features to races
+- Features can be linked to multiple classes or races simultaneously
+- Supports efficient data reuse and variant class/race creation
 
 **Clone Workflow:**
 1. Select base class to clone from
-2. Choose to share progressions (default) or fork them (create copies)
-3. System creates `FeatureProgressionClassMap` entries for shared progressions
-4. Variant class now has access to all base class progressions
+2. Choose to share features (default) or fork them (create copies)
+3. System creates `FeatureClassMap` entries for shared features
+4. Variant class now has access to all base class features
 
 **Fork Workflow:**
-1. Identify shared progression that needs class-specific modification
-2. Fork the progression to create a class-specific copy
-3. Modify the forked progression independently
-4. Original shared progression remains unchanged for other classes
+1. Identify shared feature that needs class-specific modification
+2. Fork the feature to create a class-specific copy
+3. Modify the forked feature independently
+4. Original shared feature remains unchanged for other classes
 
 **Benefits:**
-- No data duplication for shared progressions
+- No data duplication for shared features
 - Easy variant class creation
 - Efficient storage and maintenance
-- Clear separation: shared vs. class-specific progressions
+- Clear separation: shared vs. class-specific features
 
 **Source Files:**
-- Database: `apps/backend/prisma/schema.prisma` (FeatureProgressionClassMap model)
+- Database: `apps/backend/prisma/schema.prisma` (FeatureClassMap model)
 - Backend: `apps/backend/src/features/featureSystem/featureSystemService.ts` (cloneClassFeatures, forkProgressionForClass methods)
 - API: `apps/backend/src/features/featureSystem/featureSystemRoutes.ts` (clone and fork endpoints)
+
+**Note**: The `forkProgressionForClass` method name is maintained for backward compatibility, but it now operates on the unified Feature model.
 
 **Related Documentation:**
 - [Class System Refactoring](../application-overview/class-race-feature-refactoring.md) - Complete refactoring overview
@@ -134,9 +152,9 @@ Feature progressions can be shared across multiple classes via a many-to-many re
 
 The feature system integrates with the spellcasting system to enable feature-based spellcasting abilities.
 
-**FeatureProgression Links:**
-- `FeatureProgression` entities can reference `SpellcastingProgression` via `EntityAppliesToType.SpellcastingProgression`
-- Spellcasting progressions linked to classes through feature progressions
+**Feature Links:**
+- `Feature` entities can reference `SpellcastingProgression` via `SpellcastingLink`
+- Spellcasting progressions linked to classes through features (via `FeatureClassMap`)
 - Enables automatic resolution for gestalt and multiclass characters
 
 **TODO: Future Enhancement - FeatureEntity Formulas:**
@@ -167,8 +185,7 @@ The feature system integrates with the spellcasting system to enable feature-bas
 
 The feature system uses a unified entity approach with interconnected models to represent complex feature relationships:
 
-**Feature**: Core feature definitions with names, descriptions, and prerequisites
-**FeatureProgression**: Level-based feature grants with source tracking
+**Feature**: Unified feature definitions combining core information (name, description, prerequisites) with progression details (level, source type, source references)
 **FeatureEntity**: Unified model for all feature effects (modifiers, choices, special effects) with type-based differentiation
 **FeatureEntityCondition**: Conditional requirements for feature entities
 **FeatureFormulaParams**: Mathematical formulas for feature progression calculations
@@ -289,7 +306,7 @@ Class features are granted through feature progressions that scale with class le
 **Class Choices**: Choices specific to class abilities and specializations
 **Prerequisites**: Requirements based on class level and abilities
 
-**Source File**: `apps/backend/prisma/schema.prisma` (FeatureProgression model with classId)
+**Source File**: `apps/backend/prisma/schema.prisma` (Feature model with FeatureClassMap for class linking)
 
 ### **Racial Feature Integration**
 
@@ -300,7 +317,7 @@ Racial features provide innate abilities and traits:
 **Skill Bonuses**: Racial skill bonuses and specializations
 **Special Abilities**: Unique racial abilities and traits
 
-**Source File**: `apps/backend/prisma/schema.prisma` (FeatureProgression model with raceId)
+**Source File**: `apps/backend/prisma/schema.prisma` (Feature model with FeatureRaceMap for race linking)
 
 ### **Spellcasting Integration**
 

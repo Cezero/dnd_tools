@@ -1,47 +1,48 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     ClassResolutionClassIdParamSchema,
-    ClassResolutionParamsSchema,
     ApplyClassUpdateBodySchema,
 } from '@shared/schema';
 
 import {
-    InitializeClassSession,
-    GetClassSessionState,
+    StartClassEditing,
+    GetClassState,
     ApplyClassUpdate,
-    SaveClassSession,
-    CancelClassSession,
+    SaveClassState,
+    CancelClassEditing,
 } from './classResolutionController';
 import { requireAuth } from '../../middleware/authMiddleware.js';
 
-const { router: ClassResolutionRouter, get, post, patch, delete: deleteRoute } = buildValidatedRouter();
+const { router: ClassResolutionRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Class Resolution API Routes
 // These routes will be mounted under /classes, so the full path will be:
-// /api/classes/:classId/session/...
+// /api/classes/:classId/...
 
-// Initialize Session
-post('/:classId/session', requireAuth, { params: ClassResolutionClassIdParamSchema }, InitializeClassSession);
+// Start Editing
+post('/:classId/start-editing', requireAuth, {
+    params: ClassResolutionClassIdParamSchema
+}, StartClassEditing);
 
 // Get Current State
-get('/:classId/session/:sessionId', requireAuth, {
-    params: ClassResolutionParamsSchema,
-}, GetClassSessionState);
+get('/:classId/state', requireAuth, {
+    params: ClassResolutionClassIdParamSchema,
+}, GetClassState);
 
 // Apply Update
-patch('/:classId/session/:sessionId', requireAuth, {
-    params: ClassResolutionParamsSchema,
+put('/:classId/update', requireAuth, {
+    params: ClassResolutionClassIdParamSchema,
     body: ApplyClassUpdateBodySchema,
 }, ApplyClassUpdate);
 
-// Save Session
-post('/:classId/session/:sessionId/save', requireAuth, {
-    params: ClassResolutionParamsSchema,
-}, SaveClassSession);
+// Save State
+post('/:classId/save', requireAuth, {
+    params: ClassResolutionClassIdParamSchema,
+}, SaveClassState);
 
-// Cancel Session
-deleteRoute('/:classId/session/:sessionId', requireAuth, {
-    params: ClassResolutionParamsSchema,
-}, CancelClassSession);
+// Cancel Editing
+post('/:classId/cancel', requireAuth, {
+    params: ClassResolutionClassIdParamSchema,
+}, CancelClassEditing);
 
 export { ClassResolutionRouter };

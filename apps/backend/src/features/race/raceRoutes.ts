@@ -14,6 +14,7 @@ import {
     UpdateRace,
     DeleteRace,
     GetRaceCache,
+    GetRaceLockStatus,
 } from './raceController.js';
 
 const { router: RaceRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
@@ -22,6 +23,7 @@ const { router: RaceRouter, get, post, put, delete: deleteRoute } = buildValidat
 get('/', {}, GetAllRaces);
 get('/cache', {}, GetRaceCache);
 get('/:id', { params: RaceIdParamSchema, query: RaceIdQuerySchema }, GetRaceById);
+get('/:id/lock-status', { params: RaceIdParamSchema }, GetRaceLockStatus);
 
 // Race Write Routes
 post('/', requireAdmin, { body: CreateRaceSchema }, CreateRace);

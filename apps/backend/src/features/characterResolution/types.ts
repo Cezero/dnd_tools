@@ -3,7 +3,7 @@ import type {
     CharacterAdvancementWithDetailsResponse,
     Race,
     DnDClass,
-    FeatureProgression,
+    FeatureWithRelations,
     CharacterFeatureChoice,
     PendingChoice,
 } from '@shared/schema';
@@ -46,7 +46,7 @@ export interface ResolutionContext {
  * Resolution result containing resolved features and pending choices
  */
 export interface ResolutionResult {
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     pendingChoices: PendingChoice[];
     warnings: string[];
     errors: string[];
@@ -93,7 +93,7 @@ export type CharacterUpdate =
     | { type: 'SET_CLASS'; payload: { classId: number } }
     | { type: 'SET_SECONDARY_CLASS'; payload: { secondaryClassId: number | null } }
     | { type: 'SET_LEVEL'; payload: { level: number } }
-    | { type: 'MAKE_CHOICE'; payload: { progressionId: number; featureEntityId: number; appliesToId: number; appliesToSubId: number | null } }
+    | { type: 'MAKE_CHOICE'; payload: { featureId: number; featureEntityId: number; appliesToId: number; appliesToSubId: number | null } }
     | { type: 'SET_FEAT'; payload: { featId: number; featSubId: number | null } }
     | { type: 'REMOVE_FEAT'; payload: { featId: number } }
     | { type: 'SET_DISALLOWED_SOURCE'; payload: { sourceBookId: number } }

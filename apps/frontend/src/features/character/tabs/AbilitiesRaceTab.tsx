@@ -22,8 +22,9 @@ import {
     AbilityGenerationMethod,
     ABILITY_GENERATION_METHOD_LIST,
     POINT_BUY_OPTIONS_LIST,
-    SpecialFeatureId,
     EntityAppliesToType,
+    EntityType,
+    FeatureSourceType,
     CoreComponent
 } from '@shared/static-data';
 
@@ -410,7 +411,7 @@ export function AbilitiesRaceTab({
             if (index !== undefined) {
                 newRolledValues.splice(index, 1);
             } else {
-                // Fallback to filtering if no index (for backward compatibility)
+                // Fallback to filtering if no index
                 newRolledValues = newRolledValues.filter(v => v !== value);
             }
 
@@ -531,9 +532,13 @@ export function AbilitiesRaceTab({
 
         // Look for ability adjustment features
         const abilityFeatures = selectedRaceDetails.features.filter((fp: unknown) => {
-            const feature = fp as { featureId: number; entities?: { appliesTo: number; appliesToId: number; value: number }[] };
-            return feature.featureId === SpecialFeatureId.AbilityAdjustment &&
-                feature.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId);
+            const feature = fp as { sourceType: number; entities?: { type: number; appliesTo: number; appliesToId: number; value: number }[] };
+            return feature.sourceType === FeatureSourceType.Race &&
+                feature.entities?.some(e =>
+                    e.type === EntityType.Base &&
+                    e.appliesTo === EntityAppliesToType.Ability &&
+                    e.appliesToId === abilityId
+                );
         });
 
         const abilityEntity = abilityFeatures

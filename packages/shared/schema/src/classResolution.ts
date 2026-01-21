@@ -1,63 +1,26 @@
 import { z } from 'zod';
 
 import { commonValidations } from './common.js';
-import { FeatureProgressionSchema, FeatureEntitySchema } from './feature.js';
+import { FeatureWithRelationsSchema, FeatureEntitySchema } from './feature.js';
 import { SpellcastingProgressionWithSlotsSchema } from './spellcasting.js';
 import { BaseClassSchema, ClassSummarySchema } from './class.js';
+import { SourceMapSchema } from './sourcebook.js';
 import { ClassUpdateType } from '@shared/static-data';
 
 // Class Update Schema - discriminated union for all update operations
+// Note: Features are now managed independently via feature state system.
+// Class updates only handle feature linking/unlinking and class-specific fields.
 export const ClassUpdateSchema = z.discriminatedUnion('type', [
     z.object({
-        type: z.literal(ClassUpdateType.LinkProgression),
+        type: z.literal(ClassUpdateType.LinkFeature),
         payload: z.object({
-            progressionId: commonValidations.positiveInt(),
             featureId: commonValidations.positiveInt(),
         }),
     }),
     z.object({
-        type: z.literal(ClassUpdateType.UnlinkProgression),
+        type: z.literal(ClassUpdateType.UnlinkFeature),
         payload: z.object({
-            progressionId: commonValidations.positiveInt(),
-        }),
-    }),
-    z.object({
-        type: z.literal(ClassUpdateType.AddProgression),
-        payload: z.object({
-            progression: FeatureProgressionSchema,
-        }),
-    }),
-    z.object({
-        type: z.literal(ClassUpdateType.UpdateProgression),
-        payload: z.object({
-            progressionId: commonValidations.positiveInt(),
-            progression: FeatureProgressionSchema.partial(),
-        }),
-    }),
-    z.object({
-        type: z.literal(ClassUpdateType.RemoveProgression),
-        payload: z.object({
-            progressionId: commonValidations.positiveInt(),
-        }),
-    }),
-    z.object({
-        type: z.literal(ClassUpdateType.AddEntity),
-        payload: z.object({
-            progressionId: commonValidations.positiveInt(),
-            entity: FeatureEntitySchema,
-        }),
-    }),
-    z.object({
-        type: z.literal(ClassUpdateType.UpdateEntity),
-        payload: z.object({
-            entityId: commonValidations.positiveInt(),
-            entity: FeatureEntitySchema.partial(),
-        }),
-    }),
-    z.object({
-        type: z.literal(ClassUpdateType.RemoveEntity),
-        payload: z.object({
-            entityId: commonValidations.positiveInt(),
+            featureId: commonValidations.positiveInt(),
         }),
     }),
     z.object({
@@ -86,14 +49,6 @@ export const ClassResolutionClassIdParamSchema = z.object({
     classId: z.string().regex(/^\d+$/),
 });
 
-export const ClassSessionIdParamSchema = z.object({
-    sessionId: z.uuid(),
-});
-
-export const ClassResolutionParamsSchema = ClassResolutionClassIdParamSchema.extend({
-    sessionId: z.uuid(),
-});
-
 // Body schema for applying updates
 export const ApplyClassUpdateBodySchema = z.object({
     update: ClassUpdateSchema,
@@ -111,23 +66,31 @@ export const ClassEditStateSchema = z.object({
     spellsKnown: z.boolean(),
     isDivine: z.boolean(),
     description: z.string().nullable(),
-    featureProgressions: z.array(FeatureProgressionSchema),
+    sourceBookInfo: z.array(SourceMapSchema).nullable(),
+    featureIds: z.array(z.number().int()),
     spellcastingProgression: z.array(SpellcastingProgressionWithSlotsSchema),
     spellsKnownProgression: z.array(SpellcastingProgressionWithSlotsSchema),
 });
 
 // Response schemas
-export const InitializeClassSessionResponseSchema = z.object({
-    sessionId: z.uuid(),
+export const StartClassEditingResponseSchema = z.object({
     classState: ClassEditStateSchema,
 });
 
-export const GetClassSessionStateResponseSchema = z.object({
+export const GetClassStateResponseSchema = z.object({
     classState: ClassEditStateSchema,
 });
 
 export const ApplyClassUpdateResponseSchema = z.object({
     classState: ClassEditStateSchema,
+});
+
+export const SaveClassStateResponseSchema = z.object({
+    class: ClassSummarySchema,
+});
+
+export const CancelClassEditingResponseSchema = z.object({
+    success: z.boolean(),
 });
 
 // Schema for class entity with ID (used in resolution system)
@@ -136,20 +99,14 @@ export const ClassWithIdSchema = BaseClassSchema.extend({
     id: commonValidations.positiveInt('Class ID'),
 });
 
-// Response schema for saving class session
-export const SaveClassSessionResponseSchema = z.object({
-    class: ClassSummarySchema,
-});
-
 // TypeScript type exports
 export type ClassUpdate = z.infer<typeof ClassUpdateSchema>;
 export type ClassResolutionClassIdParamRequest = z.infer<typeof ClassResolutionClassIdParamSchema>;
-export type ClassSessionIdParamRequest = z.infer<typeof ClassSessionIdParamSchema>;
-export type ClassResolutionParamsRequest = z.infer<typeof ClassResolutionParamsSchema>;
 export type ApplyClassUpdateBodyRequest = z.infer<typeof ApplyClassUpdateBodySchema>;
 export type ClassEditState = z.infer<typeof ClassEditStateSchema>;
 export type ClassWithId = z.infer<typeof ClassWithIdSchema>;
-export type InitializeClassSessionResponse = z.infer<typeof InitializeClassSessionResponseSchema>;
-export type GetClassSessionStateResponse = z.infer<typeof GetClassSessionStateResponseSchema>;
+export type StartClassEditingResponse = z.infer<typeof StartClassEditingResponseSchema>;
+export type GetClassStateResponse = z.infer<typeof GetClassStateResponseSchema>;
 export type ApplyClassUpdateResponse = z.infer<typeof ApplyClassUpdateResponseSchema>;
-export type SaveClassSessionResponse = z.infer<typeof SaveClassSessionResponseSchema>;
+export type SaveClassStateResponse = z.infer<typeof SaveClassStateResponseSchema>;
+export type CancelClassEditingResponse = z.infer<typeof CancelClassEditingResponseSchema>;

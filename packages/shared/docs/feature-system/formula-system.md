@@ -72,18 +72,25 @@ Increases every N levels starting from a specific level, with optional formula s
 - **`scalingValue`**: Base value to scale by
 - **`interval`**: Level interval between increases
 - **`formulaStartLevel`**: Optional level when formula progression begins
+- **`featureLevelZero`**: Optional boolean that returns 0 for levels below formulaStartLevel
 
 **Calculation Logic**:
 - **Before Start Level**: Returns 0 (no progression yet)
-- **Before Formula Start**: Returns base scaling value
+- **Before Formula Start**: Returns base scaling value (or 0 if featureLevelZero is true)
 - **After Formula Start**: Calculates intervals and applies progressive scaling
 - **Interval-Based**: Increases occur at regular level intervals
+- **Feature Level Zero**: When enabled, levels below formulaStartLevel return 0 instead of null or scalingValue
 
 **Common Uses**:
 - **Sneak Attack**: +1d6 every 2 levels
 - **Favored Enemy**: +1 favored enemy every 5 levels
 - **Spell Resistance**: +1 SR every 3 levels
 - **Special Abilities**: New abilities every few levels
+
+**Feature Level Zero Example**:
+- **Configuration**: Feature.level: 1, FeatureEntity.value: 1, Formula: EVERY_N_LEVELS, Interval: 2, FormulaStartLevel: 2, IncludeFeatureLevel: false, FeatureLevelZero: true
+- **Progression**: L1: 0, L2: 1, L4: 2, L6: 3, ...
+- **Use Case**: Features that should start at 0 before the formula begins, then progress normally
 
 **Source File**: `packages/shared/static-data/src/FormulaDefinitions.ts` (EVERY_N_LEVELS definition)
 
@@ -218,6 +225,7 @@ The formula system uses a flexible parameter system for customization:
 **Core Parameters**:
 - **`formulaId`**: Identifies the specific formula type
 - **`formulaStartLevel`**: Level when formula progression begins
+- **`featureLevelZero`**: Returns 0 for levels below formulaStartLevel (default: false)
 - **`interval`**: Interval for interval-based formulas
 - **`abilityId`**: Ability score for ability-based formulas
 - **`thresholds`**: Level thresholds for conditional scaling

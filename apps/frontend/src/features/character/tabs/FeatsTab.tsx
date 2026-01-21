@@ -46,21 +46,21 @@ export function FeatsTab({
     // Note: This is the list of qualified feats, not the count (availableFeatsCount is the count)
     const qualifiedFeats = useMemo(() => resolvedData.qualifiedFeats || [], [resolvedData.qualifiedFeats]);
 
-    // Create a map of feat ID to feature data from resolved progressions
+    // Create a map of feat ID to feature data from resolved features
     const featFeatureMap = useMemo(() => {
         const map = new Map<number, { description?: string | null; summary?: string | null }>();
-        if (resolvedData.progressions) {
-            resolvedData.progressions.forEach(progression => {
-                if (progression.sourceType === FeatureSourceType.Feat && progression.featId && progression.feature) {
-                    map.set(progression.featId, {
-                        description: progression.feature.description,
-                        summary: progression.feature.summary
+        if (resolvedData.features) {
+            resolvedData.features.forEach(feature => {
+                if (feature.sourceType === FeatureSourceType.Feat && feature.featId) {
+                    map.set(feature.featId, {
+                        description: feature.description,
+                        summary: feature.summary
                     });
                 }
             });
         }
         return map;
-    }, [resolvedData.progressions]);
+    }, [resolvedData.features]);
 
     // Filter feats based on search term (including feature description and summary)
     const filteredFeats = useMemo(() => {
@@ -132,16 +132,16 @@ export function FeatsTab({
 
         // Extract feat choices from state.featureChoices
         for (const choice of state.featureChoices) {
-            // Look up the FeatureEntity in resolved progressions to determine if this is a feat choice
+            // Look up the FeatureEntity in resolved features to determine if this is a feat choice
             let entityAppliesTo: number | null = null;
             let sourceFeatureName: string | null = null;
 
-            for (const progression of resolvedData.progressions) {
-                if (progression.id === choice.progressionId && progression.entities) {
-                    const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+            for (const feature of resolvedData.features) {
+                if (feature.id === choice.featureId && feature.entities) {
+                    const entity = feature.entities.find(e => e.id === choice.featureEntityId);
                     if (entity) {
                         entityAppliesTo = entity.appliesTo;
-                        sourceFeatureName = progression.feature?.name || null;
+                        sourceFeatureName = feature.name || null;
                         break;
                     }
                 }
@@ -167,7 +167,7 @@ export function FeatsTab({
         }
 
         return choiceFeats;
-    }, [state.featureChoices, resolvedData.progressions, resolvedData.qualifiedFeats, itemNameMap]);
+    }, [state.featureChoices, resolvedData.features, resolvedData.qualifiedFeats, itemNameMap]);
 
     // Combine all owned feats for display (selected, granted, and choice-based)
     const allOwnedFeats = useMemo(() => {
@@ -472,7 +472,7 @@ export function FeatsTab({
                 }}
                 onConfirm={(weaponId: number) => handleWeaponSelection(weaponId)}
                 feat={modalFeat}
-                resolvedProgressions={resolvedData.progressions}
+                resolvedProgressions={resolvedData.features}
             />
         </div>
     );

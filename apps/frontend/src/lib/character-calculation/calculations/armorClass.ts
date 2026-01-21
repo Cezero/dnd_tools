@@ -1,6 +1,6 @@
 import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { getRaceNameFromCache } from '@/services/cache/raceCache';
-import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, SIZE_MAP, ARMOR_CATEGORY_ENUM, EntityAppliesToType, SizeId } from '@shared/static-data';
 
 import { getAbilityScore } from './abilityScore';
@@ -36,7 +36,7 @@ export interface ACBreakdownMap extends BreakdownMap {
  */
 export function getAC(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>
 ): CalculationResult<ACBreakdownMap> {
     // Base AC
@@ -47,7 +47,7 @@ export function getAC(
     const dexTotalValue = dexScoreResult.value;
     const dexMod = GetAbilityModifier(dexTotalValue);
 
-    // Get size modifier from race (extract from resolved progressions)
+    // Get size modifier from race (extract from resolved features)
     const raceMechanics = character.raceId ? extractRaceMechanics(resolvedProgressions, character.raceId) : null;
     const raceSizeId = raceMechanics?.sizeId ?? SizeId.Medium; // Default to Medium
     const sizeMod = SIZE_MAP[raceSizeId as keyof typeof SIZE_MAP]?.sizeModifier ?? 0;
@@ -58,7 +58,7 @@ export function getAC(
     if (items) {
         for (const item of items) {
             if (item.armor?.bonus) {
-                // If category is undefined, treat as armor (not shield) for backward compatibility
+                // If category is undefined, treat as armor (not shield)
                 const isShield = item.armor.category === ARMOR_CATEGORY_ENUM.Shield;
                 if (!isShield) {
                     armorBonus = item.armor.bonus;
@@ -174,7 +174,7 @@ export function getAC(
  */
 export function getTouchAC(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>
 ): number {
     const acResult = getAC(character, resolvedProgressions, items);
@@ -195,7 +195,7 @@ export function getTouchAC(
  */
 export function getFlatFootedAC(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>
 ): number {
     const acResult = getAC(character, resolvedProgressions, items);

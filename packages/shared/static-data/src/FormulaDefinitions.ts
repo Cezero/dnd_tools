@@ -55,14 +55,16 @@ export const FORMULA_MAP: BaseMap<Formula> = {
     [FormulaId.EVERY_N_LEVELS]: {
         id: FormulaId.EVERY_N_LEVELS,
         name: 'Every N Levels',
-        description: 'Increases every N levels starting from a specific level (e.g., every 3 levels starting at level 7). Can use formulaStartLevel to start progression at a different level than the feature. When includeProgressionLevel is false, returns null for levels before formulaStartLevel instead of returning the base scalingValue.',
+        description: 'Increases every N levels starting from a specific level (e.g., every 3 levels starting at level 7). Can use formulaStartLevel to start progression at a different level than the feature. When includeProgressionLevel is false, returns null for levels before formulaStartLevel instead of returning the base starting value. When featureLevelZero is true, returns 0 for levels before formulaStartLevel. Supports startingValue parameter to set a different starting value than the increment amount (e.g., start at 2 and then add 1 every 2 levels).',
         parameters: [
             { name: 'level', description: 'Character level', required: true },
             { name: 'startLevel', description: 'Starting level for the progression', required: true },
-            { name: 'scalingValue', description: 'Value to scale by (from FeatureModifier.value)', required: true },
+            { name: 'scalingValue', description: 'Increment amount to add every interval (from FeatureEntity.value)', required: true },
+            { name: 'startingValue', description: 'Starting value (from FeatureFormulaParams.startingValue, defaults to scalingValue if not set)', required: false },
             { name: 'interval', description: 'Level interval (from ProgressionFormulaParams.interval)', required: true },
             { name: 'formulaStartLevel', description: 'Level when formula progression begins (from ProgressionFormulaParams.formulaStartLevel)', required: false },
-            { name: 'includeProgressionLevel', description: 'Whether to include the progression level in the calculation. When false and formulaStartLevel is set, returns null for levels before formulaStartLevel instead of returning the base scalingValue.', required: false }
+            { name: 'includeProgressionLevel', description: 'Whether to include the progression level in the calculation. When false and formulaStartLevel is set, returns null for levels before formulaStartLevel instead of returning the base starting value.', required: false },
+            { name: 'featureLevelZero', description: 'When true, returns 0 for levels below formulaStartLevel instead of null or starting value.', required: false }
         ],
         calculate: (params) => {
             // If character level is before the starting level, return null
@@ -70,36 +72,62 @@ export const FORMULA_MAP: BaseMap<Formula> = {
                 return null;
             }
 
+            // Use startingValue if provided, otherwise fall back to scalingValue
+            const startingValue = params.startingValue ?? params.scalingValue;
+
+            // Handle featureLevelZero: return 0 for levels below formulaStartLevel
+            if (params.featureLevelZero === true && params.formulaStartLevel && params.level < params.formulaStartLevel) {
+                return 0;
+            }
+
             // Handle includeProgressionLevel logic within the formula
             if (params.includeProgressionLevel === false && params.level < params.formulaStartLevel) {
                 return null; // Don't include anything before the formula start level
             }
 
-            // If character level is before the formula start level, return the base scaling value
+            // If character level is before the formula start level, return the base starting value
             if (params.formulaStartLevel && params.level < params.formulaStartLevel) {
-                return params.scalingValue;
+                return startingValue;
             }
 
             // Calculate how many intervals have passed since formulaStartLevel
             // The formula should start at formulaStartLevel and increase every interval levels
             let intervals;
             if (params.formulaStartLevel) {
-                // When formulaStartLevel is explicitly set, include it in the interval calculation
                 const levelsSinceStart = params.level - params.formulaStartLevel;
-                intervals = Math.floor(levelsSinceStart / params.interval) + 1;
+                if (params.includeProgressionLevel === false) {
+                    // When includeProgressionLevel is false, start at startingValue at formulaStartLevel
+                    // then add scalingValue every interval levels after that
+                    if (levelsSinceStart === 0) {
+                        // At formulaStartLevel, return just the base startingValue
+                        return startingValue;
+                    }
+                    // Calculate intervals since formulaStartLevel (not including formulaStartLevel itself)
+                    intervals = Math.floor(levelsSinceStart / params.interval);
+                } else {
+                    // When includeProgressionLevel is true, include formulaStartLevel in the interval calculation
+                    intervals = Math.floor(levelsSinceStart / params.interval) + 1;
+                }
             } else {
                 // When formulaStartLevel is not set (null/undefined), use the original logic
                 // Start counting intervals from the start level, not including it
                 intervals = Math.floor((params.level - params.startLevel) / params.interval);
             }
 
-            return params.scalingValue + (intervals * params.scalingValue);
+            return startingValue + (intervals * params.scalingValue);
         },
         getDisplayString: (params) => {
+            const startingValue = params.startingValue ?? params.scalingValue;
             if (params.formulaStartLevel) {
-                return `${params.scalingValue} + (intervals since ${params.formulaStartLevel}) × ${params.scalingValue}`;
+                if (params.startingValue !== undefined && params.startingValue !== null) {
+                    return `${startingValue} + (intervals since ${params.formulaStartLevel}) × ${params.scalingValue}`;
+                }
+                return `${startingValue} + (intervals since ${params.formulaStartLevel}) × ${params.scalingValue}`;
             }
-            return `${params.scalingValue} + (intervals since ${params.startLevel}) × ${params.scalingValue}`;
+            if (params.startingValue !== undefined && params.startingValue !== null) {
+                return `${startingValue} + (intervals since ${params.startLevel}) × ${params.scalingValue}`;
+            }
+            return `${startingValue} + (intervals since ${params.startLevel}) × ${params.scalingValue}`;
         },
         isCharacterDependent: false
     },
@@ -317,19 +345,25 @@ export const FORMULA_MAP: BaseMap<Formula> = {
     [FormulaId.STATIC_EVERY_N_LEVELS]: {
         id: FormulaId.STATIC_EVERY_N_LEVELS,
         name: 'Static Value Every N Levels',
-        description: 'Grants a fixed value every N levels without multiplying by level (e.g., 1 skill point every level, 2 skill points every 2 levels). Returns the value for THIS level only, not cumulative. When includeProgressionLevel is false, returns null for levels before formulaStartLevel.',
+        description: 'Grants a fixed value every N levels without multiplying by level (e.g., 1 skill point every level, 2 skill points every 2 levels). Returns the value for THIS level only, not cumulative. When includeProgressionLevel is false, returns null for levels before formulaStartLevel. When featureLevelZero is true, returns 0 for levels before formulaStartLevel.',
         parameters: [
             { name: 'level', description: 'Character level', required: true },
             { name: 'startLevel', description: 'Starting level for the progression', required: true },
             { name: 'scalingValue', description: 'Fixed value granted at each interval (from FeatureModifier.value)', required: true },
             { name: 'interval', description: 'Level interval (from ProgressionFormulaParams.interval)', required: true },
             { name: 'formulaStartLevel', description: 'Level when formula progression begins (from ProgressionFormulaParams.formulaStartLevel)', required: false },
-            { name: 'includeProgressionLevel', description: 'Whether to include the progression level in the calculation. When false and formulaStartLevel is set, returns null for levels before formulaStartLevel.', required: false }
+            { name: 'includeProgressionLevel', description: 'Whether to include the progression level in the calculation. When false and formulaStartLevel is set, returns null for levels before formulaStartLevel.', required: false },
+            { name: 'featureLevelZero', description: 'When true, returns 0 for levels below formulaStartLevel instead of null.', required: false }
         ],
         calculate: (params) => {
             // If character level is before the starting level, return null
             if (params.level < params.startLevel) {
                 return null;
+            }
+
+            // Handle featureLevelZero: return 0 for levels below formulaStartLevel
+            if (params.featureLevelZero === true && params.formulaStartLevel && params.level < params.formulaStartLevel) {
+                return 0;
             }
 
             // Handle includeProgressionLevel logic within the formula

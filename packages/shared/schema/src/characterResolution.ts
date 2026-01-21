@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { EntityAppliesToType } from '@shared/static-data';
-import { FeatureProgressionSchema } from './feature.js';
+import { FeatureWithRelationsSchema } from './feature.js';
 import { CharacterWithAllDetailsSchema } from './character.js';
 import { FeatInQueryResponseSchema } from './feat.js';
 import { CharacterSpellSelectionEntrySchema } from './spell.js';
@@ -51,7 +51,7 @@ export const CharacterUpdateSchema = z.discriminatedUnion('type', [
     z.object({
         type: z.literal('MAKE_CHOICE'),
         payload: z.object({
-            progressionId: commonValidations.positiveInt(),
+            featureId: commonValidations.positiveInt(),
             featureEntityId: commonValidations.positiveInt(),
             appliesToId: commonValidations.positiveInt(),
             appliesToSubId: z.number().int().nullable(),
@@ -188,7 +188,7 @@ export const ClassSpellSelectionSchema = z.object({
  * @see ClassSpellSelectionSchema - Schema for individual class spell selection data
  */
 export const ResolvedCharacterResultSchema = z.object({
-    resolvedProgressions: z.array(FeatureProgressionSchema),
+    resolvedProgressions: z.array(FeatureWithRelationsSchema),
     pendingChoices: z.array(PendingChoiceSchema),
     classSkills: z.array(ClassSkillSchema),
     skillBonuses: z.array(SkillBonusSchema),

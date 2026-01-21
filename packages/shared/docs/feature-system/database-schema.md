@@ -14,61 +14,47 @@ The schema is designed to handle the complexity of D&D character features, inclu
 
 ### **Feature Model**
 
-The core feature definition containing basic information about character abilities, traits, and capabilities.
+The unified feature model that combines feature definitions with progression information, defining when and how features are granted to characters.
 
-**Purpose**: Defines the fundamental characteristics of a feature, including its name, description, and prerequisites.
+**Purpose**: Defines the fundamental characteristics of a feature, including its name, description, prerequisites, and progression details (level, source type, and source references).
 
 **Key Fields**:
-- **`id`**: Unique identifier for the feature
+- **`id`**: Unique identifier for the feature (inherited from the old FeatureProgression.id)
 - **`slug`**: URL-friendly identifier for the feature
 - **`name`**: Human-readable feature name
 - **`description`**: Detailed feature description and mechanics
-
-**Relationships**:
-- **`progressions`**: Links to feature progressions that grant this feature
-- **`prerequisites`**: Links to prerequisites required for this feature
-
-**Usage**: Core feature definitions that are referenced by progressions and other feature system components.
-
-**Source File**: `apps/backend/prisma/schema.prisma` (Feature model)
-
-### **FeatureProgression Model**
-
-Defines when and how features are granted to characters, including level-based progression and source tracking.
-
-**Purpose**: Connects features to their sources (classes, races, domains, feats, companions) and defines when they are acquired during character advancement.
-
-**Key Fields**:
-- **`id`**: Unique identifier for the feature progression
-- **`sourceType`**: Type of source (Race, Class, Template, ClassVariant, Domain, Feat, Companion) - references @FeatureSourceType enum
+- **`summary`**: Optional summary text that can contain template placeholders
+- **`displayInCharacterSheet`**: Whether to display this feature in character sheets (default: true)
+- **`sourceType`**: Type of source (Race, Class, Template, ClassVariant, Domain, Feat, Companion, Edition) - references @FeatureSourceType enum
 - **`level`**: Character level when feature is granted
-- **`featureId`**: Reference to the feature being granted
-- **`variantOverrideId`**: Reference to class variant override (if variant-granted)
 - **`domainId`**: Reference to domain (if domain-granted)
 - **`featId`**: Reference to feat (if feat-granted)
 - **`companionId`**: Reference to companion (if companion-granted)
+- **`editionId`**: Reference to edition (if edition-granted)
 
 **Relationships**:
-- **`classes`**: Many-to-many relationship via `FeatureProgressionClassMap` - links to classes that grant this feature (for shared progressions)
-- **`races`**: Many-to-many relationship via `FeatureProgressionRaceMap` - links to races that grant this feature (for shared progressions)
-- **`classVariantOverride`**: Links to class variant override (if applicable)
+- **`classes`**: Many-to-many relationship via `FeatureClassMap` - links to classes that grant this feature (for shared features)
+- **`races`**: Many-to-many relationship via `FeatureRaceMap` - links to races that grant this feature (for shared features)
 - **`domain`**: Links to domain that grants this feature (if applicable)
 - **`feat`**: Links to feat that grants this feature (if applicable)
 - **`companion`**: Links to companion that grants this feature (if applicable)
-- **`feature`**: Links to the feature being granted
+- **`prerequisites`**: Links to prerequisites required for this feature
+- **`transformationForms`**: Links to transformation form eligibility
 - **`spellcasting`**: Links to spellcasting abilities (if applicable)
+- **`characterFeatureChoice`**: Links to character choices for this feature
+- **`displayConditions`**: Links to display conditions via `FeatureCondition`
 - **`entities`**: Links to feature entities that define the feature's effects
-- **`characterFeatureChoice`**: Links to character choices for this progression
-- **`displayConditions`**: Links to display conditions for this progression
 
 **Constraints**:
 - **Indexes**: `@@index([featId])`, `@@index([companionId])` - Indexed for efficient queries by feat and companion
 
-**Usage**: The central model that connects features to their sources and defines progression patterns. Supports multiple source types including classes, races, domains, feats, and companions.
+**Usage**: The central model that defines features and their progression patterns. Supports multiple source types including classes, races, domains, feats, companions, and editions. Features can be shared across multiple classes or races via the many-to-many junction tables.
+
+**Migration Note**: This model is the result of merging the previous `Feature` and `FeatureProgression` models. The new `Feature.id` uses the old `FeatureProgression.id` to maintain foreign key relationships.
 
 **Related Documentation**: [Companion System](../monster-system/database-schema.md) for Companion model details (companion-granted features)
 
-**Source File**: `apps/backend/prisma/schema.prisma` (FeatureProgression model)
+**Source File**: `apps/backend/prisma/schema.prisma` (Feature model)
 
 ## 🔧 **Unified Entity Model**
 
@@ -80,7 +66,7 @@ The unified model that handles all types of feature effects including modifiers,
 
 **Key Fields**:
 - **`id`**: Unique identifier for the feature entity
-- **`progressionId`**: Links to the feature progression
+- **`featureId`**: Links to the feature
 - **`appliesTo`**: What the entity applies to (ability, skill, save, etc.) - references @EntityAppliesToType enum
 - **`appliesToId`**: Specific target ID (if applicable)
 - **`appliesToSubId`**: Sub-target ID for complex applications
@@ -93,13 +79,13 @@ The unified model that handles all types of feature effects including modifiers,
 - **`filterType`**: Type of filtering for choice options (if applicable)
 
 **Relationships**:
-- **`featureProgression`**: Links to the feature progression
-- **`conditions`**: Links to conditional requirements
+- **`feature`**: Links to the feature
+- **`conditions`**: Links to conditional requirements via `FeatureEntityCondition`
 - **`formulaParams`**: Links to formula parameters (if formula-based)
 
 **Usage**: The unified approach allows a single feature to have multiple effects of different types, all managed through one consistent model. This eliminates the need for separate modifier, choice, and special effect models while providing the same functionality.
 
-**Real-World Example**: The Monk's "AC Bonus" feature (FeatureProgression ID 16592) demonstrates the unified entity approach with a single entity that applies Wisdom modifier to AC (type: 0=Bonus, appliesTo: 3=AC, formulaParams: ability-based calculation).
+**Real-World Example**: The Monk's "AC Bonus" feature (Feature ID 16592) demonstrates the unified entity approach with a single entity that applies Wisdom modifier to AC (type: 0=Bonus, appliesTo: 3=AC, formulaParams: ability-based calculation).
 
 **Source File**: `apps/backend/prisma/schema.prisma` (FeatureEntity model)
 
@@ -137,8 +123,12 @@ Defines mathematical formulas for feature progression, including intervals, thre
 - **`thresholds`**: Level thresholds for conditional progression (stored as string)
 - **`values`**: Values corresponding to thresholds (stored as string)
 - **`includeProgressionLevel`**: Whether to include progression level in calculations (default: true)
+- **`featureLevelZero`**: Returns 0 for levels below formulaStartLevel instead of null or scalingValue (default: false)
 - **`valuesRepresent`**: What the values represent (conditional scaling value type)
 - **`cumulative`**: Whether values accumulate over time (default: false)
+- **`divisor`**: Divisor value for division-based formulas (e.g., floor(level / divisor))
+- **`baseValue`**: Base value to add for division-based formulas (e.g., floor(level / divisor) + baseValue)
+- **`startingValue`**: Starting value for formulas that need a different starting value than the increment (e.g., EVERY_N_LEVELS). Defaults to entity.value if null.
 
 **Relationships**:
 - **`featureEntity`**: Links to feature entities using this formula
@@ -186,19 +176,121 @@ Tracks player choices for feature options, storing the specific selections made 
 **Key Fields**:
 - **`id`**: Unique identifier for the character feature choice
 - **`characterId`**: Links to the character
-- **`progressionId`**: Links to the feature progression
+- **`featureId`**: Links to the feature
 - **`advancementId`**: Links to the character advancement
-- **`key`**: Key identifier for the choice (may be replaced with specific identifiers)
-- **`value`**: The value selected by the player (may be replaced with specific identifiers)
+- **`featureEntityId`**: Links to the feature entity that defines the choice
+- **`appliesToId`**: The selected value ID (e.g., feat ID, domain ID)
+- **`appliesToSubId`**: Sub-value ID for complex choices (e.g., feat sub-ID)
 - **`choiceIndex`**: Index of the choice (if applicable)
+- **`choiceGroupId`**: Identifier for grouping related choices
+- **`choiceData`**: JSON data for complex choice information
+- **`linkedChoiceGroupId`**: Identifier for linked choice groups (if applicable)
 
 **Relationships**:
-- **`featureProgression`**: Links to the feature progression
+- **`feature`**: Links to the feature
+- **`featureEntity`**: Links to the feature entity that defines the choice
 - **`advancement`**: Links to the character advancement
+
+**Constraints**:
+- **Unique Constraint**: `@@unique([advancementId, featureId, featureEntityId])` - Ensures one choice per advancement/feature/entity combination
 
 **Usage**: Tracks player choices for feature options, enabling character customization and choice persistence.
 
 **Source File**: `apps/backend/prisma/schema.prisma` (CharacterFeatureChoice model)
+
+### **CharacterFeatureUses Model**
+
+Tracks usage counts for feature abilities that have limited uses per day, week, level, or encounter.
+
+**Purpose**: Records current and maximum uses for feature abilities that have usage limits, enabling resource tracking and management.
+
+**Key Fields**:
+- **`id`**: Unique identifier for the feature uses record
+- **`characterId`**: Links to the character
+- **`featureId`**: Links to the feature
+- **`featureEntityId`**: Links to the feature entity that defines the uses
+- **`currentUses`**: Current number of uses remaining (default: 0)
+- **`maxUses`**: Maximum number of uses available
+- **`frequency`**: Frequency of use reset (PER_DAY, PER_WEEK, PER_LEVEL, PER_ENCOUNTER) - references @USES_FREQUENCY_ENUM
+
+**Relationships**:
+- **`character`**: Links to the character
+- **`feature`**: Links to the feature
+- **`featureEntity`**: Links to the feature entity that defines the uses
+
+**Constraints**:
+- **Unique Constraint**: `@@unique([characterId, featureId, featureEntityId])` - Ensures one uses record per character/feature/entity combination
+- **Indexes**: `@@index([characterId])` - Indexed for efficient queries by character
+
+**Usage**: Tracks usage counts for feature abilities with limited uses, enabling resource management and tracking.
+
+**Source File**: `apps/backend/prisma/schema.prisma` (CharacterFeatureUses model)
+
+### **FeatureCondition Model**
+
+Defines conditional requirements for when features apply, such as attack types or character states.
+
+**Purpose**: Provides conditional logic for when features should be applied, allowing for complex feature mechanics.
+
+**Key Fields**:
+- **`id`**: Unique identifier for the condition
+- **`featureId`**: Links to the feature
+- **`conditionType`**: Type of condition (trigger, attack type, character size, etc.) - references @FeatureEntityConditionType enum
+- **`conditionValue`**: Value for the condition
+
+**Relationships**:
+- **`feature`**: Links to the feature
+
+**Constraints**:
+- **Indexes**: `@@index([featureId])` - Indexed for efficient queries by feature
+
+**Usage**: Enables conditional application of features based on various game conditions and character states.
+
+**Source File**: `apps/backend/prisma/schema.prisma` (FeatureCondition model)
+
+### **FeatureClassMap Model**
+
+Junction table for the many-to-many relationship between features and classes, enabling features to be shared across multiple classes.
+
+**Purpose**: Enables features to be linked to multiple classes, supporting reusable feature definitions and variant class creation.
+
+**Key Fields**:
+- **`featureId`**: Links to the feature
+- **`classId`**: Links to the class
+
+**Relationships**:
+- **`feature`**: Links to the feature
+- **`class`**: Links to the class
+
+**Constraints**:
+- **Primary Key**: `@@id([featureId, classId])` - Composite primary key
+- **Indexes**: `@@index([classId])`, `@@index([featureId])` - Indexed for efficient queries in both directions
+
+**Usage**: Enables features to be shared across multiple classes, supporting efficient variant class creation and data reuse.
+
+**Source File**: `apps/backend/prisma/schema.prisma` (FeatureClassMap model)
+
+### **FeatureRaceMap Model**
+
+Junction table for the many-to-many relationship between features and races, enabling features to be shared across multiple races.
+
+**Purpose**: Enables features to be linked to multiple races, supporting reusable feature definitions.
+
+**Key Fields**:
+- **`featureId`**: Links to the feature
+- **`raceId`**: Links to the race
+
+**Relationships**:
+- **`feature`**: Links to the feature
+- **`race`**: Links to the race
+
+**Constraints**:
+- **Primary Key**: `@@id([featureId, raceId])` - Composite primary key
+- **Indexes**: `@@index([raceId])`, `@@index([featureId])` - Indexed for efficient queries in both directions
+
+**Usage**: Enables features to be shared across multiple races, supporting efficient data reuse.
+
+**Source File**: `apps/backend/prisma/schema.prisma` (FeatureRaceMap model)
 
 ## 🏗️ **Schema Relationships**
 
@@ -207,19 +299,21 @@ The feature system follows the standard **Relationship Patterns** documented in 
 ### **Feature-Specific Relationships**
 
 #### **Core Relationships**
-**Feature → FeatureProgression**: Features are granted through progressions
-**FeatureProgression → FeatureEntity**: Progressions provide entities that define all feature effects
+**Feature → FeatureEntity**: Features provide entities that define all feature effects
+**Feature → FeatureCondition**: Features can have display conditions
+**Feature → FeaturePrerequisite**: Features can have prerequisites
 **FeatureEntity → FeatureFormulaParams**: Entities can use formulas for complex calculations
 **FeatureEntity → FeatureEntityCondition**: Entities can have conditional requirements
 
 #### **Integration Relationships**
-**FeatureProgression → Class**: Class-granted features
-**FeatureProgression → Race**: Race-granted features
-**FeatureProgression → Domain**: Domain-granted features
-**FeatureProgression → Feat**: Feat-granted features
-**FeatureProgression → Companion**: Companion-granted features (e.g., familiar benefits, animal companion benefits)
-**FeatureProgression → SpellcastingLink**: Spellcasting features
-**FeatureProgression → CharacterFeatureChoice**: Player choices for feature options
+**Feature → Class**: Class-granted features (via `FeatureClassMap` many-to-many relationship)
+**Feature → Race**: Race-granted features (via `FeatureRaceMap` many-to-many relationship)
+**Feature → Domain**: Domain-granted features (via `domainId` foreign key)
+**Feature → Feat**: Feat-granted features (via `featId` foreign key)
+**Feature → Companion**: Companion-granted features (via `companionId` foreign key)
+**Feature → SpellcastingLink**: Spellcasting features (via `spellcasting` relationship)
+**Feature → CharacterFeatureChoice**: Player choices for feature options
+**Feature → CharacterFeatureUses**: Feature usage tracking
 **CharacterFeatureChoice → CharacterAdvancement**: Choices are tied to character advancement
 
 ## 📊 **Data Integrity**
@@ -230,15 +324,18 @@ The feature system follows the standard **Data Integrity** patterns documented i
 
 **Unique Constraints**: 
 - Feature slugs must be unique
-- Character feature choices are unique per advancement, progression, and key combination
+- Character feature choices are unique per advancement, feature, and entity combination (`@@unique([advancementId, featureId, featureEntityId])`)
+- Character feature uses are unique per character, feature, and entity combination (`@@unique([characterId, featureId, featureEntityId])`)
 
 **Foreign Key Constraints**: All relationships are properly constrained with appropriate cascade behavior
 
 **Nullable Fields**: Appropriate fields are nullable based on usage:
-- `variantOverrideId`, `domainId`, `featId`, and `companionId` in FeatureProgression (only one source type should be set per progression)
-- Class and race relationships are handled via many-to-many junction tables (`FeatureProgressionClassMap` and `FeatureProgressionRaceMap`)
+- `domainId`, `featId`, `companionId`, and `editionId` in Feature (only one source type should be set per feature based on `sourceType`)
+- `summary` in Feature (optional summary text)
+- Class and race relationships are handled via many-to-many junction tables (`FeatureClassMap` and `FeatureRaceMap`)
 - `appliesToId`, `appliesToSubId`, `formulaParamsId` in FeatureEntity (optional based on entity type)
 - `value`, `bonusType`, `filterType` in FeatureEntity (optional based on entity type)
+- `appliesToSubId`, `choiceIndex`, `choiceGroupId`, `choiceData`, `linkedChoiceGroupId` in CharacterFeatureChoice (optional based on choice type)
 
 **Cascade Deletes**: Proper cascade behavior for related records to maintain data integrity
 
@@ -249,10 +346,13 @@ The feature system follows the standard **Schema Evolution** patterns documented
 ### **Feature-Specific Performance Optimization**
 
 **Efficient Queries**: Optimized for feature lookups and calculations through the unified entity approach
-**Relationship Performance**: Efficient joins between related models, especially FeatureProgression → FeatureEntity relationships
+**Relationship Performance**: Efficient joins between related models, especially Feature → FeatureEntity relationships
 **Index Strategy**: Strategic indexing for common query patterns:
-- Feature lookups by slug
-- FeatureProgression queries by source type and level
-- FeatureProgression queries by featId and companionId (indexed for efficient companion/feat feature lookups)
-- FeatureEntity queries by progression and type
+- Feature lookups by slug (unique index)
+- Feature queries by source type and level
+- Feature queries by featId and companionId (indexed for efficient companion/feat feature lookups)
+- FeatureEntity queries by featureId and type
+- FeatureCondition queries by featureId (indexed)
+- CharacterFeatureUses queries by characterId (indexed)
+- FeatureClassMap and FeatureRaceMap queries (indexed in both directions)
 **Caching Support**: Schema supports effective caching strategies for feature calculations and character progression

@@ -368,31 +368,23 @@ The system provides visual displays of progression data.
 **BAB Calculations** (Formula-Based):
 - **ResolvedFeatureService.resolveFormulaValues()**: Resolves BAB and save formulas for all classes
 - **getCharacterBAB()**: Frontend function that uses pre-resolved formula values
-- **formatIterativeBAB(bab)**: Format BAB with iterative attacks (still used for display)
 
 **Save Calculations** (Formula-Based):
 - **ResolvedFeatureService.resolveFormulaValues()**: Resolves save formulas for all classes
 - **getSavingThrow()**: Frontend function that uses pre-resolved formula values
 
-**Deprecated Functions** (Backward Compatibility Only):
-- **getBABProgression(level, type)**: ⚠️ Deprecated - Use formula-based resolution
-- **getSaveProgression(level, type)**: ⚠️ Deprecated - Use formula-based resolution
-- **getGoodBAB(level)**: ⚠️ Deprecated - Use formula-based resolution
-- **getAverageBAB(level)**: ⚠️ Deprecated - Use formula-based resolution
-- **getPoorBAB(level)**: ⚠️ Deprecated - Use formula-based resolution
-- **getGoodSave(level)**: ⚠️ Deprecated - Use formula-based resolution
-- **getPoorSave(level)**: ⚠️ Deprecated - Use formula-based resolution
-
 **Advancement Calculations**:
-- **getFeatCount(level)**: ⚠️ Deprecated - Use ResolvedFeatureService.getAvailableFeatsCount()
-- **getAbilityScoreIncreases(level)**: ⚠️ Deprecated - Use ResolvedFeatureService.getAvailableAbilityScoreIncreases()
 - **getClassSkillMaxRanks(level)**: Calculate class skill maximum ranks
 - **getCrossClassSkillMaxRanks(level)**: Calculate cross-class skill maximum ranks
+
+**Feature-Based Calculations**:
+- **Feat counts**: Use `ResolvedFeatureService.getAvailableFeatsCount()` to get feat counts from resolved progressions
+- **Ability score increases**: Use `ResolvedFeatureService.getAvailableAbilityScoreIncreases()` to get ability score increase counts from resolved progressions
 
 **Source Files**: 
 - Formula Resolution: `apps/backend/src/features/characterResolution/resolvedFeatureService.ts`
 - Frontend Calculations: `apps/frontend/src/lib/attack-calculation/utils.ts`, `apps/frontend/src/lib/character-calculation/calculations/savingThrows.ts`
-- Deprecated Functions: `packages/shared/utils/src/ClassUtils.ts`
+- Utility Functions: `packages/shared/utils/src/ClassUtils.ts` (XP, skill ranks, formatting utilities)
 
 ### **Performance Optimization**
 

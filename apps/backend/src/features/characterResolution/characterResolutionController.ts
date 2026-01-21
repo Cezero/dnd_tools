@@ -1,46 +1,46 @@
 import { Response, NextFunction } from 'express';
 
 import type { ValidatedParamsT, ValidatedParamsBodyT } from '@/util/validated-types';
-import type { CharacterWithAllDetailsResponse, FeatInQueryResponse, ClassSpellSelection, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatInQueryResponse, ClassSpellSelection, FeatureWithRelations } from '@shared/schema';
 import { EntityAppliesToType } from '@shared/static-data';
 
-import { applyUpdateToState as genericApplyUpdateToState } from '../shared/session/GenericUpdateApplier';
 
 import { AvailableFeatService } from './availableFeatService';
 import { buildCharacterEditState } from './characterEditStateBuilder';
-import { characterUpdateApplierConfig } from './characterUpdateApplierConfig';
 import { CharacterResolutionService } from './characterResolutionService';
 import type { ResolvedCharacterResult } from './characterSessionService';
 import { CharacterSessionService } from './characterSessionService';
-import { ResolvedFeatureService } from './resolvedFeatureService';
+import { characterUpdateApplierConfig } from './characterUpdateApplierConfig';
 import { GestaltMechanicsResolver } from './gestaltMechanicsResolver';
+import { ResolvedFeatureService } from './resolvedFeatureService';
 import type { CharacterUpdate, UserChoices, CharacterEditState } from './types';
 import { characterService } from '../character/characterService';
 import { classService } from '../class/classService';
 import { featService } from '../feat/featService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 import { raceService } from '../race/raceService';
+import { applyUpdateToState as genericApplyUpdateToState } from '../shared/session/GenericUpdateApplier';
 
 /**
- * Filters out entities with invalid appliesTo values from progressions.
+ * Filters out entities with invalid appliesTo values from features.
  * This prevents validation errors when returning data to the frontend.
  * 
  * Logs warnings for each filtered entity to help identify database records that need fixing.
  * 
- * @param progressions - Array of feature progressions to filter
- * @returns Filtered progressions with only valid entities
+ * @param features - Array of feature features to filter
+ * @returns Filtered features with only valid entities
  */
-function filterInvalidAppliesToEntities(progressions: FeatureProgression[]): FeatureProgression[] {
+function filterInvalidAppliesToEntities(features: FeatureWithRelations[]): FeatureWithRelations[] {
     const validAppliesToValues = new Set(Object.values(EntityAppliesToType));
-    return progressions.map(progression => {
-        if (!progression.entities || progression.entities.length === 0) {
-            return progression;
+    return features.map(feature => {
+        if (!feature.entities || feature.entities.length === 0) {
+            return feature;
         }
 
-        const validEntities: typeof progression.entities = [];
-        const invalidEntities: typeof progression.entities = [];
+        const validEntities: typeof feature.entities = [];
+        const invalidEntities: typeof feature.entities = [];
 
-        for (const entity of progression.entities) {
+        for (const entity of feature.entities) {
             if (validAppliesToValues.has(entity.appliesTo)) {
                 validEntities.push(entity);
             } else {
@@ -54,7 +54,7 @@ function filterInvalidAppliesToEntities(progressions: FeatureProgression[]): Fea
                 console.warn(
                     `[Character Resolution] Filtered entity with invalid appliesTo value:`,
                     {
-                        progressionId: progression.id,
+                        featureId: feature.id,
                         entityId: entity.id,
                         invalidAppliesTo: entity.appliesTo,
                         entityType: entity.type,
@@ -66,7 +66,7 @@ function filterInvalidAppliesToEntities(progressions: FeatureProgression[]): Fea
         }
 
         return {
-            ...progression,
+            ...feature,
             entities: validEntities
         };
     });
@@ -76,17 +76,17 @@ function filterInvalidAppliesToEntities(progressions: FeatureProgression[]): Fea
  * Calculate spell selection data for all spellcasting classes in a character.
  * 
  * This function iterates through all classes the character has (from advancements)
- * and calculates spell selection data for each spellcasting class using resolved progressions.
+ * and calculates spell selection data for each spellcasting class using resolved features.
  * 
  * @param characterId - The character ID
  * @param character - The character data with advancements
- * @param resolvedProgressions - The resolved feature progressions
+ * @param resolvedProgressions - The resolved feature features
  * @returns Record mapping classId (as string) to ClassSpellSelection data
  */
 async function calculateSpellSelection(
     characterId: number,
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureWithRelations[]
 ): Promise<Record<string, ClassSpellSelection>> {
     const spellSelection: Record<string, ClassSpellSelection> = {};
 
@@ -211,23 +211,23 @@ export async function InitializeSession(
             maxResolutionDepth: 10,
         };
 
-        // First pass: Resolve base features to get progressions
+        // First pass: Resolve base features to get features
         const firstPassResult = await CharacterResolutionService.resolveCharacterFeatures(
             character,
             targetLevel,
             initialContext
         );
 
-        // Extract user choices from character feature choices by looking up entities in resolved progressions
+        // Extract user choices from character feature choices by looking up entities in resolved features
         const userChoices: UserChoices = {};
         if (character.advancements) {
             for (const adv of character.advancements) {
                 if (adv.featureChoices) {
                     for (const choice of adv.featureChoices) {
-                        // Find the entity in resolved progressions to get appliesTo type
-                        for (const progression of firstPassResult.resolvedProgressions) {
-                            if (progression.id === choice.progressionId && progression.entities) {
-                                const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+                        // Find the entity in resolved features to get appliesTo type
+                        for (const feature of firstPassResult.resolvedProgressions) {
+                            if (feature.id === choice.featureId && feature.entities) {
+                                const entity = feature.entities.find(e => e.id === choice.featureEntityId);
                                 if (entity && choice.appliesToId) {
                                     const appliesToType = entity.appliesTo;
                                     if (!userChoices[appliesToType]) {
@@ -319,11 +319,11 @@ export async function InitializeSession(
             !!secondaryClassDetails
         );
 
-        // Enrich progressions with filtered class/race info (only for character's classes/race)
+        // Enrich features with filtered class/race info (only for character's classes/race)
         let enrichedProgressions = resolutionResult.resolvedProgressions;
         const progressionIds = enrichedProgressions.map(p => p.id);
         if (progressionIds.length > 0) {
-            const enriched = await featureSystemService.getFeatureProgressionsByIds(
+            const enriched = await featureSystemService.getFeaturesByIds(
                 progressionIds,
                 undefined,
                 true // Include class/race info
@@ -345,17 +345,17 @@ export async function InitializeSession(
             }
             const characterRaceId = character.raceId;
 
-            enrichedProgressions = enrichedProgressions.map(progression => {
-                const enrichedProg = enrichedMap.get(progression.id);
+            enrichedProgressions = enrichedProgressions.map(feature => {
+                const enrichedProg = enrichedMap.get(feature.id);
                 if (!enrichedProg) {
-                    return progression;
+                    return feature;
                 }
 
                 const filteredClasses = enrichedProg.classes?.filter(c => characterClassIds.has(c.classId)) || [];
                 const filteredRaces = enrichedProg.races?.filter(r => r.raceId === characterRaceId) || [];
 
                 return {
-                    ...progression,
+                    ...feature,
                     ...(filteredClasses.length > 0 ? { classes: filteredClasses } : {}),
                     ...(filteredRaces.length > 0 ? { races: filteredRaces } : {})
                 };
@@ -475,7 +475,7 @@ export async function ResumeSession(
         const targetLevel = character.characterLevel || 1;
 
         // If session exists, check if it needs to be re-resolved
-        // Re-resolve if cached progressions include levels above the character's current level
+        // Re-resolve if cached features include levels above the character's current level
         if (session) {
             const progressionLevels = session.resolvedResult.resolvedProgressions?.map(p => p.level) || [];
             const maxCachedLevel = progressionLevels.length > 0 ? Math.max(...progressionLevels) : 0;
@@ -535,7 +535,7 @@ export async function ResumeSession(
 
                 const validPendingChoices = session.resolvedResult.pendingChoices;
 
-                // Enrich progressions with filtered class/race info (only for character's classes/race)
+                // Enrich features with filtered class/race info (only for character's classes/race)
                 let enrichedProgressions = filteredProgressions;
                 const progressionIds = enrichedProgressions.map(p => p.id);
                 if (progressionIds.length > 0) {
@@ -548,7 +548,7 @@ export async function ResumeSession(
                             ? await classService.getClassById({ id: character.advancements[0].secondaryClassId })
                             : null;
 
-                        const enriched = await featureSystemService.getFeatureProgressionsByIds(
+                        const enriched = await featureSystemService.getFeaturesByIds(
                             progressionIds,
                             undefined,
                             true // Include class/race info
@@ -570,17 +570,17 @@ export async function ResumeSession(
                         }
                         const characterRaceId = character.raceId;
 
-                        enrichedProgressions = enrichedProgressions.map(progression => {
-                            const enrichedProg = enrichedMap.get(progression.id);
+                        enrichedProgressions = enrichedProgressions.map(feature => {
+                            const enrichedProg = enrichedMap.get(feature.id);
                             if (!enrichedProg) {
-                                return progression;
+                                return feature;
                             }
 
                             const filteredClasses = enrichedProg.classes?.filter(c => characterClassIds.has(c.classId)) || [];
                             const filteredRaces = enrichedProg.races?.filter(r => r.raceId === characterRaceId) || [];
 
                             return {
-                                ...progression,
+                                ...feature,
                                 ...(filteredClasses.length > 0 ? { classes: filteredClasses } : {}),
                                 ...(filteredRaces.length > 0 ? { races: filteredRaces } : {})
                             };
@@ -588,7 +588,7 @@ export async function ResumeSession(
                     }
                 }
 
-                // Final pass: filter out entities with invalid appliesTo values from all progressions
+                // Final pass: filter out entities with invalid appliesTo values from all features
                 enrichedProgressions = filterInvalidAppliesToEntities(enrichedProgressions);
 
                 const result: ResolvedCharacterResult = {
@@ -653,23 +653,23 @@ export async function ResumeSession(
             maxResolutionDepth: 10,
         };
 
-        // First pass: Resolve base features to get progressions
+        // First pass: Resolve base features to get features
         const firstPassResult = await CharacterResolutionService.resolveCharacterFeatures(
             character,
             targetLevel,
             initialContext
         );
 
-        // Extract user choices from character feature choices by looking up entities in resolved progressions
+        // Extract user choices from character feature choices by looking up entities in resolved features
         const userChoices: UserChoices = {};
         if (character.advancements) {
             for (const adv of character.advancements) {
                 if (adv.featureChoices) {
                     for (const choice of adv.featureChoices) {
-                        // Find the entity in resolved progressions to get appliesTo type
-                        for (const progression of firstPassResult.resolvedProgressions) {
-                            if (progression.id === choice.progressionId && progression.entities) {
-                                const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+                        // Find the entity in resolved features to get appliesTo type
+                        for (const feature of firstPassResult.resolvedProgressions) {
+                            if (feature.id === choice.featureId && feature.entities) {
+                                const entity = feature.entities.find(e => e.id === choice.featureEntityId);
                                 if (entity && choice.appliesToId) {
                                     const appliesToType = entity.appliesTo;
                                     if (!userChoices[appliesToType]) {
@@ -763,11 +763,11 @@ export async function ResumeSession(
 
         const validPendingChoices = resolutionResult.pendingChoices;
 
-        // Enrich progressions with filtered class/race info (only for character's classes/race)
+        // Enrich features with filtered class/race info (only for character's classes/race)
         let enrichedProgressions = resolutionResult.resolvedProgressions;
         const progressionIds = enrichedProgressions.map(p => p.id);
         if (progressionIds.length > 0) {
-            const enriched = await featureSystemService.getFeatureProgressionsByIds(
+            const enriched = await featureSystemService.getFeaturesByIds(
                 progressionIds,
                 undefined,
                 true // Include class/race info
@@ -789,17 +789,17 @@ export async function ResumeSession(
             }
             const characterRaceId = character.raceId;
 
-            enrichedProgressions = enrichedProgressions.map(progression => {
-                const enrichedProg = enrichedMap.get(progression.id);
+            enrichedProgressions = enrichedProgressions.map(feature => {
+                const enrichedProg = enrichedMap.get(feature.id);
                 if (!enrichedProg) {
-                    return progression;
+                    return feature;
                 }
 
                 const filteredClasses = enrichedProg.classes?.filter(c => characterClassIds.has(c.classId)) || [];
                 const filteredRaces = enrichedProg.races?.filter(r => r.raceId === characterRaceId) || [];
 
                 return {
-                    ...progression,
+                    ...feature,
                     ...(filteredClasses.length > 0 ? { classes: filteredClasses } : {}),
                     ...(filteredRaces.length > 0 ? { races: filteredRaces } : {})
                 };
@@ -994,11 +994,11 @@ export async function ApplyUpdate(
 
         const validPendingChoices = resolutionResult.pendingChoices;
 
-        // Enrich progressions with filtered class/race info (only for character's classes/race)
+        // Enrich features with filtered class/race info (only for character's classes/race)
         let enrichedProgressions = resolutionResult.resolvedProgressions;
         const progressionIds = enrichedProgressions.map(p => p.id);
         if (progressionIds.length > 0) {
-            const enriched = await featureSystemService.getFeatureProgressionsByIds(
+            const enriched = await featureSystemService.getFeaturesByIds(
                 progressionIds,
                 undefined,
                 true // Include class/race info
@@ -1020,17 +1020,17 @@ export async function ApplyUpdate(
             }
             const characterRaceId = character.raceId;
 
-            enrichedProgressions = enrichedProgressions.map(progression => {
-                const enrichedProg = enrichedMap.get(progression.id);
+            enrichedProgressions = enrichedProgressions.map(feature => {
+                const enrichedProg = enrichedMap.get(feature.id);
                 if (!enrichedProg) {
-                    return progression;
+                    return feature;
                 }
 
                 const filteredClasses = enrichedProg.classes?.filter(c => characterClassIds.has(c.classId)) || [];
                 const filteredRaces = enrichedProg.races?.filter(r => r.raceId === characterRaceId) || [];
 
                 return {
-                    ...progression,
+                    ...feature,
                     ...(filteredClasses.length > 0 ? { classes: filteredClasses } : {}),
                     ...(filteredRaces.length > 0 ? { races: filteredRaces } : {})
                 };
@@ -1350,7 +1350,7 @@ export async function GetAvailableFeats(
         // Calculate target level
         const targetLevel = character.characterLevel || 1;
 
-        // Create resolution context to get resolved progressions
+        // Create resolution context to get resolved features
         const context = {
             character,
             targetLevel,
@@ -1367,7 +1367,7 @@ export async function GetAvailableFeats(
             maxResolutionDepth: 10,
         };
 
-        // Resolve features to get progressions
+        // Resolve features to get features
         const resolutionResult = await CharacterResolutionService.resolveCharacterFeatures(
             character,
             targetLevel,

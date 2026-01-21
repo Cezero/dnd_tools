@@ -50,37 +50,6 @@ export interface SessionConfig<TEntityId extends number, TState> {
 }
 
 /**
- * Database row structure for session storage (legacy, kept for compatibility).
- * 
- * **Note**: This interface is kept for backward compatibility but is no longer
- * used directly. Sessions are now stored in Redis as JSON strings.
- * 
- * @deprecated Sessions are now stored in Redis, not SQLite tables
- */
-export interface SessionRow {
-    /** Unique session identifier (UUID v4) */
-    id: string;
-    /** Entity type discriminator ('class', 'race', or 'character') */
-    entity_type: EntityType;
-    /** Entity ID this session belongs to */
-    entity_id: number;
-    /** User ID this session belongs to */
-    user_id: number;
-    /** Session key (entityId:userId) */
-    session_key: string;
-    /** Session state as JSON string */
-    session_state: string;
-    /** Resolved result as JSON string (only used for character sessions, NULL for class/race) */
-    resolved_result: string | null;
-    /** Session creation timestamp (Unix milliseconds) */
-    created_at: number;
-    /** Last update timestamp (Unix milliseconds) */
-    updated_at: number;
-    /** Session expiration timestamp (Unix milliseconds) */
-    expires_at: number;
-}
-
-/**
  * Session data structure stored in Redis.
  * 
  * Represents a session with parsed state and Date objects.

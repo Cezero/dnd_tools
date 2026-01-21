@@ -1,4 +1,4 @@
-import type { CharacterFeatureChoice, FeatureProgression, FeatureEntity } from '@shared/schema';
+import type { CharacterFeatureChoice, FeatureWithRelations, FeatureEntity } from '@shared/schema';
 
 /**
  * Manages complex linked choices for features
@@ -69,7 +69,7 @@ export class ChoiceGroupManager {
     static createChoiceGroupChoice(
         choiceGroupId: string,
         choiceData: Record<string, unknown>,
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         entity: FeatureEntity,
         advancementId: number,
         characterId: number
@@ -77,7 +77,7 @@ export class ChoiceGroupManager {
         return {
             id: 0, // Will be set by backend
             characterId,
-            progressionId: progression.id,
+            featureId: feature.id,
             advancementId,
             featureEntityId: entity.id,
             appliesToId: 0, // May not be applicable for complex choices
@@ -96,7 +96,7 @@ export class ChoiceGroupManager {
         choiceGroupId: string,
         linkedChoiceGroupId: string,
         choiceData: Record<string, unknown>,
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         entity: FeatureEntity,
         advancementId: number,
         characterId: number
@@ -104,7 +104,7 @@ export class ChoiceGroupManager {
         return {
             id: 0,
             characterId,
-            progressionId: progression.id,
+            featureId: feature.id,
             advancementId,
             featureEntityId: entity.id,
             appliesToId: 0,

@@ -35,12 +35,14 @@ This refactoring unifies all rule-related information through the feature system
 
 ### Database Schema
 
-**New Models:**
-- `FeatureProgressionClassMap` - Many-to-many relationship for reusable progressions
+**Historical Note**: This document describes the migration to the feature system. Since this migration, `Feature` and `FeatureProgression` have been merged into a single `Feature` model. The current schema uses `FeatureClassMap` and `FeatureRaceMap` for many-to-many relationships.
 
-**Modified Models:**
-- `FeatureProgression` - Added `classes` relationship for many-to-many support
-- `Class` - Added `sharedFeatureProgressions` relationship
+**New Models (Historical):**
+- `FeatureProgressionClassMap` - Many-to-many relationship for reusable progressions (now `FeatureClassMap`)
+
+**Modified Models (Historical):**
+- `FeatureProgression` - Added `classes` relationship for many-to-many support (now merged into `Feature`)
+- `Class` - Added `sharedFeatureProgressions` relationship (now `sharedFeatures` via `FeatureClassMap`)
 
 **Deprecated Models (to be removed in Phase 4):**
 - `ClassVariant` - Variants become regular classes
@@ -63,7 +65,7 @@ This refactoring unifies all rule-related information through the feature system
 ### Spellcasting Integration
 
 **Approach 1 (Initial Implementation):**
-- Link `SpellcastingProgression` to classes via `FeatureProgression`
+- Link `SpellcastingProgression` to classes via `Feature` (via FeatureClassMap)
 - Maintains `SpellcastingProgression` and `SpellcastingSlot` models
 - Easier migration and better performance
 
@@ -78,18 +80,18 @@ This refactoring unifies all rule-related information through the feature system
 The refactoring is implemented in four phases to ensure data integrity and minimize risk:
 
 ### Phase 1: FeatureProgression Many-to-Many Support
-- Add `FeatureProgressionClassMap` model
+- Add `FeatureProgressionClassMap` model (now `FeatureClassMap`)
 - Update queries to support both direct and many-to-many patterns
 - Add clone and fork functionality
-- **Status**: In progress
+- **Status**: ✅ Complete (Note: Feature and FeatureProgression have since been merged into unified Feature model)
 
 ### Phase 2: Variant-to-Class Migration
 - Convert existing `ClassVariant` entries to regular `Class` entries
 - Create progression sharing relationships
 - **Status**: Pending Phase 1 completion
 
-### Phase 3: Spellcasting via FeatureProgression Links
-- Link `SpellcastingProgression` to classes via `FeatureProgression`
+### Phase 3: Spellcasting via Feature Links
+- Link `SpellcastingProgression` to classes via `Feature` (via FeatureClassMap)
 - Migrate existing spellcasting data
 - **Status**: Pending Phase 1 completion
 

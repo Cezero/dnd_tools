@@ -1,4 +1,4 @@
-import type { FeatureProgression } from '@shared/schema';
+import type { FeatureWithRelations } from '@shared/schema';
 import {
     EntityType,
     EntityAppliesToType,
@@ -9,20 +9,20 @@ import {
 import type { ProficiencyResult } from './types';
 
 /**
- * Extract proficiencies from resolved feature progressions
+ * Extract proficiencies from resolved feature features
  * PUBLIC FUNCTION - Used by EquipmentTab and other components
  * 
- * @param resolvedProgressions - Resolved feature progressions from character
+ * @param resolvedProgressions - Resolved feature features from character
  * @returns Object containing weapon categories, armor categories, and specific item IDs
  */
-export function extractProficiencies(resolvedProgressions: FeatureProgression[]): ProficiencyResult {
+export function extractProficiencies(resolvedProgressions: FeatureWithRelations[]): ProficiencyResult {
     const weaponCategories = new Set<number>();
     const armorCategories = new Set<number>();
     const itemIds = new Set<number>();
 
-    for (const progression of resolvedProgressions) {
-        if (progression.entities) {
-            for (const entity of progression.entities) {
+    for (const feature of resolvedProgressions) {
+        if (feature.entities) {
+            for (const entity of feature.entities) {
                 // Check if this is a proficiency entity
                 if (entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.Proficiency) {
                     if (!entity.appliesToId) continue;

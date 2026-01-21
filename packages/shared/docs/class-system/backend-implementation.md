@@ -140,116 +140,91 @@ The class system controllers follow the shared [Controller Layer Pattern](../app
 
 **Source File**: `src/features/class/classController.ts`
 
-## 🗄️ **Session Management**
+## 🗄️ **Entity State Management**
 
-The class system uses **SQLite session storage** for persistent editing sessions, providing reliable state management and deterministic ID handling. This pattern mirrors the `CharacterEdit` session management implementation.
+The class system uses **user sessions with entity state management** for editing classes, following the shared [Entity State Management Architecture](../application-overview/entity-state-management.md). This architecture separates user session tracking from entity state storage.
 
 ### **Overview**
 
-The session management system provides:
-- **Persistent Sessions**: SQLite database stores editing sessions that survive backend restarts
-- **Automatic Expiration**: Sessions automatically expire after configurable period of inactivity
-- **Per-User Isolation**: Each user has separate sessions for each class
-- **Temporary ID Generation**: SQLite auto-increment generates temporary IDs for new entities
-- **Save Transformation**: Transforms SQLite session state → MySQL on save
+The entity state management system provides:
+- **User Sessions**: Single session per user tracking viewing/editing entities
+- **Entity States**: Independent state storage in Redis (`state:class:{classId}`)
+- **Entity Locks**: Separate lock management (`lock:class:{classId} -> userId`)
+- **Real-time Updates**: Redis pub/sub for propagating state changes
+- **Save Transformation**: Transforms Redis state → MySQL on save
 
-### **Session Database**
+### **Architecture Components**
 
-**Purpose**: Lightweight SQLite database for storing class editing session state.
+**UserSessionService**: Manages user sessions tracking viewing/editing entities
+- **Source File**: `src/features/shared/session/UserSessionService.ts`
+- **Storage**: Redis key `session:user:{userId}` with `viewing` and `editing` arrays
+- **Purpose**: Single source of truth for what entities a user is viewing/editing
 
-**Source File**: `src/features/classResolution/sessionDatabase.ts`
+**EntityStateService**: Manages independent entity states in Redis
+- **Source File**: `src/features/shared/entityState/EntityStateService.ts`
+- **Storage**: Redis key `state:class:{classId}` with class edit state
+- **Purpose**: Shared state storage accessible by all viewing users
+- **Pub/Sub**: Automatically publishes updates when state changes
 
-**Tables**:
-- **`class_edit_sessions`**: Stores session metadata and class state (JSON)
-- **`class_session_progressions`**: Temporary progressions in session (with auto-increment IDs)
-- **`class_session_entities`**: Temporary entities in session (with auto-increment IDs)
-
-**Key Features**:
-- **WAL Mode**: Write-Ahead Logging for concurrent access
-- **Auto-Increment IDs**: SQLite generates temporary IDs for new entities
-- **Session Expiration**: Automatic cleanup of expired sessions
-- **Per-User Isolation**: Sessions keyed by `classId:userId`
-
-### **ClassSessionService**
-
-Service for managing class editing sessions in SQLite.
-
-**Purpose**: Provides persistent session storage with automatic cleanup and state management.
-
-**Source File**: `src/features/classResolution/classSessionService.ts`
-
-**Key Methods**:
-
-**createSession**: Creates a new editing session
-- **Method Signature**: `async createSession(classId: number, userId: number, classState: ClassEditState): Promise<ClassSession>`
-- **Parameters**: Class ID, user ID, initial class state
-- **Business Logic**: Creates session in SQLite with unique session key and expiration time
-- **Returns**: Created session with session ID and state
-
-**getSession**: Retrieves an active session
-- **Method Signature**: `getSession(classId: number, userId: number): ClassSession | null`
-- **Parameters**: Class ID, user ID
-- **Business Logic**: Looks up session by key, checks expiration
-- **Returns**: Active session or null if not found/expired
-
-**updateSession**: Updates session state
-- **Method Signature**: `async updateSession(sessionId: string, classState: ClassEditState): Promise<void>`
-- **Parameters**: Session ID, updated class state
-- **Business Logic**: Updates session state JSON and expiration time
-- **Returns**: Void
-
-**deleteSession**: Deletes a session
-- **Method Signature**: `async deleteSession(sessionId: string): Promise<void>`
-- **Parameters**: Session ID
-- **Business Logic**: Deletes session and all related temporary entities
-- **Returns**: Void
-
-**cleanupExpiredSessions**: Removes expired sessions
-- **Method Signature**: `async cleanupExpiredSessions(): Promise<number>`
-- **Parameters**: None
-- **Business Logic**: Deletes all sessions past expiration time
-- **Returns**: Number of sessions deleted
+**EntityLockService**: Manages per-entity locks for editing
+- **Source File**: `src/features/shared/entityState/EntityLockService.ts`
+- **Storage**: Redis key `lock:class:{classId} -> userId`
+- **Purpose**: Prevents concurrent editing conflicts
 
 ### **ClassResolutionController**
 
-Controller for managing class editing sessions and applying updates.
+Controller for managing class editing using user sessions and entity state.
 
-**Purpose**: Handles HTTP requests for session lifecycle and state updates.
+**Purpose**: Handles HTTP requests for class editing lifecycle and state updates.
 
 **Source File**: `src/features/classResolution/classResolutionController.ts`
 
 **API Endpoints**:
 
-**POST /api/classes/:id/session** - Initialize or resume session
-- **Purpose**: Creates new session or returns existing active session
-- **Authentication**: User authentication required
-- **Response**: `{ sessionId: string, classState: ClassEditState }`
-- **Business Logic**: Loads class from MySQL, creates or resumes SQLite session
-
-**GET /api/classes/:id/session/:sessionId** - Get session state
-- **Purpose**: Retrieves current session state
+**POST /api/classes/:classId/start-editing** - Start editing a class
+- **Purpose**: Acquires lock, adds to user's editing list, initializes/loads state
 - **Authentication**: User authentication required
 - **Response**: `{ classState: ClassEditState }`
-- **Business Logic**: Loads session state from SQLite
+- **Business Logic**: 
+  1. Acquires lock via `EntityLockService.acquireLock('class', classId, userId)`
+  2. Adds to user session via `UserSessionService.setEditingEntity(userId, 'class', classId)`
+  3. Gets or initializes state via `EntityStateService.getState('class', classId)`
+  4. Returns state (no sessionId)
 
-**PATCH /api/classes/:id/session/:sessionId** - Apply update
-- **Purpose**: Applies action-based update to session state
+**GET /api/classes/:classId/state** - Get current class state
+- **Purpose**: Retrieves current class state from Redis
 - **Authentication**: User authentication required
-- **Body**: `ClassUpdate` (discriminated union of update actions)
 - **Response**: `{ classState: ClassEditState }`
-- **Business Logic**: Applies update to session state using `classUpdateApplier`
+- **Business Logic**: Loads state from Redis via `EntityStateService.getState()`
 
-**POST /api/classes/:id/session/:sessionId/save** - Save session to MySQL
-- **Purpose**: Transforms SQLite session → MySQL and saves class
+**PUT /api/classes/:classId/update** - Apply update
+- **Purpose**: Applies action-based update to class state
+- **Authentication**: User authentication required
+- **Body**: `{ update: ClassUpdate }` (discriminated union of update actions)
+- **Response**: `{ classState: ClassEditState }`
+- **Business Logic**: 
+  1. Verifies lock via `EntityLockService.checkLock('class', classId)`
+  2. Applies update via `GenericUpdateApplier.applyUpdateToState()`
+  3. Updates state via `EntityStateService.setState()` (auto-publishes)
+
+**POST /api/classes/:classId/save** - Save class state to database
+- **Purpose**: Transforms Redis state → MySQL and saves class
 - **Authentication**: Admin authentication required
-- **Response**: `{ class: DnDClass }`
-- **Business Logic**: Uses `ClassSaveService` to transform and persist session
+- **Response**: `{ class: ClassSummary }`
+- **Business Logic**: 
+  1. Verifies lock
+  2. Uses `ClassSaveService` to transform and persist state
+  3. Releases lock via `EntityLockService.releaseLock()`
+  4. Removes from editing via `UserSessionService.clearEditingEntity()`
 
-**DELETE /api/classes/:id/session/:sessionId** - Cancel session
-- **Purpose**: Deletes session without saving
+**POST /api/classes/:classId/cancel** - Cancel editing
+- **Purpose**: Releases lock and removes from editing list without saving
 - **Authentication**: User authentication required
-- **Response**: `{ message: string }`
-- **Business Logic**: Deletes session from SQLite
+- **Response**: `{ success: boolean }`
+- **Business Logic**: 
+  1. Releases lock via `EntityLockService.releaseLock()`
+  2. Removes from editing via `UserSessionService.clearEditingEntity()`
+  3. State remains in Redis (may be viewed by other users)
 
 ### **Update Actions**
 
@@ -281,20 +256,23 @@ Service for applying action-based updates to session state.
 
 ### **ClassSaveService**
 
-Service for transforming SQLite session state → MySQL.
+Service for transforming Redis session state → MySQL.
 
 **Purpose**: Transforms session state to MySQL format and persists class data.
 
 **Source File**: `src/features/classResolution/classSaveService.ts`
 
 **Transform Process**:
-1. **Load Session**: Load session state from SQLite
+1. **Load Session**: Load session state from Redis
 2. **Transform State**: Convert `ClassEditState` to `UpdateClassRequest`
-3. **Handle Progressions**: 
-   - Existing progressions (with real IDs): Update in MySQL
-   - New progressions (with temporary IDs): Create in MySQL, get real IDs
+3. **Handle Features**: 
+   - Features are managed independently via the feature state system
+   - Only featureIds are sent to `classService.updateClass`
+   - Class service only syncs FeatureClassMap links (no feature manipulation)
 4. **Persist Class**: Save class to MySQL via `classService.updateClass`
-5. **Cleanup**: Delete session from SQLite
+5. **Cleanup**: Delete session from Redis
+
+**Note**: Features are no longer created/updated by the class service. Features must be saved via the feature state system before class update. The class service only manages FeatureClassMap relationship links.
 
 **Key Features**:
 - **Deterministic Tracking**: Uses temporary IDs from session, no signature matching
@@ -303,8 +281,9 @@ Service for transforming SQLite session state → MySQL.
 - **Transaction Safety**: All operations in single transaction
 
 **Source Files**:
-- Session Database: `src/features/classResolution/sessionDatabase.ts`
-- Session Service: `src/features/classResolution/classSessionService.ts`
+- Entity State Service: `src/features/shared/entityState/EntityStateService.ts`
+- Entity Lock Service: `src/features/shared/entityState/EntityLockService.ts`
+- User Session Service: `src/features/shared/session/UserSessionService.ts`
 - Resolution Controller: `src/features/classResolution/classResolutionController.ts`
 - Update Applier: `src/features/classResolution/classUpdateApplier.ts`
 - Save Service: `src/features/classResolution/classSaveService.ts`
@@ -312,7 +291,7 @@ Service for transforming SQLite session state → MySQL.
 
 **Related Documentation**: 
 - [Frontend State-Based Pattern](frontend-components.md#state-based-pattern-architecture) - Frontend implementation
-- [CharacterEdit Session Pattern](../character-management/backend-implementation.md#session-management) - Reference implementation
+- [Entity State Management Architecture](../application-overview/entity-state-management.md) - Architecture overview
 
 ## 🔗 **Routes Layer**
 

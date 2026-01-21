@@ -4,11 +4,11 @@
 
 ## 📋 **Overview**
 
-The character resolution system is a centralized backend service that handles all character feature resolution logic. It processes base features (race, class), resolves user choices, handles cascading feature grants, and manages persistent editing sessions using SQLite.
+The character resolution system is a centralized backend service that handles all character feature resolution logic. It processes base features (race, class), resolves user choices, handles cascading feature grants, and manages persistent editing sessions using Redis.
 
 **Key Features**:
 - Centralized feature resolution logic on the backend
-- Persistent session management with SQLite (survives backend restarts)
+- Persistent session management with Redis (survives backend restarts)
 - RESTful API for session lifecycle management
 - Support for gestalt multiclassing
 - Cascading feature resolution with depth limits
@@ -18,7 +18,7 @@ The character resolution system is a centralized backend service that handles al
 - Backend Services: `apps/backend/src/features/characterResolution/`
 - Frontend API Client: `apps/frontend/src/services/api/CharacterResolutionApi.ts`
 - Frontend Hook: `apps/frontend/src/features/character/useCharacterResolution.ts`
-- Session Database: `apps/backend/src/features/characterResolution/sessionDatabase.ts`
+- Session Service: `apps/backend/src/features/shared/session/GenericSessionService.ts`
 
 ## 🏗️ **Core Components**
 
@@ -43,9 +43,9 @@ Main service orchestrating the complete feature resolution process.
 
 ### **CharacterSessionService**
 
-Service for managing character editing sessions in SQLite.
+Service for managing character editing sessions in Redis.
 
-**Purpose**: Provides persistent session storage using better-sqlite3. Sessions survive backend restarts and automatically expire after inactivity.
+**Purpose**: Provides persistent session storage using Redis. Sessions survive backend restarts and automatically expire after inactivity via Redis TTL.
 
 **Key Features**:
 - Automatic cleanup of expired sessions (every 5 minutes)
@@ -63,9 +63,9 @@ Service for managing character editing sessions in SQLite.
 - `cleanupExpiredSessions()` - Removes expired sessions
 
 **Session Storage**:
-- Database: SQLite (better-sqlite3)
-- Table: `character_edit_sessions`
-- Location: `data/sessions.db` (configurable via `SESSION_DATABASE_URL`)
+- Database: Redis
+- Key Pattern: `session:character:{characterId}:{userId}`
+- Storage: JSON serialization with Redis TTL
 - Expiration: Configurable via `SESSION_EXPIRATION_MINUTES` (default: 30 minutes)
 
 **Source File**: `apps/backend/src/features/characterResolution/characterSessionService.ts`
@@ -140,40 +140,39 @@ Processes features granted by other features, enabling multi-level cascading res
 
 **Source File**: `apps/backend/src/features/characterResolution/cascadingResolver.ts`
 
-## 💾 **Session Database Schema**
+## 💾 **Session Storage**
 
-The session database uses SQLite with better-sqlite3 (not Prisma). The schema is defined directly in SQL.
+The session storage uses Redis (not Prisma). Sessions are stored as JSON strings with Redis TTL for automatic expiration.
 
-### **character_edit_sessions Table**
+### **Redis Session Storage**
 
-Stores character editing session state.
+Stores character editing session state in Redis.
 
-**Fields**:
-- `id` (TEXT PRIMARY KEY) - Unique session identifier (UUID)
-- `character_id` (INTEGER NOT NULL) - Reference to character
-- `user_id` (INTEGER NOT NULL) - Reference to user
-- `session_key` (TEXT UNIQUE NOT NULL) - Composite key: `characterId:userId`
-- `character_state` (TEXT NOT NULL) - JSON-encoded CharacterEditState
-- `resolved_result` (TEXT NOT NULL) - JSON-encoded ResolvedCharacterResult
-- `created_at` (INTEGER NOT NULL) - Unix timestamp (milliseconds)
-- `updated_at` (INTEGER NOT NULL) - Unix timestamp (milliseconds)
-- `expires_at` (INTEGER NOT NULL) - Unix timestamp (milliseconds)
+**Key Pattern**: `session:character:{characterId}:{userId}`
 
-**Indexes**:
-- `idx_session_key` - Index on `session_key` for fast lookups
-- `idx_expires_at` - Index on `expires_at` for cleanup queries
-- `idx_character_user` - Composite index on `character_id, user_id`
+**Data Structure**:
+- `id` (string) - Unique session identifier (UUID)
+- `characterId` (number) - Reference to character
+- `userId` (number) - Reference to user
+- `sessionKey` (string) - Composite key: `characterId:userId`
+- `characterState` (object) - CharacterEditState (JSON serialized)
+- `resolvedResult` (object) - ResolvedCharacterResult (JSON serialized)
+- `createdAt` (number) - Unix timestamp (milliseconds)
+- `updatedAt` (number) - Unix timestamp (milliseconds)
+- `expiresAt` (number) - Unix timestamp (milliseconds)
 
-**Constraints**:
-- Unique: `session_key` must be unique (one session per character/user)
-- Foreign Keys: None (character_id and user_id are not enforced as foreign keys)
+**Storage Features**:
+- **TTL-Based Expiration**: Redis TTL automatically expires sessions
+- **JSON Serialization**: Session data stored as JSON strings
+- **High Performance**: In-memory Redis storage for fast access
+- **Automatic Cleanup**: Redis automatically removes expired sessions
 
-**Database Configuration**:
-- WAL Mode: Enabled for better concurrency
-- Location: `data/sessions.db` (configurable via `SESSION_DATABASE_URL` environment variable)
+**Redis Configuration**:
+- Connection: Configured via `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` environment variables
+- TTL: Configurable via `SESSION_EXPIRATION_MINUTES` (default: 30 minutes)
 - Initialization: Automatic on first access
 
-**Source File**: `apps/backend/src/features/characterResolution/sessionDatabase.ts`
+**Source File**: `apps/backend/src/features/shared/session/GenericSessionService.ts`
 
 ## 🔌 **API Endpoints**
 
@@ -399,9 +398,9 @@ The resolution system uses class data for feature resolution:
 
 ### **Feature System Integration**
 
-The resolution system processes feature progressions:
+The resolution system processes features:
 
-- **Feature Progressions**: Works with `FeatureProgression` objects from the feature system
+- **Features**: Works with `Feature` objects from the feature system (FeatureProgression is a type alias for FeatureWithRelationsSchema)
 - **Feature Entities**: Processes `FeatureEntity` objects for choices and grants
 - **Feature Resolution**: Uses `FeatureEntityHandlers` for entity processing
 
@@ -468,16 +467,16 @@ The frontend uses the resolution API through:
 3. Backend performs initial resolution (base features only)
 4. Backend extracts user choices from character feature choices
 5. Backend performs full resolution with user choices
-6. Backend creates session in SQLite
+6. Backend creates session in Redis
 7. Backend returns `ResolvedCharacterResult` with `sessionId`
 
 ### **Session Update Flow**
 
 1. Frontend calls `PATCH /session/:sessionId` with `CharacterUpdate`
-2. Backend loads session from SQLite
+2. Backend loads session from Redis
 3. Backend applies update to `CharacterEditState`
 4. Backend re-resolves features with updated state
-5. Backend updates session in SQLite
+5. Backend updates session in Redis
 6. Backend returns updated `ResolvedCharacterResult`
 
 ### **Spell Operation Flow**
@@ -560,9 +559,9 @@ Spell add/remove operations integrate with the resolution session system to main
 ### **Session Save Flow**
 
 1. Frontend calls `POST /session/:sessionId/save`
-2. Backend loads session from SQLite
+2. Backend loads session from Redis
 3. Backend persists `CharacterEditState` to character record
-4. Backend deletes session from SQLite
+4. Backend deletes session from Redis
 5. Backend returns success
 
 ## 🎯 **Design Decisions**
@@ -575,29 +574,31 @@ All complex feature resolution logic is centralized on the backend to ensure:
 - Easier testing and validation
 - Reduced frontend complexity
 
-### **SQLite Session Storage**
+### **Redis Session Storage**
 
-Sessions are stored in SQLite (not Prisma) for:
-- Lightweight, file-based storage
-- No additional database dependencies
-- Fast local access
-- Automatic cleanup capabilities
+Sessions are stored in Redis (not Prisma) for:
+- High-performance in-memory storage
+- Automatic expiration via Redis TTL
+- Scalable across multiple backend instances
+- Fast access for session operations
 - Sessions survive backend restarts
 
 ### **Session Expiration**
 
-Sessions automatically expire after inactivity to:
+Sessions automatically expire after inactivity via Redis TTL to:
 - Prevent stale session accumulation
-- Free up storage space
+- Free up memory space automatically
 - Ensure data freshness
 - Configurable expiration time (default: 30 minutes)
+- No manual cleanup needed (Redis handles it automatically)
 
-### **WAL Mode**
+### **Redis TTL**
 
-SQLite WAL (Write-Ahead Logging) mode is enabled for:
-- Better concurrent read performance
-- Non-blocking reads during writes
-- Improved multi-user scenarios
+Redis TTL (Time To Live) is used for:
+- Automatic session expiration
+- No manual cleanup intervals needed
+- Efficient memory management
+- Consistent expiration behavior
 
 ### **Resolution Phases**
 

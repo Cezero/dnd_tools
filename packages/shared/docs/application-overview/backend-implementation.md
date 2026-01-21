@@ -141,10 +141,10 @@ The backend provides utility functions for common transformations:
 - **Pattern**: Prisma ORM with type-safe queries
 - **Integration**: Direct database access
 
-**Session Storage Layer** (SQLite with better-sqlite3):
-- **Purpose**: Lightweight, file-based session storage
+**Session Storage Layer** (Redis):
+- **Purpose**: High-performance in-memory session storage
 - **Responsibilities**: Session state persistence, expiration management
-- **Pattern**: Direct SQL with better-sqlite3 (no ORM)
+- **Pattern**: Redis with JSON serialization and TTL-based expiration
 - **Integration**: Separate from main database for session-specific data
 - **Use Cases**: Temporary editing sessions, state that survives restarts
 
@@ -452,31 +452,30 @@ Controllers for session-based resources follow a RESTful session pattern:
 
 ## 💾 **Session Management Patterns**
 
-### **SQLite Session Storage Pattern**
+### **Redis Session Storage Pattern**
 
-For temporary, session-based data that needs to persist across backend restarts, the application uses SQLite with better-sqlite3 instead of the main Prisma database.
+For temporary, session-based data that needs to persist across backend restarts, the application uses Redis instead of the main Prisma database.
 
 **When to Use**:
 - Temporary editing sessions
 - State that should survive backend restarts
 - Data that doesn't need complex relationships
-- Lightweight, file-based storage requirements
+- High-performance in-memory storage requirements
 
 **Implementation Pattern**:
-- **Direct SQL**: Use raw SQL queries with better-sqlite3 (no ORM)
-- **WAL Mode**: Enable Write-Ahead Logging for better concurrency
-- **Automatic Cleanup**: Implement periodic cleanup of expired sessions
-- **Singleton Database**: Use singleton pattern for database connection
-- **File-Based**: Store database file in `data/` directory (configurable)
+- **Redis Client**: Use Redis client with JSON serialization
+- **TTL-Based Expiration**: Use Redis TTL for automatic session expiration
+- **Automatic Cleanup**: Redis automatically removes expired sessions via TTL
+- **Singleton Client**: Use singleton pattern for Redis connection
+- **Key Patterns**: Use consistent key patterns like `session:{entityType}:{sessionKey}`
 
 **Example Structure**:
 ```typescript
-// Initialize database with direct SQL
-db.exec(`
-  CREATE TABLE IF NOT EXISTS sessions (
-    id TEXT PRIMARY KEY,
-    data TEXT NOT NULL,
-    expires_at INTEGER NOT NULL
+// Store session in Redis with TTL
+await redis.setEx(
+  `session:class:${sessionKey}`,
+  expirationSeconds,
+  JSON.stringify(sessionData)
   );
   CREATE INDEX IF NOT EXISTS idx_expires_at ON sessions(expires_at);
 `);

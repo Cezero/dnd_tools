@@ -1,38 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import React from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { DnDClass } from '@shared/schema';
-
 import { ClassApi } from './ClassApi';
+import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
+
 import { ClassDisplay } from './ClassDisplay';
 
 export default function ClassDetail() {
     const { id } = useParams();
-    const [cls, setCls] = useState<DnDClass | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const { isAdmin } = useAuthAuto();
+    const { isAdmin, user } = useAuthAuto();
     const navigate = useNavigate();
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
 
-    // Precache all entities referenced in feature progressions
-    const { isPrecaching: isPrecachingEntities } = usePrecacheFeatureEntities(cls?.features);
+    const classId = id ? parseInt(id) : null;
 
-    useEffect(() => {
-        const Initialize = async () => {
-            try {
-                const data = await ClassApi.getClassById(undefined, { id: parseInt(id!) });
-                setCls(data);
-                setIsLoading(false);
-            } catch (error) {
-                console.error('Failed to initialize or fetch class:', error);
-                setIsLoading(false);
-            }
-        };
-        Initialize();
-    }, [id, location.state]);
+    // Fetch class data using TanStack Query (from database)
+    const { data: cls, isLoading, error } = useQuery({
+        queryKey: ClassQueryHooks.getClassByIdQueryKey(classId!),
+        queryFn: () => ClassQueryHooks.getClassById(classId!),
+        enabled: !!classId,
+    });
+
+    // Fetch lock status (only for admin users)
+    const { data: lockStatus } = useQuery({
+        queryKey: ['class', 'lock-status', classId],
+        queryFn: () => ClassApi.getClassLockStatus(undefined, { id: classId! }),
+        enabled: !!classId && isAdmin,
+    });
+
+    // Precache all entities referenced in feature features
+    const { isPrecaching: isPrecachingEntities } = usePrecacheFeatureEntities(cls?.features);
 
     const handleBack = () => {
         navigate(`/classes${fromListParams ? `?${fromListParams}` : ''}`);
@@ -52,11 +53,11 @@ export default function ClassDetail() {
         </div>
     );
 
-    if (!cls) return (
+    if (error || !cls) return (
         <div className="pt-8">
             <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
                 <div className="p-3 bg-content border-content rounded-lg border w-full">
-                    Class not found
+                    {error ? 'Error loading class' : 'Class not found'}
                 </div>
             </div>
         </div>
@@ -71,6 +72,8 @@ export default function ClassDetail() {
             onEdit={handleEdit}
             isAdmin={isAdmin}
             fromListParams={fromListParams}
+            lockStatus={lockStatus}
+            currentUserId={user?.id}
         />
     );
 }

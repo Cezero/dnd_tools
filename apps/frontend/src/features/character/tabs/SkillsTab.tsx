@@ -11,7 +11,7 @@ import { buildFormulaParams } from '@/lib/formatters/formula-utils';
 import type { FormattedSkill } from '@/lib/formatters/types';
 import { hasSubtypes, usesCustomSubtype, hasNoMaxRanks, getSkillSubtypes, getSkillSubtypeName as getSkillSubtypeNameUtil } from '@/lib/skill-utils';
 import { useCacheFunctions } from '@/services/cache';
-import type { FeatureProgression } from '@shared/schema';
+import type { FeatureWithRelations } from '@shared/schema';
 import {
     ABILITY_MAP,
     GetAbilityModifier,
@@ -150,19 +150,19 @@ export function SkillsTab({
         return skillRanks.filter(skill => skill.skillId === skillId);
     };
 
-    // Get source name from a feature progression
-    const getProgressionSourceName = (progression: FeatureProgression): string => {
-        // Check classes array for class progressions
-        if (progression.classes && progression.classes.length > 0) {
-            const firstClassId = progression.classes[0].classId;
+    // Get source name from a feature feature
+    const getProgressionSourceName = (feature: FeatureWithRelations): string => {
+        // Check classes array for class features
+        if (feature.classes && feature.classes.length > 0) {
+            const firstClassId = feature.classes[0].classId;
             const className = sharedData.classDetailsMap.get(firstClassId)?.name || getClassNameFromCache(firstClassId);
             if (className) {
                 return className;
             }
         }
-        // Check races array for race progressions
-        if (progression.races && progression.races.length > 0) {
-            const firstRaceId = progression.races[0].raceId;
+        // Check races array for race features
+        if (feature.races && feature.races.length > 0) {
+            const firstRaceId = feature.races[0].raceId;
             if (state.raceId === firstRaceId) {
                 const raceName = raceDetails?.name || (state.raceId ? getRaceNameFromCache(state.raceId) : undefined);
                 if (raceName) {
@@ -171,12 +171,12 @@ export function SkillsTab({
             }
         }
         // Fallback to source type name
-        if (progression.sourceType === FeatureSourceType.Race) {
+        if (feature.sourceType === FeatureSourceType.Race) {
             return raceDetails?.name || (state.raceId ? getRaceNameFromCache(state.raceId) || 'Race' : 'Race');
         }
-        if (progression.sourceType === FeatureSourceType.Class) {
-            if (progression.classes && progression.classes.length > 0) {
-                const firstClassId = progression.classes[0].classId;
+        if (feature.sourceType === FeatureSourceType.Class) {
+            if (feature.classes && feature.classes.length > 0) {
+                const firstClassId = feature.classes[0].classId;
                 return sharedData.classDetailsMap.get(firstClassId)?.name || getClassNameFromCache(firstClassId) || 'Class';
             }
             return 'Class';
@@ -184,14 +184,14 @@ export function SkillsTab({
         return 'Unknown Source';
     };
 
-    // Calculate bonus skill points from feature progressions
+    // Calculate bonus skill points from feature features
     const getBonusSkillPoints = useMemo(() => {
         const bonusPoints: Array<{ source: string; value: number }> = [];
 
-        for (const progression of resolvedData.progressions) {
-            if (!progression.entities) continue;
+        for (const feature of resolvedData.features) {
+            if (!feature.entities) continue;
 
-            for (const entity of progression.entities) {
+            for (const entity of feature.entities) {
                 // Check if this is a Choice entity for SkillPoints
                 if (entity.type === EntityType.Choice && entity.appliesTo === EntityAppliesToType.SkillPoints) {
                     let value = 0;
@@ -216,7 +216,7 @@ export function SkillsTab({
                             const params = buildFormulaParams(
                                 entity.formulaParams,
                                 level,
-                                progression.level,
+                                feature.level,
                                 mockContext,
                                 entity.value || 0
                             );
@@ -231,7 +231,7 @@ export function SkillsTab({
                     }
 
                     if (value > 0) {
-                        const sourceName = getProgressionSourceName(progression);
+                        const sourceName = getProgressionSourceName(feature);
                         bonusPoints.push({ source: sourceName, value });
                     }
                 }
@@ -239,7 +239,7 @@ export function SkillsTab({
         }
 
         return bonusPoints;
-    }, [resolvedData.progressions, level, abilityScores, raceDetails]);
+    }, [resolvedData.features, level, abilityScores, raceDetails]);
 
     // Calculate total bonus skill points
     const totalBonusSkillPoints = useMemo(() => {
@@ -260,7 +260,7 @@ export function SkillsTab({
         const intelligenceScore = getAbilityScore(AbilityId.Intelligence);
         const intelligenceModifier = GetAbilityModifier(intelligenceScore);
 
-        // Get class skill points from feature progressions
+        // Get class skill points from feature features
         let classSkillPoints = 2; // Default for most classes
 
         if (classId) {
@@ -630,7 +630,7 @@ export function SkillsTab({
         const intelligenceScore = getAbilityScore(AbilityId.Intelligence);
         const intModifier = GetAbilityModifier(intelligenceScore);
 
-        // Get class skill points from feature progressions
+        // Get class skill points from feature features
         const primaryId = classDetails.primary ? (classDetails.primary as { id?: number }).id : undefined;
         const primaryMechanics = classDetails.primary?.features
             ? extractClassMechanics(classDetails.primary.features, primaryId)

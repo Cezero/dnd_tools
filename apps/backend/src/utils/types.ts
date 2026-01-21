@@ -1,5 +1,5 @@
 /**
- * Extracted race mechanics from feature progressions
+ * Extracted race mechanics from feature features
  */
 export interface RaceMechanics {
     sizeId: number | null;

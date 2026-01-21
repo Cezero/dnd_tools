@@ -6,7 +6,7 @@ import { CharacterResolutionApi, type ResolvedCharacterResult, type CharacterUpd
  * Hook for managing character resolution sessions.
  * 
  * **Implementation Note**: Character resolution is more complex than Class/Race resolution
- * because it returns `ResolvedCharacterResult` (with resolved progressions, pending choices,
+ * because it returns `ResolvedCharacterResult` (with resolved features, pending choices,
  * etc.) instead of just state. This hook follows similar patterns to the generic resolution hook
  * but is customized for Character's unique requirements.
  * 

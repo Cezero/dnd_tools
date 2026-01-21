@@ -64,7 +64,7 @@ Defines source book references for races, providing proper attribution and page 
 
 The race system integrates with the feature system through feature progression:
 
-**FeatureProgression**: Links races to features with level requirements
+**Feature**: Links races to features with level requirements (via `FeatureRaceMap` many-to-many relationship)
 **Feature Components**: Races can have modifiers, choices, and special effects
 **Feature Scaling**: Features can scale with character level
 **Feature Inheritance**: Features can be inherited from other races

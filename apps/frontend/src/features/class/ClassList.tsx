@@ -36,7 +36,7 @@ export default function ClassList(): React.JSX.Element {
     }, []);
 
     const featuresDataFetcher = useCallback(async () => {
-        return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [FeatureSourceType.Class] } });
+        return await FeatureQueryHooks.getFeatures({ sourceTypes: [FeatureSourceType.Class] });
     }, []);
 
     if (isAuthLoading) {

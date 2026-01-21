@@ -39,7 +39,7 @@ export function RaceList(): React.JSX.Element {
     }, []);
 
     const featuresDataFetcher = useCallback(async () => {
-        return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [FeatureSourceType.Race] } });
+        return await FeatureQueryHooks.getFeatures({ sourceTypes: [FeatureSourceType.Race] });
     }, []);
 
     if (isAuthLoading) {

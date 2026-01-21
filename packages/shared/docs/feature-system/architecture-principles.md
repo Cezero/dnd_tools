@@ -10,33 +10,35 @@ The Feature System is the core foundation of the D&D Tools application, implemen
 
 The system separates **generic concepts** from **specific implementations** to enable reuse across different game entities.
 
-#### **Feature vs FeatureProgression Pattern**
-```
-Feature (Generic Concept)
-├── Low-Light Vision (reusable concept)
-├── Animal Companion (reusable concept)
-└── Evasion (reusable concept)
+#### **Unified Feature Model**
 
-FeatureProgression (Specific Implementation)
-├── Elf Race: Low-Light Vision (60 ft range)
-├── Dwarf Race: Low-Light Vision (120 ft range)
-├── Druid Class: Animal Companion (level 1)
-└── Rogue Class: Evasion (level 2)
+**Migration Note**: The Feature and FeatureProgression models have been merged into a single `Feature` model. The unified model combines core feature information (name, description, prerequisites) with progression details (level, source type, source references).
+
+```
+Feature (Unified Model)
+├── Core Fields: id, slug, name, description, summary, displayInCharacterSheet
+├── Progression Fields: sourceType, level, domainId, featId, companionId, editionId
+├── Relationships: classes (via FeatureClassMap), races (via FeatureRaceMap), entities, prerequisites
+└── Examples:
+    ├── Elf Race: Low-Light Vision (level 1, sourceType: Race)
+    ├── Dwarf Race: Low-Light Vision (level 1, sourceType: Race, different range via entities)
+    ├── Druid Class: Animal Companion (level 1, sourceType: Class)
+    └── Rogue Class: Evasion (level 2, sourceType: Class)
 ```
 
 **Architectural Benefits**:
-- **Eliminates Redundancy**: One "Evasion" feature can be used by multiple classes
-- **Enables Variation**: Same feature can have different progression patterns
-- **Simplifies Maintenance**: Changes to feature descriptions update everywhere
-- **Supports Extensibility**: New classes can reuse existing features
+- **Eliminates Redundancy**: One feature can be linked to multiple classes/races via junction tables
+- **Enables Variation**: Same feature concept can have different implementations via different Feature records
+- **Simplifies Maintenance**: Unified model reduces complexity and foreign key relationships
+- **Supports Extensibility**: New classes/races can link to existing features via FeatureClassMap/FeatureRaceMap
+- **Type Alias**: `FeatureProgression` is maintained as a type alias for `FeatureWithRelationsSchema` for backward compatibility
 
 ### **2. Functional Separation of Concerns**
 
 The system separates concerns by **purpose** rather than by **logical layer**, focusing on business logic modeling.
 
 #### **Component Responsibilities**
-- **Features**: Generic concept descriptions (metadata only)
-- **FeatureProgressions**: Specific implementations with level and context
+- **Features**: Unified feature definitions combining core information (name, description, prerequisites) with progression details (level, source type, source references)
 - **FeatureEntities**: Unified model for all feature effects (modifiers, choices, special effects) with type-based differentiation
 - **FeatureEntityConditions**: Conditional requirements for feature entities
 - **FeaturePrerequisites**: Requirements and conditions
@@ -45,8 +47,9 @@ The system separates concerns by **purpose** rather than by **logical layer**, f
 ```
 Database (Persistence Layer)
 ├── Prisma Schema (strict foreign key relationships)
-├── Feature tables (generic concepts)
-├── FeatureProgression tables (specific implementations)
+├── Feature table (unified model with core and progression fields)
+├── FeatureClassMap table (many-to-many: features to classes)
+├── FeatureRaceMap table (many-to-many: features to races)
 └── FeatureEntity tables (unified effects with type differentiation)
 
 Validation Layer
@@ -86,43 +89,51 @@ The architecture prioritizes performance through strategic use of static data an
 
 ```mermaid
 erDiagram
-    Feature ||--o{ FeatureProgression : "has many"
     Feature ||--o{ FeaturePrerequisite : "has many"
-    FeatureProgression ||--o{ FeatureEntity : "has many"
+    Feature ||--o{ FeatureEntity : "has many"
+    Feature ||--o{ FeatureClassMap : "has many"
+    Feature ||--o{ FeatureRaceMap : "has many"
+    Feature ||--o{ FeatureCondition : "has many"
     
     FeatureEntity ||--o{ FeatureEntityCondition : "has many"
     FeatureEntity ||--o| FeatureFormulaParams : "has optional"
     
     Feature {
         int id PK
+        string slug
         string name
         string description
-        string slug
-    }
-    
-    FeatureProgression {
-        int id PK
-        int featureId FK
+        string summary
+        boolean displayInCharacterSheet
         int sourceType
         int level
-        int classId FK
-        int raceId FK
         int domainId FK
         int featId FK
         int companionId FK
+        int editionId
+    }
+    
+    FeatureClassMap {
+        int featureId FK
+        int classId FK
+    }
+    
+    FeatureRaceMap {
+        int featureId FK
+        int raceId FK
     }
     
     FeaturePrerequisite {
         int id PK
         int featureId FK
         int type
-        int skillId FK
+        int appliesToId
         int minValue
     }
     
     FeatureEntity {
         int id PK
-        int progressionId FK
+        int featureId FK
         int type
         int appliesTo
         int appliesToId
@@ -158,22 +169,23 @@ erDiagram
 
 ### **Component Responsibilities**
 
-#### **Feature (Generic Concept)**
-- **Purpose**: Reusable game mechanic descriptions
-- **Data**: ID, name, description, prerequisites
-- **Dependencies**: None (pure metadata)
-- **Examples**: "Low-Light Vision", "Animal Companion", "Evasion"
-
-#### **FeatureProgression (Specific Implementation)**
-- **Purpose**: Links features to specific sources (classes, races, domains, feats, companions) with context
-- **Data**: Feature ID, source type, level, source ID (classId, raceId, domainId, featId, or companionId)
-- **Dependencies**: References single Feature, optional source entity (Class, Race, Domain, Feat, or Companion)
-- **Examples**: "Elf gets Low-Light Vision at level 1", "Rogue gets Evasion at level 2", "Familiar grants Alertness feat", "Animal Companion grants +2 to Handle Animal"
+#### **Feature (Unified Model)**
+- **Purpose**: Unified feature definitions combining core information (name, description, prerequisites) with progression details (level, source type, source references)
+- **Data**: 
+  - Core fields: id, slug, name, description, summary, displayInCharacterSheet
+  - Progression fields: sourceType, level, domainId, featId, companionId, editionId
+  - Relationships: classes (via FeatureClassMap), races (via FeatureRaceMap), entities, prerequisites
+- **Dependencies**: Optional source entity (Domain, Feat, Companion, or Edition) via direct foreign keys; classes and races via junction tables
+- **Examples**: 
+  - "Elf Low-Light Vision" (level 1, sourceType: Race, linked to Elf via FeatureRaceMap)
+  - "Rogue Evasion" (level 2, sourceType: Class, linked to Rogue via FeatureClassMap)
+  - "Alertness Feat" (level 1, sourceType: Feat, featId references Feat)
+  - "Animal Companion" (level 1, sourceType: Class, linked to Druid via FeatureClassMap)
 
 #### **FeatureEntity (Unified Effects)**
 - **Purpose**: Unified model for all feature effects with type-based differentiation
 - **Data**: Type, applies to, value, bonus type, conditions, formula parameters
-- **Dependencies**: References FeatureProgression, optional FormulaParams, optional Conditions
+- **Dependencies**: References Feature, optional FormulaParams, optional Conditions
 - **Entity Types**: Bonus, Quantity, Replacement, Other, Proficiency, Choice, Allocation
 - **Examples**: 
   - Bonus: "+2 to attack rolls", "+4 to Strength"
@@ -190,9 +202,9 @@ erDiagram
 #### **FeaturePrerequisite (Requirements)**
 - **Purpose**: Conditions that must be met before feature is available
 - **Data**: Prerequisite type, value, description
-- **Dependencies**: References Feature (not FeatureProgression)
+- **Dependencies**: References Feature
 - **Examples**: "Minimum 4 ranks in Perform skill" (currently the only implemented prerequisite type)
-- **Note**: Character level requirements are handled by FeatureProgression.level field
+- **Note**: Character level requirements are handled by Feature.level field
 
 ## Formula System Integration
 

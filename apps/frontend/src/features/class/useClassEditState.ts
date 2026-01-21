@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { useGenericEditState } from '@/lib/hooks/useGenericEditState';
 
 import type { ClassEditState, ClassEditStateUpdate } from './types';
@@ -20,36 +22,35 @@ import { ClassEditStateUpdateType } from './types';
  * @see useGenericEditState - Generic implementation
  */
 export function useClassEditState(initialState?: Partial<ClassEditState>) {
-    return useGenericEditState<ClassEditState, ClassEditStateUpdate>(
-        {
-            initialState: {
-                // Core class identity
-                classId: null,
-                name: '',
-                abbreviation: '',
-                editionId: 1, // Default edition
-                isPrestige: false,
-                isVisible: true,
-                canCastSpells: false,
-                spellsKnown: false,
-                isDivine: false,
-                description: null,
+    const config = useMemo(() => ({
+        initialState: {
+            // Core class identity
+            classId: null,
+            name: '',
+            abbreviation: '',
+            editionId: 1, // Default edition
+            isPrestige: false,
+            isVisible: true,
+            canCastSpells: false,
+            spellsKnown: false,
+            isDivine: false,
+            description: null,
+            sourceBookInfo: null,
 
-                // Feature progressions
-                featureProgressions: [],
+            // Feature IDs (features are managed independently via feature state system)
+            featureIds: [],
 
-                // Spellcasting progressions
-                spellcastingProgression: [],
-                spellsKnownProgression: [],
+            // Spellcasting features
+            spellcastingProgression: [],
+            spellsKnownProgression: [],
 
-                // UI state
-                activeTab: 'basic',
-                isFeatureAssocOpen: false,
-                isProgressionDialogOpen: false,
-                editingProgression: null,
-                preSelectedFeature: undefined,
-            },
-            reducer: (state, update) => {
+            // UI state
+            activeTab: 'basic',
+            isFeatureAssocOpen: false,
+            editingFeatureId: null,
+            preSelectedFeatureId: undefined,
+        },
+        reducer: (state: ClassEditState, update: ClassEditStateUpdate) => {
                 switch (update.type) {
                     case ClassEditStateUpdateType.SET_CLASS_ID:
                         return { ...state, classId: update.payload.classId };
@@ -71,26 +72,20 @@ export function useClassEditState(initialState?: Partial<ClassEditState>) {
                         return { ...state, isDivine: update.payload.isDivine };
                     case ClassEditStateUpdateType.SET_DESCRIPTION:
                         return { ...state, description: update.payload.description };
-                    case ClassEditStateUpdateType.SET_FEATURE_PROGRESSIONS:
-                        return { ...state, featureProgressions: update.payload.featureProgressions };
-                    case ClassEditStateUpdateType.ADD_FEATURE_PROGRESSION:
-                        return { ...state, featureProgressions: [...state.featureProgressions, update.payload.progression] };
-                    case ClassEditStateUpdateType.UPDATE_FEATURE_PROGRESSION: {
-                        const index = state.featureProgressions.findIndex(p => p.id === update.payload.progressionId);
-                        if (index === -1) return state;
+                    case ClassEditStateUpdateType.SET_SOURCE_BOOK_INFO:
+                        return { ...state, sourceBookInfo: update.payload.sourceBookInfo };
+                    case ClassEditStateUpdateType.SET_FEATURE_IDS:
+                        return { ...state, featureIds: update.payload.featureIds };
+                    case ClassEditStateUpdateType.LINK_FEATURE:
+                        // Add feature ID if not already present
+                        if (state.featureIds.includes(update.payload.featureId)) {
+                            return state;
+                        }
+                        return { ...state, featureIds: [...state.featureIds, update.payload.featureId] };
+                    case ClassEditStateUpdateType.UNLINK_FEATURE:
                         return {
                             ...state,
-                            featureProgressions: [
-                                ...state.featureProgressions.slice(0, index),
-                                { ...state.featureProgressions[index], ...update.payload.progression },
-                                ...state.featureProgressions.slice(index + 1)
-                            ]
-                        };
-                    }
-                    case ClassEditStateUpdateType.REMOVE_FEATURE_PROGRESSION:
-                        return {
-                            ...state,
-                            featureProgressions: state.featureProgressions.filter(p => p.id !== update.payload.progressionId)
+                            featureIds: state.featureIds.filter(id => id !== update.payload.featureId)
                         };
                     case ClassEditStateUpdateType.SET_SPELLCASTING_PROGRESSION:
                         return { ...state, spellcastingProgression: update.payload.progression };
@@ -100,17 +95,18 @@ export function useClassEditState(initialState?: Partial<ClassEditState>) {
                         return { ...state, activeTab: update.payload.activeTab };
                     case ClassEditStateUpdateType.SET_IS_FEATURE_ASSOC_OPEN:
                         return { ...state, isFeatureAssocOpen: update.payload.isFeatureAssocOpen };
-                    case ClassEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN:
-                        return { ...state, isProgressionDialogOpen: update.payload.isProgressionDialogOpen };
-                    case ClassEditStateUpdateType.SET_EDITING_PROGRESSION:
-                        return { ...state, editingProgression: update.payload.editingProgression };
-                    case ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE:
-                        return { ...state, preSelectedFeature: update.payload.preSelectedFeature };
+                    case ClassEditStateUpdateType.SET_EDITING_FEATURE_ID:
+                        return { ...state, editingFeatureId: update.payload.editingFeatureId };
+                    case ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID:
+                        return { ...state, preSelectedFeatureId: update.payload.preSelectedFeatureId };
                     default:
                         return state;
                 }
-            }
-        },
+        }
+    }), []);
+
+    return useGenericEditState<ClassEditState, ClassEditStateUpdate>(
+        config,
         initialState
     );
 }

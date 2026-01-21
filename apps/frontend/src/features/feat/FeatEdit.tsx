@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
-import { FeatureProgressionDetailEdit } from '@/components/feature-system/FeatureProgressionDetailEdit';
+import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import { CreateFeatRequest, UpdateFeatRequest, UpdateFeatSchema, BaseFeatSchema, Feat, FeatureProgression } from '@shared/schema';
+import { CreateFeatRequest, UpdateFeatRequest, UpdateFeatSchema, BaseFeatSchema, Feat, Feature, FeatureWithRelations } from '@shared/schema';
 import { FEAT_TYPE_LIST, EDITION_LIST, SourceType, EditionId, FeatureSourceType } from '@shared/static-data';
 
 // Type definitions for the form state
@@ -32,13 +32,13 @@ export function FeatEdit() {
     const [isCreating, setIsCreating] = useState(false);
     const [featError, setFeatError] = useState<Error | null>(null);
 
-    // Feature progression management state
+    // Feature feature management state
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
-    const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
-    const [preSelectedFeature, setPreSelectedFeature] = useState<FeatureProgression['feature'] | null>(null);
+    const [editingProgression, setEditingProgression] = useState<FeatureWithRelations | null>(null);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<FeatureWithRelations | null>(null);
     const [isSavingProgression, setIsSavingProgression] = useState(false);
-    // Store progressions in state for new feats (before they're saved)
-    const [unsavedProgressions, setUnsavedProgressions] = useState<FeatureProgression[]>([]);
+    // Store features in state for new feats (before they're saved)
+    const [unsavedProgressions, setUnsavedProgressions] = useState<FeatureWithRelations[]>([]);
 
     // Get query client for cache invalidation
     const queryClient = useQueryClient();
@@ -114,37 +114,39 @@ export function FeatEdit() {
         fetchFeat();
     }, [id]);
 
-    // Get the associated feature progressions from feat
-    const featWithProgressions = feat as (typeof feat & { featureProgressions?: FeatureProgression[] }) | undefined;
+    // Get the associated feature features from feat
+    const featWithProgressions = feat as (typeof feat & { features?: FeatureWithRelations[] }) | undefined;
 
-    // Create a properly initialized progression when adding a new one
+    // Create a properly initialized feature when adding a new one
     useEffect(() => {
         if (isProgressionDialogOpen && !editingProgression && preSelectedFeature) {
             // Generate temporary ID for new feats, use actual ID for existing feats
             const featIdValue = id === 'new' ? Date.now() + Math.random() : parseInt(id || '0');
 
-            const newProgression: FeatureProgression = {
-                id: 0,
+            const newProgression: FeatureWithRelations = {
+                id: preSelectedFeature.id,
                 sourceType: FeatureSourceType.Feat,
                 domainId: null,
                 featId: featIdValue,
                 companionId: null,
                 level: 1,
-                featureId: preSelectedFeature.id,
-                feature: preSelectedFeature,
+                name: preSelectedFeature.name,
+                slug: preSelectedFeature.slug,
+                description: preSelectedFeature.description,
+                displayInCharacterSheet: preSelectedFeature.displayInCharacterSheet,
                 entities: []
             };
             setEditingProgression(newProgression);
         }
     }, [isProgressionDialogOpen, editingProgression, preSelectedFeature, id]);
 
-    // Feature progression handlers
-    const handleSaveProgression = async (progression: FeatureProgression) => {
+    // Feature feature handlers
+    const handleSaveProgression = async (feature: FeatureWithRelations) => {
         setIsSavingProgression(true);
         try {
-            if (!progression.featureId) {
-                console.error('Cannot save progression: missing featureId', progression);
-                setError('Cannot save progression: missing feature ID');
+            if (!feature.id) {
+                console.error('Cannot save feature: missing id', feature);
+                setError('Cannot save feature: missing feature ID');
                 setIsSavingProgression(false);
                 return;
             }
@@ -152,29 +154,29 @@ export function FeatEdit() {
             // Check if this is a new feat - store in state instead of saving
             if (id === 'new') {
                 // Ensure sourceType and featId are set correctly (using temporary ID)
-                const progressionData: FeatureProgression = {
-                    ...progression,
+                const progressionData: FeatureWithRelations = {
+                    ...feature,
                     id: Date.now() + Math.random(), // Temporary ID for frontend
                     sourceType: FeatureSourceType.Feat,
-                    companionId: null, // Ensure companionId is null for feat progressions
+                    companionId: null, // Ensure companionId is null for feat features
                     featId: Date.now() + Math.random(), // Temporary ID, will be replaced when feat is saved
                 };
 
-                // Update or add to unsaved progressions
+                // Update or add to unsaved features
                 if (editingProgression && editingProgression.id !== 0) {
-                    // Update existing progression
+                    // Update existing feature
                     setUnsavedProgressions(prev =>
                         prev.map(p => p.id === editingProgression.id ? progressionData : p)
                     );
                 } else {
-                    // Add new progression
+                    // Add new feature
                     setUnsavedProgressions(prev => [...prev, progressionData]);
                 }
 
                 setIsProgressionDialogOpen(false);
                 setEditingProgression(null);
                 setPreSelectedFeature(null);
-                setMessage('Feature progression added (will be saved with feat)');
+                setMessage('Feature feature added (will be saved with feat)');
                 setIsSavingProgression(false);
                 return;
             }
@@ -182,24 +184,19 @@ export function FeatEdit() {
             // For existing feats, save to backend
             const featIdNum = parseInt(id || '0');
             if (!featIdNum) {
-                setError('Cannot save progression: feat ID is required');
+                setError('Cannot save feature: feat ID is required');
                 setIsSavingProgression(false);
                 return;
             }
 
             // Ensure featId and sourceType are set correctly
             const progressionData = {
-                ...progression,
+                ...feature,
                 featId: featIdNum,
-                companionId: null, // Ensure companionId is null for feat progressions
+                companionId: null, // Ensure companionId is null for feat features
                 sourceType: FeatureSourceType.Feat,
-                // Clean nested objects that shouldn't be sent
-                feature: progression.feature ? {
-                    id: progression.feature.id,
-                    name: progression.feature.name,
-                    slug: progression.feature.slug
-                } : undefined,
-                entities: progression.entities?.map(e => ({
+                // FeatureWithRelations is now the unified Feature model, no need to add feature property
+                entities: feature.entities?.map(e => ({
                     ...e,
                     conditions: e.conditions?.map(c => ({
                         ...c
@@ -207,9 +204,9 @@ export function FeatEdit() {
                 }))
             };
 
-            await FeatureSystemApi.updateFeatureProgressions(
-                { progressions: [progressionData] },
-                { id: progression.featureId }
+            await FeatureSystemApi.updateFeatures(
+                { features: [progressionData] },
+                { id: feature.id }
             );
 
             // Close the dialog FIRST, before any other state changes
@@ -218,7 +215,7 @@ export function FeatEdit() {
             setEditingProgression(null);
             setPreSelectedFeature(null);
 
-            // Refetch the feat data to get updated progressions
+            // Refetch the feat data to get updated features
             // Use imperative fetch instead of invalidate to avoid triggering navigation
             const refetchedFeat = await FeatQueryHooks.getFeatById(featIdNum);
             if (refetchedFeat) {
@@ -236,25 +233,25 @@ export function FeatEdit() {
                 exact: false
             });
             queryClient.invalidateQueries({
-                queryKey: ['features', 'progressions', progression.featureId]
+                queryKey: ['features', 'features', feature.id]
             });
             queryClient.invalidateQueries({
                 queryKey: ['features'],
                 exact: false
             });
 
-            setMessage('Feature progression updated successfully!');
+            setMessage('Feature feature updated successfully!');
         } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to save feature progression');
-            console.error('Error saving feature progression:', error);
+            const error = err instanceof Error ? err : new Error('Failed to save feature feature');
+            console.error('Error saving feature feature:', error);
             setError(error.message);
         } finally {
             setIsSavingProgression(false);
         }
     };
 
-    const handleEditProgression = (progression: FeatureProgression) => {
-        setEditingProgression(progression);
+    const handleEditProgression = (feature: FeatureWithRelations) => {
+        setEditingProgression(feature);
         setPreSelectedFeature(null);
         setIsProgressionDialogOpen(true);
     };
@@ -262,24 +259,20 @@ export function FeatEdit() {
     const handleRemoveProgression = async (progressionId: number) => {
         try {
             if (id === 'new') {
-                // Remove from unsaved progressions
+                // Remove from unsaved features
                 setUnsavedProgressions(prev => prev.filter(p => p.id !== progressionId));
-                setMessage('Feature progression removed');
+                setMessage('Feature feature removed');
                 return;
             }
 
-            // Delete progression by updating with empty array for that feature
-            const progression = (featWithProgressions?.featureProgressions || []).find(p => p.id === progressionId);
-            if (progression) {
-                const remainingProgressions = (featWithProgressions?.featureProgressions || [])
-                    .filter(p => p.id !== progressionId && p.featureId === progression.featureId)
+            // Delete feature by updating with empty array for that feature
+            const feature = (featWithProgressions?.features || []).find(p => p.id === progressionId);
+            if (feature) {
+                const remainingProgressions = (featWithProgressions?.features || [])
+                    .filter(p => p.id !== progressionId && p.id === feature.id)
                     .map(p => ({
                         ...p,
-                        feature: p.feature ? {
-                            id: p.feature.id,
-                            name: p.feature.name,
-                            slug: p.feature.slug
-                        } : undefined,
+                        // FeatureWithRelations is now the unified Feature model, no need to add feature property
                         entities: p.entities?.map(e => ({
                             ...e,
                             conditions: e.conditions?.map(c => ({
@@ -287,12 +280,12 @@ export function FeatEdit() {
                             }))
                         }))
                     }));
-                await FeatureSystemApi.updateFeatureProgressions(
-                    { progressions: remainingProgressions },
-                    { id: progression.featureId }
+                await FeatureSystemApi.updateFeatures(
+                    { features: remainingProgressions },
+                    { id: feature.id }
                 );
             }
-            // Refetch feat to update progressions
+            // Refetch feat to update features
             const refetchedFeat = await FeatQueryHooks.getFeatById(parseInt(id || '0'));
             if (refetchedFeat) {
                 setFeat(refetchedFeat);
@@ -301,16 +294,16 @@ export function FeatEdit() {
                 queryKey: ['feats'],
                 exact: false
             });
-            setMessage('Feature progression removed successfully!');
+            setMessage('Feature feature removed successfully!');
         } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to remove feature progression');
+            const error = err instanceof Error ? err : new Error('Failed to remove feature feature');
             setError(error.message);
         }
     };
 
     const handleAddFeature = async (feature: { id: number; name: string; description: string; slug: string }) => {
         if (id === 'new') {
-            // For new feats, just open the dialog to add a progression
+            // For new feats, just open the dialog to add a feature
             setPreSelectedFeature({
                 id: feature.id,
                 name: feature.name,
@@ -318,7 +311,9 @@ export function FeatEdit() {
                 slug: feature.slug,
                 summary: null,
                 displayInCharacterSheet: true,
-                prerequisites: []
+                prerequisites: [],
+                sourceType: FeatureSourceType.Template,
+                level: 1
             });
             setEditingProgression(null);
             setIsProgressionDialogOpen(true);
@@ -332,33 +327,25 @@ export function FeatEdit() {
         }
 
         try {
-            const newProgression: FeatureProgression = {
-                id: 0,
-                featureId: feature.id,
+            const newProgression: FeatureWithRelations = {
+                id: feature.id,
+                name: feature.name,
+                description: feature.description,
+                slug: feature.slug,
+                summary: null,
+                displayInCharacterSheet: true,
+                prerequisites: [],
                 featId: featIdNum,
                 sourceType: FeatureSourceType.Feat,
                 level: 1,
-                entities: [],
-                feature: {
-                    id: feature.id,
-                    name: feature.name,
-                    description: feature.description,
-                    slug: feature.slug,
-                    summary: null,
-                    displayInCharacterSheet: true,
-                    prerequisites: []
-                }
+                entities: []
             };
 
-            // Get existing progressions for this feature and add the new one
-            const existingProgressions = await FeatureSystemApi.getFeatureProgressions(undefined, { id: feature.id });
+            // Get existing features for this feature and add the new one
+            const existingProgressions = await FeatureSystemApi.getFeatures(undefined, { id: feature.id });
             const updatedProgressions = [...existingProgressions, newProgression].map(p => ({
                 ...p,
-                feature: p.feature ? {
-                    id: p.feature.id,
-                    name: p.feature.name,
-                    slug: p.feature.slug
-                } : undefined,
+                // FeatureWithRelations is now the unified Feature model, no need to add feature property
                 entities: p.entities?.map(e => ({
                     ...e,
                     conditions: e.conditions?.map(c => ({
@@ -366,12 +353,12 @@ export function FeatEdit() {
                     }))
                 }))
             }));
-            await FeatureSystemApi.updateFeatureProgressions(
-                { progressions: updatedProgressions },
+            await FeatureSystemApi.updateFeatures(
+                { features: updatedProgressions },
                 { id: feature.id }
             );
 
-            // Refetch feat to update progressions
+            // Refetch feat to update features
             const refetchedFeat = await FeatQueryHooks.getFeatById(featIdNum);
             if (refetchedFeat) {
                 setFeat(refetchedFeat);
@@ -391,7 +378,7 @@ export function FeatEdit() {
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Prevent form submission if we're saving a progression or dialog is open
+        // Prevent form submission if we're saving a feature or dialog is open
         if (isSavingProgression || isProgressionDialogOpen) {
             return;
         }
@@ -414,15 +401,14 @@ export function FeatEdit() {
         try {
             if (id === 'new') {
                 setIsCreating(true);
-                // Prepare progressions for creation (remove temporary IDs and clean up)
+                // Prepare features for creation (remove temporary IDs and clean up)
                 const progressionsToCreate = unsavedProgressions.map(p => {
-                    const { id: _id, featId: _featId, feature, ...progressionData } = p;
+                    // FeatureWithRelations is now the unified Feature model, no need to remove feature property
+                    const { id: _id, featId: _featId, ...progressionData } = p;
                     return {
                         ...progressionData,
-                        // Remove nested objects that shouldn't be sent
-                        feature: undefined,
                         entities: progressionData.entities?.map(e => {
-                            const { id: _eId, progressionId: _pId, ...entityData } = e;
+                            const { id: _eId, featureId: _fId, ...entityData } = e;
                             return {
                                 ...entityData,
                                 conditions: entityData.conditions?.map(c => {
@@ -436,13 +422,13 @@ export function FeatEdit() {
 
                 const createData: CreateFeatRequest = {
                     ...formData,
-                    featureProgressions: progressionsToCreate.length > 0 ? progressionsToCreate : undefined
+                    features: progressionsToCreate.length > 0 ? progressionsToCreate : undefined
                 } as CreateFeatRequest;
 
                 const result = await createFeatMutation.mutateAsync({ requestData: createData });
                 const newFeat = { id: result.id };
                 setMessage('Feat created successfully!');
-                // Clear unsaved progressions
+                // Clear unsaved features
                 setUnsavedProgressions([]);
 
                 // Invalidate feat-related queries
@@ -609,21 +595,35 @@ export function FeatEdit() {
                     </div>
                 </div>
 
-                {/* Feature Progressions Management */}
+                {/* Feature Features Management */}
                 <div className="mt-8">
                     <FeaturesManager
-                        featureProgressions={id === 'new' ? unsavedProgressions : (featWithProgressions?.featureProgressions || [])}
-                        onEditProgression={handleEditProgression}
-                        onRemoveProgression={handleRemoveProgression}
-                        onAddFeature={handleAddFeature}
+                        state={{
+                            features: id === 'new' ? unsavedProgressions : (featWithProgressions?.features || []),
+                            editingProgression,
+                            isProgressionDialogOpen,
+                            preSelectedFeature
+                        }}
+                        updateState={(update) => {
+                            if (update.type === 'SET_EDITING_PROGRESSION') {
+                                setEditingProgression(update.payload.editingProgression);
+                            } else if (update.type === 'SET_IS_PROGRESSION_DIALOG_OPEN') {
+                                setIsProgressionDialogOpen(update.payload.isProgressionDialogOpen);
+                            } else if (update.type === 'SET_PRE_SELECTED_FEATURE') {
+                                setPreSelectedFeature(update.payload.preSelectedFeature);
+                            } else if (update.type === 'REMOVE_FEATURE_PROGRESSION') {
+                                handleRemoveProgression(update.payload.featureId);
+                            } else if (update.type === 'SET_FEATURES') {
+                                if (id === 'new') {
+                                    setUnsavedProgressions(update.payload.features);
+                                }
+                            }
+                        }}
                         contextType={FeatureSourceType.Feat}
                         contextId={id === 'new' ? 0 : parseInt(id || '0')}
                         parentType="feat"
-                        title="Feature Progressions"
-                        emptyMessage="No feature progressions. Click 'Add Feature' to add one."
-                        setEditingProgression={setEditingProgression}
-                        setPreSelectedFeature={setPreSelectedFeature}
-                        setIsProgressionDialogOpen={setIsProgressionDialogOpen}
+                        title="Feature Features"
+                        emptyMessage="No feature features. Click 'Add Feature' to add one."
                     />
                 </div>
 
@@ -657,20 +657,36 @@ export function FeatEdit() {
                 </div>
             </ValidatedForm>
 
-            {/* Feature Progression Edit Dialog */}
+            {/* Feature Feature Edit Dialog */}
             {isProgressionDialogOpen && (
-                <FeatureProgressionDetailEdit
-                    progression={editingProgression}
+                <FeatureEditForm
                     isOpen={isProgressionDialogOpen}
                     onClose={() => {
                         setIsProgressionDialogOpen(false);
                         setEditingProgression(null);
                         setPreSelectedFeature(null);
                     }}
-                    onSave={handleSaveProgression}
-                    preSelectedFeature={preSelectedFeature || undefined}
-                    showSourceTypeSelector={false}
-                    editionId={formData.editionId}
+                    featureId={
+                        editingProgression?.id
+                            ? editingProgression.id
+                            : preSelectedFeature?.id
+                                ? preSelectedFeature.id
+                                : 'new'
+                    }
+                    onSave={(feature: Feature, features: FeatureWithRelations[]) => {
+                        const featureWithRelations = features[0] || feature as FeatureWithRelations;
+                        handleSaveProgression(featureWithRelations);
+                    }}
+                    mode="modal"
+                    context={
+                        id && id !== 'new'
+                            ? {
+                                  sourceType: FeatureSourceType.Feat,
+                                  parentId: parseInt(id),
+                                  parentType: 'feat'
+                              }
+                            : undefined
+                    }
                 />
             )}
         </div>

@@ -1,47 +1,48 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     RaceResolutionRaceIdParamSchema,
-    RaceResolutionParamsSchema,
     ApplyRaceUpdateBodySchema,
 } from '@shared/schema';
 
 import {
-    InitializeRaceSession,
-    GetRaceSessionState,
+    StartRaceEditing,
+    GetRaceState,
     ApplyRaceUpdate,
-    SaveRaceSession,
-    CancelRaceSession,
+    SaveRaceState,
+    CancelRaceEditing,
 } from './raceResolutionController';
 import { requireAuth } from '../../middleware/authMiddleware.js';
 
-const { router: RaceResolutionRouter, get, post, patch, delete: deleteRoute } = buildValidatedRouter();
+const { router: RaceResolutionRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Race Resolution API Routes
 // These routes will be mounted under /races, so the full path will be:
-// /api/races/:raceId/session/...
+// /api/races/:raceId/...
 
-// Initialize Session
-post('/:raceId/session', requireAuth, { params: RaceResolutionRaceIdParamSchema }, InitializeRaceSession);
+// Start Editing
+post('/:raceId/start-editing', requireAuth, {
+    params: RaceResolutionRaceIdParamSchema
+}, StartRaceEditing);
 
 // Get Current State
-get('/:raceId/session/:sessionId', requireAuth, {
-    params: RaceResolutionParamsSchema,
-}, GetRaceSessionState);
+get('/:raceId/state', requireAuth, {
+    params: RaceResolutionRaceIdParamSchema,
+}, GetRaceState);
 
 // Apply Update
-patch('/:raceId/session/:sessionId', requireAuth, {
-    params: RaceResolutionParamsSchema,
+put('/:raceId/update', requireAuth, {
+    params: RaceResolutionRaceIdParamSchema,
     body: ApplyRaceUpdateBodySchema,
 }, ApplyRaceUpdate);
 
-// Save Session
-post('/:raceId/session/:sessionId/save', requireAuth, {
-    params: RaceResolutionParamsSchema,
-}, SaveRaceSession);
+// Save State
+post('/:raceId/save', requireAuth, {
+    params: RaceResolutionRaceIdParamSchema,
+}, SaveRaceState);
 
-// Cancel Session
-deleteRoute('/:raceId/session/:sessionId', requireAuth, {
-    params: RaceResolutionParamsSchema,
-}, CancelRaceSession);
+// Cancel Editing
+post('/:raceId/cancel', requireAuth, {
+    params: RaceResolutionRaceIdParamSchema,
+}, CancelRaceEditing);
 
 export { RaceResolutionRouter };

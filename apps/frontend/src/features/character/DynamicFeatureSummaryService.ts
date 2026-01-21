@@ -3,7 +3,7 @@ import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { FeatureTemplateResolver } from '@/lib/formatters/FeatureTemplateResolver';
 import type { DisplayContext, FormattedItemWithLevel, CharacterSheetDisplayResult } from '@/lib/formatters/types';
 import type {
-    FeatureProgression,
+    FeatureWithRelations,
     Feature,
     CharacterWithAllDetailsResponse,
     CharacterFeatureChoice,
@@ -30,7 +30,7 @@ export class DynamicFeatureSummaryService {
         deity: Deity | null | undefined,
         domains: Domain[],
         transformationForms: Map<number, Monster[]>,
-        resolvedProgressions?: FeatureProgression[]
+        resolvedProgressions?: FeatureWithRelations[]
     ): DisplayContext {
         // Group choices by choiceGroupId
         const choicesMap = new Map<string, CharacterFeatureChoice>();
@@ -47,7 +47,7 @@ export class DynamicFeatureSummaryService {
             choicesMap
         );
 
-        // Extract sizeId from resolved progressions
+        // Extract sizeId from resolved features
         const raceMechanics = character.raceId && resolvedProgressions
             ? extractRaceMechanics(resolvedProgressions, character.raceId)
             : null;
@@ -74,15 +74,15 @@ export class DynamicFeatureSummaryService {
      * This operates as a final stage after all formatting is complete
      */
     static resolveFeatureSummary(
-        feature: Feature,
-        progression: FeatureProgression,
+        baseFeature: Feature,
+        featureWithRelations: FeatureWithRelations,
         context: DisplayContext,
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions?: FeatureProgression[],
+        resolvedProgressions?: FeatureWithRelations[],
         formattedItems?: FormattedItemWithLevel[],
         formattedCharacterResult?: CharacterSheetDisplayResult
     ): string | null {
-        const summary = feature.summary;
+        const summary = baseFeature.summary;
         if (!summary) {
             return null;
         }
@@ -96,8 +96,8 @@ export class DynamicFeatureSummaryService {
                 summary,
                 context,
                 character,
-                feature,
-                progression,
+                baseFeature,
+                featureWithRelations,
                 resolvedProgressions,
                 formattedItems,
                 formattedCharacterResult
@@ -112,11 +112,11 @@ export class DynamicFeatureSummaryService {
      * Filters features that should be displayed
      */
     static filterDisplayableFeatures(
-        features: Array<{ feature: Feature; progression: FeatureProgression }>,
+        features: Array<{ baseFeature: Feature; feature: FeatureWithRelations }>,
         character: CharacterWithAllDetailsResponse
-    ): Array<{ feature: Feature; progression: FeatureProgression }> {
-        return features.filter(({ feature, progression }) =>
-            FeatureDisplayFilter.shouldDisplayFeature(feature, progression, character)
+    ): Array<{ baseFeature: Feature; feature: FeatureWithRelations }> {
+        return features.filter(({ baseFeature, feature }) =>
+            FeatureDisplayFilter.shouldDisplayFeature(baseFeature, feature, character)
         );
     }
 

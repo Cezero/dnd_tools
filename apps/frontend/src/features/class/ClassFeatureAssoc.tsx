@@ -34,7 +34,9 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
     };
 
     const dataFetcher = useCallback(async () => {
-        return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [FeatureSourceType.Class] } });
+        // Note: getAllFeatures has a requestSchema, but other call sites use { requestData: ... } wrapper
+        // Using the same pattern for consistency
+        return await FeatureQueryHooks.getFeatures({ sourceTypes: [FeatureSourceType.Class] });
     }, []);
 
     return (

@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import type {
-    FeatureProgression,
+    FeatureWithRelations,
     FeatureEntity,
     FeaturePrerequisite
 } from '@shared/schema';
@@ -61,16 +61,16 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     protected readonly breakdownAnalyzer = new BreakdownAnalyzer();
     protected readonly registryManager = new RegistryManager();
     /**
-     * Unified entry point for formatting feature progressions
-     * Converts single progression to array and delegates to formatProgressions
+     * Unified entry point for formatting feature features
+     * Converts single feature to array and delegates to formatProgressions
      */
     format(
-        input: FeatureProgression | FeatureProgression[],
+        input: FeatureWithRelations | FeatureWithRelations[],
         context?: DisplayContext,
         showLabels: boolean = true
     ): DisplayResult {
-        const progressions = Array.isArray(input) ? input : [input];
-        return this.formatProgressions(progressions, context, showLabels);
+        const features = Array.isArray(input) ? input : [input];
+        return this.formatProgressions(features, context, showLabels);
     }
 
     /**
@@ -78,50 +78,50 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
      * This is called internally by format() and should not be called directly by external code
      */
     protected abstract formatProgressions(
-        progressions: FeatureProgression[],
+        features: FeatureWithRelations[],
         context?: DisplayContext,
         showLabels?: boolean
     ): DisplayResult;
 
     /**
-     * Generates calculated values for a progression. Can be overridden by subclasses
+     * Generates calculated values for a feature. Can be overridden by subclasses
      * to implement custom filtering or processing logic.
      */
     protected generateValues(
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         context?: DisplayContext,
     ): CalculatedValueWithLevel[] {
-        return this.valueGenerationPhase.generateValues(progression, context);
+        return this.valueGenerationPhase.generateValues(feature, context);
     }
 
     /**
-     * Orchestrate the complete 6-phase formatting process for a single progression
+     * Orchestrate the complete 6-phase formatting process for a single feature
      * This is the core orchestration method that coordinates all phases
      */
     protected orchestrateFormatting(
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         context?: DisplayContext,
         showLabels: boolean = true
     ): DisplayResult {
         // Phase 1: Value Generation & Calculation
-        const calculatedValues = this.generateValues(progression, context);
+        const calculatedValues = this.generateValues(feature, context);
 
         // Phase 2: Pure Formatting - Format individual calculated values
-        const formattedItems = this.formattingPhase.formatItems(calculatedValues, progression.level, showLabels, context);
+        const formattedItems = this.formattingPhase.formatItems(calculatedValues, feature.level, showLabels, context);
 
         // Phase 3: Within-Level Grouping
-        const withinLevelGrouped = this.groupingPhase.groupWithinLevel(formattedItems, progression, context);
+        const withinLevelGrouped = this.groupingPhase.groupWithinLevel(formattedItems, feature, context);
 
-        // Phase 4: Within-Progression Grouping
+        // Phase 4: Within-Feature Grouping
         const withinProgressionGrouped = this.progressionGroupingPhase.groupWithinProgression(withinLevelGrouped);
 
         // Phase 5: Display-Specific Final Grouping
-        const result = this.createDisplayResult(withinProgressionGrouped, context, progression);
+        const result = this.createDisplayResult(withinProgressionGrouped, context, feature);
 
         // Phase 6: Format Prerequisites (if feature has prerequisites)
-        if (progression.feature?.prerequisites && progression.feature.prerequisites.length > 0) {
+        if (feature.prerequisites && feature.prerequisites.length > 0) {
             const formatted = this.formatPrerequisites(
-                progression.feature.prerequisites,
+                feature.prerequisites,
                 context
             );
             result.formattedPrerequisites = formatted;
@@ -130,10 +130,10 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     }
 
     /**
-     * Determine if progression generation is needed based on formula properties
+     * Determine if feature generation is needed based on formula properties
      */
-    protected shouldGenerateProgression(progression: FeatureProgression, _context?: DisplayContext): boolean {
-        const hasProgressionEntities = progression.entities?.some(e =>
+    protected shouldGenerateProgression(feature: FeatureWithRelations, _context?: DisplayContext): boolean {
+        const hasProgressionEntities = feature.entities?.some(e =>
             e.formulaParams
         );
 
@@ -141,12 +141,12 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     }
 
     /**
-     * Phase 1: Progression Generation for a specific entity
-     * Generate progression values for a single formula-based entity
+     * Phase 1: Feature Generation for a specific entity
+     * Generate feature values for a single formula-based entity
      */
     protected generateProgressionValuesForSingleEntity(
         formulaEntity: FeatureEntity,
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         context?: DisplayContext
     ): ProgressionValue[] {
         if (!formulaEntity.formulaParams) {
@@ -154,21 +154,21 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         }
 
         const calculationContext: CalculationContext = {
-            level: progression.level,
-            progressionLevel: progression.level,
+            level: feature.level,
+            progressionLevel: feature.level,
             characterLevel: context?.currentLevel,
             character: context?.character
         };
 
-        // Use registry to get progression generator and formula calculator
+        // Use registry to get feature generator and formula calculator
         const progressionGenerator = this.registryManager.getDefaultProgressionGenerator();
         const formulaCalculator = this.registryManager.getFormulaCalculator(formulaEntity.formulaParams.formulaId);
         if (!progressionGenerator) {
             return [];
         }
 
-        // For CONDITIONAL_SCALING, start at the first threshold level instead of progression.level
-        let startLevel = progression.level;
+        // For CONDITIONAL_SCALING, start at the first threshold level instead of feature.level
+        let startLevel = feature.level;
         if (formulaEntity.formulaParams.formulaId === FormulaId.CONDITIONAL_SCALING &&
             formulaEntity.formulaParams.thresholds &&
             formulaEntity.formulaParams.thresholds.length > 0) {
@@ -176,8 +176,8 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             startLevel = Math.min(...formulaEntity.formulaParams.thresholds);
         }
 
-        // Generate all values using the progression generator
-        // The progression generator handles character-dependent formulas internally
+        // Generate all values using the feature generator
+        // The feature generator handles character-dependent formulas internally
         return progressionGenerator.generateValues({
             formula: formulaEntity.formulaParams,
             startLevel,
@@ -197,7 +197,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     protected abstract createDisplayResult(
         withinProgressionGrouped: GroupedLevelItem[],
         context?: DisplayContext,
-        progression?: FeatureProgression
+        feature?: FeatureWithRelations
     ): DisplayResult;
 
     /**
@@ -232,7 +232,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
 
             const entityLike: CalculatedEntity = {
                 id: prereq.id,
-                progressionId: 0, // Prerequisites don't belong to progressions
+                featureId: 0, // Prerequisites don't belong to features
                 type: EntityType.Other,
                 appliesTo: EntityAppliesToType.Prerequisite, // Use Prerequisite appliesTo type
                 appliesToId: prereq.appliesToId,
@@ -308,29 +308,29 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     }
 
     /**
-     * Static method to precache all entities referenced in feature progressions.
+     * Static method to precache all entities referenced in feature features.
      * This can be called imperatively before formatting when not using the React hook.
      *
-     * @param progressions - Feature progressions to extract entity IDs from
+     * @param features - Feature features to extract entity IDs from
      * @param queryClient - TanStack Query client for cache access
      * @returns Promise that resolves when all entities are precached
      *
      * @example
      * ```typescript
-     * await DisplayStrategyBase.precacheEntities(progressions, queryClient);
-     * const result = strategy.format(progressions);
+     * await DisplayStrategyBase.precacheEntities(features, queryClient);
+     * const result = strategy.format(features);
      * ```
      */
     static async precacheEntities(
-        progressions: FeatureProgression[],
+        features: FeatureWithRelations[],
         queryClient: QueryClient
     ): Promise<void> {
-        if (!progressions || progressions.length === 0) {
+        if (!features || features.length === 0) {
             return;
         }
 
         // Extract all entity IDs that need precaching
-        const entityIds = extractEntityIdsForPrecaching(progressions);
+        const entityIds = extractEntityIdsForPrecaching(features);
 
         // Create promises for all precaching operations
         const precachePromises: Promise<void>[] = [];

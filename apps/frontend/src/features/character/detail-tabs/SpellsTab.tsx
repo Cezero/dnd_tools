@@ -228,12 +228,12 @@ export function SpellsTab({ character, classDetailsMap, resolvedProgressions, ch
             a.classId === selectedClass.classId || a.secondaryClassId === selectedClass.classId
         ).length;
 
-        // Extract casting ability from resolved progressions
-        // Check all progressions (not just level 1) since progressions are cumulative
-        // The CastingAbility entity is typically in the level 1 progression, but we check all to be safe
+        // Extract casting ability from resolved features
+        // Check all features (not just level 1) since features are cumulative
+        // The CastingAbility entity is typically in the level 1 feature, but we check all to be safe
         let castingAbilityId: number | null = null;
         if (selectedClass.classId && resolvedProgressions) {
-            // Find all class progressions for this class, sorted by level (lowest first)
+            // Find all class features for this class, sorted by level (lowest first)
             const classProgressions = resolvedProgressions
                 .filter(
                     p => p.sourceType === FeatureSourceType.Class &&
@@ -241,10 +241,10 @@ export function SpellsTab({ character, classDetailsMap, resolvedProgressions, ch
                 )
                 .sort((a, b) => a.level - b.level);
 
-            // Check each progression for CastingAbility entity (start with lowest level)
-            for (const progression of classProgressions) {
-                if (progression.entities) {
-                    const castingAbilityEntity = progression.entities.find(
+            // Check each feature for CastingAbility entity (start with lowest level)
+            for (const feature of classProgressions) {
+                if (feature.entities) {
+                    const castingAbilityEntity = feature.entities.find(
                         e => e.appliesTo === EntityAppliesToType.CastingAbility
                     );
                     if (castingAbilityEntity?.appliesToId) {
@@ -257,7 +257,7 @@ export function SpellsTab({ character, classDetailsMap, resolvedProgressions, ch
 
         // ERROR if casting ability not found - do NOT default
         if (castingAbilityId === null) {
-            // Casting ability should always be found in level 1 class progressions
+            // Casting ability should always be found in level 1 class features
         }
 
         const abilityScore = castingAbilityId !== null
@@ -269,9 +269,9 @@ export function SpellsTab({ character, classDetailsMap, resolvedProgressions, ch
         // Get spells per day
         const spellsPerDay = new Map<number, number>();
         if (selectedClass.class.spellcastingProgression) {
-            for (const progression of selectedClass.class.spellcastingProgression) {
-                if (progression.classLevel <= classLevel) {
-                    for (const slot of progression.slots || []) {
+            for (const feature of selectedClass.class.spellcastingProgression) {
+                if (feature.classLevel <= classLevel) {
+                    for (const slot of feature.slots || []) {
                         if (slot.spellLevel >= 0 && slot.spellLevel <= 9) {
                             spellsPerDay.set(slot.spellLevel, slot.slotsPerDay);
                         }

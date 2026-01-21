@@ -130,91 +130,91 @@ The race system controllers follow the shared [Controller Layer Pattern](../appl
 
 **Source File**: `src/features/race/raceController.ts`
 
-## 🗄️ **Session Management**
+## 🗄️ **Entity State Management**
 
-The race system uses **SQLite session storage** for persistent editing sessions, providing reliable state management and deterministic ID handling. This pattern mirrors the `CharacterEdit` and `ClassEdit` session management implementations.
+The race system uses **user sessions with entity state management** for editing races, following the shared [Entity State Management Architecture](../application-overview/entity-state-management.md). This architecture separates user session tracking from entity state storage.
 
 ### **Overview**
 
-The session management system provides:
-- **Persistent Sessions**: SQLite database stores editing sessions that survive backend restarts
-- **Automatic Expiration**: Sessions automatically expire after configurable period of inactivity
-- **Per-User Isolation**: Each user has separate sessions for each race
-- **Temporary ID Generation**: SQLite auto-increment generates temporary IDs for new entities
-- **Save Transformation**: Transforms SQLite session state → MySQL on save
+The entity state management system provides:
+- **User Sessions**: Single session per user tracking viewing/editing entities
+- **Entity States**: Independent state storage in Redis (`state:race:{raceId}`)
+- **Entity Locks**: Separate lock management (`lock:race:{raceId} -> userId`)
+- **Real-time Updates**: Redis pub/sub for propagating state changes
+- **Save Transformation**: Transforms Redis state → MySQL on save
 
-### **Session Database**
+### **Architecture Components**
 
-**Purpose**: Lightweight SQLite database for storing race editing session state.
+**UserSessionService**: Manages user sessions tracking viewing/editing entities
+- **Source File**: `src/features/shared/session/UserSessionService.ts`
+- **Storage**: Redis key `session:user:{userId}` with `viewing` and `editing` arrays
+- **Purpose**: Single source of truth for what entities a user is viewing/editing
 
-**Source File**: `src/features/raceResolution/sessionDatabase.ts`
+**EntityStateService**: Manages independent entity states in Redis
+- **Source File**: `src/features/shared/entityState/EntityStateService.ts`
+- **Storage**: Redis key `state:race:{raceId}` with race edit state
+- **Purpose**: Shared state storage accessible by all viewing users
+- **Pub/Sub**: Automatically publishes updates when state changes
 
-**Tables**:
-- **`race_edit_sessions`**: Stores session metadata and race state (JSON)
-- **`race_session_progressions`**: Temporary progressions in session (with auto-increment IDs)
-- **`race_session_entities`**: Temporary entities in session (with auto-increment IDs)
-
-**Key Features**:
-- **WAL Mode**: Write-Ahead Logging for concurrent access
-- **Auto-Increment IDs**: SQLite generates temporary IDs for new entities
-- **Session Expiration**: Automatic cleanup of expired sessions
-- **Per-User Isolation**: Sessions keyed by `raceId:userId`
-
-### **RaceSessionService**
-
-Service for managing race editing sessions in SQLite.
-
-**Purpose**: Provides persistent session storage with automatic cleanup and state management.
-
-**Source File**: `src/features/raceResolution/raceSessionService.ts`
-
-**Key Methods**: Similar to `ClassSessionService` but for race sessions:
-- **createSession**: Creates a new editing session
-- **getSession**: Retrieves an active session
-- **updateSession**: Updates session state
-- **deleteSession**: Deletes a session
-- **cleanupExpiredSessions**: Removes expired sessions
+**EntityLockService**: Manages per-entity locks for editing
+- **Source File**: `src/features/shared/entityState/EntityLockService.ts`
+- **Storage**: Redis key `lock:race:{raceId} -> userId`
+- **Purpose**: Prevents concurrent editing conflicts
 
 ### **RaceResolutionController**
 
-Controller for managing race editing sessions and applying updates.
+Controller for managing race editing using user sessions and entity state.
 
-**Purpose**: Handles HTTP requests for session lifecycle and state updates.
+**Purpose**: Handles HTTP requests for race editing lifecycle and state updates.
 
 **Source File**: `src/features/raceResolution/raceResolutionController.ts`
 
 **API Endpoints**:
 
-**POST /api/races/:id/session** - Initialize or resume session
-- **Purpose**: Creates new session or returns existing active session
-- **Authentication**: User authentication required
-- **Response**: `{ sessionId: string, raceState: RaceEditState }`
-- **Business Logic**: Loads race from MySQL, creates or resumes SQLite session
-
-**GET /api/races/:id/session/:sessionId** - Get session state
-- **Purpose**: Retrieves current session state
+**POST /api/races/:raceId/start-editing** - Start editing a race
+- **Purpose**: Acquires lock, adds to user's editing list, initializes/loads state
 - **Authentication**: User authentication required
 - **Response**: `{ raceState: RaceEditState }`
-- **Business Logic**: Loads session state from SQLite
+- **Business Logic**: 
+  1. Acquires lock via `EntityLockService.acquireLock('race', raceId, userId)`
+  2. Adds to user session via `UserSessionService.setEditingEntity(userId, 'race', raceId)`
+  3. Gets or initializes state via `EntityStateService.getState('race', raceId)`
+  4. Returns state (no sessionId)
 
-**PATCH /api/races/:id/session/:sessionId** - Apply update
-- **Purpose**: Applies action-based update to session state
+**GET /api/races/:raceId/state** - Get current race state
+- **Purpose**: Retrieves current race state from Redis
 - **Authentication**: User authentication required
-- **Body**: `RaceUpdate` (discriminated union of update actions)
 - **Response**: `{ raceState: RaceEditState }`
-- **Business Logic**: Applies update to session state using `raceUpdateApplier`
+- **Business Logic**: Loads state from Redis via `EntityStateService.getState()`
 
-**POST /api/races/:id/session/:sessionId/save** - Save session to MySQL
-- **Purpose**: Transforms SQLite session → MySQL and saves race
+**PUT /api/races/:raceId/update** - Apply update
+- **Purpose**: Applies action-based update to race state
+- **Authentication**: User authentication required
+- **Body**: `{ update: RaceUpdate }` (discriminated union of update actions)
+- **Response**: `{ raceState: RaceEditState }`
+- **Business Logic**: 
+  1. Verifies lock via `EntityLockService.checkLock('race', raceId)`
+  2. Applies update via `GenericUpdateApplier.applyUpdateToState()`
+  3. Updates state via `EntityStateService.setState()` (auto-publishes)
+
+**POST /api/races/:raceId/save** - Save race state to database
+- **Purpose**: Transforms Redis state → MySQL and saves race
 - **Authentication**: Admin authentication required
-- **Response**: `{ race: Race }`
-- **Business Logic**: Uses `RaceSaveService` to transform and persist session
+- **Response**: `{ race: RaceSummary }`
+- **Business Logic**: 
+  1. Verifies lock
+  2. Uses `RaceSaveService` to transform and persist state
+  3. Releases lock via `EntityLockService.releaseLock()`
+  4. Removes from editing via `UserSessionService.clearEditingEntity()`
 
-**DELETE /api/races/:id/session/:sessionId** - Cancel session
-- **Purpose**: Deletes session without saving
+**POST /api/races/:raceId/cancel** - Cancel editing
+- **Purpose**: Releases lock and removes from editing list without saving
 - **Authentication**: User authentication required
-- **Response**: `{ message: string }`
-- **Business Logic**: Deletes session from SQLite
+- **Response**: `{ success: boolean }`
+- **Business Logic**: 
+  1. Releases lock via `EntityLockService.releaseLock()`
+  2. Removes from editing via `UserSessionService.clearEditingEntity()`
+  3. State remains in Redis (may be viewed by other users)
 
 ### **Update Actions**
 
@@ -244,20 +244,23 @@ Service for applying action-based updates to session state.
 
 ### **RaceSaveService**
 
-Service for transforming SQLite session state → MySQL.
+Service for transforming Redis session state → MySQL.
 
 **Purpose**: Transforms session state to MySQL format and persists race data.
 
 **Source File**: `src/features/raceResolution/raceSaveService.ts`
 
 **Transform Process**:
-1. **Load Session**: Load session state from SQLite
+1. **Load Session**: Load session state from Redis
 2. **Transform State**: Convert `RaceEditState` to `UpdateRaceRequest`
-3. **Handle Progressions**: 
-   - Existing progressions (with real IDs): Update in MySQL
-   - New progressions (with temporary IDs): Create in MySQL, get real IDs
+3. **Handle Features**: 
+   - Features are managed independently via the feature state system
+   - Only featureIds are sent to `raceService.updateRace`
+   - Race service only syncs FeatureRaceMap links (no feature manipulation)
 4. **Persist Race**: Save race to MySQL via `raceService.updateRace`
-5. **Cleanup**: Delete session from SQLite
+5. **Cleanup**: Delete session from Redis
+
+**Note**: Features are no longer created/updated by the race service. Features must be saved via the feature state system before race update. The race service only manages FeatureRaceMap relationship links.
 
 **Key Features**:
 - **Deterministic Tracking**: Uses temporary IDs from session, no signature matching
@@ -266,16 +269,17 @@ Service for transforming SQLite session state → MySQL.
 - **Transaction Safety**: All operations in single transaction
 
 **Source Files**:
-- Session Database: `src/features/raceResolution/sessionDatabase.ts`
-- Session Service: `src/features/raceResolution/raceSessionService.ts`
+- Entity State Service: `src/features/shared/entityState/EntityStateService.ts`
+- Entity Lock Service: `src/features/shared/entityState/EntityLockService.ts`
+- User Session Service: `src/features/shared/session/UserSessionService.ts`
 - Resolution Controller: `src/features/raceResolution/raceResolutionController.ts`
 - Update Applier: `src/features/raceResolution/raceUpdateApplier.ts`
 - Save Service: `src/features/raceResolution/raceSaveService.ts`
-- Types: `src/features/raceResolution/types.ts`, `packages/shared/schema/src/classResolution.ts`
+- Types: `src/features/raceResolution/types.ts`, `packages/shared/schema/src/raceResolution.ts`
 
 **Related Documentation**: 
 - [Frontend State-Based Pattern](frontend-components.md#state-based-pattern-architecture) - Frontend implementation
-- [Class System Session Management](../class-system/backend-implementation.md#session-management) - Reference implementation
+- [Class System Entity State Management](../class-system/backend-implementation.md#entity-state-management) - Reference implementation
 
 ## 🔗 **Routes Layer**
 
@@ -307,13 +311,21 @@ The race system routes follow the shared [RESTful API Structure](../application-
 
 ### **Feature System Integration**
 
-The race system integrates with the feature system through consolidated service methods:
+The race system integrates with the feature system through link table management:
 
-**Consolidated Methods**: Race service calls feature system methods for feature management
-**Bulk Operations**: Efficient bulk creation and deletion of racial features
-**Transaction Safety**: Shared transactions ensure data consistency
+**Feature State System**: Features are managed independently via the feature state system
+**Link Table Management**: Race service only manages FeatureRaceMap relationship links
+**No Feature Manipulation**: Race service does NOT create, update, or delete features
+**Feature IDs Only**: Race service receives featureIds (not full feature objects) and syncs links
 
-**Integration Pattern**: The race service calls feature system methods to manage racial features, passing the race context and feature data. This ensures that all feature operations for races go through the centralized feature system service, maintaining consistency and reducing code duplication.
+**Integration Pattern**: 
+- Features are edited and saved via the feature state system (see [Feature System Backend Implementation](../feature-system/backend-implementation.md))
+- When a feature is saved, its ID is added to the race's featureIds array in state
+- When the race is saved, only featureIds are sent to the backend
+- The race service extracts featureIds and syncs FeatureRaceMap links using `syncRaceFeatures`
+- Features are never manipulated by the race service - they are managed separately
+
+**Orphaned Features**: Orphaned features (features with no class/race/feat/domain/companion links) are NOT automatically deleted. An admin UI should be created to review and manually delete orphaned features.
 
 **Related Documentation**: [Feature System Backend Implementation](../feature-system/backend-implementation.md)
 

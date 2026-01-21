@@ -1,11 +1,11 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression, FeatureEntity, FormulaCalculationParams } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations, FeatureEntity, FormulaCalculationParams } from '@shared/schema';
 import { EntityAppliesToType, EntityType, FeatureSourceType, SavingThrowId, FORMULA_MAP, FormulaId } from '@shared/static-data';
 
 /**
  * Service for resolving gestalt mechanics after full character resolution.
  * 
  * According to D&D 3.5 gestalt rules, when two classes have overlapping mechanics
- * (BAB, saving throws, hit dice, skill points), the better progression should be used.
+ * (BAB, saving throws, hit dice, skill points), the better feature should be used.
  * 
  * This resolver operates AFTER full character resolution, allowing it to:
  * - Handle multiclassing within each gestalt "half"
@@ -20,13 +20,13 @@ export class GestaltMechanicsResolver {
      * Resolve gestalt mechanics by comparing halves and taking the better values.
      * 
      * @param character - Character with all advancements
-     * @param resolvedProgressions - Fully resolved feature progressions
+     * @param resolvedProgressions - Fully resolved feature features
      * @param resolvedFormulaValues - Pre-resolved formula values (will be modified)
      * @returns Modified resolvedFormulaValues with gestalt rules applied
      */
     static resolveGestaltMechanics(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         resolvedFormulaValues: Record<string, number>
     ): Record<string, number> {
         if (!character.isGestalt && !character.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)) {
@@ -72,33 +72,33 @@ export class GestaltMechanicsResolver {
      */
     private static resolveBABAndSaves(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         resolvedFormulaValues: Record<string, number>,
         primaryClassLevels: Map<number, number>,
         secondaryClassLevels: Map<number, number>
     ): void {
-        // Find all BAB and save entities from class progressions
-        const babEntities: Array<{ entity: FeatureEntity; classId: number; progression: FeatureProgression }> = [];
-        const saveEntities: Array<{ entity: FeatureEntity; saveType: number; classId: number; progression: FeatureProgression }> = [];
+        // Find all BAB and save entities from class features
+        const babEntities: Array<{ entity: FeatureEntity; classId: number; feature: FeatureWithRelations }> = [];
+        const saveEntities: Array<{ entity: FeatureEntity; saveType: number; classId: number; feature: FeatureWithRelations }> = [];
 
-        for (const progression of resolvedProgressions) {
+        for (const feature of resolvedProgressions) {
             // Filter by sourceType and EntityType instead of feature slug
-            if (progression.sourceType === FeatureSourceType.Class && progression.entities) {
-                // Get class ID from progression
-                const classId = progression.classes?.[0]?.classId;
+            if (feature.sourceType === FeatureSourceType.Class && feature.entities) {
+                // Get class ID from feature
+                const classId = feature.classes?.[0]?.classId;
                 if (!classId) continue;
 
-                for (const entity of progression.entities) {
+                for (const entity of feature.entities) {
                     // Only process Base type entities with formula params
                     if (entity.type === EntityType.Base && entity.formulaParams) {
                         if (entity.appliesTo === EntityAppliesToType.BaseAttackBonus) {
-                        babEntities.push({ entity, classId, progression });
+                        babEntities.push({ entity, classId, feature });
                         } else if (entity.appliesTo === EntityAppliesToType.SavingThrow) {
                         saveEntities.push({
                             entity,
                             saveType: entity.appliesToId ?? 0,
                             classId,
-                            progression
+                            feature
                         });
                         }
                     }
@@ -129,20 +129,20 @@ export class GestaltMechanicsResolver {
      * Calculate BAB total for a gestalt half by summing multiclass contributions.
      */
     private static calculateBABForHalf(
-        babEntities: Array<{ entity: FeatureEntity; classId: number; progression: FeatureProgression }>,
+        babEntities: Array<{ entity: FeatureEntity; classId: number; feature: FeatureWithRelations }>,
         classLevels: Map<number, number>,
         character: CharacterWithAllDetailsResponse
     ): number {
         let total = 0;
 
-        for (const { entity, classId, progression } of babEntities) {
+        for (const { entity, classId, feature } of babEntities) {
             const classLevel = classLevels.get(classId);
             if (classLevel === undefined || classLevel === 0) continue;
 
             if (!entity.formulaParams) continue;
 
             // Calculate formula value for this class at its actual level
-            const value = this.calculateFormulaValue(entity, progression, classLevel, character);
+            const value = this.calculateFormulaValue(entity, feature, classLevel, character);
             if (value !== null) {
                 total += value;
             }
@@ -155,14 +155,14 @@ export class GestaltMechanicsResolver {
      * Calculate saving throw total for a gestalt half by summing multiclass contributions.
      */
     private static calculateSaveForHalf(
-        saveEntities: Array<{ entity: FeatureEntity; saveType: number; classId: number; progression: FeatureProgression }>,
+        saveEntities: Array<{ entity: FeatureEntity; saveType: number; classId: number; feature: FeatureWithRelations }>,
         saveType: number,
         classLevels: Map<number, number>,
         character: CharacterWithAllDetailsResponse
     ): number {
         let total = 0;
 
-        for (const { entity, classId, saveType: entitySaveType, progression } of saveEntities) {
+        for (const { entity, classId, saveType: entitySaveType, feature } of saveEntities) {
             if (entitySaveType !== saveType) continue;
 
             const classLevel = classLevels.get(classId);
@@ -171,7 +171,7 @@ export class GestaltMechanicsResolver {
             if (!entity.formulaParams) continue;
 
             // Calculate formula value for this class at its actual level
-            const value = this.calculateFormulaValue(entity, progression, classLevel, character);
+            const value = this.calculateFormulaValue(entity, feature, classLevel, character);
             if (value !== null) {
                 total += value;
             }
@@ -185,7 +185,7 @@ export class GestaltMechanicsResolver {
      */
     private static calculateFormulaValue(
         entity: FeatureEntity,
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         level: number,
         character: CharacterWithAllDetailsResponse
     ): number | null {
@@ -194,10 +194,11 @@ export class GestaltMechanicsResolver {
         const formulaDef = FORMULA_MAP[entity.formulaParams.formulaId];
         if (!formulaDef) return null;
 
-        const formulaStartLevel = entity.formulaParams.formulaStartLevel ?? progression.level;
+        const formulaStartLevel = entity.formulaParams.formulaStartLevel ?? feature.level;
 
-        // Only calculate if level is at or after the formula start level
-        if (level < formulaStartLevel) {
+        // Only calculate if level is at or after the formula start level, unless featureLevelZero is enabled
+        // (featureLevelZero allows formula to return 0 for levels below formulaStartLevel)
+        if (level < formulaStartLevel && entity.formulaParams.featureLevelZero !== true) {
             return null;
         }
 
@@ -209,7 +210,7 @@ export class GestaltMechanicsResolver {
         const params: FormulaCalculationParams = {
             ...entity.formulaParams,
             level,
-            startLevel: progression.level,
+            startLevel: feature.level,
             scalingValue,
             context: {
                 character: {
@@ -218,9 +219,10 @@ export class GestaltMechanicsResolver {
                     )
                 }
             },
-            // Convert null to undefined for baseValue and divisor
+            // Convert null to undefined for baseValue, divisor, and startingValue
             baseValue: entity.formulaParams.baseValue != null ? entity.formulaParams.baseValue : undefined,
             divisor: entity.formulaParams.divisor != null ? entity.formulaParams.divisor : undefined,
+            startingValue: entity.formulaParams.startingValue != null ? entity.formulaParams.startingValue : undefined,
         };
 
         // Add ability-specific params for ABILITY_BASED formula
@@ -231,7 +233,13 @@ export class GestaltMechanicsResolver {
         try {
             const calculatedValue = formulaDef.calculate(params);
             if (typeof calculatedValue === 'number') {
-                return calculatedValue;
+                // Allow 0 values when featureLevelZero is enabled
+                if (calculatedValue === 0 && entity.formulaParams.featureLevelZero === true) {
+                    return 0;
+                }
+                if (calculatedValue > 0) {
+                    return calculatedValue;
+                }
             }
         } catch (error) {
             console.error('Error calculating formula value in gestalt resolver:', error);

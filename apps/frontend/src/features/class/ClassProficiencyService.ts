@@ -1,19 +1,23 @@
-import { FeatureProgression, FeatureEntity } from '@shared/schema';
-import { EntityAppliesToType, EntityType, SpecialFeatureId } from '@shared/static-data';
+import { FeatureWithRelations, FeatureEntity } from '@shared/schema';
+import { EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
 export const ClassProficiencyService = {
 
     /**
-     * Extract proficiencies from feature progressions
+     * Extract proficiencies from feature features
      */
     getClassProficiencies(
-        progressions: FeatureProgression[]
+        features: FeatureWithRelations[]
     ): FeatureEntity[] {
-        return progressions
-            .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency)
+        return features
+            .filter(prog =>
+                prog.sourceType === FeatureSourceType.Class &&
+                prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency)
+            )
             .flatMap(prog =>
                 prog.entities
                     ?.filter((entity) =>
+                        entity.type === EntityType.Base &&
                         entity.appliesTo === EntityAppliesToType.Proficiency &&
                         entity.appliesToId !== null
                     ) || []
@@ -21,19 +25,22 @@ export const ClassProficiencyService = {
     },
 
     /**
-     * Remove a proficiency from class proficiencies progression
+     * Remove a proficiency from class proficiencies feature
      */
     removeProficiency(
-        featureProgressions: FeatureProgression[],
-        setFeatureProgressions: (progressions: FeatureProgression[]) => void,
+        features: FeatureWithRelations[],
+        setFeatures: (features: FeatureWithRelations[]) => void,
         featId: number,
         itemId: number
     ) {
-        const updatedProgressions = featureProgressions.map(prog => {
-            if (prog.featureId === SpecialFeatureId.ClassProficiency) {
+        const updatedProgressions = features.map(prog => {
+            // Find class proficiency features (class source with Base proficiency entities)
+            if (prog.sourceType === FeatureSourceType.Class &&
+                prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency)) {
                 // Remove the specific proficiency entity
                 const updatedEntities = prog.entities?.filter(entity =>
-                    !(entity.appliesTo === EntityAppliesToType.Proficiency &&
+                    !(entity.type === EntityType.Base &&
+                        entity.appliesTo === EntityAppliesToType.Proficiency &&
                         entity.appliesToId === featId &&
                         entity.appliesToSubId === itemId)
                 ) || [];
@@ -46,12 +53,13 @@ export const ClassProficiencyService = {
             return prog;
         });
 
-        // Remove the progression entirely if it has no entities left
+        // Remove the feature entirely if it has no entities left
         const finalProgressions = updatedProgressions.filter(prog =>
-            !(prog.featureId === SpecialFeatureId.ClassProficiency) ||
+            !(prog.sourceType === FeatureSourceType.Class &&
+                prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency)) ||
             (prog.entities && prog.entities.length > 0)
         );
 
-        setFeatureProgressions(finalProgressions);
+        setFeatures(finalProgressions);
     }
 }; 

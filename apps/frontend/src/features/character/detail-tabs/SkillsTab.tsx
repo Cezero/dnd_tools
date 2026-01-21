@@ -62,10 +62,10 @@ export function SkillsTab({ formattedCharacter, resolvedProgressions, character 
             raceId: character.raceId ?? undefined,
         };
 
-        for (const progression of resolvedProgressions) {
-            if (!progression.entities) continue;
+        for (const feature of resolvedProgressions) {
+            if (!feature.entities) continue;
 
-            for (const entity of progression.entities) {
+            for (const entity of feature.entities) {
                 // Only include entities with conditions
                 if (!entity.conditions || entity.conditions.length === 0) continue;
 
@@ -79,7 +79,7 @@ export function SkillsTab({ formattedCharacter, resolvedProgressions, character 
                 const modifierValue = typeof entity.value === 'number' ? entity.value : (typeof entity.value === 'string' ? parseFloat(entity.value) || 0 : 0);
 
                 // Format this entity using the display strategy
-                const displayResult = characterSheetStrategy.format([progression], {
+                const displayResult = characterSheetStrategy.format([feature], {
                     character: characterContext
                 });
 

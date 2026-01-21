@@ -247,27 +247,43 @@ The feature system integrates with the formula system for dynamic calculations:
 
 ### **Class System Integration**
 
-The feature system integrates with the class system through consolidated service methods:
+The feature system integrates with the class system through link table management:
 
-**Consolidated Methods**: Class service calls feature system methods for progression management
-**Bulk Operations**: Efficient bulk creation and deletion of class feature progressions
-**Transaction Safety**: Shared transactions ensure data consistency
+**Feature State System**: Features are managed independently via the feature state system
+**Link Table Management**: Class service only manages FeatureClassMap relationship links via `syncClassFeatures`
+**No Feature Manipulation**: Class service does NOT create, update, or delete features
+**Feature IDs Only**: Class service receives featureIds and syncs FeatureClassMap links
 
-**Integration Pattern**: The class service calls feature system methods to manage feature progressions, passing the class context and progression data. This ensures that all feature operations for classes go through the centralized feature system service, maintaining consistency and reducing code duplication.
+**Integration Pattern**: 
+- Features are edited and saved via the feature state system before class update
+- When a feature is saved, its ID is added to the class's featureIds array in state
+- When the class is saved, only featureIds are sent to the backend
+- The class service extracts featureIds and syncs FeatureClassMap links using `syncClassFeatures`
+- Features are never manipulated by the class service - they are managed separately
 
-**Related Documentation**: [Class System Feature Integration](../class-system/feature-integration.md)
+**Orphaned Features**: The `cleanupOrphanedFeatures` method exists but should NOT be called automatically by class/race services. An admin UI should be created to review and manually delete orphaned features.
+
+**Related Documentation**: [Class System Backend Implementation](../class-system/backend-implementation.md#feature-system-integration)
 
 ### **Race System Integration**
 
-The feature system integrates with the race system through similar consolidated patterns:
+The feature system integrates with the race system through link table management:
 
-**Consolidated Methods**: Race service calls feature system methods for progression management
-**Bulk Operations**: Efficient bulk creation and deletion of race feature progressions
-**Transaction Safety**: Shared transactions ensure data consistency
+**Feature State System**: Features are managed independently via the feature state system
+**Link Table Management**: Race service only manages FeatureRaceMap relationship links via `syncRaceFeatures`
+**No Feature Manipulation**: Race service does NOT create, update, or delete features
+**Feature IDs Only**: Race service receives featureIds and syncs FeatureRaceMap links
 
-**Integration Pattern**: The race service calls feature system methods to manage feature progressions, passing the race context and progression data. This follows the same pattern as class integration, ensuring consistent feature management across all source types.
+**Integration Pattern**: 
+- Features are edited and saved via the feature state system before race update
+- When a feature is saved, its ID is added to the race's featureIds array in state
+- When the race is saved, only featureIds are sent to the backend
+- The race service extracts featureIds and syncs FeatureRaceMap links using `syncRaceFeatures`
+- Features are never manipulated by the race service - they are managed separately
 
-**Related Documentation**: [Race System Feature Integration](../race-system/race-integration.md)
+**Orphaned Features**: The `cleanupOrphanedFeatures` method exists but should NOT be called automatically by class/race services. An admin UI should be created to review and manually delete orphaned features.
+
+**Related Documentation**: [Race System Backend Implementation](../race-system/backend-implementation.md#feature-system-integration)
 
 ### **Spellcasting Integration**
 

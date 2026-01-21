@@ -1,8 +1,10 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { FeatureCacheEntry, FeatureCacheResponse } from '@shared/schema';
+import type { FilterableComponent } from '@shared/static-data';
 
-import { getIdByNameFromCache, getIdByNameFromCacheStandalone, getStandaloneQueryClient } from './utils';
+import { getByEdition, getIdByNameFromCache, getIdByNameFromCacheStandalone, getStandaloneQueryClient } from './utils';
+import type { CacheEntryAsCoreComponent } from './utils';
 
 /**
  * Feature cache functions
@@ -29,10 +31,23 @@ export const createFeatureCacheHooks = (queryClient: QueryClient) => {
         return feature?.name;
     };
 
+    const getFeatureSelectFull = (): CacheEntryAsCoreComponent<FeatureCacheEntry>[] => {
+        const cacheData = queryClient.getQueryData<FeatureCacheResponse>(['features-cache']);
+        if (!cacheData?.results) return [];
+        return cacheData.results as CacheEntryAsCoreComponent<FeatureCacheEntry>[];
+    };
+
+    const getFeatureSelectByEdition = (editionId: number): CacheEntryAsCoreComponent<FeatureCacheEntry>[] => {
+        const allFeatures = getFeatureSelectFull();
+        return getByEdition(allFeatures, editionId);
+    };
+
     return {
         getFeatureSummaryById,
         getFeatureIdByName,
         getFeatureNameFromCache,
+        getFeatureSelectFull,
+        getFeatureSelectByEdition,
     };
 };
 
@@ -73,4 +88,22 @@ export const getFeatureSummaryById = (id: number): FeatureCacheEntry | undefined
     const cacheData = queryClient.getQueryData<FeatureCacheResponse>(['features-cache']);
     if (!cacheData?.results) return undefined;
     return cacheData.results.find(item => item.id === id);
+};
+
+/**
+ * Get all features (standalone)
+ */
+export const getFeatureSelectFull = (): Array<FeatureCacheEntry & FilterableComponent> => {
+    const queryClient = getStandaloneQueryClient();
+    const cacheData = queryClient.getQueryData<FeatureCacheResponse>(['features-cache']);
+    if (!cacheData?.results) return [];
+    return cacheData.results as Array<FeatureCacheEntry & FilterableComponent>;
+};
+
+/**
+ * Get features by edition (standalone)
+ */
+export const getFeatureSelectByEdition = (editionId: number): Array<FeatureCacheEntry & FilterableComponent> => {
+    const allFeatures = getFeatureSelectFull();
+    return getByEdition(allFeatures, editionId);
 };

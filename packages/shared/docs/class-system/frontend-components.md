@@ -8,6 +8,12 @@ The class system frontend components provide the user interface for class manage
 
 The frontend implementation follows the shared [Frontend Component Architecture](../application-overview/frontend-components.md#shared-component-architecture) with class-specific business logic and user interface patterns.
 
+**Viewing vs Editing Architecture**:
+- **Viewing**: Components use TanStack Query to fetch class data from the database. This ensures viewers always see persisted database state, not editing state.
+- **Editing**: Components use isolated entity state (Redis) that is flushed to the database on save. Editing state is NOT shared between users via WebSocket.
+- **Lock Status**: Viewing components check lock status to disable edit buttons when another user is editing.
+- **Cache Invalidation**: After saving, TanStack Query cache is invalidated so viewers see updated data.
+
 **Source Files**: 
 - Core Components: `frontend/src/features/class/ClassEdit.tsx`, `frontend/src/features/class/ClassList.tsx`, `frontend/src/features/class/ClassDisplay.tsx`
 - Detail Components: `frontend/src/features/class/ClassDetail.tsx`
@@ -30,13 +36,35 @@ The class system frontend follows the shared [Component Architecture](../applica
 ### **Class-Specific Component Structure**
 
 **ClassList**: Primary component for displaying and managing class collections
-**ClassDetail**: Container component for class detail views with navigation
-**ClassDisplay**: Comprehensive class information display component
-**ClassEdit**: Main class creation and editing interface with tab-based layout
+**ClassDetail**: Container component for class detail views with navigation (uses TanStack Query for database data)
+**ClassDisplay**: Comprehensive class information display component (shows lock status, disables edit when locked)
+**ClassEdit**: Main class creation and editing interface with tab-based layout (uses isolated entity state)
 **Tab Components**: Specialized components for different aspects of class editing
-**ClassApi**: API client for backend communication
+**ClassApi**: API client for backend communication (includes lock status checks)
 
 ## 🔧 **Core Components**
+
+### **ClassDetail Component**
+
+Container component for class detail views. Uses TanStack Query to fetch class data from the database, ensuring viewers always see persisted state, not editing state.
+
+**Key Features**:
+- **Database Fetching**: Uses `ClassQueryHooks.getClassById` with TanStack Query
+- **Lock Status**: Checks lock status to disable edit button when another user is editing
+- **Cache Management**: Automatically benefits from TanStack Query caching and refetching
+
+**Source File**: `frontend/src/features/class/ClassDetail.tsx`
+
+### **ClassDisplay Component**
+
+Comprehensive display component for viewing complete class information. Shows lock status and disables edit button when class is locked by another user.
+
+**Key Features**:
+- **Lock Status Display**: Shows "Currently locked by User {userId}" when locked by another user
+- **Edit Button Disabled**: Edit button is disabled when locked by another user
+- **Database Data**: Always displays data from database (via TanStack Query cache)
+
+**Source File**: `frontend/src/features/class/ClassDisplay.tsx`
 
 ### **ClassList Component**
 
@@ -114,11 +142,11 @@ Comprehensive display component for viewing complete class information. This com
 
 ### **ClassEdit Component**
 
-Comprehensive editing interface for creating and modifying classes. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern and uses a **state-based pattern with SQLite session storage** for reliable data management.
+Comprehensive editing interface for creating and modifying classes. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern and uses a **state-based pattern with Redis session storage** for reliable data management.
 
 **Architecture**: The component uses a centralized state management pattern that mirrors the `CharacterEdit` implementation, providing:
 - **Single Source of Truth**: All class data managed through `useClassEditState` hook
-- **Backend Session Storage**: SQLite session database for persistent editing sessions
+- **Backend Session Storage**: Redis session storage for persistent editing sessions
 - **Automatic Synchronization**: Frontend state automatically syncs with backend session
 - **Context Preservation**: Class ID and context preserved throughout navigation and feature creation
 - **Deterministic ID Management**: Backend generates temporary IDs for new entities, eliminating signature matching
@@ -145,7 +173,8 @@ interface ClassEditState {
   isDivine: boolean;
   description: string | null;
   
-  // Feature progressions (id: number for existing, null for new)
+  // Features (id: number for existing, null for new)
+  // Note: FeatureProgression is a type alias for FeatureWithRelationsSchema
   featureProgressions: FeatureProgression[];
   
   // Spellcasting progressions
@@ -157,7 +186,7 @@ interface ClassEditState {
   isFeatureAssocOpen: boolean;
   isProgressionDialogOpen: boolean;
   editingProgression: FeatureProgression | null;
-  preSelectedFeature: FeatureProgression['feature'] | undefined;
+  preSelectedFeature: FeatureProgression | undefined;
 }
 ```
 
@@ -179,12 +208,12 @@ updateState({
 // Update feature progression
 updateState({ 
   type: ClassEditStateUpdateType.UPDATE_FEATURE_PROGRESSION, 
-  payload: { progressionId: 123, progression: { level: 5 } } 
+  payload: { featureId: 123, progression: { level: 5 } } 
 });
 ```
 
 **Session Synchronization**:
-The component automatically synchronizes state changes with the backend SQLite session:
+The component automatically synchronizes state changes with the backend Redis session:
 - **Field Changes**: Individual field changes (name, abbreviation, etc.) sync via `UPDATE_CLASS_FIELD` actions
 - **Progression Changes**: Feature progression changes sync via diff-based detection
 - **Spellcasting Changes**: Spellcasting progression changes sync automatically
@@ -203,7 +232,7 @@ The component automatically synchronizes state changes with the backend SQLite s
 2. **Add Features**: Configure class features and their progression via FeaturesTab
 3. **Set Spellcasting**: Configure spellcasting capabilities and progression
 4. **Add Sources**: Link to source books and page references
-5. **Review and Save**: Review all data and save the class (transforms SQLite session → MySQL)
+5. **Review and Save**: Review all data and save the class (transforms Redis session → MySQL)
 
 **Source Files**: 
 - Component: `frontend/src/features/class/ClassEdit.tsx`
@@ -398,7 +427,7 @@ Proper state management for complex class data:
 
 ## 🏛️ **State-Based Pattern Architecture**
 
-The class editing system uses a **state-based pattern with SQLite session storage** that provides reliable data management, context preservation, and deterministic ID handling. This pattern mirrors the `CharacterEdit` implementation and solves several architectural challenges.
+The class editing system uses a **state-based pattern with Redis session storage** that provides reliable data management, context preservation, and deterministic ID handling. This pattern mirrors the `CharacterEdit` implementation and solves several architectural challenges.
 
 ### **Overview**
 
@@ -407,7 +436,7 @@ The state-based pattern provides:
 - **Context Preservation**: Class ID and context preserved throughout navigation
 - **No Orphaned Data**: Automatic linking of new features/progressions to class
 - **Deterministic IDs**: Backend generates temporary IDs, eliminating signature matching
-- **Persistent Sessions**: SQLite session storage for reliable editing sessions
+- **Persistent Sessions**: Redis session storage for reliable editing sessions
 - **Automatic Synchronization**: Frontend state automatically syncs with backend
 
 ### **State Management Hooks**
@@ -448,9 +477,9 @@ updateState({
 
 #### **useClassResolution Hook**
 
-Session management hook that handles backend SQLite session lifecycle.
+Hook for managing class editing using user sessions and entity state.
 
-**Purpose**: Manages editing session initialization, state synchronization, and save operations.
+**Purpose**: Manages class editing lifecycle: start editing, apply updates, save, and cancel.
 
 **Source File**: `frontend/src/features/class/useClassResolution.ts`
 
@@ -458,50 +487,67 @@ Session management hook that handles backend SQLite session lifecycle.
 ```typescript
 const resolution = useClassResolution(classId);
 
-// Initialize/resume session
-await resolution.initializeSession();
+// Start editing (acquires lock, adds to user session)
+// Automatically called on mount when classId is available
 
-// Apply update to session
+// Apply update to class state
 await resolution.applyUpdate({
   type: 'UPDATE_CLASS_FIELD',
   payload: { field: 'name', value: 'Fighter' }
 });
 
-// Save session to MySQL
-await resolution.saveSession();
+// Save class state to database
+await resolution.save();
+
+// Cancel editing (releases lock, removes from user session)
+await resolution.cancel();
 ```
 
 **Key Features**:
-- **Automatic Initialization**: Creates or resumes session on mount
-- **State Synchronization**: Syncs frontend state changes to backend session
-- **Save Transformation**: Transforms SQLite session → MySQL on save
+- **Automatic Initialization**: Starts editing on mount when classId is available
+- **State Synchronization**: Syncs frontend state changes to backend entity state
+- **Save Transformation**: Transforms Redis state → MySQL on save
 - **Error Handling**: Comprehensive error handling and loading states
+- **No SessionId**: Uses user sessions instead of entity-specific session IDs
 
-### **Session Synchronization**
+**Return Value**:
+```typescript
+{
+  classState: ClassEditState | null;  // Current class state
+  isLoading: boolean;                  // Loading state
+  error: string | null;                // Error state
+  applyUpdate: (update: ClassUpdate) => Promise<void>;
+  save: () => Promise<void>;
+  cancel: () => Promise<void>;
+  refreshState: () => Promise<void>;
+}
+```
 
-The component automatically synchronizes state changes with the backend SQLite session through `useEffect` hooks:
+### **State Synchronization**
+
+The component automatically synchronizes state changes with the backend entity state through `useEffect` hooks:
 
 **Field Synchronization**:
 ```typescript
 // Sync individual field changes
 useEffect(() => {
-  if (!resolution.sessionId || !hasInitializedRef.current) return;
+  if (!resolution.classState || !hasInitializedRef.current) return;
   
   // Only sync changed fields
-  if (prevRaceFieldsRef.current.name !== state.name) {
+  if (prevClassFieldsRef.current.name !== state.name) {
     resolution.applyUpdate({
       type: 'UPDATE_CLASS_FIELD',
       payload: { field: 'name', value: state.name }
     });
   }
-}, [state.name, resolution.sessionId]);
+}, [state.name, resolution.classState]);
 ```
 
 **Progression Synchronization**:
 ```typescript
 // Sync feature progression changes (diff-based)
 useEffect(() => {
-  if (!resolution.sessionId || !hasInitializedRef.current) return;
+  if (!resolution.classState || !hasInitializedRef.current) return;
   
   // Detect added/removed/updated progressions
   const prevIds = new Set(prevProgressionsRef.current.map(p => p.id));
@@ -512,7 +558,7 @@ useEffect(() => {
     if (!currIds.has(prev.id)) {
       resolution.applyUpdate({
         type: 'REMOVE_PROGRESSION',
-        payload: { progressionId: prev.id }
+        payload: { featureId: prev.id }
       });
     }
   });
@@ -530,12 +576,12 @@ useEffect(() => {
       if (JSON.stringify(prev) !== JSON.stringify(curr)) {
         resolution.applyUpdate({
           type: 'UPDATE_PROGRESSION',
-          payload: { progressionId: curr.id, progression: curr }
+          payload: { featureId: curr.id, progression: curr }
         });
       }
     }
   });
-}, [state.featureProgressions, resolution.sessionId]);
+}, [state.featureProgressions, resolution.classState]);
 ```
 
 ### **ID Management**
@@ -543,7 +589,7 @@ useEffect(() => {
 The system uses backend-managed IDs for all new entities:
 
 **Frontend**: New items have `id: null`, existing items have real database IDs
-**Backend**: SQLite session generates temporary auto-increment IDs for new entities
+**Backend**: Redis session generates temporary IDs for new entities
 **On Save**: Backend transforms new entities (create in MySQL) and existing entities (update in MySQL)
 **After Save**: Frontend receives updated state with real IDs from backend
 

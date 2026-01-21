@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import { getSkillNameFromCache, getClassNameFromCache } from '@/services/cache';
-import type { SkillCacheResponse, FeatureProgression } from '@shared/schema';
+import type { SkillCacheResponse, FeatureWithRelations } from '@shared/schema';
 import { ABILITY_MAP, GetAbilityModifier, EntityType, EntityAppliesToType } from '@shared/static-data';
 
 import type { AnalogSkillState, AnalogSkillInfo } from './types';
@@ -9,15 +9,15 @@ import type { AnalogSkillState, AnalogSkillInfo } from './types';
 export const AnalogSkillService = {
     /**
      * Get all analog skills that the character has access to
-     * Uses resolved feature progressions to determine which analog skills are granted
+     * Uses resolved feature features to determine which analog skills are granted
      * @param character - Character state with class and ability information
-     * @param resolvedProgressions - Resolved feature progressions from backend API
+     * @param resolvedProgressions - Resolved feature features from backend API
      * @param queryClient - Query client for cache access
      * @returns Array of analog skills the character has access to
      */
     getCharacterAnalogSkills(
         character: AnalogSkillState,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         queryClient?: QueryClient
     ): AnalogSkillInfo[] {
         const analogSkills: AnalogSkillInfo[] = [];
@@ -38,12 +38,12 @@ export const AnalogSkillService = {
             .filter(skill => skill.isAnalog)
             .map(skill => skill.id);
 
-        // For each analog skill, check if the character has access to it through resolved progressions
+        // For each analog skill, check if the character has access to it through resolved features
         for (const skillId of analogSkillIds) {
             const skill = allSkills.find(s => s.id === skillId);
             if (!skill) continue;
 
-            // Check if any resolved progression grants this analog skill
+            // Check if any resolved feature grants this analog skill
             // Analog skills are granted through entities with EntityType.Other and EntityAppliesToType.Skill
             const grantedByClasses: string[] = [];
             let totalClassLevels = 0;
@@ -51,10 +51,10 @@ export const AnalogSkillService = {
             // Track which classes grant this skill and their levels
             const classLevelsMap = new Map<number, number>();
 
-            for (const progression of resolvedProgressions) {
-                if (!progression.entities) continue;
+            for (const feature of resolvedProgressions) {
+                if (!feature.entities) continue;
 
-                for (const entity of progression.entities) {
+                for (const entity of feature.entities) {
                     // Check if this entity grants the analog skill
                     // Analog skills use EntityType.Other with EntityAppliesToType.Skill
                     if (
@@ -62,10 +62,10 @@ export const AnalogSkillService = {
                         entity.appliesTo === EntityAppliesToType.Skill &&
                         entity.appliesToId === skillId
                     ) {
-                        // This progression grants the analog skill
-                        // Get the class IDs from the progression (many-to-many relationship)
-                        if (progression.classes && progression.classes.length > 0) {
-                            for (const classLink of progression.classes) {
+                        // This feature grants the analog skill
+                        // Get the class IDs from the feature (many-to-many relationship)
+                        if (feature.classes && feature.classes.length > 0) {
+                            for (const classLink of feature.classes) {
                                 const classId = classLink.classId;
                                 const currentLevel = classLevelsMap.get(classId) || 0;
                                 classLevelsMap.set(classId, currentLevel + 1);
@@ -131,7 +131,7 @@ export const AnalogSkillService = {
     getAnalogSkillInfo(
         character: AnalogSkillState,
         skillId: number,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         queryClient?: QueryClient
     ): AnalogSkillInfo | null {
         const analogSkills = this.getCharacterAnalogSkills(character, resolvedProgressions, queryClient);
@@ -152,7 +152,7 @@ export const AnalogSkillService = {
     calculateAnalogSkillTotal(
         character: AnalogSkillState,
         skillId: number,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         queryClient?: QueryClient
     ): number | null {
         const analogSkillInfo = this.getAnalogSkillInfo(character, skillId, resolvedProgressions, queryClient);

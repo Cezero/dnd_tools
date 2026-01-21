@@ -16,7 +16,7 @@ export const SpellcastingSlotSchema = z.object({
 
 export const SpellcastingLinkSchema = z.object({
     id: commonValidations.positiveInt('Link ID'),
-    featureProgressionId: commonValidations.positiveInt('Feature progression ID'),
+    featureId: commonValidations.positiveInt('Feature ID'),
     progressionId: commonValidations.positiveInt('Progression ID'),
     inheritedFrom: z.string().nullable(),
     levelOffset: z.number().int().nullable(),

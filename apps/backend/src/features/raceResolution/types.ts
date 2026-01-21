@@ -17,7 +17,7 @@ export interface RaceSessionRow {
 }
 
 /**
- * Race session stored in SQLite
+ * Race session stored in Redis
  */
 export interface RaceSession {
     id: string;

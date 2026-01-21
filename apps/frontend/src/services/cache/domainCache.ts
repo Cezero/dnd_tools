@@ -87,12 +87,19 @@ export const getDomainSummaryById = (id: number): DomainCacheEntry | undefined =
 };
 
 /**
- * Get domains by edition (standalone)
+ * Get all domains (standalone)
  */
-export const getDomainSelectByEdition = (editionId: number): Array<DomainCacheEntry & FilterableComponent> => {
+export const getDomainSelectFull = (): Array<DomainCacheEntry & FilterableComponent> => {
     const queryClient = getStandaloneQueryClient();
     const cacheData = queryClient.getQueryData<DomainCacheResponse>(['domains-cache']);
     if (!cacheData?.results) return [];
-    const allDomains = cacheData.results as Array<DomainCacheEntry & FilterableComponent>;
+    return cacheData.results as Array<DomainCacheEntry & FilterableComponent>;
+};
+
+/**
+ * Get domains by edition (standalone)
+ */
+export const getDomainSelectByEdition = (editionId: number): Array<DomainCacheEntry & FilterableComponent> => {
+    const allDomains = getDomainSelectFull();
     return getByEdition(allDomains, editionId);
 };

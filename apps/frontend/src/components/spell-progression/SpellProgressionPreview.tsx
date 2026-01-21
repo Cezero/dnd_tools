@@ -4,8 +4,8 @@ import React, { useMemo } from 'react';
 import { CreateSpellcastingProgressionRequest } from '@shared/schema';
 
 export interface SpellProgressionPreviewProps {
-    /** Spell progression data for all levels */
-    progression: CreateSpellcastingProgressionRequest[];
+    /** Spell feature data for all levels */
+    feature: CreateSpellcastingProgressionRequest[];
     /** Currently active class level */
     activeLevel: number;
     /** Callback when a level is clicked */
@@ -15,14 +15,14 @@ export interface SpellProgressionPreviewProps {
 }
 
 export const SpellProgressionPreview: React.FC<SpellProgressionPreviewProps> = ({
-    progression,
+    feature,
     activeLevel,
     onLevelClick,
     readOnly = false
 }) => {
-    // Format progression data for display
+    // Format feature data for display
     const formattedData = useMemo(() => {
-        return progression.map((levelData, index) => {
+        return feature.map((levelData, index) => {
             const classLevel = index + 1;
             const slots = levelData?.slots || [];
 
@@ -53,7 +53,7 @@ export const SpellProgressionPreview: React.FC<SpellProgressionPreviewProps> = (
                 totalSlots: slots.reduce((sum, slot) => sum + slot.slotsPerDay, 0)
             };
         });
-    }, [progression]);
+    }, [feature]);
 
     return (
         <div className="space-y-2">
@@ -64,7 +64,7 @@ export const SpellProgressionPreview: React.FC<SpellProgressionPreviewProps> = (
                 <div>Total</div>
             </div>
 
-            {/* Progression rows */}
+            {/* Feature rows */}
             <div className="h-96 overflow-hidden">
                 <ScrollArea.Root className="h-full">
                     <ScrollArea.Viewport className="h-full">

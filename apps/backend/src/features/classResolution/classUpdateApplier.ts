@@ -1,7 +1,7 @@
-import { applyUpdateToState as genericApplyUpdateToState } from '../shared/session/GenericUpdateApplier';
 
 import { classUpdateApplierConfig } from './classUpdateApplierConfig';
 import type { ClassEditState, ClassUpdate } from './types';
+import { applyUpdateToState as genericApplyUpdateToState } from '../shared/session/GenericUpdateApplier';
 
 /**
  * Applies an update to the class edit state.

@@ -17,7 +17,7 @@ export interface ClassSessionRow {
 }
 
 /**
- * Class session stored in SQLite
+ * Class session stored in Redis
  */
 export interface ClassSession {
     id: string;

@@ -2,7 +2,7 @@ import type {
     FeatureEntity,
     FeatureEntityCondition,
     FormulaParamsData,
-    FeatureProgression,
+    FeatureWithRelations,
     ItemWithDetails,
     CharacterItem,
     Race,
@@ -41,7 +41,7 @@ export interface BaseContextInfo {
 
 // Processing context interface for consolidated processing functions
 export interface ProcessingContext extends BaseContextInfo {
-    progression: FeatureProgression;
+    feature: FeatureWithRelations;
     context?: DisplayContext;
     conditionPrefix?: string;
     entityType: EntityType;
@@ -107,7 +107,6 @@ export interface FormattedItemWithBreakdown extends BaseFormattedValue {
     entity?: CalculatedEntity;
     // Additional properties for other use cases
     value?: string | number;
-    progressionId?: number;
     featureId?: number;
     groupingId: number; // Always present, no || 0 needed
 }
@@ -402,7 +401,7 @@ export interface BaseCharacterInfo {
 // Character context for calculations
 export type CharacterContext = BaseCharacterInfo;
 
-// Progression value for progression calculations (Layer 3)
+// Feature value for feature calculations (Layer 3)
 export interface ProgressionValue {
     level: number;
     breakdown: CalculationBreakdown;
@@ -451,7 +450,7 @@ export interface EntityGroupKey {
 
 // Type for grouped level items (used by groupWithinLevel, groupWithinProgression, and detectTransitions)
 export interface GroupedLevelItem extends BaseLevelInfo, BaseFormattedValue, BaseEntityInfo {
-    progressionId: number;
+    featureId: number;
     descriptionLevel: number;
     groupingId: number; // Add groupingId for entity grouping support
 }
@@ -483,7 +482,7 @@ export interface FormulaParameter {
     defaultValue?: number;
 }
 
-// Progression generator parameters
+// Feature generator parameters
 export interface ProgressionGeneratorParams {
     formula: FormulaParamsData;
     startLevel: number;
@@ -494,7 +493,7 @@ export interface ProgressionGeneratorParams {
     originalEntity?: FeatureEntity;
 }
 
-// Progression generator interface
+// Feature generator interface
 export interface ProgressionGenerator {
     generateValues(params: ProgressionGeneratorParams): Array<ProgressionValue>;
 }
@@ -503,7 +502,7 @@ export interface ProgressionGenerator {
 export enum CalculatorType {
     Formula = 0,
     Choice = 1,
-    Progression = 2,
+    Feature = 2,
     Conditional = 4
 }
 
@@ -513,11 +512,11 @@ export enum ProgressionGeneratorType {
 
 // Display strategy interface
 export interface DisplayStrategy {
-    format(input: FeatureProgression | FeatureProgression[], context?: DisplayContext, showLabels?: boolean): DisplayResult;
+    format(input: FeatureWithRelations | FeatureWithRelations[], context?: DisplayContext, showLabels?: boolean): DisplayResult;
     formatAttack?(attackResult: import('@/lib/character-calculation/calculations/combatValues').CombatValuesResult, item: ItemWithDetails | CharacterItem | null): FormattedAttackResult; // Optional method for character sheet formatting
     formatCharacter?(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         items: ItemWithDetails[],
         characterItems: CharacterItem[],
         classDetailsMap: Map<number, DnDClass>,

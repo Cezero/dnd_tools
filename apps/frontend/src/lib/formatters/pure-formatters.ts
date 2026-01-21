@@ -43,7 +43,7 @@ export class DamageFormatter implements BaseFormatter {
         if (value === null || value === undefined) {
             console.warn('[DamageFormatter] Null or undefined value in modifier:', {
                 entityId: modifier.id,
-                progressionId: modifier.progressionId,
+                featureId: modifier.featureId,
                 appliesTo: modifier.appliesTo,
                 appliesToId: modifier.appliesToId,
                 entityType: modifier.type,
@@ -70,7 +70,7 @@ export class DamageBonusFormatter implements BaseFormatter {
         if (value === null || value === undefined) {
             console.warn('[DamageBonusFormatter] Null or undefined value in modifier:', {
                 entityId: modifier.id,
-                progressionId: modifier.progressionId,
+                featureId: modifier.featureId,
                 appliesTo: modifier.appliesTo,
                 appliesToId: modifier.appliesToId,
                 entityType: modifier.type,
@@ -85,7 +85,7 @@ export class DamageBonusFormatter implements BaseFormatter {
         // For string values, return as-is; for numeric values, format with sign
         const formatContext = {
             entityId: modifier.id,
-            progressionId: modifier.progressionId,
+            featureId: modifier.featureId,
             appliesTo: modifier.appliesTo,
             caller: 'DamageBonusFormatter'
         };
@@ -108,7 +108,7 @@ export class HealingFormatter implements BaseFormatter {
         if (value === null || value === undefined) {
             console.warn('[HealingFormatter] Null or undefined value in modifier:', {
                 entityId: modifier.id,
-                progressionId: modifier.progressionId,
+                featureId: modifier.featureId,
                 appliesTo: modifier.appliesTo,
                 appliesToId: modifier.appliesToId,
                 entityType: modifier.type,
@@ -132,7 +132,7 @@ export class SignedValueFormatter implements BaseFormatter {
         if (value === null || value === undefined) {
             console.warn('[SignedValueFormatter] Null or undefined value in modifier:', {
                 entityId: modifier.id,
-                progressionId: modifier.progressionId,
+                featureId: modifier.featureId,
                 appliesTo: modifier.appliesTo,
                 appliesToId: modifier.appliesToId,
                 appliesToSubId: modifier.appliesToSubId,
@@ -161,7 +161,7 @@ export class SignedValueFormatter implements BaseFormatter {
         // For string values, return as-is; for numeric values, format with sign
         const formatContext = {
             entityId: modifier.id,
-            progressionId: modifier.progressionId,
+            featureId: modifier.featureId,
             appliesTo: modifier.appliesTo,
             caller: 'SignedValueFormatter'
         };
@@ -933,7 +933,7 @@ export class PrerequisiteFormatter implements BaseFormatter {
 }
 
 /**
- * Formatter for Base Attack Bonus progression
+ * Formatter for Base Attack Bonus feature
  * Formats the calculated BAB value (e.g., "+1", "+2") from formula resolution
  */
 export class BaseAttackBonusFormatter implements BaseFormatter {
@@ -949,7 +949,7 @@ export class BaseAttackBonusFormatter implements BaseFormatter {
 }
 
 /**
- * Formatter for Saving Throw progression
+ * Formatter for Saving Throw feature
  * Formats the calculated save value (e.g., "+2", "+3") from formula resolution
  */
 export class SavingThrowProgressionFormatter implements BaseFormatter {
@@ -1049,15 +1049,15 @@ export class CastingTypeFormatter implements BaseFormatter {
 }
 
 /**
- * Formatter for Spellcasting Progression
- * Formats the progression ID from appliesToId
+ * Formatter for Spellcasting Feature
+ * Formats the feature ID from appliesToId
  */
 export class SpellcastingProgressionFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const progressionId = modifier.appliesToId;
         if (progressionId !== null && progressionId !== undefined) {
-            return `Progression ${progressionId}`;
+            return `Feature ${progressionId}`;
         }
-        return `Progression ID: ${progressionId || modifier.value}`;
+        return `Feature ID: ${progressionId || modifier.value}`;
     }
 }

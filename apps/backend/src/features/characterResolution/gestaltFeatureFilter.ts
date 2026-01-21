@@ -1,11 +1,11 @@
-import type { FeatureProgression, FeatureEntity } from '@shared/schema';
+import type { FeatureWithRelations, FeatureEntity } from '@shared/schema';
 import { EntityAppliesToType, SavingThrowId, ProgressionType, EntityType } from '@shared/static-data';
 
 /**
  * Service for filtering overlapping class-mechanics features in gestalt characters.
  * 
  * According to D&D 3.5 gestalt rules, when two classes have overlapping mechanics
- * (BAB, saving throws, hit dice, skill points), only the better progression should be used.
+ * (BAB, saving throws, hit dice, skill points), only the better feature should be used.
  */
 export class GestaltFeatureFilter {
     /**
@@ -17,14 +17,14 @@ export class GestaltFeatureFilter {
      * 
      * This method now simply returns all features without filtering mechanics.
      * 
-     * @param primaryFeatures - Feature progressions from primary class
-     * @param secondaryFeatures - Feature progressions from secondary class
-     * @returns All feature progressions (mechanics filtering deferred)
+     * @param primaryFeatures - Feature features from primary class
+     * @param secondaryFeatures - Feature features from secondary class
+     * @returns All feature features (mechanics filtering deferred)
      */
     static filterOverlappingMechanics(
-        primaryFeatures: FeatureProgression[],
-        secondaryFeatures: FeatureProgression[]
-    ): FeatureProgression[] {
+        primaryFeatures: FeatureWithRelations[],
+        secondaryFeatures: FeatureWithRelations[]
+    ): FeatureWithRelations[] {
         // Return all features - mechanics filtering is now deferred to GestaltMechanicsResolver
         return [...primaryFeatures, ...secondaryFeatures];
     }
@@ -34,13 +34,13 @@ export class GestaltFeatureFilter {
      * This method is no longer used but kept for reference.
      */
     private static mergeClassMechanics(
-        primary: FeatureProgression,
-        secondary: FeatureProgression
-    ): FeatureProgression {
+        primary: FeatureWithRelations,
+        secondary: FeatureWithRelations
+    ): FeatureWithRelations {
         const primaryEntities = primary.entities || [];
         const secondaryEntities = secondary.entities || [];
 
-        // Extract mechanics from both progressions
+        // Extract mechanics from both features
         const primaryBAB = this.extractBAB(primaryEntities);
         const secondaryBAB = this.extractBAB(secondaryEntities);
         const primaryHitDie = this.extractHitDie(primaryEntities);
@@ -75,19 +75,19 @@ export class GestaltFeatureFilter {
         }
 
         // Update or add saving throw entities
-        for (const [saveType, progression] of Object.entries(bestSaves)) {
-            if (progression !== null) {
+        for (const [saveType, feature] of Object.entries(bestSaves)) {
+            if (feature !== null) {
                 const saveTypeId = saveType === 'fortitude' ? SavingThrowId.Fortitude :
                     saveType === 'reflex' ? SavingThrowId.Reflex : SavingThrowId.Will;
-                this.updateOrAddEntity(mergedEntities, EntityAppliesToType.SavingThrow, saveTypeId, progression);
+                this.updateOrAddEntity(mergedEntities, EntityAppliesToType.SavingThrow, saveTypeId, feature);
             }
         }
 
-        // Return merged progression (use primary as base, update entities)
+        // Return merged feature (use primary as base, update entities)
         return {
             ...primary,
             entities: mergedEntities,
-            // Merge class links from both progressions
+            // Merge class links from both features
             classes: [
                 ...(primary.classes || []),
                 ...(secondary.classes || [])
@@ -98,7 +98,7 @@ export class GestaltFeatureFilter {
     }
 
     /**
-     * Extract BAB progression from entities.
+     * Extract BAB feature from entities.
      */
     private static extractBAB(entities: Array<{ appliesTo: number; appliesToId: number | null }>): ProgressionType | null {
         const babEntity = entities.find(
@@ -128,7 +128,7 @@ export class GestaltFeatureFilter {
     }
 
     /**
-     * Extract saving throw progressions from entities.
+     * Extract saving throw features from entities.
      */
     private static extractSavingThrows(
         entities: Array<{ appliesTo: number; appliesToId: number | null; appliesToSubId: number | null }>
@@ -160,7 +160,7 @@ export class GestaltFeatureFilter {
     }
 
     /**
-     * Choose the better BAB progression (lower value = better).
+     * Choose the better BAB feature (lower value = better).
      */
     private static chooseBetterBAB(
         primary: ProgressionType | null,
@@ -173,7 +173,7 @@ export class GestaltFeatureFilter {
     }
 
     /**
-     * Choose the better saving throw progressions (lower value = better for each save).
+     * Choose the better saving throw features (lower value = better for each save).
      */
     private static chooseBetterSaves(
         primary: { fortitude: ProgressionType | null; reflex: ProgressionType | null; will: ProgressionType | null },
@@ -187,7 +187,7 @@ export class GestaltFeatureFilter {
     }
 
     /**
-     * Choose the better save progression (lower value = better).
+     * Choose the better save feature (lower value = better).
      */
     private static chooseBetterSave(
         primary: ProgressionType | null,
@@ -246,12 +246,12 @@ export class GestaltFeatureFilter {
         } else {
             // Find a matching entity from secondary to copy structure, or create minimal entity
             // For class-mechanics, entities should already exist, so this is a fallback
-            // Create a minimal entity with required fields - id and progressionId will be set when saved
+            // Create a minimal entity with required fields - id and featureId will be set when saved
             // We use type assertion here because we're creating an incomplete entity that will be
-            // completed when the progression is saved to the database
+            // completed when the feature is saved to the database
             const newEntity = {
                 id: 0, // Temporary - will be set when saved
-                progressionId: 0, // Temporary - will be set when saved
+                featureId: 0, // Temporary - will be set when saved
                 appliesTo: appliesTo as EntityAppliesToType,
                 appliesToId: appliesTo === EntityAppliesToType.SavingThrow ? appliesToId : (appliesTo === EntityAppliesToType.SkillPoints ? null : appliesToId),
                 appliesToSubId: appliesTo === EntityAppliesToType.SavingThrow ? valueOrSubId : null,

@@ -1,5 +1,5 @@
 import type {
-    FeatureProgression
+    FeatureWithRelations
 } from '@shared/schema';
 
 import type {
@@ -21,6 +21,6 @@ export abstract class DisplayResultPhase {
     abstract createDisplayResult(
         withinProgressionGrouped: GroupedLevelItem[],
         context?: DisplayContext,
-        progression?: FeatureProgression
+        feature?: FeatureWithRelations
     ): DisplayResult;
 }

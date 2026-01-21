@@ -1,32 +1,39 @@
 import React, { useState } from 'react';
 
 import { formatSignedValue } from '@/lib/formatterUtils';
-import { ABILITY_LIST, SpecialFeatureId, EntityAppliesToType } from '@shared/static-data';
+import { ABILITY_LIST, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
 
 import type { RaceTabProps } from './types';
 
 export function AbilitiesTab({
-    formData: _formData,
-    featureProgressions = [],
+    features = [],
     onAbilityChange
 }: RaceTabProps): React.JSX.Element {
     const [focusedAbilityId, setFocusedAbilityId] = useState<number | null>(null);
     const [editingAbilityValue, setEditingAbilityValue] = useState('');
 
-    // Helper function to extract ability adjustments from feature progression
+    // Helper function to extract ability adjustments from feature feature
     const getAbilityAdjustments = () => {
-        const abilityFeatures = featureProgressions.filter(fp =>
-            fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-            fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability)
+        const abilityFeatures = features.filter(fp =>
+            fp.sourceType === FeatureSourceType.Race &&
+            fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability)
         );
 
         return ABILITY_LIST.map(ability => {
             const abilityFeature = abilityFeatures.find(fp =>
-                fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === ability.id)
+                fp.sourceType === FeatureSourceType.Race &&
+                fp.entities?.some(e =>
+                    e.type === EntityType.Base &&
+                    e.appliesTo === EntityAppliesToType.Ability &&
+                    e.appliesToId === ability.id
+                )
             );
-            const abilityEntity = abilityFeature?.entities?.find(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === ability.id);
+            const abilityEntity = abilityFeature?.entities?.find(e =>
+                e.type === EntityType.Base &&
+                e.appliesTo === EntityAppliesToType.Ability &&
+                e.appliesToId === ability.id
+            );
             return {
                 abilityId: ability.id,
                 value: abilityEntity?.value || 0

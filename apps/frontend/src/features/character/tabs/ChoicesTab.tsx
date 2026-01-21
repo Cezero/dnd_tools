@@ -29,7 +29,6 @@ export function ChoicesTab({
     resolvedData,
     isLoading,
     triggerFeatureResolution: _triggerFeatureResolution,
-    handleChoiceSelection: _handleChoiceSelection,
     sharedData,
     character
 }: TabComponentProps): React.JSX.Element {
@@ -57,14 +56,14 @@ export function ChoicesTab({
             return filtered;
         }
 
-        // Create a map of feat ID to feature data from resolved progressions
+        // Create a map of feat ID to feature data from resolved features
         const featFeatureMap = new Map<number, { description?: string | null; summary?: string | null }>();
-        if (resolvedData.progressions) {
-            resolvedData.progressions.forEach(progression => {
-                if (progression.sourceType === FeatureSourceType.Feat && progression.featId && progression.feature) {
-                    featFeatureMap.set(progression.featId, {
-                        description: progression.feature.description,
-                        summary: progression.feature.summary
+        if (resolvedData.features) {
+            resolvedData.features.forEach(feature => {
+                if (feature.sourceType === FeatureSourceType.Feat && feature.featId) {
+                    featFeatureMap.set(feature.featId, {
+                        description: feature.description,
+                        summary: feature.summary
                     });
                 }
             });
@@ -74,10 +73,10 @@ export function ChoicesTab({
             if (choice.type === EntityAppliesToType.Feat) {
                 // Find the corresponding entity to check filterType
                 let entityFilterType: number | null = null;
-                for (const progression of resolvedData.progressions) {
-                    if (progression.entities) {
-                        const entity = progression.entities.find(e =>
-                            `${progression.id}-${e.id}` === choice.id
+                for (const feature of resolvedData.features) {
+                    if (feature.entities) {
+                        const entity = feature.entities.find(e =>
+                            `${feature.id}-${e.id}` === choice.id
                         );
                         if (entity) {
                             entityFilterType = entity.filterType ?? null;
@@ -117,31 +116,31 @@ export function ChoicesTab({
     }, [
         resolvedData.qualifiedFeats,
         resolvedData.pendingChoices,
-        resolvedData.progressions,
+        resolvedData.features,
         featSearchTerms
     ]);
 
-    // Create a map of feat ID to feature data from resolved progressions (for display)
+    // Create a map of feat ID to feature data from resolved features (for display)
     const featFeatureMap = useMemo(() => {
         const map = new Map<number, { description?: string | null; summary?: string | null }>();
-        if (resolvedData.progressions) {
-            resolvedData.progressions.forEach(progression => {
-                if (progression.sourceType === FeatureSourceType.Feat && progression.featId && progression.feature) {
-                    map.set(progression.featId, {
-                        description: progression.feature.description,
-                        summary: progression.feature.summary
+        if (resolvedData.features) {
+            resolvedData.features.forEach(feature => {
+                if (feature.sourceType === FeatureSourceType.Feat && feature.featId) {
+                    map.set(feature.featId, {
+                        description: feature.description,
+                        summary: feature.summary
                     });
                 }
             });
         }
         return map;
-    }, [resolvedData.progressions]);
+    }, [resolvedData.features]);
 
     // Derive selectedChoices directly from global state
     const selectedChoices = useMemo(() => {
         const choices: Record<string, number[]> = {};
         state.featureChoices.forEach(choice => {
-            const choiceId = `${choice.progressionId}-${choice.featureEntityId}`;
+            const choiceId = `${choice.featureId}-${choice.featureEntityId}`;
             if (!choices[choiceId]) {
                 choices[choiceId] = [];
             }
@@ -177,13 +176,13 @@ export function ChoicesTab({
 
     useEffect(() => {
         const loadAllChoices = async () => {
-            // Create a map of selected choices by their choice key (progressionId-featureEntityId)
-            const selectedChoicesMap = new Map<string, { progressionId: number; featureEntityId: number; appliesToId: number }>();
+            // Create a map of selected choices by their choice key (featureId-featureEntityId)
+            const selectedChoicesMap = new Map<string, { featureId: number; featureEntityId: number; appliesToId: number }>();
             state.featureChoices.forEach(choice => {
-                const choiceKey = `${choice.progressionId}-${choice.featureEntityId}`;
+                const choiceKey = `${choice.featureId}-${choice.featureEntityId}`;
                 if (!selectedChoicesMap.has(choiceKey)) {
                     selectedChoicesMap.set(choiceKey, {
-                        progressionId: choice.progressionId,
+                        featureId: choice.featureId,
                         featureEntityId: choice.featureEntityId,
                         appliesToId: choice.appliesToId
                     });
@@ -208,13 +207,13 @@ export function ChoicesTab({
             // These are only the unselected choices - we'll add selected ones from state
             const pendingChoicesMap = new Map(resolvedData.pendingChoices.map(c => [c.id, c]));
 
-            // Build the combined list with selection status, preserving order from progressions
-            // Sort by progression level and entity order to ensure stable ordering
+            // Build the combined list with selection status, preserving order from features
+            // Sort by feature level and entity order to ensure stable ordering
             const combined: Array<{ choice: typeof resolvedData.pendingChoices[0]; isSelected: boolean; selectedId?: number }> = [];
 
-            // Iterate through progressions in order to maintain stable ordering
-            // Sort progressions by sourceType and level to ensure consistent order
-            const sortedProgressions = [...resolvedData.progressions].sort((a, b) => {
+            // Iterate through features in order to maintain stable ordering
+            // Sort features by sourceType and level to ensure consistent order
+            const sortedProgressions = [...resolvedData.features].sort((a, b) => {
                 // First sort by sourceType (Race, Class, etc.)
                 if (a.sourceType !== b.sourceType) {
                     return a.sourceType - b.sourceType;
@@ -227,28 +226,28 @@ export function ChoicesTab({
                 return a.id - b.id;
             });
 
-            for (const progression of sortedProgressions) {
-                if (!progression.entities) continue;
+            for (const feature of sortedProgressions) {
+                if (!feature.entities) continue;
 
                 // Sort entities by ID for stable ordering
-                const sortedEntities = [...(progression.entities || [])].sort((a, b) => a.id - b.id);
+                const sortedEntities = [...(feature.entities || [])].sort((a, b) => a.id - b.id);
 
                 for (const entity of sortedEntities) {
                     if (entity.type !== EntityType.Choice) continue;
 
-                    const choiceId = `${progression.id}-${entity.id}`;
-                    const choiceKey = `${progression.id}-${entity.id}`;
+                    const choiceId = `${feature.id}-${entity.id}`;
+                    const choiceKey = `${feature.id}-${entity.id}`;
                     const selected = selectedChoicesMap.get(choiceKey);
 
                     // If this choice is selected, we need to create a pending choice object for display
                     // Otherwise, use the pending choice from backend
                     if (selected) {
                         // Build proper choice name based on type (matching backend logic)
-                        const firstClassId = progression.classes && progression.classes.length > 0 ? progression.classes[0].classId : undefined;
+                        const firstClassId = feature.classes && feature.classes.length > 0 ? feature.classes[0].classId : undefined;
                         const className = firstClassId ? getClassNameFromCache(firstClassId) : undefined;
-                        const firstRaceId = progression.races && progression.races.length > 0 ? progression.races[0].raceId : undefined;
+                        const firstRaceId = feature.races && feature.races.length > 0 ? feature.races[0].raceId : undefined;
                         const raceName = firstRaceId ? getRaceNameFromCache(firstRaceId) : undefined;
-                        const source = className || raceName || progression.feature?.name || 'Unknown';
+                        const source = className || raceName || feature.name || 'Unknown';
                         let choiceName = '';
                         if (entity.appliesTo === EntityAppliesToType.Domain) {
                             choiceName = `${source}: Select a Domain`;
@@ -301,12 +300,12 @@ export function ChoicesTab({
                             name: choiceName,
                             description: choiceName,
                             source,
-                            level: progression.level,
+                            level: feature.level,
                             required: true,
                             maxSelections: entity.value || 1,
                             minSelections: 1,
                             options, // Include all available options for dropdown
-                            progressionId: progression.id,
+                            featureId: feature.id,
                             featureEntityId: entity.id,
                         };
                         combined.push({
@@ -334,7 +333,7 @@ export function ChoicesTab({
         loadAllChoices().catch(console.error);
     }, [
         // Only depend on stable values that indicate actual changes
-        resolvedData.progressions.length,
+        resolvedData.features.length,
         state.featureChoices.length,
         state.editionId,
         companionsByType.size, // Rebuild when companions are loaded
@@ -378,12 +377,12 @@ export function ChoicesTab({
             // First try to find in pending choices
             let choice = resolvedData.pendingChoices.find(c => c.id === choiceId);
 
-            // If not found, look up from progressions (for already-selected choices)
+            // If not found, look up from features (for already-selected choices)
             if (!choice) {
-                const [progressionId, featureEntityId] = choiceId.split('-').map(Number);
-                if (!isNaN(progressionId) && !isNaN(featureEntityId)) {
-                    const progression = resolvedData.progressions.find(p => p.id === progressionId);
-                    const entity = progression?.entities?.find(e => e.id === featureEntityId);
+                const [featureId, featureEntityId] = choiceId.split('-').map(Number);
+                if (!isNaN(featureId) && !isNaN(featureEntityId)) {
+                    const feature = resolvedData.features.find(p => p.id === featureId);
+                    const entity = feature?.entities?.find(e => e.id === featureEntityId);
                     if (entity && entity.type === EntityType.Choice) {
                         // Create a synthetic choice object with the necessary fields
                         choice = {
@@ -416,11 +415,11 @@ export function ChoicesTab({
                 }));
 
                 // Update the global state with the choice
-                const [progressionId, featureEntityId] = choiceId.split('-').map(Number);
+                const [featureId, featureEntityId] = choiceId.split('-').map(Number);
                 const newChoice = {
                     id: Date.now(), // Temporary ID for local state
                     characterId: state.characterId || 0,
-                    progressionId,
+                    featureId,
                     advancementId: 0, // Will be set when saving to backend
                     featureEntityId,
                     appliesToId: selectedId,
@@ -428,10 +427,10 @@ export function ChoicesTab({
                     choiceIndex: null
                 };
 
-                // Remove any existing choice for this progression/entity combination before adding the new one
+                // Remove any existing choice for this feature/entity combination before adding the new one
                 // This prevents duplicates when changing a selection
                 const existingChoicesFiltered = state.featureChoices.filter(choice =>
-                    !(choice.progressionId === progressionId && choice.featureEntityId === featureEntityId)
+                    !(choice.featureId === featureId && choice.featureEntityId === featureEntityId)
                 );
 
                 // Add the choice to the global state first (optimistic update)
@@ -471,17 +470,17 @@ export function ChoicesTab({
             });
 
             // Remove the choice from the global state
-            const [progressionId, featureEntityId] = choiceId.split('-').map(Number);
+            const [featureId, featureEntityId] = choiceId.split('-').map(Number);
             updateState({
                 type: CharacterEditStateUpdateType.SET_FEATURE_CHOICES,
                 payload: {
                     featureChoices: state.featureChoices.filter(choice =>
-                        !(choice.progressionId === progressionId && choice.featureEntityId === featureEntityId)
+                        !(choice.featureId === featureId && choice.featureEntityId === featureEntityId)
                     )
                 }
             });
         }
-    }, [resolvedData.pendingChoices, resolvedData.progressions, updateState, state.featureChoices, state.characterId, sharedData.allFeats, getFeatSummaryById, queryClient]);
+    }, [resolvedData.pendingChoices, resolvedData.features, updateState, state.featureChoices, state.characterId, sharedData.allFeats, getFeatSummaryById, queryClient]);
 
     // Handle weapon selection from modal
     const handleWeaponSelection = useCallback(async (weaponId: number) => {
@@ -845,7 +844,7 @@ export function ChoicesTab({
                 }}
                 onConfirm={handleWeaponSelection}
                 feat={selectedFeatForSubId}
-                resolvedProgressions={resolvedData.progressions}
+                resolvedProgressions={resolvedData.features}
             />
         </div>
     );

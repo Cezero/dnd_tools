@@ -29,10 +29,9 @@ The race system manages all aspects of character races, including base race defi
 ```
 Race (Race Definition)
 ├── RaceSourceMap (Source Book References)
-└── FeatureProgression (Racial Features)
-    ├── FeatureModifier (Racial Bonuses)
-    ├── FeatureChoice (Racial Choices)
-    └── FeatureSpecialEffect (Racial Abilities)
+└── Feature (Racial Features, via FeatureRaceMap)
+    ├── FeatureEntity (Racial Bonuses, Choices, Abilities)
+    └── FeatureCondition (Display Conditions)
 ```
 
 ### **Key Principles**
@@ -40,20 +39,22 @@ Race (Race Definition)
 - **Racial Features**: Races grant unique abilities through the feature system
 - **Source Attribution**: All racial content is properly attributed to source books
 - **Character Integration**: Races integrate seamlessly with character creation
-- **Consolidated Backend**: Uses FeatureSystemService for all FeatureProgression management
+- **Consolidated Backend**: Uses FeatureSystemService for all feature management
 
-### **Backend FeatureProgression Integration**
+### **Backend Feature Integration**
 The race system integrates with the feature system through a consolidated backend architecture:
 
-- **FeatureSystemService**: Central service handling all FeatureProgression creation, deletion, and management
+- **FeatureSystemService**: Central service handling all feature creation, deletion, and management
 - **RaceService**: Consumer service that calls consolidated methods instead of duplicating logic
-- **Single Source of Truth**: All FeatureProgression operations go through FeatureSystemService
+- **Single Source of Truth**: All feature operations go through FeatureSystemService
 - **Transaction Safety**: Consistent transaction patterns across all services
+
+**Note**: `FeatureProgression` is maintained as a type alias for `FeatureWithRelationsSchema` for backward compatibility, but the database model is now unified as `Feature`.
 
 **Related Documentation:**
 - [Feature System Documentation](../feature-system/README.md) - Complete feature system overview
-- [FeatureProgression Management](../feature-system/feature-progression-management.md) - Detailed FeatureProgression management
-- [Schema Reference](../feature-system/schema-reference.md) - Feature system schema definitions
+- [Feature System Database Schema](../feature-system/database-schema.md) - Feature system database models
+- [Feature System Validation Schemas](../feature-system/validation-schemas.md) - Feature system validation rules
 
 ### **Feature Formatting Integration**
 

@@ -168,7 +168,7 @@ export function ClassTab({
                 </div>
             )}
 
-            {/* Gestalt Combined Progression */}
+            {/* Gestalt Combined Feature */}
             {state.isGestalt && primaryClassData && secondaryClassData && (
                 <div className="mt-6">
                     <GestaltProgressionDisplay
@@ -184,7 +184,7 @@ export function ClassTab({
                 <div className="mt-6">
                     <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md mb-4">
                         <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                            <strong>Note:</strong> Select both primary and secondary classes to see the combined gestalt progression.
+                            <strong>Note:</strong> Select both primary and secondary classes to see the combined gestalt feature.
                         </p>
                     </div>
                     <div className="mt-4">

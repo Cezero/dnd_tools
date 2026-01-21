@@ -1,18 +1,18 @@
 import ordinal from 'ordinal';
 
-import { ProgressionRow } from '@/lib/ClassProgression';
+import type { ProgressionRow } from '@/lib/types';
 
-function hasSpellsAtLevel(progression: ProgressionRow[], spellLevel: number, isSpellsKnown: boolean = false): boolean {
-    return progression.some(row => {
+function hasSpellsAtLevel(feature: ProgressionRow[], spellLevel: number, isSpellsKnown: boolean = false): boolean {
+    return feature.some(row => {
         const spells = isSpellsKnown ? row.spellsKnown : row.spells;
         return spells && spellLevel in spells && spells[spellLevel] > 0;
     });
 }
 
-function countSpellLevels(progression: ProgressionRow[], isSpellsKnown: boolean = false): number {
+function countSpellLevels(feature: ProgressionRow[], isSpellsKnown: boolean = false): number {
     let count = 0;
     for (let i = 0; i <= 9; i++) {
-        if (hasSpellsAtLevel(progression, i, isSpellsKnown)) {
+        if (hasSpellsAtLevel(feature, i, isSpellsKnown)) {
             count++;
         }
     }
@@ -26,25 +26,25 @@ function getMaxSpellLevel(spells: { [spellLevel: number]: number }): number {
 }
 
 interface ClassProgressionTableProps {
-    progression: ProgressionRow[];
+    feature: ProgressionRow[];
     className?: string;
 }
 
-export function ClassProgressionTable({ progression, className = '' }: ClassProgressionTableProps) {
-    if (!progression || progression.length === 0) {
+export function ClassProgressionTable({ feature, className = '' }: ClassProgressionTableProps) {
+    if (!feature || feature.length === 0) {
         return null;
     }
 
     // Check if any row has spells to determine if we need spell columns
-    const hasSpells = progression.some(row => row.spells);
-    const hasSpellsKnown = progression.some(row => row.spellsKnown);
+    const hasSpells = feature.some(row => row.spells);
+    const hasSpellsKnown = feature.some(row => row.spellsKnown);
 
     // Get the maximum spell level that has actual spells
     const maxSpellLevel = hasSpells
-        ? Math.max(...progression.map(row => row.spells ? getMaxSpellLevel(row.spells) : 0))
+        ? Math.max(...feature.map(row => row.spells ? getMaxSpellLevel(row.spells) : 0))
         : 0;
     const maxSpellsKnownLevel = hasSpellsKnown
-        ? Math.max(...progression.map(row => row.spellsKnown ? getMaxSpellLevel(row.spellsKnown) : 0))
+        ? Math.max(...feature.map(row => row.spellsKnown ? getMaxSpellLevel(row.spellsKnown) : 0))
         : 0;
 
     return (
@@ -69,12 +69,12 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
                                 Will<br />Save
                             </th>
                             {hasSpells && (
-                                <th className="border-r border-gray-300 dark:border-gray-500 px-2 py-1 text-center text-sm font-medium align-bottom" colSpan={countSpellLevels(progression)}>
+                                <th className="border-r border-gray-300 dark:border-gray-500 px-2 py-1 text-center text-sm font-medium align-bottom" colSpan={countSpellLevels(feature)}>
                                     Spells per Day
                                 </th>
                             )}
                             {hasSpellsKnown && (
-                                <th className="border-r border-gray-300 dark:border-gray-500 px-2 py-1 text-center text-sm font-medium align-bottom" colSpan={countSpellLevels(progression, true)}>
+                                <th className="border-r border-gray-300 dark:border-gray-500 px-2 py-1 text-center text-sm font-medium align-bottom" colSpan={countSpellLevels(feature, true)}>
                                     Spells Known
                                 </th>
                             )}
@@ -84,7 +84,7 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
                         <tr className="bg-gray-100 dark:bg-gray-800">
                             {hasSpells && Array.from({ length: 10 }, (_, i) => {
                                 // Only show column if there are spells at this level
-                                if (!hasSpellsAtLevel(progression, i)) {
+                                if (!hasSpellsAtLevel(feature, i)) {
                                     return null;
                                 }
 
@@ -98,7 +98,7 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
                             }).filter(Boolean)}
                             {hasSpellsKnown && Array.from({ length: 10 }, (_, i) => {
                                 // Only show column if there are spells known at this level
-                                if (!hasSpellsAtLevel(progression, i, true)) {
+                                if (!hasSpellsAtLevel(feature, i, true)) {
                                     return null;
                                 }
 
@@ -133,7 +133,7 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
                     )}
                 </thead>
                 <tbody>
-                    {progression.map((row, index) => (
+                    {feature.map((row, index) => (
                         <tr key={row.level} className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'
                             }`}>
                             <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
@@ -155,14 +155,14 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
                                 <>
                                     {Array.from({ length: 10 }, (_, i) => {
                                         // Only show column if there are spells at this level
-                                        if (!hasSpellsAtLevel(progression, i)) {
+                                        if (!hasSpellsAtLevel(feature, i)) {
                                             return null;
                                         }
 
                                         return (
                                             <td key={`spells-${i}`} className={`px-2 py-1 border text-sm text-center whitespace-nowrap ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
                                                 } ${i === maxSpellLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
-                                                } ${index === progression.length - 1 ? 'border-b-gray-300 dark:border-b-gray-500' : 'border-b-gray-200 dark:border-b-gray-600'}`}>
+                                                } ${index === feature.length - 1 ? 'border-b-gray-300 dark:border-b-gray-500' : 'border-b-gray-200 dark:border-b-gray-600'}`}>
                                                 {row.spells && row.spells[i] !== undefined ? row.spells[i] : '-'}
                                             </td>
                                         );
@@ -173,14 +173,14 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
                                 <>
                                     {Array.from({ length: 10 }, (_, i) => {
                                         // Only show column if there are spells known at this level
-                                        if (!hasSpellsAtLevel(progression, i, true)) {
+                                        if (!hasSpellsAtLevel(feature, i, true)) {
                                             return null;
                                         }
 
                                         return (
                                             <td key={`spells-known-${i}`} className={`px-2 py-1 border text-sm text-center whitespace-nowrap ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
                                                 } ${i === maxSpellsKnownLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
-                                                } ${index === progression.length - 1 ? 'border-b-gray-300 dark:border-b-gray-500' : 'border-b-gray-200 dark:border-b-gray-600'}`}>
+                                                } ${index === feature.length - 1 ? 'border-b-gray-300 dark:border-b-gray-500' : 'border-b-gray-200 dark:border-b-gray-600'}`}>
                                                 {row.spellsKnown && row.spellsKnown[i] !== undefined ? row.spellsKnown[i] : '-'}
                                             </td>
                                         );

@@ -1,4 +1,4 @@
-import type { DnDClass, CharacterAdvancementWithDetailsResponse, FeatureProgression, SpellcastingProgressionWithSlots } from '@shared/schema';
+import type { DnDClass, CharacterAdvancementWithDetailsResponse, FeatureWithRelations, SpellcastingProgressionWithSlots } from '@shared/schema';
 import { EntityAppliesToType } from '@shared/static-data';
 
 /**
@@ -22,12 +22,12 @@ export class GestaltClassService {
             description: primaryClass.description,
             sourceBookInfo: primaryClass.sourceBookInfo,
 
-            // Mechanics are now handled via feature progressions, not class fields
+            // Mechanics are now handled via feature features, not class fields
 
             // Merged features with source tracking
             features: this.mergeFeatures(primaryClass.features || [], secondaryClass.features || [], primaryClass.name, secondaryClass.name),
 
-            // Merged spellcasting progressions
+            // Merged spellcasting features
             spellcastingProgression: [
                 ...(primaryClass.spellcastingProgression || []),
                 ...(secondaryClass.spellcastingProgression || [])
@@ -49,12 +49,12 @@ export class GestaltClassService {
     /**
      * Get class skill sources for UI display
      */
-    static getClassSkillSources(classSkills: FeatureProgression[]): Map<number, string[]> {
+    static getClassSkillSources(classSkills: FeatureWithRelations[]): Map<number, string[]> {
         const skillSources = new Map<number, string[]>();
 
-        classSkills.forEach(progression => {
-            const className = (progression as FeatureProgression & { sourceClassName?: string }).sourceClassName;
-            progression.entities?.forEach(entity => {
+        classSkills.forEach(feature => {
+            const className = (feature as FeatureWithRelations & { sourceClassName?: string }).sourceClassName;
+            feature.entities?.forEach(entity => {
                 if (entity.appliesTo === EntityAppliesToType.Skill) {
                     const skillId = entity.appliesToId;
 
@@ -83,23 +83,23 @@ export class GestaltClassService {
     ): Array<{
         classId: number;
         className: string;
-        progressions: SpellcastingProgressionWithSlots[];
+        features: SpellcastingProgressionWithSlots[];
     }> {
         const displays: Array<{
             classId: number;
             className: string;
-            progressions: SpellcastingProgressionWithSlots[];
+            features: SpellcastingProgressionWithSlots[];
         }> = [];
 
         if (!gestaltClass.spellcastingProgression) {
             return displays;
         }
 
-        // Get unique class IDs from the merged spellcasting progressions
+        // Get unique class IDs from the merged spellcasting features
         const classIds = new Set(gestaltClass.spellcastingProgression.map(prog => prog.classId));
 
         classIds.forEach(classId => {
-            // Filter progressions for this class
+            // Filter features for this class
             const classProgressions = gestaltClass.spellcastingProgression!.filter(prog => prog.classId === classId);
 
             // Determine class name based on class ID
@@ -113,7 +113,7 @@ export class GestaltClassService {
             displays.push({
                 classId,
                 className,
-                progressions: classProgressions
+                features: classProgressions
             });
         });
 
@@ -121,7 +121,7 @@ export class GestaltClassService {
     }
 
     /**
-     * Get spellcasting progressions for a specific class from the merged gestalt class
+     * Get spellcasting features for a specific class from the merged gestalt class
      */
     static getSpellcastingProgressionsForClass(
         gestaltClass: DnDClass,
@@ -135,7 +135,7 @@ export class GestaltClassService {
     }
 
     /**
-     * Get spells known progressions for a specific class from the merged gestalt class
+     * Get spells known features for a specific class from the merged gestalt class
      */
     static getSpellsKnownProgressionsForClass(
         gestaltClass: DnDClass,
@@ -152,11 +152,11 @@ export class GestaltClassService {
      * Merge features from both classes with source tracking
      */
     private static mergeFeatures(
-        primaryFeatures: FeatureProgression[],
-        secondaryFeatures: FeatureProgression[],
+        primaryFeatures: FeatureWithRelations[],
+        secondaryFeatures: FeatureWithRelations[],
         primaryClassName: string,
         secondaryClassName: string
-    ): (FeatureProgression & { sourceClassName: string })[] {
+    ): (FeatureWithRelations & { sourceClassName: string })[] {
         return [
             ...primaryFeatures.map(f => ({ ...f, sourceClassName: primaryClassName })),
             ...secondaryFeatures.map(f => ({ ...f, sourceClassName: secondaryClassName }))

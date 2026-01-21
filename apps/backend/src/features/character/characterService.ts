@@ -3,7 +3,7 @@
  * 
  * This service provides comprehensive character management capabilities including:
  * - Character CRUD operations (create, read, update, delete)
- * - Character advancement and level progression management
+ * - Character advancement and level feature management
  * - Ability score management and calculations
  * - Spell preparation and spell known management
  * - Character attack definition management
@@ -65,7 +65,7 @@ import type {
     Spell,
     AddSpellKnownResponse,
     RemoveSpellKnownResponse,
-    FeatureProgression,
+    FeatureWithRelations,
     UpdateMoneyRequest,
     AddItemRequest,
     UpdateWoundsRequest,
@@ -902,7 +902,7 @@ export const characterService: CharacterService = {
                 where: {
                     characterId: advancementData.characterId,
                     advancementId: 0,
-                    progressionId: { in: featureChoices.map(c => c.progressionId) }
+                    featureId: { in: featureChoices.map(c => c.featureId) }
                 },
                 data: {
                     advancementId: result.id
@@ -911,17 +911,17 @@ export const characterService: CharacterService = {
         }
 
         // Auto-grant 0th level spells for spellbook classes on first level
-        // Check if this class is a spellbook class by checking for FeatureProgression with SpellbookSpell entity
+        // Check if this class is a spellbook class by checking for FeatureWithRelations with SpellbookSpell entity
         // Check if class has spellbook spell feature via many-to-many relationship
-        const classLinks = await prisma.featureProgressionClassMap.findMany({
+        const classLinks = await prisma.featureClassMap.findMany({
             where: { classId: advancementData.classId },
-            select: { progressionId: true }
+            select: { featureId: true }
         });
-        const progressionIds = classLinks.map(link => link.progressionId);
+        const progressionIds = classLinks.map(link => link.featureId);
 
         const isSpellbookClass = await prisma.featureEntity.findFirst({
             where: {
-                featureProgression: {
+                feature: {
                     id: { in: progressionIds },
                     level: { lte: advancementData.level }
                 },
@@ -1679,15 +1679,15 @@ export const characterService: CharacterService = {
     },
 
     async getCharacterDomains(characterId: number, classId: number): Promise<number[]> {
-        // Get all progressions for this class via many-to-many relationship
-        // Domain choices can be associated with any progression for the class
-        const classLinks = await prisma.featureProgressionClassMap.findMany({
+        // Get all features for this class via many-to-many relationship
+        // Domain choices can be associated with any feature for the class
+        const classLinks = await prisma.featureClassMap.findMany({
             where: { classId },
-            select: { progressionId: true }
+            select: { featureId: true }
         });
-        const progressionIds = classLinks.map(link => link.progressionId);
+        const progressionIds = classLinks.map(link => link.featureId);
 
-        const progressions = await prisma.featureProgression.findMany({
+        const features = await prisma.feature.findMany({
             where: {
                 id: { in: progressionIds }
             },
@@ -1696,18 +1696,18 @@ export const characterService: CharacterService = {
             }
         });
 
-        const finalProgressionIds = progressions.map(p => p.id);
+        const finalProgressionIds = features.map(p => p.id);
 
         if (finalProgressionIds.length === 0) {
             return [];
         }
 
         // Get character's feature choices where appliesTo = Domain
-        // and the progression is associated with this class
+        // and the feature is associated with this class
         const domainChoices = await prisma.characterFeatureChoice.findMany({
             where: {
                 characterId,
-                progressionId: { in: progressionIds },
+                featureId: { in: progressionIds },
                 featureEntity: {
                     appliesTo: EntityAppliesToType.Domain,
                 }
@@ -1736,21 +1736,21 @@ export const characterService: CharacterService = {
      * Get available spells for a character's class, including known status and free grant information.
      * 
      * This method handles both spellbook classes (Wizard, etc.) and spellsKnown classes (Sorcerer, Bard, etc.):
-     * - **Spellbook Classes**: Detects via `EntityAppliesToType.SpellbookSpell` in resolved progressions
-     *   - Calculates available free spells from resolved progressions
+     * - **Spellbook Classes**: Detects via `EntityAppliesToType.SpellbookSpell` in resolved features
+     *   - Calculates available free spells from resolved features
      *   - Checks for 0th level spell grant feature (EntityType.Other + SpellbookSpell with appliesToId: 0)
      *   - For 0th level spells, marks them as "known" if the grant feature exists (no database records)
      *   - For other spell levels, marks spells as "known" based on AdvancementSpell records
      *   - Includes `isFreeGrant` flag for each known spell
      * - **SpellsKnown Classes**: Uses AdvancementSpell records for all spell levels (including 0th)
-     *   - Does not calculate free spells (uses spellsKnown progression limits instead)
+     *   - Does not calculate free spells (uses spellsKnown feature limits instead)
      *   - All known spells come from AdvancementSpell records
      * 
      * The method also handles domain spells for classes with domains (e.g., Cleric).
      * 
      * @param characterId - The character to get spells for
      * @param classId - The class to get spells for
-     * @param resolvedProgressions - Optional resolved progressions. If provided, used for spellbook class detection and free spell calculation. If not provided, queries database directly.
+     * @param resolvedProgressions - Optional resolved features. If provided, used for spellbook class detection and free spell calculation. If not provided, queries database directly.
      * @returns Object containing:
      *   - `spells`: Array of available spells with known status and free grant flag
      *   - `domainSpells`: Array of domain spells (if character has domains)
@@ -1762,7 +1762,7 @@ export const characterService: CharacterService = {
     async getAvailableSpellsForClass(
         characterId: number,
         classId: number,
-        resolvedProgressions?: FeatureProgression[]
+        resolvedProgressions?: FeatureWithRelations[]
     ): Promise<{
         spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean; isFreeGrant?: boolean }>;
         domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }>;
@@ -1847,18 +1847,18 @@ export const characterService: CharacterService = {
             }).filter((ds): ds is NonNullable<typeof ds> => ds !== null);
         }
 
-        // Check if this is a spellbook class (has EntityAppliesToType.SpellbookSpell in resolved progressions or database)
+        // Check if this is a spellbook class (has EntityAppliesToType.SpellbookSpell in resolved features or database)
         let isSpellbookClass = false;
         let availableFreeSpells: number | undefined = undefined;
         let hasZeroLevelGrant = false;
 
         if (resolvedProgressions) {
-            for (const progression of resolvedProgressions) {
-                // Check if this progression applies to the class via many-to-many relationship
-                const appliesToClass = progression.classes && progression.classes.some(c => c.classId === classId);
+            for (const feature of resolvedProgressions) {
+                // Check if this feature applies to the class via many-to-many relationship
+                const appliesToClass = feature.classes && feature.classes.some(c => c.classId === classId);
 
-                if (appliesToClass && progression.entities) {
-                    for (const entity of progression.entities) {
+                if (appliesToClass && feature.entities) {
+                    for (const entity of feature.entities) {
                         if (entity.type === EntityType.Choice &&
                             entity.appliesTo === EntityAppliesToType.SpellbookSpell) {
                             isSpellbookClass = true;
@@ -1885,20 +1885,20 @@ export const characterService: CharacterService = {
                 );
             }
         } else {
-            // If resolved progressions are not provided, check database directly via many-to-many relationship
-            // First, find progressions linked to this class
-            const classLinks = await prisma.featureProgressionClassMap.findMany({
+            // If resolved features are not provided, check database directly via many-to-many relationship
+            // First, find features linked to this class
+            const classLinks = await prisma.featureClassMap.findMany({
                 where: { classId },
-                select: { progressionId: true }
+                select: { featureId: true }
             });
-            const progressionIds = classLinks.map(link => link.progressionId);
+            const progressionIds = classLinks.map(link => link.featureId);
 
             if (progressionIds.length > 0) {
                 // Check for spellbook class (EntityType.Other + SpellbookSpell)
                 const spellbookProgression = await prisma.featureEntity.findFirst({
                     where: {
-                        progressionId: { in: progressionIds },
-                        featureProgression: {
+                        featureId: { in: progressionIds },
+                        feature: {
                             level: { lte: characterLevel }
                         },
                         type: EntityType.Other,
@@ -1913,8 +1913,8 @@ export const characterService: CharacterService = {
                 // Check for 0th level spell grant (EntityType.Other + SpellbookSpell + appliesToId: 0 + appliesToSubId: -1)
                 const zeroLevelGrantEntity = await prisma.featureEntity.findFirst({
                     where: {
-                        progressionId: { in: progressionIds },
-                        featureProgression: {
+                        featureId: { in: progressionIds },
+                        feature: {
                             level: { lte: characterLevel }
                         },
                         type: EntityType.Other,
@@ -2186,10 +2186,10 @@ export const characterService: CharacterService = {
      * character level. This is used for validation when scribing spells to ensure a character
      * cannot scribe spells beyond their casting capability.
      * 
-     * @param classId - The class to check spellcasting progression for
+     * @param classId - The class to check spellcasting feature for
      * @param characterLevel - The character level to check maximum castable spell level at
      * @returns The highest spell level with available slots at the given level, or 0 if the class
-     *          has no spellcasting progression or no slots at that level
+     *          has no spellcasting feature or no slots at that level
      * 
      * @example
      * // A 1st-level wizard can cast 1st-level spells (returns 1)
@@ -2197,15 +2197,14 @@ export const characterService: CharacterService = {
      * // A 5th-level wizard can cast 3rd-level spells (returns 3)
      */
     async getMaxCastableSpellLevel(classId: number, characterLevel: number): Promise<number> {
-        // Phase 3: Support both old (direct classId) and new (featureProgressionId) patterns
-        // Try new pattern first (feature-based spellcasting)
-        const featureProgressions = await featureSystemService.getFeatureProgressionsByClassId(classId);
+        // Get spellcasting from feature-based system
+        const features = await featureSystemService.getFeaturesByClassId(classId);
 
-        // Extract spellcasting progression IDs from feature entities
+        // Extract spellcasting feature IDs from feature entities
         const spellcastingProgressionIds: number[] = [];
-        for (const progression of featureProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        for (const feature of features) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (entity.appliesTo === EntityAppliesToType.SpellcastingProgression &&
                         entity.appliesToId !== null &&
                         typeof entity.appliesToId === 'number') {
@@ -2218,8 +2217,8 @@ export const characterService: CharacterService = {
         let maxSpellLevel = 0;
 
         if (spellcastingProgressionIds.length > 0) {
-            // New pattern: Get spellcasting from FeatureProgression entities
-            const progressions = await prisma.spellcastingProgression.findMany({
+            // Get spellcasting from FeatureWithRelations entities
+            const features = await prisma.spellcastingProgression.findMany({
                 where: {
                     id: { in: spellcastingProgressionIds },
                     classLevel: { lte: characterLevel }
@@ -2233,34 +2232,8 @@ export const characterService: CharacterService = {
                 take: 1
             });
 
-            if (progressions.length > 0 && progressions[0].slots && progressions[0].slots.length > 0) {
-                maxSpellLevel = Math.max(...progressions[0].slots.map(slot => slot.spellLevel));
-            }
-        } else {
-            // Fallback to old pattern: Direct classId link (backward compatibility)
-            const classDetails = await prisma.class.findUnique({
-                where: { id: classId },
-                include: {
-                    spellcastingProgression: {
-                        where: {
-                            classLevel: { lte: characterLevel }
-                        },
-                        include: {
-                            slots: true
-                        },
-                        orderBy: {
-                            classLevel: 'desc'
-                        },
-                        take: 1
-                    }
-                }
-            });
-
-            if (classDetails?.spellcastingProgression && classDetails.spellcastingProgression.length > 0) {
-                const progression = classDetails.spellcastingProgression[0];
-                if (progression.slots && progression.slots.length > 0) {
-                    maxSpellLevel = Math.max(...progression.slots.map(slot => slot.spellLevel));
-                }
+            if (features.length > 0 && features[0].slots && features[0].slots.length > 0) {
+                maxSpellLevel = Math.max(...features[0].slots.map(slot => slot.spellLevel));
             }
         }
 
@@ -2275,7 +2248,7 @@ export const characterService: CharacterService = {
      * scribing - a 1st-level wizard cannot scribe a 3rd-level spell, regardless of whether
      * it's a free grant or found on a scroll.
      * 
-     * @param classId - The class to check spellcasting progression for
+     * @param classId - The class to check spellcasting feature for
      * @param advancementLevel - The character level at the time of the advancement
      * @param spellLevel - The spell level to validate
      * @returns True if the spell level is castable at the advancement level, false otherwise
@@ -2319,7 +2292,7 @@ export const characterService: CharacterService = {
      * - Re-resolves character features to reflect the spell addition
      * - Returns updated resolved character data in the response
      * 
-     * For spellbook classes (wizards, etc.), validates free spell grants using resolved progressions.
+     * For spellbook classes (wizards, etc.), validates free spell grants using resolved features.
      * For spellsKnown classes (sorcerers, bards), validates maximum spells per level.
      * 
      * @param characterId - The character receiving the spell. Must belong to an existing character record.
@@ -2327,7 +2300,7 @@ export const characterService: CharacterService = {
      * @param spellId - The spell to add. Must be available for the specified class via SpellLevelMap.
      * @param advancementId - The advancement record to associate the spell with. Must belong to the character and class.
      * @param isFreeGrant - Whether this is a free grant (spellbook classes during level-up) or ad-hoc scribing. Affects validation limits.
-     * @param resolvedProgressions - Optional resolved progressions for validation. If not provided and session exists, fetched from session. If no session, resolved on-demand.
+     * @param resolvedProgressions - Optional resolved features for validation. If not provided and session exists, fetched from session. If no session, resolved on-demand.
      * @returns Response with spell counts (for free grants) and updated resolved character data (if session exists)
      * @throws Error if spell cannot be added (validation failed, limit reached, spell not available for class, etc.)
      * 
@@ -2341,7 +2314,7 @@ export const characterService: CharacterService = {
         spellId: number,
         advancementId: number,
         isFreeGrant: boolean = false,
-        resolvedProgressions?: FeatureProgression[]
+        resolvedProgressions?: FeatureWithRelations[]
     ): Promise<AddSpellKnownResponse> {
         // Verify advancement belongs to character and class
         const advancement = await prisma.characterAdvancement.findFirst({
@@ -2380,16 +2353,16 @@ export const characterService: CharacterService = {
         // When isFreeGrant: true, also validate quantity limit
         // Declare variables outside the block so they're accessible in the response section
         let characterForValidation: CharacterWithAllDetailsResponse | null = null;
-        let effectiveResolvedProgressionsForValidation: FeatureProgression[] | undefined = resolvedProgressions;
+        let effectiveResolvedProgressionsForValidation: FeatureWithRelations[] | undefined = resolvedProgressions;
 
         if (isFreeGrant) {
-            // Get character with all details for resolved progressions calculation
+            // Get character with all details for resolved features calculation
             characterForValidation = await this.getCharacterWithAllDetails({ id: characterId });
             if (!characterForValidation) {
                 throw new Error('Character not found');
             }
 
-            // Try to get resolved progressions from session first (if character is being edited)
+            // Try to get resolved features from session first (if character is being edited)
             if (!effectiveResolvedProgressionsForValidation && characterForValidation.userId) {
                 const sessionService = new CharacterSessionService();
                 const session = await sessionService.getSession(characterId, characterForValidation.userId);
@@ -2398,7 +2371,7 @@ export const characterService: CharacterService = {
                 }
             }
 
-            // Fetch resolved progressions if not provided and not available from session
+            // Fetch resolved features if not provided and not available from session
             if (!effectiveResolvedProgressionsForValidation) {
                 // Load race and class details for resolution
                 const raceDetails = characterForValidation.raceId ? await raceService.getRaceById({ id: characterForValidation.raceId }) : null;
@@ -2425,7 +2398,7 @@ export const characterService: CharacterService = {
                     maxResolutionDepth: 10,
                 };
 
-                // First pass: Resolve base features to get progressions
+                // First pass: Resolve base features to get features
                 const firstPassResult = await CharacterResolutionService.resolveCharacterFeatures(
                     characterForValidation,
                     advancement.level,
@@ -2438,10 +2411,10 @@ export const characterService: CharacterService = {
                     for (const adv of characterForValidation.advancements) {
                         if (adv.featureChoices) {
                             for (const choice of adv.featureChoices) {
-                                // Find the entity in resolved progressions to get appliesTo type
-                                for (const progression of firstPassResult.resolvedProgressions) {
-                                    if (progression.id === choice.progressionId && progression.entities) {
-                                        const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+                                // Find the entity in resolved features to get appliesTo type
+                                for (const feature of firstPassResult.resolvedProgressions) {
+                                    if (feature.id === choice.featureId && feature.entities) {
+                                        const entity = feature.entities.find(e => e.id === choice.featureEntityId);
                                         if (entity && choice.appliesToId) {
                                             const appliesToType = entity.appliesTo;
                                             if (!userChoices[appliesToType]) {
@@ -2551,11 +2524,11 @@ export const characterService: CharacterService = {
                     for (const adv of updatedCharacter.advancements) {
                         if (adv.featureChoices) {
                             for (const choice of adv.featureChoices) {
-                                // Find the entity in resolved progressions to get appliesTo type
+                                // Find the entity in resolved features to get appliesTo type
                                 if (session.resolvedResult?.resolvedProgressions) {
-                                    for (const progression of session.resolvedResult.resolvedProgressions) {
-                                        if (progression.id === choice.progressionId && progression.entities) {
-                                            const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+                                    for (const feature of session.resolvedResult.resolvedProgressions) {
+                                        if (feature.id === choice.featureId && feature.entities) {
+                                            const entity = feature.entities.find(e => e.id === choice.featureEntityId);
                                             if (entity && choice.appliesToId) {
                                                 const appliesToType = entity.appliesTo;
                                                 if (!userChoices[appliesToType]) {
@@ -2669,11 +2642,11 @@ export const characterService: CharacterService = {
         };
 
         if (isFreeGrant && characterForValidation) {
-            // Use the character and resolved progressions from validation (already fetched)
+            // Use the character and resolved features from validation (already fetched)
             let effectiveResolvedProgressions = effectiveResolvedProgressionsForValidation;
             const characterForResponse = characterForValidation;
 
-            // If we still don't have resolved progressions, fetch them now
+            // If we still don't have resolved features, fetch them now
             if (!effectiveResolvedProgressions) {
                 // Load race and class details for resolution
                 const raceDetails = characterForResponse.raceId ? await raceService.getRaceById({ id: characterForResponse.raceId }) : null;
@@ -2700,7 +2673,7 @@ export const characterService: CharacterService = {
                     maxResolutionDepth: 10,
                 };
 
-                // First pass: Resolve base features to get progressions
+                // First pass: Resolve base features to get features
                 const firstPassResult = await CharacterResolutionService.resolveCharacterFeatures(
                     characterForResponse,
                     advancement.level,
@@ -2713,10 +2686,10 @@ export const characterService: CharacterService = {
                     for (const adv of characterForResponse.advancements) {
                         if (adv.featureChoices) {
                             for (const choice of adv.featureChoices) {
-                                // Find the entity in resolved progressions to get appliesTo type
-                                for (const progression of firstPassResult.resolvedProgressions) {
-                                    if (progression.id === choice.progressionId && progression.entities) {
-                                        const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+                                // Find the entity in resolved features to get appliesTo type
+                                for (const feature of firstPassResult.resolvedProgressions) {
+                                    if (feature.id === choice.featureId && feature.entities) {
+                                        const entity = feature.entities.find(e => e.id === choice.featureEntityId);
                                         if (entity && choice.appliesToId) {
                                             const appliesToType = entity.appliesTo;
                                             if (!userChoices[appliesToType]) {
@@ -2865,11 +2838,11 @@ export const characterService: CharacterService = {
                     for (const adv of updatedCharacter.advancements) {
                         if (adv.featureChoices) {
                             for (const choice of adv.featureChoices) {
-                                // Find the entity in resolved progressions to get appliesTo type
+                                // Find the entity in resolved features to get appliesTo type
                                 if (session.resolvedResult?.resolvedProgressions) {
-                                    for (const progression of session.resolvedResult.resolvedProgressions) {
-                                        if (progression.id === choice.progressionId && progression.entities) {
-                                            const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+                                    for (const feature of session.resolvedResult.resolvedProgressions) {
+                                        if (feature.id === choice.featureId && feature.entities) {
+                                            const entity = feature.entities.find(e => e.id === choice.featureEntityId);
                                             if (entity && choice.appliesToId) {
                                                 const appliesToType = entity.appliesTo;
                                                 if (!userChoices[appliesToType]) {
@@ -2983,7 +2956,7 @@ export const characterService: CharacterService = {
         };
 
         if (wasFreeGrant && resolvedCharacterResult) {
-            // Use resolved progressions from the session update (already done above)
+            // Use resolved features from the session update (already done above)
             const effectiveResolvedProgressions = resolvedCharacterResult.resolvedProgressions;
 
             // Calculate available free spells for this advancement level
@@ -3014,13 +2987,13 @@ export const characterService: CharacterService = {
         return uses;
     },
 
-    async updateFeatureUses(characterId: number, progressionId: number, entityId: number, delta: number) {
+    async updateFeatureUses(characterId: number, featureId: number, entityId: number, delta: number) {
         // Find or create the uses record
         const existing = await prisma.characterFeatureUses.findUnique({
             where: {
-                characterId_progressionId_featureEntityId: {
+                characterId_featureId_featureEntityId: {
                     characterId,
-                    progressionId,
+                    featureId,
                     featureEntityId: entityId,
                 },
             },
@@ -3037,7 +3010,7 @@ export const characterService: CharacterService = {
             const featureEntity = await prisma.featureEntity.findUnique({
                 where: { id: entityId },
                 include: {
-                    featureProgression: true,
+                    feature: true,
                 },
             });
 
@@ -3056,7 +3029,7 @@ export const characterService: CharacterService = {
             return await prisma.characterFeatureUses.create({
                 data: {
                     characterId,
-                    progressionId,
+                    featureId,
                     featureEntityId: entityId,
                     currentUses: newCurrentUses,
                     maxUses,

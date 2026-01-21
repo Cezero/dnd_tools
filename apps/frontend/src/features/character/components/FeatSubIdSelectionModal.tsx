@@ -18,12 +18,12 @@ export function FeatSubIdSelectionModal({
     const [selectedWeaponId, setSelectedWeaponId] = useState<number | null>(null);
     const { getAllWeapons, transformItemCacheEntriesToCoreComponents } = useCacheFunctions();
 
-    // Extract proficiencies from resolved progressions
+    // Extract proficiencies from resolved features
     const proficiencies = useMemo(() => {
         return extractProficiencies(resolvedProgressions);
     }, [resolvedProgressions]);
 
-    // Find feature progressions for this feat
+    // Find feature features for this feat
     const featProgressions = useMemo(() => {
         if (!feat || !resolvedProgressions) return [];
         return resolvedProgressions.filter(
@@ -31,18 +31,18 @@ export function FeatSubIdSelectionModal({
         );
     }, [feat, resolvedProgressions]);
 
-    // Get feature description from progression
+    // Get feature description from feature
     const featureDescription = useMemo(() => {
-        return featProgressions[0]?.feature?.description || null;
+        return featProgressions[0]?.description || null;
     }, [featProgressions]);
 
     // Check if feat has proficiency prerequisite from Feature system
     const hasProficiencyPrereq = useMemo(() => {
         if (!featProgressions.length) return false;
 
-        // Check if any progression has a proficiency prerequisite
-        return featProgressions.some(progression =>
-            progression.feature?.prerequisites?.some(
+        // Check if any feature has a proficiency prerequisite
+        return featProgressions.some(feature =>
+            feature.prerequisites?.some(
                 prereq => prereq.type === FeaturePrerequisiteType.Proficiency
             )
         );

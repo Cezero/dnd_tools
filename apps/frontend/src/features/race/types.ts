@@ -1,18 +1,20 @@
-import type { RaceEditState as SharedRaceEditState, FeatureProgression, SourceMap } from '@shared/schema';
+import type { RaceEditState as SharedRaceEditState, SourceMap } from '@shared/schema';
 
 /**
  * Centralized state for RaceEdit component that eliminates per-tab state management
  * and provides a single source of truth for all race data.
  * 
  * Extends the shared RaceEditState with UI-specific state fields.
+ * 
+ * **Note**: Features are now managed independently via the feature state system.
+ * Race state only contains featureIds, not full feature objects.
  */
 export interface RaceEditState extends SharedRaceEditState {
     // UI state
     activeTab: string;
     isFeatureAssocOpen: boolean;
-    isProgressionDialogOpen: boolean;
-    editingProgression: FeatureProgression | null;
-    preSelectedFeature: FeatureProgression['feature'] | undefined;
+    editingFeatureId: number | null;
+    preSelectedFeatureId: number | undefined;
 }
 
 /**
@@ -26,15 +28,13 @@ export enum RaceEditStateUpdateType {
     SET_IS_VISIBLE = 3,
     SET_DESCRIPTION = 4,
     SET_SOURCE_BOOK_INFO = 5,
-    SET_FEATURE_PROGRESSIONS = 6,
-    ADD_FEATURE_PROGRESSION = 7,
-    UPDATE_FEATURE_PROGRESSION = 8,
-    REMOVE_FEATURE_PROGRESSION = 9,
+    SET_FEATURE_IDS = 6,
+    LINK_FEATURE = 7,
+    UNLINK_FEATURE = 8,
     SET_ACTIVE_TAB = 10,
     SET_IS_FEATURE_ASSOC_OPEN = 11,
-    SET_IS_PROGRESSION_DIALOG_OPEN = 12,
-    SET_EDITING_PROGRESSION = 13,
-    SET_PRE_SELECTED_FEATURE = 14,
+    SET_EDITING_FEATURE_ID = 12,
+    SET_PRE_SELECTED_FEATURE_ID = 13,
 }
 
 export type RaceEditStateUpdate =
@@ -44,12 +44,10 @@ export type RaceEditStateUpdate =
     | { type: RaceEditStateUpdateType.SET_IS_VISIBLE; payload: { isVisible: boolean } }
     | { type: RaceEditStateUpdateType.SET_DESCRIPTION; payload: { description: string | null } }
     | { type: RaceEditStateUpdateType.SET_SOURCE_BOOK_INFO; payload: { sourceBookInfo: SourceMap[] | null } }
-    | { type: RaceEditStateUpdateType.SET_FEATURE_PROGRESSIONS; payload: { featureProgressions: FeatureProgression[] } }
-    | { type: RaceEditStateUpdateType.ADD_FEATURE_PROGRESSION; payload: { progression: FeatureProgression } }
-    | { type: RaceEditStateUpdateType.UPDATE_FEATURE_PROGRESSION; payload: { progressionId: number; progression: Partial<FeatureProgression> } }
-    | { type: RaceEditStateUpdateType.REMOVE_FEATURE_PROGRESSION; payload: { progressionId: number } }
+    | { type: RaceEditStateUpdateType.SET_FEATURE_IDS; payload: { featureIds: number[] } }
+    | { type: RaceEditStateUpdateType.LINK_FEATURE; payload: { featureId: number } }
+    | { type: RaceEditStateUpdateType.UNLINK_FEATURE; payload: { featureId: number } }
     | { type: RaceEditStateUpdateType.SET_ACTIVE_TAB; payload: { activeTab: string } }
     | { type: RaceEditStateUpdateType.SET_IS_FEATURE_ASSOC_OPEN; payload: { isFeatureAssocOpen: boolean } }
-    | { type: RaceEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN; payload: { isProgressionDialogOpen: boolean } }
-    | { type: RaceEditStateUpdateType.SET_EDITING_PROGRESSION; payload: { editingProgression: FeatureProgression | null } }
-    | { type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE; payload: { preSelectedFeature: FeatureProgression['feature'] | undefined } };
+    | { type: RaceEditStateUpdateType.SET_EDITING_FEATURE_ID; payload: { editingFeatureId: number | null } }
+    | { type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID; payload: { preSelectedFeatureId: number | undefined } };

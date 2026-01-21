@@ -1,0 +1,1384 @@
+id,slug,name,description,summary,displayInCharacterSheet
+1,class-skill,Class Skill,"Holds class skills, this description should never be displayed!",,true
+2,class-proficiency,Class Proficiency,"Holds class proficiencies, this description should never be displayed!",,true
+3,automaticlanguage,Automatic Language,"Holds racial automatic languages, this discription should never be displayed!",,true
+4,bonuslanguage,Bonus Language,"Holds racial bonus languages, this discription should never be displayed!",,true
+5,race-ability-adjustment,Ability Adjustment,"Holds racial ability adjustments, this discription should never be displayed!",,true
+6,companion-benefit,Companion Benefits,Benefits granted by companions,,true
+7,alignedspells,"Chaotic, Evil, Good, and Lawful Spells","**Chaotic, Evil, Good, and Lawful Spells:** A [var: classname] can’t cast spells of an alignment opposed to their own or their deity’s (if they have one). For example, a good [var: classname] (or a neutral [var: classname] of a good deity) cannot cast evil spells. Spells associated with particular alignments are indicated by the chaos, evil, good, and law descriptors in their spell descriptions.",,true
+8,barbarianex,Ex-Barbarians,"**Ex-Barbarians:** A barbarian who becomes lawful loses the ability to rage and cannot gain more levels as a barbarian. He retains all the other benefits of the class (damage reduction, fast movement, trap sense, and uncanny dodge).",,true
+9,bardarmorprof,Light Armor Spellcasting,"**Light Armor Spellcasting:** Because the somatic components required for bard spells are relatively simple, a bard can cast bard spells while wearing light armor without incurring the normal arcane spell failure  chance. However, like any other arcane spellcaster, a bard wearing medium or heavy armor or using a shield incurs a chance of arcane spell failure if the spell in question has a somatic component (most do). A multiclass bard still incurs the normal arcane  spellfailure chance for arcane spells received from other classes.",,true
+12,bardcountersong,Countersong,"*Countersong (Su):* A bard with 3 or more ranks in a Perform skill can use his music or poetics to counter magical effects that depend on sound (but not spells that simply have verbal components). Each round of the countersong, he makes a Perform check. Any creature within 30 feet of the bard (including the bard himself ) that is affected by a sonic or language-dependent magical attack (such as a sound burst or command spell) may use the bard’s Perform check result in place of its saving throw if, after the saving throw is rolled, the Perform check result proves to be higher. If a creature within range of the countersong is already under the effect of a noninstantaneous sonic or language-dependent magical attack, it gains another saving throw against the effect each round it hears the countersong, but it must use the bard’s Perform check result for the save. Countersong has no effect against effects that don’t allow saves. The bard may keep up the countersong for 10 rounds.",,true
+15,bardex,Ex-Bards,"**Ex-Bards:** A bard who becomes lawful in alignment cannot progress in levels as a bard, though he retains all his bard abilities.",,true
+18,bardfascinate,Fascinate,"*Fascinate (Sp):* A bard with 3 or more ranks in a Perform skill can use his music or poetics to cause one or more creatures to become fascinated with him. Each creature to be fascinated must be within 90 feet, able to see and hear the bard, and able to pay attention to him. The bard must also be able to see the creature. The distraction of a nearby combat or other dangers prevents the ability from working. For every three levels a bard attains beyond 1st, he can target one additional creature with a single use of this ability (two at 4th level, three at 7th level, and so on).
+
+To use the ability, a bard makes a Perform check. His check result is the DC for each affected creature’s Will save against the effect. If a creature’s saving throw succeeds, the bard cannot attempt to fascinate that creature again for 24 hours. If its saving throw fails, the creature sits quietly and listens to the song, taking no other actions, for as long as the bard continues to play and concentrate (up to a maximum of 1 round per bard level). While fascinated, a target takes a -4 penalty on skill checks made as reactions, such as Listen and Spot checks. Any potential threat requires the bard to make another Perform check and allows the creature a new saving throw against a DC equal to the new Perform check result. Any obvious threat, such as someone drawing a weapon, casting a spell, or aiming a ranged weapon at the target, automatically breaks the effect. Fascinate is an enchantment (compulsion), mind affecting ability.",,true
+21,bardicknowledge,Bardic Knowledge,"**Bardic Knowledge:** A bard picks up a lot of stray knowledge while wandering the land and learning stories from other bards. He may make a special bardic knowledge check with a bonus equal to his bard level + his Intelligence modifier to see whether he knows some relevant information about local notable people, legendary items, or noteworthy places. (If the bard has 5 or more ranks in Knowledge (history), he gains a +2 bonus on this check.)
+
+[table: bardknowledge]
+
+A successful bardic knowledge check will not reveal the powers of a magic item but may give a hint as to its general function. A bard may not take 10 or take 20 on this check; this sort of knowledge is essentially random. The DM can determine the Difficulty Class of the check by referring to the table above.",,true
+24,bardicmusic,Bardic Music,"**Bardic Music:** Once per day per bard level, a bard can use his song or poetics to produce magical effects on those around him (usually including himself, if desired). While these abilities fall under the category of bardic music and the descriptions discuss singing or playing instruments, they can all be activated by reciting poetry, chanting, singing lyrical songs, singing melodies (fa-la-la, and so forth), whistling, playing an instrument, or playing an instrument in combination with some spoken performance. Each ability requires both a minimum bard level and a minimum number of ranks in the Perform skill to qualify; if a bard does not have the required number of ranks in at least one Perform skill, he does not gain the bardic music ability until he acquires the needed ranks.
+
+Starting a bardic music effect is a standard action. Some bardic music abilities require concentration, which means the bard must take a standard action each round to maintain the ability. Even while using bardic music that doesn’t require concentration, a bard cannot cast spells, activate magic items by spell completion (such as scrolls), or activate magic items by magic word (such as wands). Just as for casting a spell with a verbal component (see Components), a deaf bard has a 20% chance to fail when attempting to use bardic music. If he fails, the attempt still counts against his daily limit.",,true
+27,bardinspirecompetence,Inspire Competence,"*Inspire Competence (Su):* A bard of 3rd level or higher with 6 or more ranks in a Perform skill can use his music or poetics to help an ally succeed at a task. The ally must be within 30 feet and able to see and hear the bard. The bard must also be able to see the ally. Depending on the task that the ally has at hand, the bard may use his bardic music to lift the ally’s spirits, to help him or her focus mentally, or in some other way. The ally gets a +2 competence bonus on skill checks with a particular skill as long as he or she continues to hear the bard’s music. The DM may rule that certain uses of this ability are infeasible - chanting to make a rogue move more quietly, for example, is self-defeating. The effect lasts as long as the bard concentrates, up to a maximum of 2 minutes. A bard can’t inspire competence in himself. Inspire competence is a mind affecting ability.",,true
+30,bardinspirecourage,Inspire Courage,"*Inspire Courage (Su):* A bard with 3 or more ranks in a Perform skill can use song or poetics to inspire courage in his allies (including himself ), bolstering them against fear and improving their combat abilities. To be affected, an ally must be able to hear the bard sing. The effect lasts for as long as the ally hears the bard sing and for 5 rounds thereafter. An affected ally receives a +1 morale bonus on saving throws against charm and fear effects and a +1 morale bonus on attack and weapon damage rolls. At 8th level, and every six bard levels thereafter, this bonus increases by 1 (+2 at 8th, +3 at 14th, and +4 at 20th). Inspire courage is a mind-affecting ability.",,true
+33,bardinspiregreatness,Inspire Greatness,"*Inspire Greatness (Su):* A bard of 9th level or higher with 12 or more ranks in a Perform skill can use music or poetics to inspire greatness in himself or a single willing ally within 30 feet, granting him or her extra fighting capability. For every three levels a bard attains beyond 9th, he can target one additional ally with a single use of this ability (two at 12th level, three at 15th, four at 18th). To inspire greatness, a bard must sing and an ally must hear him sing. The effect lasts for as long as the ally hears the bard sing and for 5 rounds thereafter. A creature inspired with greatness gains 2 bonus Hit Dice (d10s), the commensurate number of temporary hit points (apply the target’s Constitution modifier, if any, to these bonus Hit Dice), a +2 competence bonus on attack rolls, and a +1 competence bonus on Fortitude saves. The bonus Hit Dice count as regular Hit Dice for determining the effect of spells such as sleep. Inspire greatness is a mind-affecting ability.",,true
+36,bardinspireheroics,Inspire Heroics,"*Inspire Heroics (Su):* A bard of 15th level or higher with 18 or more ranks in a Perform skill can use music or poetics to inspire tremendous heroism in himself or a single willing ally within 30 feet, allowing that creature to fight bravely even against overwhelming odds. For every three bard levels the character attains beyond 15th, he can inspire heroics in one additional creature. To inspire heroics, a bard must sing and an ally must hear the bard sing for a full round. A creature so inspired gains a +4 morale bonus on saving throws and a +4 dodge bonus to AC. The effect lasts for as long as the ally hears the bard sing and for up to 5 rounds thereafter. Inspire heroics is a mind-affecting ability.",,true
+39,bardmasssuggestion,Mass Suggestion,"*Mass Suggestion (Sp):* This ability functions like suggestion, above, except that a bard of 18th level or higher with 21 or more ranks in a Perform skill can make the suggestion simultaneously to any number of creatures that he has already fascinated (see above). Mass suggestion is an enchantment (compulsion), mind-affecting, language-dependent ability.",,true
+42,bardsongoffreedom,Song of Freedom,"*Song of Freedom (Sp):* A bard of 12th level or higher with 15 or more ranks in a Perform skill can use music or poetics to create an effect equivalent to the break enchantment spell (caster level equals the character’s bard level). Using this ability requires 1 minute of uninterrupted concentration and music, and it functions on a single target within 30 feet. A bard can’t use song of freedom on himself.",,true
+45,bardspells,Spells,"**Spells:** A bard casts arcane spells (the same type of spells available to sorcerers and wizards), which are drawn from the bard spell list. He can cast any spell he knows without preparing it ahead of time, the way a wizard or cleric must. Every bard spell has a verbal component (singing, reciting, or music).
+
+To learn or cast a spell, a bard must have a Charisma score equal to at least 10 + the spell level (Cha 10 for 0-level spells, Cha 11 for 1st level spells, and so forth). The Difficulty Class for a saving throw against a bard’s spell is 10 + the spell level + the bard’s Charisma modifier.
+
+Like other spellcasters, a bard can cast only a certain number of spells of each spell level per day. His base daily spell allotment is outlined on the Spells per Day table. In addition, he receives bonus spells per day if he has a high Charisma score. When the Spells per Day table indicates that the bard gets 0 spells per day of a given spell level (for instance, 1st level spells for a 2nd-level bard), he gains only the bonus spells he would be entitled to based on his Charisma score for that spell level.
+
+The bard’s selection of spells is extremely limited. A bard begins play knowing four 0-level spells (also called cantrips) of your choice. At most new bard levels, he gains one or more new spells. (Unlike spells per day, the number of spells a bard knows is not affected by his Charisma score; the numbers on the table are fixed.)
+
+Upon reaching 5th level, and at every third bard level after that (8th, 11th, and so on), a bard can choose to learn a new spell in place of one he already knows. In effect, the bard “loses” the old spell in exchange for the new one. The new spell’s level must be the same as that of the spell being exchanged, and it must be at least two levels lower than the highest-level bard spell the bard can cast. For instance, upon reaching 5th level, a bard could trade a single 0-level spell (two spell levels below the highest-level bard spell he can cast, which is 2nd) for a different 0-level spell. At 8th level, he could trade in a single 0-level or 1st-level spell (since he now can cast 3rd-level bard spells) for a different spell of the same level. A bard may swap only a single spell at any given level, and must choose whether or not to swap the spell at the same time that he gains new spells known for the level.
+
+As noted above, a bard need not prepare his spells in advance. He can cast any spell he knows at any time, assuming he has not yet used up his allotment of spells per day for the spell’s level. For example, at 1st level, Gimble the bard can cast two 0 level spells per day for being 1st level. However, he knows four 0-level spells: detect magic, ghost sound, light, and read magic. Thus, on any given day, he can cast some combination of those four spells a total of two times. He does not have to decide ahead of time which spells he’ll cast.",,true
+48,bardsuggestion,Suggestion,"*Suggestion (Sp):* A bard of 6th level or higher with 9 or more ranks in a Perform skill can make a suggestion (as the spell) to a creature that he has already fascinated (see above). Using this ability does not break the bard’s concentration on the fascinate effect, nor does it allow a second saving throw against the fascinate effect. Making a suggestion doesn’t count against a bard’s daily limit on bardic music performances. A Will saving throw (DC 10 + 1/2 bard’s level + bard’s Cha modifier) negates the effect. This ability affects only a single creature (but see mass suggestion, below). Suggestion is an enchantment (compulsion), mind-affecting, language dependent ability.",,true
+51,clericatone,Ex-Clerics,"**Ex-Clerics:** A cleric who grossly violates the code of conduct required by his god (generally by acting in ways opposed to the god’s alignment or purposes) loses all spells and class features, except for armor and shield proficiencies and proficiency with simple weapons. He cannot thereafter gain levels as a cleric of that god until he atones (see the [spell: atonement] spell description).",,true
+54,clericaura,Aura,"**Aura (Ex):** A cleric of a chaotic, evil, good, or lawful deity has a particularly powerful aura corresponding to the deity’s alignment (see the [spell: detect evil] spell for details). Clerics who don’t worship a specific deity but choose the Chaotic, Evil, Good, or Lawful domain have a similarly powerful aura of the corresponding alignment.",,true
+57,clericbonuslanguage,Bonus Languages,"**Bonus Languages:** A cleric’s bonus language options include Celestial, Abyssal, and Infernal (the languages of good, chaotic evil, and lawful evil outsiders, respectively). These choices are in addition to the bonus languages available to the character because of his race.","A cleric’s bonus language options include Celestial, Abyssal, and Infernal (the languages of good, chaotic evil, and lawful evil outsiders, respectively).",true
+60,clericdomains,"Deity, Domains, and Domain Spells","**Deity, Domains, and Domain Spells:** Choose a deity for your cleric. The cleric’s deity influences his alignment, what magic he can perform, his values, and how others see him. You may also choose for your cleric to have no deity.
+
+If the typical worshipers of a deity include the members of a race, a cleric must be of the indicated race to choose that deity as his own. (The god may have occasional worshipers of other races, but not clerics.)
+
+When you have chosen an alignment and a deity for your cleric, choose two domains from among those given for the deity. While the clerics of a particular religion are united in their reverence for their deity, each cleric emphasizes different aspects of the deity’s interests. You can select an alignment domain (Chaos, Evil, Good, or Law) for your cleric only if his alignment matches that domain.
+
+If your cleric is not devoted to a particular deity, you still select two domains to represent his spiritual inclinations and abilities. The restriction on alignment domains still applies.
+
+Each domain gives your cleric access to a domain spell at each spell level he can cast, from 1st on up, as well as a granted power. Your cleric gets the granted powers of both the domains selected. With access to two domain spells at a given spell level, a cleric prepares one or the other each day in his domain spell slot. If a domain spell is not on the cleric spell list, a cleric can prepare it only in his domain spell slot. Domain spells and granted powers are given in Cleric Domains.
+
+For example, Jozan is a 1st-level cleric of Pelor. He chooses Good and Healing (from Pelor’s domain options) as his two domains. He gets the granted powers of both his selected domains. The Good domain allows him to cast all spells with the good descriptor at +1 caster level (as if he were one level higher as a cleric) as a granted power, and it gives him access to [spell: protection from evil] as a 1st-level domain spell. The Healing domain allows him to cast all healing subschool spells of the conjuration school at +1 caster level as a granted power, and it gives him access to [spell: cure light wounds] as a 1st level domain spell. When Jozan prepares his spells, he gets one 1st level spell for being a 1st-level cleric, one bonus 1st-level spell for having a high Wisdom score (15), and one domain spell. The domain spell must be one of the two to which he has access, either [spell: protection from evil] or [spell: cure light wounds].",,true
+63,clericfavoredweapon,Favored Weapon,"Every deity has a favored weapon (see Deities), and his or her clerics consider it a point of pride to wield that weapon. A cleric who chooses the War domain receives the Weapon Focus feat related to that weapon as a bonus feat. He also receives the appropriate Martial Weapon Proficiency feat as a bonus feat, if the weapon falls into that category. See Feats for details.",,true
+66,clericspells,Spells,"**Spells:** A cleric casts divine spells (the same type of spells available to the druid, paladin, and ranger), which are drawn from the cleric spell list. However, his alignment may restrict him from casting certain spells opposed to his moral or ethical beliefs; see Chaotic, Evil, Good, and Lawful Spells, below. A cleric must choose and prepare his spells in advance.
+
+To prepare or cast a spell, a cleric must have a Wisdom score equal to at least 10 + the spell level (Wis 10 for 0-level spells, Wis 11 for 1st-level spells, and so forth). The Difficulty Class for a saving throw against a cleric’s spell is 10 + the spell level + the cleric’s Wisdom modifier.
+
+Like other spellcasters, a cleric can cast only a certain number of spells of each spell level per day. His base daily spell allotment is given on the Spells per Day table. In addition, he receives bonus spells per day if he has a high Wisdom score. A cleric also gets one domain spell of each spell level he can cast, starting at 1st level. When a cleric prepares a spell in a domain spell slot, it must come from one of his two domains (see Deities, Domains, and Domain Spells).
+
+Clerics do not acquire their spells from books or scrolls, nor do they prepare them through study. Instead, they meditate or pray for their spells, receiving them through their own strength of faith or as divine inspiration. Each cleric must choose a time at which he must spend 1 hour each day in quiet contemplation or supplication to regain his daily allotment of spells. Typically, this hour is at dawn or noon for good clerics and at dusk or midnight for evil ones. Time spent resting has no effect on whether a cleric can prepare spells. A cleric may prepare and cast any spell on the cleric spell list, provided that he can cast spells of that level, but he must choose which spells to prepare during his daily meditation.","A cleric casts divine spells, which are drawn from the cleric spell list.",true
+69,clericspontaneous,Spontaneous Casting,"**Spontaneous Casting:** A good cleric (or a neutral cleric of a good deity) can channel stored spell energy into healing spells that the cleric did not prepare ahead of time. The cleric can “lose” any prepared spell that is not a domain spell in order to cast any cure spell of the same spell level or lower (a cure spell is any spell with “cure” in its name). For example, a good cleric who has prepared [spell: command] (a 1st-level spell) may lose [spell: command] in order to cast [spell: cure light wounds] (also a 1st-level spell). Clerics of good deities can cast cure spells in this way because they are especially proficient at wielding positive energy.
+
+An evil cleric (or a neutral cleric of an evil deity), on the other hand, can’t convert prepared spells to cure spells but can convert them to inflict spells (an inflict spell is one with “inflict” in its name).
+
+A cleric who is neither good nor evil and whose deity is neither good nor evil can convert spells to either cure spells or inflict spells (player’s choice), depending on whether the cleric is more proficient at wielding positive or negative energy. Once the player makes this choice, it cannot be reversed. This choice also determines whether the cleric turns or commands undead. Exceptions: All lawful neutral clerics of Wee Jas (goddess of death and magic) convert prepared spells to inflict spells, not cure spells. All clerics of St. Cuthbert (god of retribution) and all nonevil clerics of Obad-Hai (god of nature) convert prepared spells to cure spells, not inflict spells.",,true
+72,clericturn,Turn or Rebuke Undead,"**Turn or Rebuke Undead (Su):** Any cleric, regardless of alignment, has the power to affect undead creatures (such as skeletons, zombies, ghosts, and vampires) by channeling the power of his faith through his holy (or unholy) symbol (see Turn or Rebuke Undead).
+
+A good cleric (or a neutral cleric who worships a good deity) can turn or destroy undead creatures. An evil cleric (or a neutral cleric who worships an evil deity) instead rebukes or commands such creatures, forcing them to cower in awe of his power. If your character is a neutral cleric of a neutral deity, you must choose whether his turning ability functions as that of a good cleric or an evil cleric. Once you make this choice, it cannot be reversed. This decision also determines whether the cleric can cast spontaneous cure or inflict spells. Exceptions: All lawful neutral clerics of Wee Jas (goddess of death and magic) rebuke or command undead. All clerics of St. Cuthbert (god of retribution) and all nonevil clerics of Obad-Hai (god of nature) turn or destroy undead.
+
+A cleric may attempt to turn undead a number of times per day equal to 3 + his Charisma modifier. A cleric with 5 or more ranks in Knowledge (religion) gets a +2 bonus on turning checks against undead.",,true
+75,damagereduction,Damage Reduction,"**Damage Reduction (Ex):** A barbarian gains the ability to shrug off some amount of injury from each blow or attack. Subtract 1 from the damage the barbarian takes each time he is dealt damage from a weapon or a natural attack. At 10th level, and every three barbarian levels thereafter (13th, 16th, and 19th level), this damage reduction rises by 1 point. Damage reduction can reduce damage to 0 but not below 0.",,true
+78,druidanimalcompanion,Animal Companion,"**Animal Companion (Ex):** A druid may begin play with an animal companion selected from the following list: badger, camel, dire rat, dog, riding dog, eagle, hawk, horse (light or heavy), owl, pony, snake (Small or Medium viper), or wolf. If the DM’s campaign takes place wholly or partly in an aquatic environment, the DM may add the following creatures to the druid’s list of options: crocodile, porpoise, Medium shark, and squid. This animal is a loyal companion that accompanies the druid on her adventures as appropriate for its kind.
+
+A 1st-level druid’s companion is completely typical for its kind except as noted in animal companion rules. As a druid advances in level, the animal’s power increases.
+
+If a druid releases her companion from service, she may gain a new one by performing a ceremony requiring 24 uninterrupted hours of prayer. This ceremony can also replace an animal companion that has perished.
+
+A druid of 4th level or higher may select from alternative lists of animals. Should she select an animal companion from one of these alternative lists, the creature gains abilities as if the character’s druid level were lower than it actually is. Subtract the value indicated from the character’s druid level and use this adjusted level to determine the animal companion’s powers. (If this adjustment would reduce the druid’s effective level to 0 or lower, she can’t have that animal as a companion.) For example, a 6th-level druid could select a leopard as an animal companion. The leopard would have characteristics and special abilities as if the druid were 3rd level (taking into account the -3 adjustment) instead of 6th level.",,true
+81,druidbonuslanguage,Bonus Languages,"**Bonus Languages:** A druid’s bonus language options include Sylvan, the language of woodland creatures. This choice is in addition to the bonus languages available to the character because of her race.
+
+A druid also knows Druidic, a secret language known only to druids, which she learns upon becoming a 1st-level druid. Druidic is a free language for a druid; that is, she knows it in addition to her regular allotment of languages and it doesn’t take up a language slot. Druids are forbidden to teach this language to nondruids. Druidic has its own alphabet.",,true
+84,druidex,Ex-Druids,"**Ex-Druids:** A druid who ceases to revere nature, changes to a prohibited alignment, or teaches the Druidic language to a nondruid loses all spells and druid abilities (including her animal companion, but not including weapon, armor, and shield proficiencies). She cannot thereafter gain levels as a druid until she atones (see the [spell: atonement] spell description).",,true
+87,druidnaturesense,Nature Sense,**Nature Sense (Ex):** A druid gains a +2 bonus on Knowledge (nature) and Survival checks.,,true
+90,druidproficiency,Weapon and Armor Proficiency,"**Weapon and Armor Proficiency:** Druids are also proficient with all natural attacks (claw, bite, and so forth) of any form they assume with wild shape (see below).
+
+Druids are proficient with light and medium armor but are prohibited from wearing metal armor; thus, they may wear only padded, leather, or hide armor. (A druid may also wear wooden armor that has been altered by the ironwood spell so that it functions as though it were steel. See the [spell: ironwood] spell description) Druids are proficient with shields (except tower shields) but must use only wooden ones.
+
+A druid who wears prohibited armor or carries a prohibited shield is unable to cast druid spells or use any of her supernatural or spell-like class abilities while doing so and for 24 hours thereafter.",,true
+93,druidresistnaturelure,Resist Nature's Lure,"**Resist Nature’s Lure (Ex):** Starting at 4th level, a druid gains a +4 bonus on saving throws against the spell-like abilities of fey (such as dryads, pixies, and sprites).",,true
+96,druidspells,Spells,"**Spells:** A druid casts divine spells (the same type of spells available to the cleric, paladin, and ranger), which are drawn from the druid spell list. Her alignment may restrict her from casting certain spells opposed to her moral or ethical beliefs; see Chaotic, Evil, Good, and Lawful Spells. A druid must choose and prepare her spells in advance.
+
+To prepare or cast a spell, the druid must have a Wisdom score equal to at least 10 + the spell level (Wis 10 for 0-level spells, Wis 11 for 1st-level spells, and so forth). The Difficulty Class for a saving throw against a druid’s spell is 10 + the spell level + the druid’s Wisdom modifier.
+
+Like other spellcasters, a druid can cast only a certain number of spells of each spell level per day. Her base daily spell allotment is given on the Spells per Day table. In addition, she receives bonus spells per day if she has a high Wisdom score. She does not have access to any domain spells or granted powers, as a cleric does.
+
+A druid prepares and casts spells the way a cleric does, though she cannot lose a prepared spell to cast a cure spell in its place (but see Spontaneous Casting). A druid may prepare and cast any spell on the druid spell list, provided that she can cast spells of that level, but she must choose which spells to prepare during her daily meditation.",,true
+99,druidspontaneous,Spontaneous Casting,"**Spontaneous Casting:** A druid can channel stored spell energy into summoning spells that she hasn’t prepared ahead of time. She can “lose” a prepared spell in order to cast any *summon nature’s ally* spell of the same level or lower. For example, a druid who has prepared [spell: repel vermin] (a 4th-level spell) may lose repel vermin in order to cast [spell: summon nature's ally IV] (also a 4th-level spell).",,true
+102,druidthousandfaces,A Thousand Faces,"**A Thousand Faces (Su):** At 13th level, a druid gains the ability to change her appearance at will, as if using the [spell: alter self] spell, but only while in her normal form.",,true
+105,druidtimelessbody,Timeless Body,"**Timeless Body (Ex):** A [var: classname] no longer takes ability score penalties for aging (see Aging Effects) and cannot be magically aged. Any penalties she may have already incurred, however, remain in place. Bonuses still accrue, and the [var: classname] still dies of old age when her time is up.",,true
+108,druidtracklessstep,Trackless Step,"**Trackless Step (Ex):** Starting at 3rd level, a druid leaves no trail in natural surroundings and cannot be tracked. She may choose to leave a trail if so desired.",,true
+111,druidvenomimmunity,Venom Immunity,"**Venom Immunity (Ex):** At 9th level, a druid gains immunity to all poisons.",,true
+114,druidwildshape,Wild Shape,"**Wild Shape (Su):** At 5th level, a druid gains the ability to turn herself into any Small or Medium animal and back again once per day. Her options for new forms include all creatures with the animal type. This ability functions like the [spell: polymorph] spell, except as noted here. The effect lasts for 1 hour per druid level, or until she changes back. Changing form (to animal or back) is a standard action and doesn’t provoke an attack of opportunity.
+
+The form chosen must be that of an animal the druid is familiar with. For example, a druid who has never been outside a temperate forest could not become a polar bear.
+
+A druid loses her ability to speak while in animal form because she is limited to the sounds that a normal, untrained animal can make, but she can communicate normally with other animals of the same general grouping as her new form. (The normal sound a wild parrot makes is a squawk, so changing to this form does not permit speech.)
+
+A druid can use this ability more times per day at 6th, 7th, 10th, 14th, and 18th level. In addition, she gains the ability to take the shape of a Large animal at 8th level, a Tiny animal at 11th level, and a Huge animal at 15th level. The new form’s Hit Dice can’t exceed the character’s druid level. For instance, a druid can’t take the form of a dire bear (a Large creature that always has at least 12 HD) until 12th level, even though she can begin taking Large forms at 8th level.
+
+At 12th level, a druid becomes able to use wild shape to change into a plant creature, such as a shambling mound, with the same size restrictions as for animal forms. (A druid can’t use this ability to take the form of a plant that isn’t a creature, such as a tree or a rose bush.)
+
+At 16th level, a druid becomes able to use wild shape to change into a Small, Medium, or Large elemental (air, earth, fire, or water) once per day. These elemental forms are in addition to her normal wild shape usage. In addition to the normal effects of wild shape, the druid gains all the elemental’s extraordinary, supernatural, and spell-like abilities. She also gains the elemental’s feats for as long as she maintains the wild shape, but she retains her own creature type (humanoid, in most cases).
+
+At 18th level, a druid becomes able to assume elemental form twice per day, and at 20th level she can do so three times per day. At 20th level, a druid may use this wild shape ability to change into a Huge elemental.",,true
+117,evasion,Evasion,"**Evasion (Ex):** A [var: classname] can avoid even magical and unusual attacks with great agility. If she makes a successful Reflex saving throw against an attack that normally deals half damage on a successful save (such as a red dragon’s fiery breath or a fireball), she instead takes no damage. Evasion can be used only if a [var: classname] is wearing light armor or no armor. A helpless [var: classname] (such as one who is unconscious or paralysed) does not gain the benefit of evasion.",,true
+120,fastmovement,Fast Movement,"**Fast Movement (Ex):** A barbarian’s land speed is faster than the norm for his race by +10 feet. This benefit applies only when he is wearing no armor, light armor, or medium armor and not carrying a heavy load. Apply this bonus before modifying the barbarian’s speed because of any load carried or armor worn. For example, a human barbarian has a speed of 40 feet, rather than 30 feet, when wearing light or no armor. When wearing medium armor or carrying a medium load, his speed drops to 30 feet. A halfling barbarian has a speed of 30 feet, rather than 20 feet, in light or no armor. When wearing medium armor or carrying a medium load, his speed drops to 20 feet.",,true
+123,fighterbonusfeat,Bonus Feat,"**Bonus Feat:** At 1st level, a fighter gets a bonus combat-oriented feat in addition to the feat that any 1st-level character gets and the bonus feat granted to a human character. The fighter gains an additional bonus feat at 2nd level and every two fighter levels thereafter (4th, 6th, 8th, 10th, 12th, 14th, 16th, 18th, and 20th). These bonus feats must be drawn from the feats noted as fighter bonus feats. A fighter must still meet all prerequisites for a bonus feat, including ability score and base attack bonus minimums. (See feats for descriptions and their prerequisites.) 
+
+These bonus feats are in addition to the feat that a character of any class gets from advancing levels. A fighter is not limited to the list of fighter bonus feats when choosing these feats.","A fighter gets a bonus combat-oriented feat at 1st, 2nd and every two fighter levels thereafter. A fighter must still meet all prerequisites for a bonus feat, which must be drawn from the feats noted as fighter bonus feats.",true
+126,greaterrage,Greater Rage,"**Greater Rage (Ex):** A barbarian’s bonuses to Strength and Constitution during his rage each increase to +6, and his morale bonus on Will saves increases to +3. The penalty to AC remains at -2.",,true
+129,illiteracy,Illiteracy,"**Illiteracy:** Barbarians are the only characters who do not automatically know how to read and write. A barbarian may spend 2 skill points to gain the ability to read and write all languages he is able to speak.
+
+A barbarian who gains a level in any other class automatically gains literacy. Any other character who gains a barbarian level does not lose the literacy he or she already had.",,true
+132,improvedevasion,Improved Evasion,"**Improved Evasion (Ex):** A [var: classname]’s evasion ability improves. She still takes no damage on a successful Reflex saving throw against attacks such as a dragon’s breath weapon or a fireball, but henceforth she takes only half damage on a failed save. A helpless [var: classname] (such as one who is unconscious or paralysed) does not gain the benefit of improved evasion.",,true
+135,improveduncannydodge,Improved Uncanny Dodge,"**Improved Uncanny Dodge (Ex):** A [var: classname] can no longer be flanked; he can react to opponents on opposite sides of him as easily as he can react to a single attacker. This defense denies a rogue the ability to sneak attack the [var: classname] by flanking him, unless the attacker has at least four more rogue levels than the target does.
+
+If a character already has uncanny dodge from a second class, the character automatically gains improved uncanny dodge instead, and the levels from the classes that grant uncanny dodge stack to determine the minimum rogue level required to flank the character.",,true
+138,indomitablewill,Indomitable Will,"**Indomitable Will (Ex):** While in a rage, a barbarian gains a +4 bonus on Will saves to resist enchantment spells. This bonus stacks with all other modifiers, including the morale bonus on Will saves he also receives during his rage.",,true
+141,mightyrage,Mighty Rage,"**Mighty Rage (Ex):** A barbarian’s bonuses to Strength and Constitution during his rage each increase to +8, and his morale bonus on Will saves increases to +4. The penalty to AC remains at -2.",,true
+144,monkabundantstep,Abundant Step,"**Abundant Step (Su):** At 12th level or higher, a monk can slip magically between spaces, as if using the spell [spell: dimension door], once per day. Her caster level for this effect is one-half her monk level (rounded down).",,true
+147,monkac,AC Bonus,"**AC Bonus (Ex):** A monk is highly trained at dodging blows, and she has a sixth sense that lets her avoid even unanticipated attacks. When unarmored and unencumbered, the monk adds her Wisdom bonus (if any) to her AC. In addition, a monk gains a +1 bonus to AC at 5th level. This bonus increases by 1 for every five monk levels thereafter (+2 at 10th, +3 at 15th, and +4 at 20th level).
+
+These bonuses to AC apply even against touch attacks or when the monk is flat-footed. She loses these bonuses when she is immobilized or helpless, when she wears any armor, when she carries a shield, or when she carries a medium or heavy load.",,true
+150,monkarmorprof,Armor Restriction,"Monks are not proficient with any armor or shields - in fact, many of the monk’s special powers require unfettered movement. When wearing armor, using a shield, or carrying a medium or heavy load, a monk loses her AC bonus, as well as her fast movement and flurry of blows abilities.",,true
+153,monkbonusfeat,Bonus Feat,"**Bonus Feat:** At 1st level, a monk may select either Improved Grapple or Stunning Fist as a bonus feat. At 2nd level, she may select either Combat Reflexes or Deflect Arrows as a bonus feat. At 6th level, she may select either Improved Disarm or Improved Trip as a bonus feat. A monk need not have any of the prerequisites normally required for these feats to select them.",,true
+156,monkdiamondbody,Diamond Body,"**Diamond Body (Su):** At 11th level, a monk is in such firm control of her own metabolism that she gains immunity to poisons of all kinds.",,true
+159,monkdiamondsoul,Diamond Soul,"**Diamond Soul (Ex):** At 13th level, a monk gains spell resistance equal to her current monk level + 10. In order to affect the monk with a spell, a spellcaster must get a result on a caster level check (1d20 + caster level; see Spell Resistance) that equals or exceeds the monk’s spell resistance.",,true
+162,monkemptybody,Empty Body,"**Empty Body (Su):** At 19th level, a monk gains the ability to assume an ethereal state for 1 round per monk level per day, as though using the spell [spell: etherealness]. She may go ethereal on a number of different occasions during any single day, as long as the total number of rounds spent in an ethereal state does not exceed her monk level.",,true
+165,monkex,Ex-Monks,"**Ex-Monks:** A monk who becomes nonlawful cannot gain new levels as a monk but retains all monk abilities.
+
+Like a member of any other class, a monk may be a multiclass character, but multiclass monks face a special restriction. A monk who gains a new class or (if already multiclass) raises another class by a level may never again raise her monk level, though she retains all her monk abilities.",,true
+168,monkfastmove,Fast Movement,"**Fast Movement (Ex):** At 3rd level, a monk gains a +10 ft. enhancement bonus to her speed. A monk in armor (even light armor) or carrying a medium or heavy load loses this extra speed.",,true
+171,monkflurry,Flurry of Blows,"**Flurry of Blows (Ex):** When unarmored, a monk may strike with a flurry of blows at the expense of accuracy. When doing so, she may make one extra attack in a round at her highest base attack bonus, but this attack takes a -2 penalty, as does each other attack made that round. This penalty applies for 1 round, so it also affects attacks of opportunity the monk might make before her next action. When a monk reaches 5th level, the penalty lessens to -1, and at 9th level it disappears. A monk must use a full attack action to strike with a flurry of blows.
+
+When using flurry of blows, a monk may attack only with unarmed strikes or with special monk weapons (kama, nunchaku, quarterstaff, sai, shuriken, and siangham). She may attack with unarmed strikes and special monk weapons interchangeably as desired. For example, at 6th level, the monk Ember could make one attack with her unarmed strike at an attack bonus of +3 and one attack with a special monk weapon at an attack bonus of +3. When using weapons as part of a flurry of blows, a monk applies her Strength bonus (not Str bonus × 1-1/2 or × 1/2) to her damage rolls for all successful attacks, whether she wields a weapon in one or both hands. The monk can’t use any weapon other than a special monk weapon as part of a flurry of blows.
+
+In the case of the quarterstaff, each end counts as a separate weapon for the purpose of using the flurry of blows ability. Even though the quarterstaff requires two hands to use, a monk may still intersperse unarmed strikes with quarterstaff strikes, assuming that she has enough attacks in her flurry of blows routine to do so. For example, an 8th-level monk could make two attacks with the quarterstaff (one with each end) at a +5 attack bonus and one with an unarmed strike at a +0 attack bonus, or she could attack with one end of the quarterstaff and one unarmed strike each at a +5 attack bonus, and with the other end of the quarterstaff at a +0 attack bonus, or she could attack with one end of the quarterstaff and one unarmed strike at a +5 attack bonus each, and with the other end of the quarterstaff at a +0 attack bonus. She cannot, however, wield any other weapon at the same time that she uses a quarterstaff.
+
+When a monk reaches 11th level, her flurry of blows ability improves. In addition to the standard single extra attack she gets from flurry of blows, she gets a second extra attack at her full base attack bonus.",,true
+174,monkkistrike,Ki Strike,"**Ki Strike (Su):** At 4th level, a monk’s unarmed attacks are empowered with ki. Her unarmed attacks are treated as magic weapons for the purpose of dealing damage to creatures with damage reduction. Ki strike improves with the character’s monk level. At 10th level, her unarmed attacks are also treated as lawful weapons for the purpose of dealing damage to creatures with damage reduction. At 16th level, her unarmed attacks are treated as adamantine weapons for the purpose of dealing damage to creatures with damage reduction and bypassing hardness.",,true
+177,monkperfectself,Perfect Self,"**Perfect Self:** At 20th level, a monk has tuned her body with skill and quasi-magical abilities to the point that she becomes a magical creature. She is forevermore treated as an outsider (an extraplanar creature) rather than as a humanoid for the purpose of spells and magical effects. For instance, [spell: charm person] does not affect her. Additionally, the monk gains damage reduction 10/magic, which allows her to ignore the first 10 points of damage from any attack made by a nonmagical weapon or by any natural attack made by a creature that doesn’t have similar damage reduction. Unlike other outsiders, the monk can still be brought back from the dead as if she were a member of her previous creature type.",,true
+180,monkpuritybody,Purity of Body,"**Purity of Body (Ex):** At 5th level, a monk gains control over her body’s immune system. She gains immunity to all diseases except for supernatural and magical diseases (such as mummy rot and lycanthropy).",,true
+183,monkquiveringpalm,Quivering Palm,"**Quivering Palm (Su):** Starting at 15th level, a monk can set up vibrations within the body of another creature that can thereafter be fatal if the monk so desires. She can use this quivering palm attack once a week, and she must announce her intent before making her attack roll. Constructs, oozes, plants, undead, incorporeal creatures, and creatures immune to critical hits cannot be affected. Otherwise, if the monk strikes successfully and the target takes damage from the blow, the quivering palm attack succeeds. Thereafter the monk can try to slay the victim at any later time, as long as the attempt is made within a number of days equal to her monk level. To make such an attempt, the monk merely wills the target to die (a free action), and unless the target makes a Fortitude saving throw (DC 10 + 1/2 the monk’s level + the monk’s Wis modifier), it dies. If the saving throw is successful, the target is no longer in danger from that particular quivering palm attack, but it may still be affected by another one at a later time.",,true
+186,monkslowfall,Slow Fall,"**Slow Fall (Ex):** At 4th level or higher, a monk within arm’s reach of a wall can use it to slow her descent. When first using this ability, she takes damage as if the fall were 20 feet shorter than it actually is. The monk’s ability to slow her fall (that is, to reduce the effective distance of the fall when next to a wall) improves with her monk level until at 20th level she can use a nearby wall to slow her descent and fall any distance without harm.",,true
+189,monkstillmind,Still Mind,"**Still Mind (Ex):** A monk of 3rd level or higher gains a +2 bonus on saving throws against spells and effects from the school of enchantment, since her meditation and training improve her resistance to mind-affecting attacks.",,true
+192,monktongue,Tongue of the Sun and Moon,**Tongue of the Sun and Moon (Ex):** A monk of 17th level or higher can speak with any living creature.,,true
+195,monkunarmedstrike,Unarmed Strike,"**Unarmed Strike:** Monks are highly trained in fighting unarmed, giving them considerable advantages when doing so. At 1st level, a monk gains Improved Unarmed Strike as a bonus feat. A monk’s attacks may be with either fist interchangeably or even from elbows, knees, and feet. This means that a monk may even make unarmed strikes with her hands full. There is no such thing as an off-hand attack for a monk striking unarmed. A monk may thus apply her full Strength bonus on damage rolls for all her unarmed strikes.
+
+Usually a monk’s unarmed strikes deal lethal damage, but she can choose to deal nonlethal damage instead with no penalty on her attack roll. She has the same choice to deal lethal or nonlethal damage while grappling.
+
+A monk’s unarmed strike is treated both as a manufactured weapon and a natural weapon for the purpose of spells and effects that enhance or improve either manufactured weapons or natural weapons (such as the [spell: magic fang] and [spell: magic weapon] spells).
+
+A monk also deals more damage with her unarmed strikes than a normal person would. At 1st level their unarmed strikes do 1d6 damage. The unarmed damage shown is for Medium monks. A Small monk deals less damage than the amount given there with her unarmed attacks, while a Large monk deals more damage.
+
+[table: phb-monk-small-large-dmg]",,true
+198,monkwholenessofbody,Wholeness of Body,"**Wholeness of Body (Su):** At 7th level or higher, a monk can heal her own wounds. She can heal a number of hit points of damage equal to twice her current monk level each day, and she can spread this healing out among several uses.",,true
+201,paladinassoc,Associates,"**Associates:** While she may adventure with characters of any good or neutral alignment, a paladin will never knowingly associate with evil characters, nor will she continue an association with someone who consistently offends her moral code. A paladin may accept only henchmen, followers, or cohorts who are lawful good.",,true
+204,paladinaura,Aura of Good,"**Aura of Good (Ex):** The power of a paladin’s aura of good (see the [spell: detect good] spell) is equal to her paladin level, just like the aura of a cleric of a good deity.",,true
+207,paladinauraofcourage,Aura of Courage,"**Aura of Courage (Su):** Beginning at 3rd level, a paladin is immune to fear (magical or otherwise). Each ally within 10 feet of her gains a +4 morale bonus on saving throws against fear effects.
+
+This ability functions while the paladin is conscious, but not if she is unconscious or dead.",,true
+210,paladincode,Code of Conduct,"**Code of Conduct:** A paladin must be of lawful good alignment and loses all class abilities if she ever willingly commits an evil act. Additionally, a paladin’s code requires that she respect legitimate authority, act with honor (not lying, not cheating, not using poison, and so forth), help those in need (provided they do not use the help for evil or chaotic ends), and punish those who harm or threaten innocents.",,true
+213,paladindivinegrace,Divine Grace,"**Divine Grace (Su):** At 2nd level, a paladin gains a bonus equal to her Charisma bonus (if any) on all saving throws.",,true
+216,paladindivinehealth,Divine Health,"**Divine Health (Ex):** At 3rd level, a paladin gains immunity to all diseases, including supernatural and magical diseases (such as mummy rot and lycanthropy).",,true
+219,paladinedetectevil,Detect Evil,"**Detect Evil (Sp):** At will, a paladin can use [spell: detect evil], as the spell.",,true
+222,paladinex,Ex-Paladins,"**Ex-Paladins:** A paladin who ceases to be lawful good, who willfully commits an evil act, or who grossly violates the code of conduct loses all paladin spells and abilities (including the service of the paladin’s mount, but not weapon, armor, and shield proficiencies). She may not progress any farther in levels as a paladin. She regains her abilities and advancement potential if she atones for her violations (see the [spell: atonement] spell description), as appropriate.
+
+Like a member of any other class, a paladin may be a multiclass character, but multiclass paladins face a special restriction. A paladin who gains a level in any class other than paladin may never again raise her paladin level, though she retains all her paladin abilities. The path of the paladin requires a constant heart. If a character adopts this class, she must pursue it to the exclusion of all other careers. Once she has turned off the path, she may never return.",,true
+225,paladinlayonhands,Lay on Hands,"**Lay on Hands (Su):** Beginning at 2nd level, a paladin with a Charisma score of 12 or higher can heal wounds (her own or those of others) by touch. Each day she can heal a total number of hit points of damage equal to her paladin level x her Charisma bonus. For example, a 7th-level paladin with a 16 Charisma (+3 bonus) can heal 21 points of damage per day. A paladin may choose to divide her healing among multiple recipients, and she doesn’t have to use it all at once. Using lay on hands is a standard action.
+
+Alternatively, a paladin can use any or all of this healing power to deal damage to undead creatures. Using lay on hands in this way requires a successful melee touch attack and doesn’t provoke an attack of opportunity. The paladin decides how many of her daily allotment of points to use as damage after successfully touching an undead creature.",,true
+228,paladinmoount,Special Mount,"**Special Mount (Sp):** Upon reaching 5th level, a paladin gains the service of an unusually intelligent, strong, and loyal steed to serve her in her crusade against evil. This mount is usually a heavy warhorse (for a Medium paladin) or a warpony (for a Small paladin).
+
+Once per day, as a full-round action, a paladin may magically call her mount from the celestial realms in which it resides. The mount immediately appears adjacent to the paladin and remains for 2 hours per paladin level; it may be dismissed at any time as a free action. The mount is the same creature each time it is summoned, though the paladin may release a particular mount from service (if it has grown too old to join her crusade, for instance). Each time the mount is called, it appears in full health, regardless of any damage it may have taken previously. The mount also appears wearing or carrying any gear it had when it was last dismissed (including barding, saddle, saddlebags, and the like). Calling a mount is a conjuration (calling) effect.
+
+Should the paladin’s mount die, it immediately disappears, leaving behind any equipment it was carrying. The paladin may not summon another mount for thirty days or until she gains a paladin level, whichever comes first, even if the mount is somehow returned from the dead. During this thirty-day period, the paladin takes a -1 penalty on attack and weapon damage rolls.",,true
+231,paladinremovedisease,Remove Disease,"**Remove Disease (Sp):** At 6th level, a paladin can produce a [spell: remove disease] effect, as the spell, once per week. She can use this ability one additional time per week for every three levels after 6th (twice per week at 9th, three times at 12th, and so forth).",,true
+234,paladinsmite,Smite Evil,"**Smite Evil (Su):** Once per day, a paladin may attempt to smite evil with one normal melee attack. She adds her Charisma bonus (if any) to her attack roll and deals 1 extra point of damage per paladin level. For example, a 13th-level paladin armed with a longsword would deal 1d8+13 points of damage, plus any additional bonuses for high Strength or magical affects that would normally apply. If the paladin accidentally smites a creature that is not evil, the smite has no effect, but the ability is still used up for that day.
+
+At 5th level, and at every five levels thereafter, the paladin may smite evil one additional time per day, to a maximum of five times per day at 20th level.",,true
+237,paladinspells,Spells,"**Spells:** Beginning at 4th level, a paladin gains the ability to cast a small number of divine spells (the same type of spells available to the cleric, druid, and ranger), which are drawn from the paladin spell list. A paladin must choose and prepare her spells in advance.
+
+To prepare or cast a spell, a paladin must have a Wisdom score equal to at least 10 + the spell level (Wis 11 for 1st level spells, Wis 12 for 2nd-level spells, and so forth). The Difficulty Class for a saving throw against a paladin’s spell is 10 + the spell level + the paladin’s Wisdom modifier.
+
+Like other spellcasters, a paladin can cast only a certain number of spells of each spell level per day. In addition, she receives bonus spells per day if she has a high Wisdom score. When the spell table indicates that the paladin gets 0 spells per day of a given spell level (for instance, 1st-level spells for a 4th-level paladin), she gains only the bonus spells she would be entitled to based on her Wisdom score for that spell level. The paladin does not have access to any domain spells or granted powers, as a cleric does.
+
+A paladin prepares and casts spells the way a cleric does, though she cannot lose a prepared spell to spontaneously cast a cure spell in its place. A paladin may prepare and cast any spell on the paladin spell list, provided that she can cast spells of that level, but she must choose which spells to prepare during her daily meditation.
+
+Through 3rd level, a paladin has no caster level. At 4th level and higher, her caster level is one-half her paladin level.",,true
+240,paladinturnundead,Turn Undead,"**Turn Undead (Su):** When a paladin reaches 4th level, she gains the supernatural ability to turn undead. She may use this ability a number of times per day equal to 3 + her Charisma modifier. She turns undead as a cleric of three levels lower would.",,true
+243,rage,Rage,"**Rage (Ex):** A barbarian can fly into a screaming blood frenzy a certain number of times per day. In a rage, a barbarian gains phenomenal strength and durability but becomes reckless and less able to defend himself. He temporarily gains a +4 bonus to Strength, a +4 bonus to Constitution, and a +2 morale bonus on Will saves, but he takes a –2 penalty to Armor Class.
+
+The increase in Constitution increases the barbarian’s hit points by 2 points per level, but these hit points go away at the end of the rage when his Constitution score drops back to normal. (These extra hit points are not lost first the way temporary hit points are; see Temporary Hit Points) While raging, a barbarian cannot use any Charisma-, Dexterity-, or Intelligence-based skills (except for Balance, Escape Artist, Intimidate, and Ride), the Concentration skill, or any abilities that require patience or concentration, nor can he cast spells or activate magic items that require a command word, a spell trigger (such as a wand), or spell completion (such as a scroll) to function. He can use any feat he has except Combat Expertise, item creation feats, and metamagic feats. A fit of rage lasts for a number of rounds equal to 3 + the character’s (newly improved) Constitution modifier. A barbarian may prematurely end his rage. At the end of the rage, the barbarian loses the rage modifiers and restrictions and becomes fatigued (-2 penalty to Strength, -2 penalty to Dexterity, can’t charge or run) for the duration of the current encounter (unless he is a 17th-level barbarian, at which point this limitation no longer applies).
+
+A barbarian can fly into a rage only once per encounter. At 1st level he can use his rage ability once per day. At 4th level and every four levels thereafter, he can use it one additional time per day (to a maximum of six times per day at 20th level). Entering a rage takes no time itself, but a barbarian can do it only during his action (see Initiative), not in response to someone else’s action. A barbarian can’t, for example, fly into a rage when struck down by an arrow in order to get the extra hit points from the increased Constitution, although the extra hit points would be of benefit if he had gone into a rage earlier in the round, before the arrow struck.",,true
+246,rangeranimalcompanion,Animal Companion,"**Animal Companion (Ex):** At 4th level, a ranger gains an animal companion selected from the following list: badger, camel, dire rat, dog, riding dog, eagle, hawk, horse (light or heavy), owl, pony, snake (Small or Medium viper), or wolf. If the DM’s campaign takes place wholly or partly in an aquatic environment, the DM may add the following creatures to the ranger’s list of options: crocodile, porpoise, Medium shark, and squid. This animal is a loyal companion that accompanies the ranger on his adventures as appropriate for its kind. (For instance, an aquatic creature can’t adventure with a ranger on land and shouldn’t be selected by a nonaquatic character without extenuating circumstances). In most cases, the animal companion functions as a mount, sentry, scout, or hunting animal, rather than as a protector.
+
+This ability functions like the druid ability of the same name, except that the ranger’s effective druid level is one-half his ranger level. For example, the animal companion of a 4th-level ranger would be the equivalent of a 2nd-level druid’s animal companion. A ranger may select from the alternative lists of animal companions just as a druid can, though again his effective druid level is half his ranger level. Thus, he must be at least an 8th-level ranger to select from the druid’s list of 4th-level animal companions, and if he chooses one of those animals, his effective druid level would be reduced by 3, to 1st level. Like a druid, a ranger cannot select an alternative animal if the choice would reduce his effective druid level below 1st.",,true
+249,rangercamouflage,Camouflage,"**Camouflage (Ex):** A ranger of 13th level or higher can use the Hide skill in any sort of natural terrain, even if the terrain doesn’t grant cover or concealment.",,true
+252,rangercombatstyle,Combat Style,"**Combat Style (Ex):** At 2nd level, a ranger must select one of two combat styles to pursue: archery or two-weapon combat. This choice affects the character’s class features but does not restrict his selection of feats or special abilities in any way.
+
+If the ranger selects archery, he is treated as having the Rapid Shot feat, even if he does not have the normal prerequisites for that feat.
+
+If the ranger selects two-weapon combat, he is treated as having the Two-Weapon Fighting feat, even if he does not have the normal prerequisites for that feat.
+
+The benefits of the ranger’s chosen style apply only when he wears light or no armor. He loses all benefits of his combat style when wearing medium or heavy armor.",,true
+255,rangercombatstylemastery,Combat Style Mastery,"**Combat Style Mastery (Ex):** At 11th level, a ranger’s aptitude in his chosen combat style (archery or two-weapon combat) improves again. If he selected archery at 2nd level, he is treated as having the Improved Precise Shot feat, even if he does not have the normal prerequisites for that feat.
+
+If the ranger selected two-weapon combat at 2nd level, he is treated as having the Greater Two-Weapon Fighting feat, even if he does not have the normal prerequisites for that feat.
+
+As before, the benefits of the ranger’s chosen style apply only when he wears light or no armor. He loses all benefits of his combat style when wearing medium or heavy armor.",,true
+258,rangerendurance,Endurance,**Endurance:** A ranger gains Endurance as a bonus feat at 3rd level.,,true
+261,rangerfavoredenemy,Favored Enemy,"**Favored Enemy (Ex):** At 1st level, a ranger may select a type of creature from among those given on Table: Ranger Favored Enemies. Due to his extensive study on his chosen type of foe and training in the proper techniques for combating such creatures, the ranger gains a +2 bonus on Bluff, Listen, Sense Motive, Spot, and Survival checks when using these skills against creatures of this type. Likewise, he gets a +2 bonus on weapon damage rolls against such creatures.
+
+At 5th level and every five levels thereafter (10th, 15th, and 20th level), the ranger may select an additional favored enemy from those given on the table. In addition, at each such interval, the bonus against any one favored enemy (including the one just selected, if so desired) increases by 2. For example, a 5th-level ranger has two favored enemies; against one he gains a +4 bonus on Bluff, Listen, Sense Motive, Spot, and Survival checks and weapon damage rolls, and against the other he has a +2 bonus. At 10th level, he has three favored enemies, and he gains an additional +2 bonus, which he can allocate to the bonus against any one of his three favored enemies. Thus, his bonuses could be either +4, +4, +2 or +6, +2, +2.
+
+If the ranger chooses humanoids or outsiders as a favored enemy, he must also choose an associated subtype, as indicated on the table. If a specific creature falls into more than one category of favored enemy (for instance, devils are both evil outsiders and lawful outsiders), the ranger’s bonuses do not stack; he simply uses whichever bonus is higher.
+
+[table: phb-ranger-favored-enemies]",,true
+264,rangerhideinplainsight,Hide in Plain Sight,"**Hide in Plain Sight (Ex):** While in any sort of natural terrain, a ranger of 17th level or higher can use the Hide skill even while being observed.",,true
+267,rangerimprovedcombatstyle,Improved Combat Style,"**Improved Combat Style (Ex):** At 6th level, a ranger’s aptitude in his chosen combat style (archery or two-weapon combat) improves. If he selected archery at 2nd level, he is treated as having the Manyshot feat, even if he does not have the normal prerequisites for that feat.
+
+If the ranger selected two-weapon combat at 2nd level, he is treated as having the Improved Two-Weapon Fighting feat, even if he does not have the normal prerequisites for that feat.
+
+As before, the benefits of the ranger’s chosen style apply only when he wears light or no armor. He loses all benefits of his combat style when wearing medium or heavy armor.",,true
+270,rangerspells,Spells,"**Spells:** Beginning at 4th level, a ranger gains the ability to cast a small number of divine spells (the same type of spells available to the cleric, druid, and paladin), which are drawn from the ranger spell list. A ranger must choose and prepare his spells in advance.
+
+To prepare or cast a spell, a ranger must have a Wisdom score equal to at least 10 + the spell level (Wis 11 for 1st level spells, Wis 12 for 2nd-level spells, and so forth). The Difficulty Class for a saving throw against a ranger’s spell is 10 + the spell level + the ranger’s Wisdom modifier.
+
+Like other spellcasters, a ranger can cast only a certain number of spells of each spell level per day. His base daily spell allotment is given on the Spells per Day table. In addition, he receives bonus spells per day if he has a high Wisdom score. When the Spells per Day table indicates that the ranger gets 0 spells per day of a given spell level (for instance, 1st-level spells for a 4th-level ranger), he gains only the bonus spells he would be entitled to based on his Wisdom score for that spell level. The ranger does not have access to any domain spells or granted powers, as a cleric does.
+
+A ranger prepares and casts spells the way a cleric does, though he cannot lose a prepared spell to cast a cure spell in its place. A ranger may prepare and cast any spell on the ranger spell list, provided that he can cast spells of that level, but he must choose which spells to prepare during his daily meditation.
+
+Through 3rd level, a ranger has no caster level. At 4th level and higher, his caster level is one-half his ranger level.",,true
+273,rangerswifttracker,Swift Tracker,"**Swift Tracker (Ex):** Beginning at 8th level, a ranger can move at his normal speed while following tracks without taking the normal -5 penalty. He takes only a -10 penalty (instead of the normal -20) when moving at up to twice normal speed while tracking.",,true
+276,rangertrack,Track,**Track:** A ranger gains Track as a bonus feat.,,true
+279,roguesneakattack,Sneak Attack,"**Sneak Attack:** If a rogue can catch an opponent when he is unable to defend himself effectively from her attack, she can strike a vital spot for extra damage. Basically, the rogue’s attack deals extra damage any time her target would be denied a Dexterity bonus to AC (whether the target actually has a Dexterity bonus or not), or when the rogue flanks her target. This extra damage is 1d6 at 1st level, and it increases by 1d6 every two rogue levels thereafter. Should the rogue score a critical hit with a sneak attack, this extra damage is not multiplied. Ranged attacks can count as sneak attacks only if the target is within 30 feet. A rogue can’t strike with deadly accuracy from beyond that range.
+
+With a sap (blackjack) or an unarmed strike, a rogue can make a sneak attack that deals nonlethal damage instead of lethal damage. She cannot use a weapon that deals lethal damage to deal nonlethal damage in a sneak attack, not even with the usual -4 penalty, because she must make optimal use of her weapon in order to execute a sneak attack.
+
+A rogue can sneak attack only living creatures with discernible anatomies - undead, constructs, oozes, plants, and incorporeal creatures lack vital areas to attack. Any creature that is immune to critical hits is not vulnerable to sneak attacks. The rogue must be able to see the target well enough to pick out a vital spot and must be able to reach such a spot. A rogue cannot sneak attack while striking a creature with concealment or striking the limbs of a creature whose vitals are beyond reach.",,true
+282,roguespecialabilities,Special Abilities,"**Special Abilities:** On attaining 10th level, and at every three levels thereafter (13th, 16th, and 19th), a rogue gains a special ability of her choice from among the following options.
+
+*Crippling Strike (Ex):* A rogue with this ability can sneak attack opponents with such precision that her blows weaken and hamper them. An opponent damaged by one of her sneak attacks also takes 2 points of Strength damage. Ability points lost to damage return on their own at the rate of 1 point per day for each damaged ability.
+
+*Defensive Roll (Ex):* The rogue can roll with a potentially lethal blow to take less damage from it than she otherwise would. Once per day, when she would be reduced to 0 or fewer hit points by damage in combat (from a weapon or other blow, not a spell or special ability), the rogue can attempt to roll with the damage. To use this ability, the rogue must attempt a Reflex saving throw (DC = damage dealt). If the save succeeds, she takes only half damage from the blow; if it fails, she takes full damage. She must be aware of the attack and able to react to it in order to execute her defensive roll - if she is denied her Dexterity bonus to AC, she can’t use this ability. Since this effect would not normally allow a character to make a Reflex save for half damage, the rogue’s evasion ability does not apply to the defensive roll.
+
+*Improved Evasion (Ex):* This ability works like evasion, except that while the rogue still takes no damage on a successful Reflex saving throw against attacks such as a dragon’s breath weapon or a fireball, henceforth she henceforth takes only half damage on a failed save. A helpless rogue (such as one who is unconscious or paralysed) does not gain the benefit of improved evasion.
+
+*Opportunist (Ex):* Once per round, the rogue can make an attack of opportunity against an opponent who has just been struck for damage in melee by another character. This attack counts as the rogue’s attack of opportunity for that round. Even a rogue with the Combat Reflexes feat can’t use the opportunist ability more than once per round.
+
+*Skill Mastery:* The rogue becomes so certain in the use of certain skills that she can use them reliably even under adverse conditions. Upon gaining this ability, she selects a number of skills equal to 3 + her Intelligence modifier. When making a skill check with one of these skills, she may take 10 even if stress and distractions would normally prevent her from doing so. A rogue may gain this special ability multiple times, selecting additional skills for it to apply to each time.
+
+*Slippery Mind (Ex):* This ability represents the rogue’s ability to wriggle free from magical effects that would otherwise control or compel her. If a rogue with slippery mind is affected by an enchantment spell or effect and fails her saving throw, she can attempt it again 1 round later at the same DC. She gets only this one extra chance to succeed on her saving throw.
+
+*Feat:* A rogue may gain a bonus feat in place of a special ability.",,true
+285,roguetrapfinding,Trapfinding,"**Trapfinding:** Rogues (and only rogues) can use the Search skill to locate traps when the task has a Difficulty Class higher than 20. Finding a nonmagical trap has a DC of at least 20, or higher if it is well hidden. Finding a magic trap has a DC of 25 + the level of the spell used to create it.
+
+Rogues (and only rogues) can use the Disable Device skill to disarm magic traps. A magic trap generally has a DC of 25 + the level of the spell used to create it.
+
+A rogue who beats a trap’s DC by 10 or more with a Disable Device check can study a trap, figure out how it works, and bypass it (with her party) without disarming it.",,true
+288,sorcererspells,Spells,"**Spells:** A sorcerer casts arcane spells (the same type of spells available to bards and wizards), which are drawn primarily from the sorcerer/wizard spell list. He can cast any spell he knows without preparing it ahead of time, the way a wizard or a cleric must.
+
+To learn or cast a spell, a sorcerer must have a Charisma score equal to at least 10 + the spell level (Cha 10 for 0-level spells, Cha 11 for 1st-level spells, and so forth). The Difficulty Class for a saving throw against a sorcerer’s spell is 10 + the spell level + the sorcerer’s Charisma modifier.
+
+Like other spellcasters, a sorcerer can cast only a certain number of spells of each spell level per day. His base daily spell allotment is given on the Spells per Day table. In addition, he receives bonus spells per day if he has a high Charisma score.
+
+A sorcerer’s selection of spells is extremely limited. A sorcerer begins play knowing four 0-level spells (also called cantrips) and two 1st-level spells of your choice. At each new sorcerer level, he gains one or more new spells. (Unlike spells per day, the number of spells a sorcerer knows is not affected by his Charisma score). These new spells can be common spells chosen from the sorcerer/wizard spell list, or they can be unusual spells that the sorcerer has gained some understanding of by study. For example, a sorcerer with a scroll or spellbook detailing an unusual sorcerer/wizard spell (one not on the sorcerer/wizard spell list in this book) could select that spell as one of his new spells for attaining a new level, provided that it is of the right spell level. The sorcerer can’t use this method of spell acquisition to learn spells at a faster rate, however.
+
+Upon reaching 4th level, and at every even-numbered sorcerer level after that (6th, 8th, and so on), a sorcerer can choose to learn a new spell in place of one he already knows. In effect, the sorcerer “loses” the old spell in exchange for the new one. The new spell’s level must be the same as that of the spell being exchanged, and it must be at least two levels lower than the highest-level sorcerer spell the sorcerer can cast. For instance, upon reaching 4th level, a sorcerer could trade in a single 0-level spell (two spell levels below the highest-level sorcerer spell he can cast, which is 2nd) for a different 0-level spell. At 6th level, he could trade in a single 0-level or 1st-level spell (since he now can cast 3rd-level sorcerer spells) for a different spell of the same level. A sorcerer may swap only a single spell at any given level, and must choose whether or not to swap the spell at the same time that he gains new spells known for the level.
+
+Unlike a wizard or a cleric, a sorcerer need not prepare his spells in advance. He can cast any spell he knows at any time, assuming he has not yet used up his spells per day for that spell level. For example, at 1st level, the sorcerer Hennet can cast four 1st-level spells per day - three for being 1st level, plus one thanks to his Charisma score of 15. However, he knows only two 1st-level spells: [spell: magic missile] and [spell: sleep]. Thus, on any given day, he can cast some combination of the two spells a total of four times. He does not have to decide ahead of time which spells he’ll cast.",,true
+291,summonfamiliar,Familiar,"**Familiar:** A [var: classname] can obtain a familiar. Doing so takes 24 hours and uses up magical materials that cost 100 gp. A familiar is a magical beast that resembles a small animal and is unusually tough and intelligent. The creature serves as a companion and servant.
+
+The [var: classname] chooses the kind of familiar he gets. As the [var: classname] advances in level, his familiar also increases in power.
+
+If the familiar dies or is dismissed by the [var: classname], the [var: classname] must attempt a DC 15 Fortitude saving throw. Failure means he loses 200 experience points per [var: classname] level; success reduces the loss to one-half that amount. However, a [var: classname]’s experience point total can never go below 0 as the result of a familiar’s demise or dismissal. For example, suppose that Hennet is a 3rd level [var: classname] with 3,230 XP when his owl familiar is killed by a bugbear. Hennet makes a successful saving throw, so he loses 300 XP, dropping him below 3,000 XP and back to 2nd level. A slain or dismissed familiar cannot be replaced for a year and day. A slain familiar can be raised from the dead just as a character can be, and it does not lose a level or a Constitution point when this happy event occurs.
+
+A character with more than one class that grants a familiar may have only one familiar at a time.",Obtain a magical beast that resembles a small animal and is unusually tough and intelligent. The creature serves as a companion and servant.,true
+294,tirelessrage,Tireless Rage,**Tireless Rage (Ex):** A barbarian no longer becomes fatigued at the end of his rage.,,true
+297,trapsense,Trap Sense,"**Trap Sense (Ex):** A [var: classname] has an intuitive sense that alerts him to danger from traps, giving him a +1 bonus on Reflex saves made to avoid traps and a +1 dodge bonus to AC against attacks made by traps. These bonuses rise by +1 every three [var: classname] levels thereafter (6th, 9th, 12th, 15th, and 18th level). Trap sense bonuses gained from multiple classes stack.",,true
+300,uncannydodge,Uncanny Dodge,"**Uncanny Dodge (Ex):** A [var: classname] gains the ability to react to danger before his senses would normally allow him to do so. He retains his Dexterity bonus to AC (if any) even if he is caught flat-footed or struck by an invisible attacker. However, he still loses his Dexterity bonus to AC if immobilized.
+
+If a [var: classname] already has uncanny dodge from a different class, he automatically gains improved uncanny dodge instead.",,true
+303,wildempathy,Wild Empathy,"**Wild Empathy (Ex):** A [var: classname] can use body language, vocalizations, and demeanor to improve the attitude of an animal (such as a bear or a monitor lizard). This ability functions just like a Diplomacy check made to improve the attitude of a person. The [var: classname] rolls 1d20 and adds her [var: classname] level and her Charisma modifier to determine the wild empathy check result. The typical domestic animal has a starting attitude of indifferent, while wild animals are usually unfriendly.
+
+To use wild empathy, the [var: classname] and the animal must be able to study each other, which means that they must be within 30 feet of one another under normal conditions. Generally, influencing an animal in this way takes 1 minute but, as with influencing people, it might take more or less time.
+
+A [var: classname] can also use this ability to influence a magical beast with an Intelligence score of 1 or 2 (such as a basilisk or a girallon), but she takes a -4 penalty on the check.",,true
+306,wizardarmor,Armor Restriction,"**Armor Restriction:** Armor of any type interferes with a wizard’s movements, which can cause her spells with somatic components to fail.","Armor of any type interferes with a wizard’s movements, which can cause her spells with somatic components to fail.",true
+309,wizardbonusfeat,Bonus Feats,"**Bonus Feats:** At 5th, 10th, 15th, and 20th level, a wizard gains a bonus feat. At each such opportunity, she can choose a metamagic feat, an item creation feat, or Spell Mastery. The wizard must still meet all prerequisites for a bonus feat, including caster level minimums.
+
+These bonus feats are in addition to the feat that a character of any class gets every three levels The wizard is not limited to the categories of item creation feats, metamagic feats, or Spell Mastery when choosing these feats.","At 5th, 10th, 15th, and 20th level, a wizard gains a bonus metamagic or item creation feat.",true
+312,wizardbonuslanguage,Bonus Languages,"**Bonus Languages:** A wizard may substitute Draconic for one of the bonus languages available to the character because of her race. Many ancient tomes of magic are written in Draconic, and apprentice wizards often learn it as part of their studies.","Wizards gain Draconic as a bonus language. Many ancient tomes of magic are written in Draconic, and apprentice wizards often learn it as part of their studies.",true
+315,wizardscribescroll,Scribe Scroll,"**Scribe Scroll:** At 1st level, a wizard gains Scribe Scroll as a bonus feat. This feats enables her to create magic scrolls.",a wizard gains Scribe Scroll as a bonus feat. This feats enables her to create magic scrolls.,true
+318,wizardspecialization,School Specialization,"**School Specialization:** A school is one of eight groupings of spells, each defined by a common theme, such as illusion or necromancy. If desired, a wizard may specialize in one school of magic. Specialization allows a wizard to cast extra spells from her chosen school, but she then never learns to cast spells from some other schools. Essentially, the wizard gains exceptional mastery over a single school by neglecting the study of other schools.
+
+A specialist wizard can prepare one additional spell of her specialty school per spell level each day. She also gains a +2 bonus on Spellcraft checks to learn the spells of her chosen school.
+
+The wizard must choose whether to specialize and, if she does so, choose her specialty at 1st level. At this time, she must also give up two other schools of magic (unless she chooses to specialize in divination; see below), which become her prohibited schools. For instance, if she chooses to specialize in conjuration, she might decide to give up enchantment and necromancy, or evocation and transmutation. A wizard can never give up divination to fulfill this requirement. Spells of the prohibited school or schools are not available to the wizard, and she can’t even cast such spells from scrolls or fire them from wands. She may not change either her specialization or her prohibited schools later.
+
+The eight schools of arcane magic are abjuration, conjuration, divination, enchantment, evocation, illusion, necromancy, and transmutation. Spells that do not fall into any of these schools are called universal spells.
+
+*Abjuration:* Spells that protect, block, or banish. An abjuration specialist is called an abjurer.
+
+*Conjuration:* Spells that bring creatures or materials to the caster. A conjuration specialist is called a conjurer.
+
+*Divination:* Spells that reveal information. A divination specialist is called a diviner. Unlike the other specialists, a diviner must give up only one other school.
+
+*Enchantment:* Spells that imbue the recipient with some property or grant the caster power over another being. An enchantment specialist is called an enchanter.
+
+*Evocation:* Spells that manipulate energy or create something from nothing. An evocation specialist is called an evoker.
+
+*Illusion:* Spells that alter perception or create false images. An illusion specialist is called an illusionist.
+
+*Necromancy:* Spells that manipulate, create, or destroy life or life force. A necromancy specialist is called a necromancer.
+
+*Transmutation:* Spells that transform the recipient physically or change its properties in a more subtle way. A transmutation specialist is called a transmuter.
+
+*Universal:* Not a school, but a category for spells that all wizards can learn. A wizard cannot select universal as a specialty school or as a prohibited school. Only a limited number of spells fall into this category.",,true
+321,wizardspellbook,Spellbooks,"**Spellbooks:** A wizard must study her spellbook each day to prepare her spells. She cannot prepare any spell not recorded in her spellbook, except for read magic, which all wizards can prepare from memory.
+
+A wizard begins play with a spellbook containing all 0-level wizard spells (except those from her prohibited school or schools, if any) plus three 1st-level spells of your choice. For each point of Intelligence bonus the wizard has, the spellbook holds one additional 1st-level spell of your choice. At each new wizard level, she gains two new spells of any spell level or levels that she can cast (based on her new wizard level) for her spellbook. For example, when a wizard attains 5th level, she can cast 3rd-level spells. At this point, she can add two new 3rd-level spells to her spellbook, or one 2nd-level spell and one 3rd-level spell, or any combination of two spells between 1st and 3rd level. At any time, a wizard can also add spells found in other wizards’ spellbooks to her own.","A wizard must study her spellbook each day to prepare her spells. She cannot prepare any spell not recorded in her spellbook, except for read magic, which all wizards can prepare from memory.",true
+324,wizardspells,Spells,"**Spells:** A wizard casts arcane spells (the same type of spells available to sorcerers and bards), which are drawn from the sorcerer/wizard spell list. A wizard must choose and prepare her spells ahead of time.
+
+To learn, prepare, or cast a spell, the wizard must have an Intelligence score equal to at least 10 + the spell level (Int 10 for 0-level spells, Int 11 for 1st-level spells, and so forth). The Difficulty Class for a saving throw against a wizard’s spell is 10 + the spell level + the wizard’s Intelligence modifier.
+
+Like other spellcasters, a wizard can cast only a certain number of spells of each spell level per day. Her base daily spell allotment is given on the Spells per Day table. In addition, she receives bonus spells per day if she has a high Intelligence score.
+
+Unlike a bard or sorcerer, a wizard may know any number of spells. She must choose and prepare her spells ahead of time by getting a good night’s sleep and spending 1 hour studying her spellbook. While studying, the wizard decides which spells to prepare.",A wizard casts arcane spells which are drawn from the sorcerer/wizard spell list. A wizard must choose and prepare her spells ahead of time.,true
+327,woodlandstride,Woodland Stride,"**Woodland Stride (Ex):** A [var: classname] may move through any sort of undergrowth (such as natural thorns, briars, overgrown areas, and similar terrain) at her normal speed and without taking damage or suffering any other impairment. However, thorns, briars, and overgrown areas that have been magically manipulated to impede motion still affect her.",,true
+330,awareness,Awareness,"+2 racial bonus on Listen, Search, and Spot checks. An [var: racenamelower] who merely passes within 5 feet of a secret or concealed door is entitled to a Search check to notice it as if she were actively looking for it. An [var: racenamelower]’s senses are so keen that she practically has a sixth sense about hidden portals.","+2 racial bonus on Listen, Search, and Spot checks.",true
+333,bonusfeat,Bonus Feat,"1 extra feat at 1st level, because humans are quick to master specialized tasks and varied in their talents.","1 extra feat at 1st level, because humans are quick to master specialized tasks and varied in their talents.",true
+336,bonusskillpoints,Bonus Skill Points,"4 extra skill points at 1^st^ level and 1 extra skill point at each additional level, since humans are versatile and capable. (The 4 skill points at 1^st^ level are added on as a bonus, not multiplied in)","4 extra skill points at 1st level and 1 extra skill point at each additional level, since humans are versatile and capable.",true
+339,darkvision,Darkvision,"**Darkvision:** [var: raceplural] can see in the dark up to 60 feet. Darkvision is black and white only, but it is otherwise like normal sight, and [var: raceplurallower] can function just fine with no light at all.","can see in the dark up to 60 feet, in black and white only.",true
+342,dwarfappraise,Dwarven Appraise Bonus,"+2 racial bonus on Appraise checks that are related to stone or metal items: Dwarves are familiar with valuable items of all kinds, especially those made of stone or metal.",+2 racial bonus on Appraise checks that are related to stone or metal items,true
+345,dwarfcombat,Combat Techniques,"+1 racial bonus to attack rolls against orcs (including half-orcs) and goblinoids (including goblins, hobgoblins, and bugbears): Dwarves are trained in the special combat techniques that allow them to fight their common enemies more effectively.","+1 racial bonus to attack rolls against orcs (including half-orcs) and goblinoids (including goblins, hobgoblins, and bugbears)",true
+348,dwarfcraft,Dwarven Craft Bonus,+2 racial bonus on Craft checks that are related to stone or metal: Dwarves are especially capable with stonework and metalwork.,+2 racial bonus on Craft checks that are related to stone or metal,true
+351,dwarfdodgegiant,Dwarven Dodge Bonus,"+4 dodge bonus to Armor Class against monsters of the giant type (such as ogres, trolls, and hill giants): This bonus represents special training that [var: raceplurallower] undergo, during which they learn tricks that previous generations developed in their battles with giants. Any time a creature loses its Dexterity bonus (if any) to Armor Class, such as when it’s caught flat-footed, it loses its dodge bonus, too. The Monster Manual has information on which creatures are of the giant type.",+4 dodge bonus to Armor Class against monsters of the giant type,true
+354,dwarfstability,Stability,"**Stability:** Dwarves are exceptionally stable on their feet. A dwarf gains a +4 bonus on ability checks made to resist being bull rushed or tripped when standing on the ground (but not when climbing, flying, riding, or otherwise not standing firmly on the ground).",+4 bonus on ability checks made to resist being bull rushed or tripped when standing on the ground,true
+357,dwarfweapfam,Weapon Familiarity,"**Weapon Familiarity:** Dwarves may treat dwarven waraxes and dwarven urgroshes as martial weapons, rather than exotic weapons.",May treat dwarven waraxes and dwarven urgroshes as martial weapons,true
+360,elfweapprof,Weapon Proficiency,"**Weapon Proficiency:** Elves receive the Martial Weapon Proficiency feats for the longsword, rapier, longbow (including composite longbow), and shortbow (including composite shortbow) as bonus feats. Elves esteem the arts of swordplay and archery, so all elves are familiar with these weapons.","Elves esteem the arts of swordplay and archery, so all elves are proficient with the longsword, rapier, longbow, and shortbow.",true
+363,elvenblood,Elven Blood,"**Elven Blood:** For all effects related to race, a [var: racenamelower] is considered an elf. [var: raceplural], for example, are just as vulnerable to special effects that affect elves as their elf ancestors are, and they can use magic items that are only usable by elves. (See the Monster Manual for more information about elves, and the Dungeon Master’s Guide for more on magic items.)",,true
+366,gnomealchemy,Gnome Alchemy,"+2 racial bonus on Craft (alchemy) checks: A gnome’s sensitive
+nose allows him to monitor alchemical processes by smell.",,true
+369,gnomeattackbonus,Gnome Combat Bonus,"+1 racial bonus on attack rolls against kobolds and goblinoids
+(including goblins, hobgoblins, and bugbears): Gnomes battle
+these creatures frequently and practice special techniques for
+fighting them.",,true
+372,gnomeillusionbonus,Gnome Illusion Bonus,"Add +1 to the Difficulty Class for all saving throws against
+illusion spells cast by gnomes. Their innate familiarity with these
+effects make their illusions more difficult to see through. This
+adjustment stacks with those from similar effects, such as the
+Spell Focus feat.",,true
+375,gnomelisten,Gnome Listen Bonus,+2 racial bonus on Listen checks: Gnomes have keen ears.,,true
+378,gnomesavebonus,Gnome Save Bonus,"+2 racial bonus on saving throws against illusions: Gnomes are
+innately familiar with illusions of all kinds.",,true
+381,gnomespells,Spell-Like Abilities,"**Spell-Like Abilities:** 1/day - [Spell: speak with animals] (burrowing mammal only, duration 1 minute).",,true
+384,gnomeweapfam,Weapon Familiarity,**Weapon Familiarity:** Gnomes may treat gnome hooked hammers as martial weapons rather than exotic weapons.,,true
+387,halfelfawareness,Half-elf Awareness,"+1 racial bonus on Listen, Search, and Spot checks: A half-elf does
+not have the elf’s ability to notice secret doors simply by passing
+near them. Half-elves have keen senses, but not as keen as those
+of an elf.",,true
+390,halfelfdiplomacy,Half-elf Diplomacy,"+2 racial bonus on Diplomacy and Gather Information checks:
+Half-elves get along naturally with all people.",,true
+393,halflingagile,Halfling Agility,"+2 racial bonus on Climb, Jump, and Move Silently
+checks: Halflings are agile, surefooted, and
+athletic.",,true
+396,halflinglisten,Halfling Listen,"+2 racial bonus on Listen checks:
+Halflings have keen ears.",,true
+399,halflingmorale,Halfling Save Bonus vs Fear,"+2 morale bonus on saving throws against
+fear. This bonus stacks with the halfling’s
++1 bonus on saving throws in general.",,true
+402,halflingsaves,Halfling Save Bonus,"+1 racial bonus on all saving throws: Halflings
+are surprisingly capable of avoiding mishaps.",,true
+405,halflingslings,Halfling Weapon Proficiency,"+1 racial bonus on attack rolls with a
+thrown weapon and slings: Throwing and
+slinging stones is a universal sport among
+halflings, and they develop especially
+good aim.",,true
+408,lowlightvision,Low-light Vision,"**Low-light Vision:** An [var: racenamelower] can see twice as far as a human in starlight, moonlight, torchlight, and similar conditions of poor illumination. She retains the ability to distinguish color and detail under these conditions.","Can see twice as far as a human in starlight, moonlight, torchlight, and similar conditions of poor illumination",true
+411,magicresistance,Magic Resistance,+2 racial bonus on saving throws against spells and spell-like effects: [var: raceplurallower] have an innate resistance to magic spells.,+2 racial bonus on saving throws against spells and spell-like effects,true
+414,orcblood,Orc Blood,"**Orc Blood:** For all effects related to race, a half-orc is considered an orc. Half-orcs, for example, are just as vulnerable to special effects that affect orcs as their orc ancestors are, and they can use magic items that are only usable by orcs. (See the Monster Manual for more information about orcs, and the Dungeon Master’s Guide for more on magic items.)",,true
+417,poisonresistance,Hardy,+2 racial bonus on saving throws against poison: [var: raceplural] are hardy and resistant to toxins.,+2 racial bonus on saving throws against poison,true
+420,sleepimmune,Sleep Immunity,"Immunity to magic sleep effects, and a +2 racial saving throw bonus against enchantment spells or effects.","Immunity to magic sleep effects, and a +2 racial saving throw bonus against enchantment spells or effects.",true
+423,stonecunning,Stonecunning,"**Stonecunning:** This ability grants a dwarf a +2 racial bonus on Search checks to notice unusual stonework, such as sliding walls, stonework traps, new construction (even when built to match the old), unsafe stone surfaces, shaky stone ceilings, and the like. Something that isn’t stone but that is disguised as stone also counts as unusual stonework. A dwarf who merely comes within 10 feet of unusual stonework can make a Search check as if he were actively searching, and a dwarf can use the Search skill to find stonework traps as a rogue can. A dwarf can also intuit depth, sensing his approximate depth underground as naturally as a human can sense which way is up. Dwarves have a sixth sense about stonework, an innate ability that they get plenty of opportunity to practice and hone in their underground homes.",+2 racial bonus on Search checks to notice unusual stonework,true
+1413,wild-empathy,Wild Empathy,"A ranger can improve the attitude of an animal. This ability functions just like a Diplomacy check to improve the attitude of a person. The ranger rolls 1d20 and adds his ranger level and his Charisma modifier to determine the wild empathy check result. The typical domestic animal has a starting attitude of indifferent, while wild animals are usually unfriendly.",,true
+1419,archery,Archery,Ranger feature for weapon style selection. This description should never be displayed as this feature is simply to provide a progression.,,true
+1422,two-weapon-combat,Two-Weapon Combat,Two-Weapon combat Ranger fighting style feature. This description should never be displayed as this feature is simply to hold the feat grant progressions.,,true
+1425,crippling-strike,Crippling Strike,*Crippling Strike (Ex):* A rogue with this ability can sneak attack opponents with such precision that her blows weaken and hamper them. An opponent damaged by one of her sneak attacks also takes 2 points of Strength damage. Ability points lost to damage return on their own at the rate of 1 point per day for each damaged ability.,,true
+1428,defensive-roll,Defensive Roll,"*Defensive Roll (Ex):* The rogue can roll with a potentially lethal blow to take less damage from it than she otherwise would. Once per day, when she would be reduced to 0 or fewer hit points by damage in combat (from a weapon or other blow, not a spell or special ability), the rogue can attempt to roll with the damage. To use this ability, the rogue must attempt a Reflex saving throw (DC = damage dealt). If the save succeeds, she takes only half damage from the blow; if it fails, she takes full damage. She must be aware of the attack and able to react to it in order to execute her defensive roll - if she is denied her Dexterity bonus to AC, she can’t use this ability. Since this effect would not normally allow a character to make a Reflex save for half damage, the rogue’s evasion ability does not apply to the defensive roll.",,true
+1431,improved-evasion,Improved Evasion,"*Improved Evasion (Ex):* This ability works like evasion, except that while the rogue still takes no damage on a successful Reflex saving throw against attacks such as a dragon’s breath weapon or a fireball, henceforth she henceforth takes only half damage on a failed save. A helpless rogue (such as one who is unconscious or paralysed) does not gain the benefit of improved evasion.",,true
+1434,opportunist,Opportunist,"*Opportunist (Ex):* Once per round, the rogue can make an attack of opportunity against an opponent who has just been struck for damage in melee by another character. This attack counts as the rogue’s attack of opportunity for that round. Even a rogue with the Combat Reflexes feat can’t use the opportunist ability more than once per round.",,true
+1437,skill-mastery,Skill Mastery,"*Skill Mastery:* The rogue becomes so certain in the use of certain skills that she can use them reliably even under adverse conditions. Upon gaining this ability, she selects a number of skills equal to 3 + her Intelligence modifier. When making a skill check with one of these skills, she may take 10 even if stress and distractions would normally prevent her from doing so. A rogue may gain this special ability multiple times, selecting additional skills for it to apply to each time.",,true
+1440,slippery-mind,Slippery Mind,"*Slippery Mind (Ex):* This ability represents the rogue’s ability to wriggle free from magical effects that would otherwise control or compel her. If a rogue with slippery mind is affected by an enchantment spell or effect and fails her saving throw, she can attempt it again 1 round later at the same DC. She gets only this one extra chance to succeed on her saving throw.",,true
+1442,druidelementalwildshape,Elemental Wild Shape,"**Elemental Wild Shape (Su):** A druid becomes able to use wild shape to change into a Small, Medium, or Large elemental (air, earth, fire, or water) once per day. These elemental forms are in addition to her normal wild shape usage. In addition to the normal effects of wild shape, the druid gains all the elemental’s extraordinary, supernatural, and spell-like abilities. She also gains the elemental’s feats for as long as she maintains the wild shape, but she retains her own creature type (humanoid, in most cases).",,true
+1446,gnomespellscha,Spell-Like Abilities,"**Spell-Like Abilities:** A gnome with a Charisma score of at least 10 also has the following spell-like abilities: 1/day - [Spell: dancing lights], [Spell: ghost sound], [Spell: prestidigitation]. Caster level 1^st^; save DC 10 + gnome’s Cha modifier + spell level.",,true
+1449,tieflingskills,Racial Skills,*Racial Skills:* Tieflings have a +2 racial bonus on Bluff and Hide checks.,,true
+1452,tieflingdarkness,Darkness,*Darkness (Sp):* A tiefling can use [spell: darkness] once per day (caster level equal to class levels).,,true
+1455,tieflingresistance,Special Qualities,"*Special Qualities:* Resistance to cold 5, electricity 5, and fire 5.",,true
+1458,catfolkskills,Racial Skills,Catfolk have a +2 racial bonus on Listen and Move Silently checks.,,true
+1461,catfolknatarmor,Natural Armor,+1 natural armor bonus,,true
+1464,clclrlore,Lore,"**Lore:** Thanks to long hours of study, a cloistered cleric has a wide range of stray knowledge. He may make a special lore check with a bonus equal to his cloistered cleric level + his Intelligence modifier to see whether he knows some relevant information about local notable people, legendary items, or noteworthy places. (If the cloistered cleric has 5 or more ranks in Knowledge (history), he gains a +2 bonus on this check.)
+
+[table: bardknowledge]
+
+A successful lore check will not reveal the powers of a magic item but may give a hint as to its general function. A cloistered cleric may not take 10 or take 20 on this check; this sort of knowledge is essentially random. The DM can determine the Difficulty Class of the check by referring to the table above.",,true
+1470,airdomainturnearth,Turn Earth,"Turn or destroy earth creatures as a good cleric turns undead. Rebuke, command, or bolster air creatures as an evil cleric rebukes undead. Use these abilities a total number of times per day equal to 3 + your Charisma modifier. This granted power is a supernatural ability.",,true
+1473,clclericbonusdomain,Bonus Domain,"**Bonus Domain:** In addition to any domains selected from his deity's list, a cloistered cleric automatically gains Knowledge as a bonus domain (even if Knowledge is not normally available to clerics of that deity). He gains the Knowledge domain granted power and may select his bonus domain spell from the Knowledge domain or from on of his two regular domains.",,true
+1476,knowledgedomainaddskills,Skill Grant,Add all Knowledge skills to your list of cleric class skills.,,true
+1479,knowledgedomaincasterlevel,Enhanced Divination,You cast divination spells at +1 caster level.,,true
+1481,feat-1,Acrobatic,"You have excellent body awareness and coordination.
+
+## Benefit:
+You get a +2 bonus on all Jump checks and Tumble checks.",You get a +2 bonus on all Jump checks and Tumble checks.,true
+1484,feat-2,Agile,"You are particularly flexible and poised.
+
+## Benefit:
+You get a +2 bonus on all Balance checks and Escape Artist checks.",You get a +2 bonus on all Balance checks and Escape Artist checks.,true
+1487,feat-3,Alertness,"You have finely tuned senses.
+
+## Benefit:
+You get a +2 bonus on all Listen checks and Spot checks.
+
+## Special:
+The master of a familiar gains the benefit of the Alertness feat whenever the familiar is within arm’s reach.",You get a +2 bonus on all Listen checks and Spot checks.,true
+1490,feat-6,Animal Affinity,"You are good with animals.
+
+## Benefit:
+You get a +2 bonus on all Handle Animal checks and Ride checks.",You get a +2 bonus on all Handle Animal checks and Ride checks.,true
+1493,feat-9,Armor Proficiency (Light),"You are proficient with light armor.
+
+## Benefit:
+When you wear a type of armor with which you are proficient, the armor check penalty for that armor applies only to Balance, Climb, Escape Artist, Hide, Jump, Move Silently, Pick Pocket, and Tumble checks.
+
+## Normal:
+A character who is wearing armor with which she is not proficient applies its armor check penalty to attack rolls and to all skill checks that involve moving, including Ride.
+
+## Special:
+All characters except wizards, sorcerers, and monks automatically have Armor Proficiency (light) as a bonus feat. They need not select it.",You are proficient with light armor.,true
+1496,feat-12,Armor Proficiency (Medium),"You are proficient with medium armor.
+
+## Benefit:
+When you wear a type of armor with which you are proficient, the armor check penalty for that armor applies only to Balance, Climb, Escape Artist, Hide, Jump, Move Silently, Pick Pocket, and Tumble checks.
+
+## Normal:
+A character who is wearing armor with which she is not proficient applies its armor check penalty to attack rolls and to all skill checks that involve moving, including Ride.
+
+## Special:
+Fighters, barbarians, paladins, clerics, druids, and bards automatically have Armor Proficiency (medium) as a bonus feat. They need not select it.",You are proficient with medium armor.,true
+1499,feat-15,Armor Proficiency (Heavy),"You are proficient with heavy armor.
+
+## Benefit:
+When you wear a type of armor with which you are
+proficient, the armor check penalty for that armor applies only to
+Balance, Climb, Escape Artist, Hide, Jump, Move Silently, Pick
+Pocket, and Tumble checks.
+
+## Normal:
+A character who is wearing armor with which she is not proficient applies its armor check penalty to attack rolls and to all skill checks that involve moving, including Ride.
+
+## Special:
+Fighters, paladins, and clerics automatically have Armor Proficiency (heavy) as a bonus feat. They need not select it.",You are proficient with heavy armor.,true
+1502,feat-18,Athletic,"You have a knack for athletic endeavors.
+
+## Benefit:
+You get a +2 bonus on all Climb checks and Swim checks.",You get a +2 bonus on all Climb checks and Swim checks.,true
+1505,feat-21,Augment Summoning,"Your summoned creatures are more powerful than normal.
+
+## Benefit:
+Each creature you conjure with any summon spell gains a +4 enhancement bonus to Strength and Constitution for the duration of the spell that summoned it.
+
+## Prerequisites:
+Spell Focus (conjuration)",Each creature you conjure with any summon spell gains a +4 enhancement bonus to Strength and Constitution for the duration of the spell that summoned it.,true
+1508,feat-24,Blind-Fight,"You know how to fight in melee without being able to see your foes.
+
+## Benefit:
+In melee, every time you miss because of concealment, you can reroll your miss chance percentile roll one time to see if you actually hit (see Concealment).
+
+An invisible attacker gets no advantages related to hitting you in melee. That is, you don’t lose your Dexterity bonus to Armor Class, and the attacker doesn’t get the usual +2 bonus for being invisible (see Table 8–5: Attack Roll Modifiers and Table 8–6: Armor Class Modifiers). The invisible attacker’s bonuses do still apply for ranged attacks, however.
+
+You take only half the usual penalty to speed for being unable to see. Darkness and poor visibility in general reduces your speed to three-quarters normal, instead of one-half (see Table 9–4: Hampered Movement).
+
+## Normal:
+Regular attack roll modifiers for invisible attackers trying to hit you (see Table 8–5: Attack Roll Modifiers) apply, and you lose your Dexterity bonus to AC. The speed reduction for darkness and poor visibility (see Table 9–4: Hampered Movement) also applies.
+
+## Special:
+The Blind-Fight feat is of no use against a character who is the subject of a [spell: blink] spell.","In melee, every time you miss because of concealment, you can reroll your miss chance percentile roll one time.",true
+1511,feat-27,Brew Potion,"You can create potions, which carry spells within themselves. See the Dungeon Master’s Guide for rules on potions.
+
+## Benefit:
+You can create a potion of any 3rd-level or lower spell that you know and that targets one or more creatures. Brewing a potion takes one day. When you create a potion, you set the caster level, which must be sufficient to cast the spell in question and no higher than your own level. The base price of a potion is its spell level x its caster level x 50 gp. To brew a potion, you must spend 1/25 of this base price in XP and use up raw materials costing one half this base price.
+
+When you create a potion, you make any choices that you would normally make when casting the spell. Whoever drinks the potion is the target of the spell.
+
+Any potion that stores a spell with a costly material component or an XP cost also carries a commensurate cost. In addition to the costs derived from the base price, you must expend the material component or pay the XP when creating the potion.",You can create a potion of any 3rd-level or lower spell that you know and that targets one or more creatures.,true
+1514,feat-30,Cleave,"You can follow through with powerful blows.
+
+## Benefit:
+If you deal a creature enough damage to make it drop (typically by dropping it to below 0 hit points or killing it), you get an immediate, extra melee attack against another creature within reach. You cannot take a 5-foot step before making this extra attack. The extra attack is with the same weapon and at the same bonus as the attack that dropped the previous creature. You can use this ability once per round.","If you deal a creature enough damage to make it drop, you get an immediate, extra melee attack against another creature within reach.",true
+1517,feat-33,Combat Casting,"You are adept at casting spells in combat.
+
+## Benefit:
+You get a +4 bonus on Concentration checks made to cast a spell or use a spell-like ability while on the defensive (see Casting on the Defensive) or while you are grappling or pinned.",You get a +4 bonus on Concentration checks made to cast a spell or use a spell-like ability while on the defensive.,true
+1520,feat-36,Combat Expertise,"You are trained at using your combat skill for defense as well as offense.
+
+## Benefit:
+When you use the attack action or the full attack action in melee, you can take a penalty of as much as -5 on your attack roll and add the same number (+5 or less) as a dodge bonus to your Armor Class. This number may not exceed your base attack bonus. The changes to attack rolls and Armor Class last until your next action.
+
+## Normal:
+character without the Combat Expertise feat can fight defensively while using the attack or full attack action to take a -4 penalty on attack rolls and gain a +2 dodge bonus to Armor Class.",,true
+1523,feat-39,Combat Reflexes,"You can respond quickly and repeatedly to opponents who let their defenses down.
+
+## Benefit:
+When foes leave themselves open, you may make a number of additional attacks of opportunity equal to your Dexterity bonus. For example, a fighter with a Dexterity of 15 can make a total of three attacks of opportunity in 1 round - the one attack of opportunity any character is entitled to, plus two more because of his +2 Dexterity bonus. If four goblins move out of the character’s threatened squares, he can make one attack of opportunity each against three of the four. You can still make only one attack of opportunity per opportunity.
+
+With this feat, you may also make attacks of opportunity while flat-footed.
+
+## Normal:
+character without this feat can make only one attack of opportunity per round and can’t make attacks of opportunity while flat-footed.
+
+## Special:
+The Combat Reflexes feat does not allow a rogue to use her opportunist ability more than once per round.
+
+A monk may select Combat Reflexes as a bonus feat at 2nd level.",,true
+1526,feat-42,Craft Magic Arms and Armor,"You can create magic weapons, armor, and shields.
+
+## Benefit:
+You can create any magic weapon, armor, or shield whose prerequisites you meet (see the Dungeon Master’s Guide for prerequisites and other information on these items). Enhancing a weapon, suit of armor, or shield takes one day for each 1,000 gp in the price of its magical features. To enhance a weapon, suit of armor, or shield, you must spend 1/25 of its features’ total price in XP and use up raw materials costing one-half of this total price.
+
+The weapon, armor, or shield to be enhanced must be a masterwork item that you provide. Its cost is not included in the above cost.
+
+You can also mend a broken magic weapon, suit of armor, or shield if it is one that you could make. Doing so costs half the XP, half the raw materials, and half the time it would take to craft that item in the first place.",,true
+1529,feat-45,Craft Rod,"You can create magic rods, which have varied magical effects.
+
+## Benefit:
+You can create any rod whose prerequisites you meet (see the Dungeon Master’s Guide for prerequisites and other information on rods). Crafting a rod takes one day for each 1,000 gp in its base price. To craft a rod, you must spend 1/25 of its base price in XP and use up raw materials costing one-half of its base price.
+
+Some rods incur extra costs in material components or XP, as noted in their descriptions. These costs are in addition to those derived from the rod’s base price.",,true
+1532,feat-48,Craft Staff,"You can create magic staffs, each of which has multiple magical effects.
+
+## Benefit:
+You can create any staff whose prerequisites you meet (see the Dungeon Master’s Guide for prerequisites and other information on staffs). Crafting a staff takes one day for each 1,000 gp in its base price. To craft a staff, you must spend 1/25 of its base price in XP and use up raw materials costing one-half of its base price. A newly created staff has 50 charges.
+
+Some staffs incur extra costs in material components or XP, as noted in their descriptions. These costs are in addition to those derived from the staff ’s base price.",,true
+1535,feat-51,Craft Wand,"You can create wands, which hold spells (see the Dungeon Master’s Guide for rules on wands).
+
+## Benefit:
+You can create a wand of any 4th-level or lower spell that you know. Crafting a wand takes one day for each 1,000 gp in its base price. The base price of a wand is its caster level x the spell level x 750 gp. To craft a wand, you must spend 1/25 of this base price in XP and use up raw materials costing one-half of this base price. A newly created wand has 50 charges.
+
+Any wand that stores a spell with a costly material component or an XP cost also carries a commensurate cost. In addition to the cost derived from the base price, you must expend fifty copies of the material component or pay fifty times the XP cost.",,true
+1538,feat-54,Craft Wondrous Item,"You can create a wide variety of magic items, such as a crystal ball or a flying carpet.
+
+## Benefit:
+You can create any wondrous item whose prerequisites you meet (see the Dungeon Master’s Guide for prerequisites and other information on wondrous items). Enchanting a wondrous item takes one day for each 1,000 gp in its price. To enchant a wondrous item, you must spend 1/25 of the item’s price in XP and use up raw materials costing half of this price.
+
+You can also mend a broken wondrous item if it is one that you could make. Doing so costs half the XP, half the raw materials, and half the time it would take to craft that item in the first place.
+
+Some wondrous items incur extra costs in material components or XP, as noted in their descriptions. These costs are in addition to those derived from the item’s base price. You must pay such a cost to create an item or to mend a broken one.",,true
+1541,feat-57,Deceitful,"You have a knack for disguising the truth.
+
+## Benefit:
+You get a +2 bonus on all Disguise checks and Forgery checks.",,true
+1544,feat-60,Deflect Arrows,"You can deflect incoming arrows, as well as crossbow bolts, spears, and other projectile or thrown weapons.
+
+## Benefit:
+You must have at least one hand free (holding nothing) to use this feat. Once per round when you would normally be hit with a ranged weapon, you may deflect it so that you take no damage from it. You must be aware of the attack and not flat-footed. Attempting to deflect a ranged weapon doesn’t count as an action. Unusually massive ranged weapons, such as boulders hurled by giants, and ranged attacks generated by spell effects, such as [spell: Melf's acid arrow], can’t be deflected.
+
+## Special:
+A monk may select Deflect Arrows as a bonus feat at 2nd level, even if she does not meet the prerequisites.",,true
+1547,feat-63,Deft Hands,"You have exceptional manual dexterity.
+
+## Benefit:
+You get a +2 bonus on all Sleight of Hand checks and Use Rope checks.",,true
+1550,feat-66,Diehard,"You can remain conscious after attacks that would fell others.
+
+## Benefit:
+When reduced to between -1 and -9 hit points, you automatically become stable. You don’t have to roll d% to see if you lose 1 hit point each round.
+
+When reduced to negative hit points, you may choose to act as if you were disabled, rather than dying. You must make this decision as soon as you are reduced to negative hit points (even if it isn’t your turn). If you do not choose to act as if you were disabled, you immediately fall unconscious.
+
+When using this feat, you can take either a single move or standard action each turn, but not both, and you cannot take a full-round action. You can take a move action without further injuring yourself, but if you perform any standard action (or any other action the DM deems as strenuous, including some free actions, such as casting a quickened spell) you take 1 point of damage after completing the act. If you reach -10 hit points, you immediately die.
+
+## Normal:
+A character without this feat who is reduced to between -1 and -9 hit points is unconscious and dying,",,true
+1553,feat-69,Diligent,"Your meticulousness allows you to analyze minute details that others miss.
+
+## Benefit:
+You get a +2 bonus on all Appraise checks and Decipher Script checks.",,true
+1556,feat-72,Dodge,"You are adept at dodging blows.
+
+## Benefit:
+During your action, you designate an opponent and receive a +1 dodge bonus to Armor Class against attacks from that opponent. You can select a new opponent on any action.
+
+A condition that makes you lose your Dexterity bonus to Armor Class (if any) also makes you lose dodge bonuses. Also, dodge bonuses (such as this one and a dwarf’s racial bonus on dodge attempts against giants) stack with each other, unlike most other types of bonuses.",,true
+1559,feat-75,Empower Spell,"You can cast spells to greater effect.
+
+## Benefit:
+All variable, numeric effects of an empowered spell are increased by one-half. An empowered spell deals half again as much damage as normal, cures half again as many hit points, affects half again as many targets, and so forth, as appropriate. For example, an empowered magic missile deals 1-1/2 times its normal damage (roll 1d4+1 and multiply the result by 1-1/2 for each missile). Saving throws and opposed rolls (such as the one you make when you cast dispel magic) are not affected, nor are spells without random variables. An empowered spell uses up a spell slot two levels higher than the spell’s actual level.",,true
+1562,feat-78,Endurance,"You are capable of amazing feats of stamina.
+
+## Benefit:
+You gain a +4 bonus on the following checks and saves: Swim checks made to resist nonlethal damage, Constitution checks made to continue running, Constitution checks made to avoid nonlethal damage from a forced march, Constitution checks made to hold your breath, Constitution checks made to avoid nonlethal damage from starvation or thirst, Fortitude saves made to avoid nonlethal damage from hot or cold environments, and Fortitude saves made to resist damage from suffocation. Also, you may sleep in light or medium armor without becoming fatigued.
+
+## Normal:
+A character without this feat who sleeps in medium or heavier armor is automatically fatigued the next day.
+
+## Special:
+A ranger automatically gains Endurance as a bonus feat at 3rd level. He need not select it.",,true
+1565,feat-81,Enlarge Spell,"You can cast spells farther than normal.
+
+## Benefit:
+You can alter a spell with a range of close, medium, or long to increase its range by 100%. An enlarged spell with a range of close now has a range of 50 ft. + 5 ft./level, while medium-range spells have a range of 200 ft. + 20 ft./level and long-range spells have a range of 800 ft. + 80 ft./level. An enlarged spell uses up a spell slot one level higher than the spell’s actual level.
+
+Spells whose ranges are not defined by distance, as well as spells whose ranges are not close, medium, or long, do not have increased ranges.",,true
+1568,feat-84,Eschew Materials,"You can cast spells without relying on material components.
+
+## Benefit:
+You can cast any spell that has a material component costing 1 gp or less without needing that component. (The casting of the spell still provokes attacks of opportunity as normal.) If the spell requires a material component that costs more than 1 gp, you must have the material component at hand to cast the spell, just as normal.",,true
+1571,feat-87,Exotic Weapon Proficiency,"Choose a type of exotic weapon, such as dire flail or shuriken. You understand how to use that type of exotic weapon in combat.
+
+## Benefit:
+You make attack rolls with the weapon normally.
+
+## Normal:
+A character who uses a weapon with which he or she is not proficient takes a –4 penalty on attack rolls.
+
+## Special:
+You can gain Exotic Weapon Proficiency multiple times. Each time you take the feat, it applies to a new type of exotic weapon. Proficiency with the bastard sword or the dwarven waraxe has an additional prerequisite of Str 13.
+
+## Prerequisites:
+Base attack bonus +1 (plus Str 13 for bastard sword or dwarven waraxe).",,true
+1574,feat-90,Extend Spell,"You can cast spells that last longer than normal.
+
+## Benefit:
+An extended spell lasts twice as long as normal. A spell with a duration of concentration, instantaneous, or permanent is not affected by this feat. An extended spell uses up a spell slot one level higher than the spell’s actual level.",,true
+1577,feat-93,Extra Turning,"You can turn or rebuke creatures more often than normal.
+
+## Benefit:
+Each time you take this feat, you can use your ability to turn or rebuke creatures four more times per day than normal.
+
+If you have the ability to turn or rebuke more than one kind of creature (such as a good-aligned cleric with access to the Fire domain, who can turn undead and water creatures and can also rebuke fire creatures), each of your turning or rebuking abilities gains four additional uses per day.
+
+## Normal:
+Without this feat, a character can typically turn or rebuke undead (or other creatures) a number of times per day equal to 3 + his or her Charisma modifier.
+
+## Special:
+You can gain Extra Turning multiple times. Its effects stack. Each time you take the feat, you can use each of your turning or rebuking abilities four additional times per day.",,true
+1580,feat-96,Far Shot,"You can get greater distance out of a ranged weapon.
+
+## Benefit:
+When you use a projectile weapon, such as a bow, its range increment increases by one-half (multiply by 1-1/2). When you use a thrown weapon, its range increment is doubled.",,true
+1583,feat-99,Forge Ring,"You can create magic rings, which have varied magical effects.
+
+## Benefit:
+You can create any ring whose prerequisites you meet (see the Dungeon Master’s Guide for prerequisites and other information on rings). Crafting a ring takes one day for each 1,000 gp in its base price. To craft a ring, you must spend 1/25 of its base price in XP and use up raw materials costing one-half of its base price.
+
+You can also mend a broken ring if it is one that you could make. Doing so costs half the XP, half the raw materials, and half the time it would take to forge that ring in the first place.
+
+Some magic rings incur extra costs in material components or XP, as noted in their descriptions. For example, a ring of three wishes costs 15,000 XP in addition to costs derived from its base price (as many XP as it costs to cast wish three times). You must pay such a cost to forge such a ring or to mend a broken one.",,true
+1586,feat-102,Great Cleave,"You can wield a melee weapon with such power that you can strike multiple times when you fell your foes.
+
+## Benefit:
+This feat works like Cleave, except that there is no limit to the number of times you can use it per round.",,true
+1589,feat-105,Great Fortitude,"You are tougher than normal.
+
+## Benefit:
+You get a +2 bonus on all Fortitude saving throws.",,true
+1592,feat-108,Greater Spell Focus,"Choose a school of magic to which you already have applied the Spell Focus feat. Your spells of that school are now even more potent than before.
+
+## Benefit:
+Add +1 to the Difficulty Class for all saving throws against spells from the school of magic you select. This bonus stacks with the bonus from Spell Focus.
+
+## Special:
+You can gain this feat multiple times. Its effects do not stack. Each time you take the feat, it applies to a new school of magic to which you already have applied the Spell Focus feat.",,true
+1595,feat-111,Greater Spell Penetration,"Your spells are remarkably potent, breaking through spell resistance more readily than normal.
+
+## Benefit:
+You get a +2 bonus on caster level checks (1d20 + caster level) made to overcome a creature’s spell resistance. This bonus stacks with the one from Spell Penetration.",,true
+1598,feat-114,Greater Two-Weapon Fighting,"You are a master at fighting two-handed.
+
+## Benefit:
+You get a third attack with your off-hand weapon, albeit
+at a -10 penalty.
+
+## Special:
+An 11th-level ranger who has chosen the two-weapon combat style is treated as having Greater Two-Weapon Fighting, even if he does not have the prerequisites for it, but only when he is wearing light or no armor.",,true
+1601,feat-117,Greater Weapon Focus,"Choose one type of weapon, such as greataxe, for which you have already selected Weapon Focus. You can also choose unarmed strike or grapple as your weapon for purposes of this feat. You are especially good at using this weapon.
+
+## Benefit:
+You gain a +1 bonus on all attack rolls you make using the selected weapon. This bonus stacks with other bonuses on attack rolls, including the one from Weapon Focus (see below).
+
+## Special:
+You can gain Greater Weapon Focus multiple times. Its effects do not stack. Each time you take the feat, it applies to a new type of weapon.
+
+A fighter must have Greater Weapon Focus with a given weapon to gain the Greater Weapon Specialization feat for that weapon.",,true
+1604,feat-120,Greater Weapon Specialization,"Choose one type of weapon, such as greataxe, for which you have already selected Weapon Specialization. You can also choose unarmed strike or grapple as your weapon for purposes of this feat. You deal extra damage when using this weapon.
+
+## Benefit:
+You gain a +2 bonus on all damage rolls you make using the selected weapon. This bonus stacks with other bonuses on damage rolls, including the one from Weapon Specialization (see below).
+
+## Special:
+You can gain Greater Weapon Specialization multiple times. Its effects do not stack. Each time you take the feat, it applies to a new type of weapon.",,true
+1607,feat-123,Heighten Spell,"You can cast a spell as if it were a higher-level spell than it actually is.
+
+## Benefit:
+A heightened spell has a higher spell level than normal (up to a maximum of 9th level). Unlike other metamagic feats, Heighten Spell actually increases the effective level of the spell that it modifies. All effects dependent on spell level (such as saving throw DCs and ability to penetrate a lesser globe of invulnerability) are calculated according to the heightened level. The heightened spell is as difficult to prepare and cast as a spell of its effective level. For example, a cleric could prepare hold person as a 4th-level spell (instead of a 2nd-level spell), and it would in all ways be treated as a 4th-level spell.",,true
+1610,feat-126,Improved Bull Rush,"You know how to push opponents back.
+
+## Benefit:
+When you perform a bull rush, you do not provoke an attack of opportunity from the defender. You also gain a +4 bonus on the opposed Strength check you make to push back the defender.",,true
+1613,feat-129,Improved Counterspell,"You understand the nuances of magic to such an extent that you can counter your opponent’s spells with great efficiency.
+
+## Benefit:
+When counterspelling, you may use a spell of the same school that is one or more spell levels higher than the target spell.
+
+## Normal:
+Without this feat, you may counter a spell only with the same spell or with a spell specifically designated as countering the target spell.",,true
+1616,feat-132,Improved Critical,"Choose one type of weapon, such as longsword or greataxe. With that weapon, you know how to hit where it hurts.
+
+## Benefit:
+When using the weapon you selected, your threat range is doubled. For example, a longsword usually threatens a critical hit on a roll of 19-20 (two numbers). If a character using a longsword has Improved Critical (longsword), the threat range becomes 17-20 (four numbers).
+
+## Special:
+You can gain Improved Critical multiple times. The effects do not stack. Each time you take the feat, it applies to a new type of weapon.
+
+This effect doesn’t stack with any other effect that expands the threat range of a weapon (such as the keen edge spell).",,true
+1619,feat-135,Improved Disarm,"You know how to disarm opponents in melee combat.
+
+## Benefit:
+You do not provoke an attack of opportunity when you attempt to disarm an opponent, nor does the opponent have a chance to disarm you. You also gain a +4 bonus on the opposed attack roll you make to disarm your opponent.
+
+## Special:
+A monk may select Improved Disarm as a bonus feat at 6th level, even if she does not meet the prerequisites.",,true
+1622,feat-138,Improved Feint,"You are skilled at misdirecting your opponent’s attention in combat.
+
+## Benefit:
+You can make a Bluff check to feint in combat as a move action.
+
+## Normal:
+Feinting in combat is a standard action.",,true
+1625,feat-141,Improved Grapple,"You are skilled at grappling opponents.
+
+## Benefit:
+You do not provoke an attack of opportunity when you make a touch attack to start a grapple. You also gain a +4 bonus on all grapple checks, regardless of whether you started the grapple.
+
+## Normal:
+Without this feat, you provoke an attack of opportunity when you make a touch attack to start a grapple.
+
+## Special:
+A monk may select Improved Grapple as a bonus feat at 1st level, even if she does not meet the prerequisites.",,true
+1628,feat-144,Improved Initiative,"You can react more quickly than normal in a fight.
+
+## Benefit:
+You get a +4 bonus on initiative checks.",You get a +4 bonus on initiative checks.,true
+1631,feat-147,Improved Overrun,"You are skilled at knocking down opponents.
+
+## Benefit:
+When you attempt to overrun an opponent, the target may not choose to avoid you. You also gain a +4 bonus on your Strength check to knock down your opponent.
+
+## Normal:
+Without this feat, the target of an overrun can choose to avoid you or to block you.",,true
+1634,feat-150,Improved Precise Shot,"Your ranged attacks can ignore the effects of cover or concealment.
+
+## Benefit:
+Your ranged attacks ignore the AC bonus granted to targets by anything less than total cover, and the miss chance granted to targets by anything less than total concealment. Total cover and total concealment provide their normal benefits against your ranged attacks.
+
+In addition, when you shoot or throw ranged weapons at a grappling opponent, you automatically strike at the opponent you have chosen.
+
+## Normal:
+Without this feat, a character who shoots or throws a ranged weapon at a target involved in a grapple must roll randomly to see which grappling combatant the attack strikes.
+
+## Special:
+An 11th-level ranger who has chosen the archery combat style is treated as having Improved Precise Shot, even if he does not have the prerequisites for it, but only when he is wearing light or no armor.",,true
+1637,feat-153,Improved Shield Bash,"You can bash with a shield while retaining its shield bonus to your Armor Class.
+
+## Benefit:
+When you perform a shield bash, you may still apply the shield’s shield bonus to your AC.
+
+## Normal:
+Without this feat, a character who performs a shield bash loses the shield’s shield bonus to AC until his or her next turn.",,true
+1640,feat-156,Improved Sunder,"You are skilled at attacking your opponents’ weapons and shields, as well as other objects.
+
+## Benefit:
+When you strike at an object held or carried by an opponent (such as a weapon or shield), you do not provoke an attack of opportunity.
+
+You also gain a +4 bonus on any attack roll made to attack an object held or carried by another character
+
+## Normal:
+Without this feat, you provoke an attack of opportunity when you strike at an object held or carried by another character.",,true
+1643,feat-159,Improved Trip,"You are trained not only in tripping opponents safely but also in
+following through with an attack.
+
+## Benefit:
+You do not provoke an attack of opportunity when you attempt to trip an opponent while you are unarmed. You also gain a +4 bonus on your Strength check to trip your opponent.
+
+If you trip an opponent in melee combat, you immediately get a melee attack against that opponent as if you hadn’t used your attack for the trip attempt. For example, at 11th level, Tordek gets three attacks at bonuses of +11, +6, and +1. In the current round, he attempts to trip his opponent. His first attempt fails (using up his first attack). His second attempt succeeds, and he immediately makes a melee attack against his opponent with a bonus of +6. Finally, he takes his last attack at a bonus of +1.
+
+## Normal:
+Without this feat, you provoke an attack of opportunity
+when you attempt to trip an opponent while you are unarmed.
+
+## Special:
+At 6th level, a monk may select Improved Trip as a bonus feat, even if she does not have the prerequisites.",,true
+1646,feat-162,Improved Turning,"Your turning or rebuking attempts are more powerful than normal.
+
+## Benefit:
+You turn or rebuke creatures as if you were one level higher than you are in the class that grants you the ability.",,true
+1649,feat-165,Improved Two-Weapon Fighting,"You are an expert in fighting two-handed.
+
+## Benefit:
+In addition to the standard single extra attack you get with an off-hand weapon, you get a second attack with it, albeit at a -5 penalty.
+
+## Normal:
+Without this feat, you can only get a single extra attack
+with an off-hand weapon.
+
+## Special:
+A 6th-level ranger who has chosen the two-weapon combat style is treated as having Improved Two-Weapon Fighting, even if he does not have the prerequisites for it, but only when he is wearing light or no armor.",,true
+1652,feat-168,Improved Unarmed Strike,"You are skilled at fighting while unarmed.
+
+## Benefit:
+You are considered to be armed even when unarmed - that is, you do not provoke attacks or opportunity from armed opponents when you attack them while unarmed. However, you still get an attack of opportunity against any opponent who makes an unarmed attack on you.
+
+In addition, your unarmed strikes can deal lethal or nonlethal damage, at your option.
+
+## Normal:
+Without this feat, you are considered unarmed when attacking with an unarmed strike, and you can deal only nonlethal damage with such an attack.
+
+## Special:
+A monk automatically gains Improved Unarmed Strike as a bonus feat at 1st level. She need not select it.",,true
+1655,feat-171,Investigator,"You have a knack for finding information.
+
+## Benefit:
+You get a +2 bonus on all Gather Information checks
+and Search checks.",,true
+1658,feat-174,Iron Will,"You have a stronger will than normal.
+
+## Benefit:
+You get a +2 bonus on all Will saving throws.",,true
+1661,feat-177,Leadership,"You are the sort of person others want to follow, and you have done some work attempting to recruit cohorts and followers.
+
+## Benefit:
+You can attract loyal companions and devoted followers, subordinates who assist you. Your DM has information on what sort of cohort and how many followers you can recruit.
+
+## Special:
+Check with your DM before selecting this feat, and work with your DM to determine an appropriate cohort and followers for your character (the Dungeon Master’s Guide has more information on cohorts and followers).",,true
+1664,feat-180,Lightning Reflexes,"You have faster than normal reflexes.
+
+## Benefit:
+You get a +2 bonus on all Reflex saving throws.",,true
+1667,feat-183,Magical Aptitude,"You have a knack for magical endeavors.
+
+## Benefit:
+You get a +2 bonus on all Spellcraft checks and Use Magic Device checks.",,true
+1670,feat-186,Manyshot,"You can fire multiple arrows simultaneously against a nearby target.
+
+## Benefit:
+As a standard action, you may fire two arrows at a single opponent within 30 feet. Both arrows use the same attack roll (with a -4 penalty) to determine success and deal damage normally (but see Special).
+
+For every five points of base attack bonus you have above +6, you may add one additional arrow to this attack, to a maximum of four arrows at a base attack bonus of +16. However, each arrow after the second adds a cumulative -2 penalty on the attack roll (for a total penalty of -6 for three arrows and -8 for four).
+
+Damage reduction and other resistances apply separately against each arrow fired.
+
+## Special:
+Regardless of the number of arrows you fire, you apply precision-based damage (such as sneak attack damage) only once. If you score a critical hit, only the first arrow fired deals critical damage; all others deal regular damage.
+
+A 6th-level ranger who has chosen the archery combat style is
+treated as having Manyshot even if he does not have the
+prerequisites for it, but only when he is wearing light or no armor.",,true
+1673,feat-189,Martial Weapon Proficiency,"Choose a type of martial weapon, such as a longbow. You understand how to use that type of martial weapon in combat. Use this feat to expand the list of weapons with which you are proficient beyond the basic list in your class description.
+
+## Benefit:
+You make attack rolls with the selected weapon normally.
+
+## Normal:
+When using a weapon with which you are not proficient, you take a -4 penalty on attack rolls.
+
+## Special:
+Barbarians, fighters, paladins, and rangers are proficient with all martial weapons. They need not select this feat.
+
+You can gain Martial Weapon Proficiency multiple times. Each time you take the feat, it applies to a new type of weapon.
+
+A cleric who chooses the War domain automatically gains the Martial Weapon Proficiency feat related to his deity’s favored weapon as a bonus feat, if the weapon is a martial one. He need not select it.
+
+A sorcerer or wizard who casts the spell [spell: Tenser's transformation] on himself or herself gains proficiency with all martial weapons for the duration of the spell.",,true
+1676,feat-192,Maximize Spell,"You can cast spells to maximum effect.
+
+## Benefit:
+All variable, numeric effects of a spell modified by this feat are maximized. A maximized spell deals maximum damage, cures the maximum number of hit points, affects the maximum number of targets, etc., as appropriate. For example, a maximized fireball deals 6 points of damage per caster level (up to a maximum of 60 points of damage at 10th caster level). Saving throws and opposed rolls (such as the one you make when you cast dispel magic) are not affected, nor are spells without random variables. A maximized spell uses up a spell slot three levels higher than the spell’s actual level.
+
+An empowered, maximized spell gains the separate benefits of each feat: the maximum result plus one-half the normally rolled result. An empowered, maximized fireball cast by a 15th-level wizard deals points of damage equal to 60 plus one half of 10d6.",,true
+1679,feat-195,Mobility,"You are skilled at dodging past opponents and avoiding blows.
+
+## Benefit:
+You get a +4 dodge bonus to Armor Class against attacks of opportunity caused when you move out of or within a threatened area. A condition that makes you lose your Dexterity bonus to Armor Class (if any) also makes you lose dodge bonuses. Dodge bonuses (such as this one and a dwarf’s racial bonus on dodge attempts against giants) stack with each other, unlike most types of bonuses.",,true
+1682,feat-198,Mounted Archery,"You are skilled at using ranged weapons while mounted.
+
+## Benefit:
+The penalty you take when using a ranged weapon while mounted is halved: -2 instead of -4 if your mount is taking a double move, and -4 instead of -8 if your mount is running.",,true
+1685,feat-201,Mounted Combat,"You are skilled in mounted combat.
+
+## Benefit:
+Once per round when your mount is hit in combat, you may attempt a Ride check (as a reaction) to negate the hit. The hit is negated if your Ride check result is greater than the opponent’s attack roll. (Essentially, the Ride check result becomes the mount’s Armor Class if it’s higher than the mount’s regular AC.)",,true
+1688,feat-204,Natural Spell,"You can cast spells while in a wild shape.
+
+## Benefit:
+You can complete the verbal and somatic components of spells while in a wild shape. For example, while in the form of a hawk, you could substitute screeches and gestures with your talons for the normal verbal and somatic components of a spell. You can also use any material components or focuses you possess, even if such items are melded within your current form. This feat does not permit the use of magic items while you are in a form that could not ordinarily use them, and you do not gain the ability to speak while in a wild shape.",,true
+1691,feat-207,Negotiator,"You are good at gauging and swaying attitudes.
+
+## Benefit:
+You get a +2 bonus on all Diplomacy checks and Sense Motive checks.",,true
+1694,feat-210,Nimble Fingers,"You are adept at manipulating small, delicate objects.
+
+## Benefit:
+You get a +2 bonus on all Disable Device checks and Open Lock checks.",,true
+1697,feat-213,Persuasive,"You have a way with words and body language.
+
+## Benefit:
+You get a +2 bonus on all Bluff checks and Intimidate checks.",,true
+1700,feat-216,Point Blank Shot,"You are skilled at making well-placed shots with ranged weapons at close range.
+
+## Benefit:
+You get a +1 bonus on attack and damage rolls with ranged weapons at ranges of up to 30 feet.",,true
+1703,feat-219,Power Attack,"You can make exceptionally powerful melee attacks.
+
+## Benefit:
+On your action, before making attack rolls for a round, you may choose to subtract a number from all melee attack rolls and add the same number to all melee damage rolls. This number may not exceed your base attack bonus. The penalty on attacks and bonus on damage apply until your next turn.
+
+## Special:
+If you attack with a two-handed weapon, or with a one-handed weapon wielded in two hands, instead add twice the number subtracted from your attack rolls. You can’t add the bonus from Power Attack to the damage dealt with a light weapon (except with unarmed strikes or natural weapon attacks), even though the penalty on attack rolls still applies. (Normally, you treat a double weapon as a one-handed weapon and a light weapon. If you choose to use a double weapon like a two-handed weapon, attacking with only one end of it in a round, you treat it as a two-handed weapon.)",,true
+1706,feat-222,Precise Shot,"You are skilled at timing and aiming ranged attacks.
+
+## Benefit:
+You can shoot or throw ranged weapons at an opponent engaged in melee without taking the standard -4 penalty on your attack roll.",,true
+1709,feat-225,Quick Draw,"You can draw weapons with startling speed.
+
+## Benefit:
+You can draw a weapon as a free action instead of as a move action. You can draw a hidden weapon (see the Sleight of Hand skill) as a move action.
+
+A character who has selected this feat may throw weapons at his full normal rate of attacks (much like a character with a bow).
+
+## Normal:
+Without this feat, you may draw a weapon as a move
+action, or (if your base attack bonus is +1 or higher) as a free action
+as part of movement. Without this feat, you can draw
+a hidden weapon as a standard action.",,true
+1712,feat-228,Quicken Spell,"You can cast a spell with a moment’s thought.
+
+## Benefit:
+Casting a quickened spell is a free action. You can perform another action, even casting another spell, in the same round as you cast a quickened spell. You may cast only one quickened spell per round. A spell whose casting time is more than 1 full-round action cannot be quickened. A quickened spell uses up a spell slot four levels higher than the spell’s actual level. Casting a quickened spell doesn’t provoke an attack of opportunity.
+
+## Special:
+This feat can’t be applied to any spell cast spontaneously (including sorcerer spells, bard spells, and cleric or druid spells cast spontaneously), since applying a metamagic feat to a spontaneously cast spell automatically increases the casting time to a full-round action.",,true
+1715,feat-231,Rapid Reload,"Choose a type of crossbow (hand, light, or heavy). You can reload a crossbow of that type more quickly than normal.
+
+## Benefit:
+The time required for you to reload your chosen type of crossbow is reduced to a free action (for a hand or light crossbow) or a move action (for a heavy crossbow). Reloading a crossbow still provokes an attack of opportunity.
+
+If you have selected this feat for hand crossbow or light crossbow, you may fire that weapon as many times in a full attack action as you could attack if you were using a bow.
+
+## Normal:
+A character without this feat needs a move action to reload a hand or light crossbow, or a fullround action to reload a heavy crossbow.
+
+## Special:
+You can gain Rapid Reload multiple times. Each time you take the feat, it applies to a new type of crossbow.",,true
+1718,feat-234,Rapid Shot,"You can use ranged weapons with exceptional speed.
+
+## Benefit:
+You can get one extra attack per round with a ranged weapon. The attack is at your highest base attack bonus, but each attack you make in that round (the extra one and the normal ones) takes a -2 penalty. You must use the full attack action to use this feat.
+
+## Special:
+A 2nd-level ranger who has chosen the archery combat style is treated as having Rapid Shot, even if he does not have the prerequisites for it, but only when he is wearing light or no armor.",,true
+1721,feat-237,Ride-by Attack,"You are skilled at making fast attacks for your mount.
+
+## Benefit:
+When you are mounted and use the charge action, you may move and attack as if with a standard charge and then move again (continuing the straight line of the charge). Your total movement for the round can’t exceed double your mounted speed. You and your mount do not provoke an attack of opportunity from the opponent that you attack.",,true
+1724,feat-240,Run,"You are fleet of foot.
+
+## Benefit:
+When running, you move five times your normal speed (if wearing light or no armor and carrying no more than a light load) or four times your speed (if wearing medium or heavy armor or carrying a medium or heavy load). If you make a jump after a running start (see the Jump skill description), you gain a +4 bonus on your Jump check. While running, you retain your Dexterity bonus to AC.
+
+## Normal:
+You move four times your speed while running (if wearing light or no armor and carrying no more than a light load) or three times your speed (if wearing medium or heavy armor or carrying a medium or heavy load), and you lose your Dexterity bonus to AC.",,true
+1727,feat-243,Scribe Scroll,"You can create scrolls, from which you or another spellcaster can cast the scribed spells. See the Dungeon Master’s Guide for rules on scrolls.
+
+## Benefit:
+You can create a scroll of any spell that you know. Scribing a scroll takes one day for each 1,000 gp in its base price. The base price of a scroll is its spell level x its caster level x 25 gp. To scribe a scroll, you must spend 1/25 of this base price in XP and use up raw materials costing one-half of this base price.
+
+Any scroll that stores a spell with a costly material component or an XP cost also carries a commensurate cost. In addition to the costs derived from the base price, you must expend the material component or pay the XP when scribing the scroll.",You can create a scroll of any spell that you know.,true
+1730,feat-246,Self-Sufficient,"You can take care of yourself in harsh environments and situations.
+
+## Benefit:
+You get a +2 bonus on all Heal checks and Survival
+checks.",,true
+1733,feat-249,Shield Proficiency,"You are proficient with bucklers, small shields, and large shields.
+
+## Benefit:
+You can use a shield and take only the standard penalties.
+
+## Normal:
+When you are using a shield with which you are not proficient, you take the shield’s armor check penalty on attack rolls and on all skill checks that involve moving, including Ride checks.
+
+## Special:
+Barbarians, bards, clerics, druids, fighters, paladins, and rangers automatically have Shield Proficiency as a bonus feat. They need not select it.",,true
+1736,feat-252,Shot on the Run,"You are highly trained in skirmish ranged weapon tactics.
+
+## Benefit:
+When using the attack action with a ranged weapon, you can move both before and after the attack, provided that your total distance moved is not greater than your speed.",,true
+1739,feat-255,Silent Spell,"You can cast spells silently.
+
+## Benefit:
+A silent spell can be cast with no verbal components. Spells without verbal components are not affected. A silent spell uses up a spell slot one level higher than the spell’s actual level.
+
+## Special:
+Bard spells cannot be enhanced by this metamagic feat.",,true
+1742,feat-258,Simple Weapon Proficiency,"You understand how to use all types of simple weapons in combat.
+
+## Benefit:
+You make attack rolls with simple weapons normally.
+
+## Normal:
+When using a weapon with which you are not proficient, you take a -4 penalty on attack rolls.
+
+## Special:
+All characters except for druids, monks, rogues, and wizards are automatically proficient with all simple weapons. They need not select this feat.
+
+A sorcerer or wizard who casts the spell [spell: Tenser's transformation] on himself or herself gains proficiency with all simple weapons for the duration of the spell.",,true
+1745,feat-261,Skill Focus,"Choose a skill, such as Move Silently. You have a special knack with that skill.
+
+## Benefit:
+You get a +3 bonus on all checks involving that skill.
+
+## Special:
+You can gain this feat multiple times. Its effects do not stack. Each time you take the feat, it applies to a new skill.",,true
+1748,feat-264,Snatch Arrows,"You are adept at grabbing incoming arrows, as well as crossbow bolts, spears, and other projectile or thrown weapons.
+
+## Benefit:
+When using the Deflect Arrows feat, you may catch the weapon instead of just deflecting it. Thrown weapons, such as spears or axes, can immediately be thrown back at the original attacker (even though it isn’t your turn) or kept for later use.
+
+You must have at least one hand free (holding nothing) to use this feat.",,true
+1751,feat-267,Spell Focus,"Choose a school of magic, such as illusion. Your spells of that school are more potent than normal.
+
+## Benefit:
+Add +1 to the Difficulty Class for all saving throws against spells from the school of magic you select.
+
+## Special:
+You can gain this feat multiple times. Its effects do not stack. Each time you take the feat, it applies to a new school of magic.",,true
+1754,feat-270,Spell Mastery,"You are so intimately familiar with certain spells that you don’t need a spellbook to prepare them anymore.
+
+## Benefit:
+Each time you take this feat, choose a number of spells equal to your Intelligence modifier that you already know. From that point on, you can prepare these spells without referring to a spellbook.
+
+## Normal:
+Without this feat, you must use a spellbook to prepare all your spells, except [spell: read magic].
+
+## Prerequisites:
+Wizard level 1st.",,true
+1757,feat-273,Spell Penetration,"Your spells are especially potent, breaking through spell resistance more readily than normal.
+
+## Benefit:
+You get a +2 bonus on caster level checks (1d20 + caster level) made to overcome a creature’s spell resistance.",,true
+1760,feat-276,Spirited Charge,"You are trained at making a devastating mounted charge.
+
+## Benefit:
+When mounted and using the charge action, you deal double damage with a melee weapon (or triple damage with a lance).",,true
+1763,feat-279,Spring Attack,"You are trained in fast melee attacks and fancy footwork.
+
+## Benefit:
+When using the attack action with a melee weapon, you can move both before and after the attack, provided that your total distance moved is not greater than your speed. Moving in this way does not provoke an attack of opportunity from the defender you attack, though it might provoke attacks of opportunity from other creatures, if appropriate. You can’t use this feat if you are wearing heavy armor.
+
+You must move at least 5 feet both before and after you make your attack in order to utilize the benefits of Spring Attack.",,true
+1766,feat-282,Stealthy,"You are particularly good at avoiding notice.
+
+## Benefit:
+You get a +2 bonus on all Hide checks and Move Silently checks.",,true
+1769,feat-285,Still Spell,"You can cast spells without gestures.
+
+## Benefit:
+A stilled spell can be cast with no somatic components. Spells without somatic components are not affected. A stilled spell uses up a spell slot one level higher than the spell’s actual level.",,true
+1772,feat-288,Stunning Fist,"You know how to strike opponents in vulnerable areas.
+
+## Benefit:
+You must declare that you are using this feat before you make your attack roll (thus, a failed attack roll ruins the attempt). Stunning Fist forces a foe damaged by your unarmed attack to make a Fortitude saving throw (DC 10 + 1/2 your character level + your Wis modifier), in addition to dealing damage normally. A defender who fails this saving throw is stunned for 1 round (until just before your next action). A stunned character can’t act, loses any Dexterity bonus to AC, and takes a -2 penalty to AC. You may attempt a stunning attack once per day for every four levels you have attained (but see Special), and no more than once per round. Constructs, oozes, plants, undead, incorporeal creatures, and creatures immune to critical hits cannot be stunned.
+
+## Special:
+A monk may select Stunning Fist as a bonus feat at 1st level, even if she does not meet the prerequisites. A monk who selects this feat may attempt a stunning attack a number of times per day equal to her monk level, plus one more time per day for every four levels she has in classes other than monk.",,true
+1775,feat-291,Toughness,"You are tougher than normal.
+
+## Benefit:
+You gain +3 hit points.
+
+## Special:
+A character may gain this feat multiple times. Its effects stack.",,true
+1778,feat-294,Tower Shield Proficiency,"You are proficient with tower shields.
+
+## Benefit:
+You can use a tower shield and suffer only the standard
+penalties.
+
+## Normal:
+A character who is using a shield with which he or she is not proficient takes the shield’s armor check penalty on attack rolls and on all skill checks that involve moving, including Ride.
+
+## Special:
+Fighters automatically have Tower Shield Proficiency as a bonus feat. They need not select it.",,true
+1781,feat-297,Track,"You can follow the trails of creatures and characters across most types of terrain.
+
+## Benefit:
+To find tracks or to follow them for 1 mile requires a successful Survival check. You must make another Survival check every time the tracks become difficult to follow, such as when other tracks cross them or when the tracks backtrack and diverge.
+
+You move at half your normal speed (or at your normal speed with a -5 penalty on the check, or at up to twice your normal speed with a -20 penalty on the check). The DC depends on the surface and the prevailing conditions, as given on the table below:
+
+[table: trackdc]
+
+*Very Soft Ground:* Any surface (fresh snow, thick dust, wet mud) that holds deep, clear impressions of footprints.
+
+*Soft Ground:* Any surface soft enough to yield to pressure, but firmer than wet mud or fresh snow, in which a creature leaves frequent but shallow footprints.
+
+*Firm Ground:* Most normal outdoor surfaces (such as lawns, fields, woods, and the like) or exceptionally soft or dirty indoor surfaces (thick rugs and very dirty or dusty floors). The creature might leave some traces (broken branches or tufts of hair), but it leaves only occasional or partial footprints.
+
+*Hard Ground:* Any surface that doesn’t hold footprints at all, such as bare rock or an indoor floor. Most streambeds fall into this category, since any footprints left behind are obscured or washed away. The creature leaves only traces (scuff marks or displaced pebbles).
+
+Several modifiers may apply to the Survival check, as given on the
+table below.
+
+[table: trackcondmod]
+
+If you fail a Survival check, you can retry after 1 hour (outdoors) or 10 minutes (indoors) of searching.
+
+## Normal:
+Without this feat, you can use the Survival skill to find tracks, but you can follow them only if the DC for the task is 10 or lower. Alternatively, you can use the Search skill to find a footprint or similar sign of a creature’s passage using the DCs given above, but you can’t use Search to follow tracks, even if someone else has already found them.
+
+## Special:
+A ranger automatically has Track as a bonus feat. He need not select it.
+
+This feat does not allow you to find or follow the tracks made by a subject of a [spell: pass without trace] spell.",,true
+1784,feat-300,Trample,"You are trained in using your mount to knock down opponents.
+
+## Benefit:
+When you attempt to overrun an opponent while mounted, your target may not choose to avoid you. Your mount may make one hoof attack against any target you knock down, gaining the standard +4 bonus on attack rolls against prone targets.",,true
+1787,feat-303,Two-Weapon Defense,"Your two-weapon fighting style bolsters your defense as well as your offense.
+
+## Benefit:
+When wielding a double weapon or two weapons (not including natural weapons or unarmed strikes), you gain a +1 shield bonus to your AC.
+
+When you are fighting defensively or using the total defense action, this shield bonus increases to +2.",,true
+1790,feat-306,Two-Weapon Fighting,"You can fight with a weapon in each hand. You can make one extra attack each round with the second weapon.
+
+## Benefit:
+Your penalties on attack rolls for fighting with two weapons are reduced. The penalty for your primary hand lessens by 2 and the one for your off hand lessens by 6.
+
+## Special:
+A 2nd-level ranger who has chosen the two-weapon combat style is treated as having Two-Weapon Fighting, even if he does not have the prerequisite for it, but only when he is wearing light or no armor.",Your penalties on attack rolls for fighting with two weapons are reduced. The penalty for your primary hand lessens by 2 and the one for your off hand lessens by 6.,true
+1793,feat-309,Weapon Finesse,"You are especially skilled at using weapons that can benefit as much from Dexterity as from Strength.
+
+## Benefit:
+With a light weapon, rapier, whip, or spiked chain made for a creature of your size category, you may use your Dexterity modifier instead of your Strength modifier on attack rolls. If you carry a shield, its armor check penalty applies to your attack rolls.
+
+## Special:
+Natural weapons are always considered light weapons.",,true
+1796,feat-312,Weapon Focus,"Choose one type of weapon, such as greataxe. You can also choose unarmed strike or grapple (or ray, if you are a spellcaster) as your weapon for purposes of this feat. You are especially good at using this weapon. (If you have chosen ray, you are especially good with rays, such as the one produced by the [spell: ray of frost] spell.)
+
+## Benefit:
+You gain a +1 bonus on all attack rolls you make using the selected weapon.
+
+## Special:
+You can gain this feat multiple times. Its effects do not stack. Each time you take the feat, it applies to a new type of weapon.
+
+A fighter must have Weapon Focus with a weapon to gain the Weapon Specialization feat for that weapon.",You gain a +1 bonus on all attack rolls you make using the selected weapon.,true
+1799,feat-315,Weapon Specialization,"Choose one type of weapon, such as greataxe, for which you have already selected the Weapon Focus feat. You can also choose unarmed strike or grapple as your weapon for purposes of this feat. You deal extra damage when using this weapon.
+
+## Benefit:
+You gain a +2 bonus on all damage rolls you make using the selected weapon.
+
+## Special:
+You can gain this feat multiple times. Its effects do not stack. Each time you take the feat, it applies to a new type of weapon.",,true
+1802,feat-318,Whirlwind Attack,"You can strike nearby opponents in an amazing, spinning attack.
+
+## Benefit:
+When you use the full attack action, you can give up your regular attacks and instead make one melee attack at your full base attack bonus against each opponent within reach.
+
+When you use the Whirlwind Attack feat, you also forfeit any bonus or extra attacks granted by other feats, spells, or abilities (such as the Cleave feat or the [spell: haste] spell).",,true
+1805,feat-321,Widen Spell,"You can increase the area of your spells.
+
+## Benefit:
+You can alter a burst, emanation, line, or spread shaped spell to increase its area. Any numeric measurements of the spell’s area increase by 100%. For example, a fireball spell (which normally produces a 20-foot-radius spread) that is widened now fills a 40-foot-radius spread. A widened spell uses up a spell slot three levels higher than the spell’s actual level.
+
+Spells that do not have an area of one of these four sorts are not affected by this feat.",,true
+1808,feat-324,Ability Focus,"Choose one of the creature's special attacks. This attack becomes more potent than normal.
+
+## Benefit:
+Add +2 to the DC for all saving throws against the special attack on which the creature focuses.
+
+## Special:
+A creature can gain this feat multiple times. Its effects do not stack. Each time the creature takes the feat, it applies to a different special attack.
+
+## Prerequisites:
+Special attack.",Add +2 to the DC for all saving throws against the special attack on which the creature focuses.,true
+1811,feat-327,Awesome Blow,"The creature can choose to deliver blows that send its smaller opponents flying like bowling pins.
+
+## Benefit:
+As a standard action, the creature may choose to subtract 4 from its melee attack roll and deliver an awesome blow. If the creature hits a corporeal opponent smaller than itself with an awesome blow, its opponent must succeed on a Reflex save (DC = damage dealt) or be knocked flying 10 feet in a direction of the attacking creature's choice and fall prone. The attacking creature can only push the opponent in a straight line, and the opponent can't move closer to the attacking creature than the square it started in. If an obstacle prevents the completion of the opponent's move, the opponent and the obstacle each take 1d6 points of damage, and the opponent stops in the space adjacent to the obstacle.",,true
+1814,feat-330,Craft Construct,"The creature can create golems and other magic automatons that obey its orders. A creature with this feat can repair constructs that have taken damage. In one day of work, the creature can repair up to 20 points of damage by expending 50 gp per point of damage repaired. A newly created construct has average hit points for its Hit Dice.
+
+## Benefit:
+A creature with this feat can create any construct whose prerequisites it meets. Enchanting a construct takes one day for each 1,000 gp in its market price. To enchant a construct, a spellcaster must spend 1/25 the item's price in XP and use up raw materials costing half of this price (see the Golem, Homunculus, and Shield Guardian monster entries for details).
+
+## Prerequisites:
+Craft Magic Arms and Armor, Craft Wondrous Item.",,true
+1817,feat-333,Empower Spell-Like Ability,"The creature can use a spell-like ability with greater effect than normal. When a creature uses an empowered spell-like ability, all variable, numeric effects of the spell-like ability are increased by one-half. An empowered spell-like ability does half again as much damage as normal, cures half again as many hit points, affects half again as many targets, and so on as appropriate. For example, a night hag's empowered magic missile deals 1-1/2 times normal damage (roll 1d4+1 and multiply the result by 1-1/2 for each missile). Saving throws and opposed rolls (such as the one made when a character casts dispel magic ) are not affected. Spell-like abilities without random variables are not affected. The creature can only select a spell-like ability duplicating a spell with a level less than or equal to half its caster level (round down) -2. For a summary, see the table in the description of the Quicken Spell-Like Ability feat. For example, a creature that uses its spell-like abilities as a 13th-level caster can only empower spelllike abilities duplicating spells of 4th level or lower.
+
+## Benefit:
+Choose one of the creature's spell-like abilities, subject to the restrictions below. The creature can use that ability as an empowered spell-like ability three times per day (or less, if the ability is normally usable only once or twice per day).
+
+## Special:
+This feat can be taken multiple times. Each time it is taken, the creature can apply it to a different one of its spell-like abilites.
+
+## Prerequisites:
+Spell-like ability at caster level 6th or higher.",,true
+1820,feat-336,Flyby Attack,"The creature can attack on the wing.
+
+## Benefit:
+When flying, the creature can take a move action (including a dive) and another standard action at any point during the move. The creature cannot take a second move action during a round when it makes a flyby attack.
+
+## Normal:
+Without this feat, the creature takes a standard action either before or after its move.
+
+## Prerequisites:
+Fly speed.",,true
+1823,feat-339,Hover,"The creature can come to a halt in midair. If a creature begins its turn hovering, it can hover in place for the turn and take a full-round action. A hovering creature cannot make wing attacks, but it can attack with all other limbs and appendages it could use in a full attack. The creature can instead use a breath weapon or cast a spell instead of making physical attacks, if it could normally do so. If a creature of Large size or larger hovers within 20 feet of the ground in an area with lots of loose debris, the draft from its wings creates a hemispherical cloud with a radius of 60 feet. The winds so generated can snuff torches, small campfires, exposed lanterns, and other small, open flames of nonmagical origin. Clear vision within the cloud is limited to 10 feet. Creatures have concealment at 15 to 20 feet (20% miss chance). At 25 feet or more, creatures have total concealment (50% miss chance, and opponents cannot use sight to locate the creature). Those caught in the cloud must succeed on a Concentration check (DC 10 + 1/2 creature's HD) to cast a spell.
+
+## Benefit:
+When flying, the creature can halt its forward motion and hover in place as a move action. It can then fly in any direction, including straight down or straight up, at half speed, regardless of its maneuverability.
+
+## Normal:
+Without this feat, a creature must keep moving while flying unless it has perfect maneuverability.",,true
+1826,feat-342,Improved Natural Armor,"The creature's natural armor is thicker and harder than that of others of its kind.
+
+## Benefit:
+The creature's natural armor bonus increases by 1.
+
+## Special:
+A creature can gain this feat multiple times. Each time the creature takes the feat, its natural armor bonus increases by another point.
+
+## Prerequisites:
+Natural armor, Con 13.",,true
+1829,feat-345,Improved Natural Attack,"The creature's natural attacks are more dangerous than its size and type would otherwise dictate. 6d8, 8d8, 12d8.
+
+## Benefit:
+Choose one of the creature's natural attack forms. The damage for this natural weapon increases by one step, as if the creature's size had increased by one category: 1d2, 1d3, 1d4, 1d6, 1d8, 2d6, 3d6, 4d6, 6d6, 8d6, 12d6. A weapon or attack that deals 1d10 points of damage increases as follows: 1d10, 2d8, 3d8, 4d8,
+
+## Prerequisites:
+Natural weapon, base attack bonus +4.",,true
+1832,feat-348,Multiattack,"The creature is adept at using all its natural weapons at once. Prerequisite: Three or more natural attacks.
+
+## Benefit:
+The creature's secondary attacks with natural weapons take only a -2 penalty.
+
+## Normal:
+Without this feat, the creature's secondary attacks with natural weapons take a -5 penalty.",,true
+1835,feat-351,Multiweapon Fighting,"A creature with three or more hands can fight with a weapon in each hand. The creature can make one extra attack each round with each extra weapon.
+
+## Benefit:
+Penalties for fighting with multiple weapons are reduced by 2 with the primary hand and reduced by 6 with off hands.
+
+## Normal:
+A creature without this feat takes a -6 penalty on attacks made with its primary hand and a -10 penalty on attacks made with its off hands. (It has one primary hand, and all the others are off hands.) See Two-Weapon Fighting, page 160 of the Player's Handbook.
+
+## Special:
+This feat replaces the Two-Weapon Fighting feat for creatures with more than two arms.
+
+## Prerequisites:
+Dex 13, three or more hands.",,true
+1838,feat-354,Quicken Spell-Like Ability,"The creature can employ a spell-like ability with a moment's thought. Using a quickened spell-like ability is a free action that does not provoke an attack of opportunity. The creature can perform another action--including the use of another spell-like ability--in the same round that it uses a quickened spell-like ability. The creature may use only one quickened spell-like ability per round. The creature can only select a spell-like ability duplicating a spell with a level less than or equal to half its caster level (round down) -4. For a summary, see the table below. For example, a creature that uses its spell-like abilities as a 15th-level caster can only quicken spell-like abilities duplicating spells of 3rd level or lower. In addition, a spell-like ability that duplicates a spell with a casting time greater than 1 full round cannot be quickened.
+
+## Benefit:
+Choose one of the creature's spell-like abilities, subject to the restrictions described below. The creature can use that ability as a quickened spell-like ability three times per day (or less, if the ability is normally usable only once or twice per day). Empower and Quicken Spell-Like Ability Spell Level Caster Level to Empower Caster Level to Quicken 0 4th 8 th 1 st 6 th 10 th 2 nd 8 th 12 th 3rd 10 th 14th 4th 12 th 16th 5 th 14th 18th 6 th 16th 20 th 7th 18th -- 8 th 20 th -- 9th -- --
+
+## Normal:
+Normally the use of a spell-like ability requires a standard action and provokes an attack of opportunity unless noted otherwise.
+
+## Special:
+This feat can be taken multiple times. Each time it is taken, the creature can apply it to a different one of its spell-like abilities.
+
+## Prerequisites:
+Spell-like ability at caster level 10th or higher.",,true
+1841,feat-357,Snatch,"The creature can grab opponents much smaller than itself and hold them in its mouth or claw. The creature can drop a creature it has snatched as a free action or use a standard action to fling it aside. A flung creature travels 1d6x10 feet, and takes 1d6 points of damage per 10 feet traveled. If the creature flings a snatched opponent while flying, the opponent takes this amount or falling damage, whichever is greater.
+
+## Benefit:
+The creature can choose to start a grapple when it hits with a claw or bite attack, as though it had the improved grab special attack. If the creature gets a hold on a creature three or more sizes smaller, it squeezes each round for automatic bite or claw damage. A snatched opponent held in the creature's mouth is not allowed a Reflex save against the creature's breath weapon, if it has one.
+
+## Prerequisites:
+Size Huge or larger.",,true
+1844,feat-360,Wingover,"The creature can change direction quickly while flying.
+
+## Benefit:
+A flying creature with this feat can change direction quickly once each round as a free action. This feat allows it to turn up to 180 degrees regardless of its maneuverability, in addition to any other turns it is normally allowed. A creature cannot gain altitude during a round when it executes a wingover, but it can dive. The change of direction consumes 10 feet of flying movement.",,true
+1847,collegiate-wizard,Collegiate Wizard,"You have undergone extensive training in a formal school for wizards.
+
+## Benefit
+You begin play with knowledge of six 1st-level spells plus 1 per point of Intelligence modifier. Each time you gain a wizard level, you may add four spells to your spellbook without additional research. In addition, you gain a +2 bonus on all Knowledge (arcana) checks.
+
+## Special
+You can take this feat only as a 1st-level character.
+
+## Normal
+1st-level wizards begin play with knowledge of three 1^st^ level spells, and can add two spells per level to their spellbooks.","You begin play with knowledge of six 1st-level spells. Each time you gain a wizard level, you may add four spells to your spellbook without additional research.",true
+1856,dnd3x-character-features,DnD 3x - Character Features,,,true
+1859,spellcasting-bard,Bard Spellcasting,Spellcasting ability for Bard,,false
+1865,spellcasting-sorcerer,Sorcerer Spellcasting,Spellcasting ability for Sorcerer,,false
+1868,spellcasting-cleric,Cleric Spellcasting,Spellcasting ability for Cleric,,false
+1871,spellcasting-druid,Druid Spellcasting,Spellcasting ability for Druid,,false
+1874,spellcasting-paladin,Paladin Spellcasting,Spellcasting ability for Paladin,,false
+1877,spellcasting-ranger,Ranger Spellcasting,Spellcasting ability for Ranger,,false
+1880,spellcasting-wizard,Wizard Spellcasting,Spellcasting ability for Wizard,,false
+1883,class-mechanics,Class Mechanics,"Base mechanical properties for classes (hit die, BAB, saving throws, skill points)",,false
+1886,race-mechanics,Race Mechanics,"Base mechanical properties for races (size, speed, favored class, level adjustment)",,false
+1889,spellcasting-spells-known-bard,Bard Spells Known,Spells known progression for Bard,,false
+1892,class-21-skills,Fighter Class Skills,Class skills for Fighter,,true
+1895,class-22-skills,Monk Class Skills,Class skills for Monk,,true
+1898,class-25-skills,Rogue Class Skills,Class skills for Rogue,,true
+1901,class-26-skills,Sorcerer Class Skills,Class skills for Sorcerer,,true
+1904,class-19-skills,Cleric Class Skills,Class skills for Cleric,,true
+1907,class-20-skills,Druid Class Skills,Class skills for Druid,,true
+1910,class-23-skills,Paladin Class Skills,Class skills for Paladin,,true
+1913,class-24-skills,Ranger Class Skills,Class skills for Ranger,,true
+1916,class-27-skills,Wizard Class Skills,Class skills for Wizard,,true
+1919,class-21-proficiencies,Fighter Proficiencies,Proficiencies for Fighter,,true
+1922,class-22-proficiencies,Monk Proficiencies,Proficiencies for Monk,,true
+1925,class-25-proficiencies,Rogue Proficiencies,Proficiencies for Rogue,,true
+1928,class-26-proficiencies,Sorcerer Proficiencies,Proficiencies for Sorcerer,,true
+1931,class-19-proficiencies,Cleric Proficiencies,Proficiencies for Cleric,,true
+1934,class-20-proficiencies,Druid Proficiencies,Proficiencies for Druid,,true
+1937,class-23-proficiencies,Paladin Proficiencies,Proficiencies for Paladin,,true
+1940,class-24-proficiencies,Ranger Proficiencies,Proficiencies for Ranger,,true
+1943,class-27-proficiencies,Wizard Proficiencies,Proficiencies for Wizard,,true
+1946,race-3-automatic-languages,Elf Automatic Languages,Automatic languages for Elf,,true
+1949,race-4-automatic-languages,Gnome Automatic Languages,Automatic languages for Gnome,,true
+1952,race-5-automatic-languages,Half-Elf Automatic Languages,Automatic languages for Half-Elf,,true
+1955,race-6-automatic-languages,Half-Orc Automatic Languages,Automatic languages for Half-Orc,,true
+1958,race-7-automatic-languages,Halfling Automatic Languages,Automatic languages for Halfling,,true
+1961,race-9-automatic-languages,Tiefling Automatic Languages,Automatic languages for Tiefling,,true
+1964,race-12-automatic-languages,Catfolk Automatic Languages,Automatic languages for Catfolk,,true
+1967,race-1-automatic-languages,Human Automatic Languages,Automatic languages for Human,,true
+1970,race-2-automatic-languages,Dwarf Automatic Languages,Automatic languages for Dwarf,,true
+1973,race-3-bonus-languages,Elf Bonus Languages,Bonus languages for Elf,,true
+1976,race-4-bonus-languages,Gnome Bonus Languages,Bonus languages for Gnome,,true
+1979,race-5-bonus-languages,Half-Elf Bonus Languages,Bonus languages for Half-Elf,,true
+1982,race-6-bonus-languages,Half-Orc Bonus Languages,Bonus languages for Half-Orc,,true
+1985,race-7-bonus-languages,Halfling Bonus Languages,Bonus languages for Halfling,,true
+1988,race-9-bonus-languages,Tiefling Bonus Languages,Bonus languages for Tiefling,,true
+1991,race-12-bonus-languages,Catfolk Bonus Languages,Bonus languages for Catfolk,,true
+1994,race-1-bonus-languages,Human Bonus Languages,Bonus languages for Human,,true
+1997,race-2-bonus-languages,Dwarf Bonus Languages,Bonus languages for Dwarf,,true
+2000,race-3-ability-adjustments,Elf Ability Adjustments,Ability score adjustments for Elf,,true
+2003,race-4-ability-adjustments,Gnome Ability Adjustments,Ability score adjustments for Gnome,,true
+2006,race-6-ability-adjustments,Half-Orc Ability Adjustments,Ability score adjustments for Half-Orc,,true
+2009,race-7-ability-adjustments,Halfling Ability Adjustments,Ability score adjustments for Halfling,,true
+2012,race-9-ability-adjustments,Tiefling Ability Adjustments,Ability score adjustments for Tiefling,,true
+2015,race-12-ability-adjustments,Catfolk Ability Adjustments,Ability score adjustments for Catfolk,,true
+2018,race-2-ability-adjustments,Dwarf Ability Adjustments,Ability score adjustments for Dwarf,,true
+2021,companion-38-benefit,Companion 38 Benefit,Benefits granted by Companion 38,,true
+2024,companion-41-benefit,Companion 41 Benefit,Benefits granted by Companion 41,,true
+2027,companion-44-benefit,Companion 44 Benefit,Benefits granted by Companion 44,,true
+2030,companion-47-benefit,Companion 47 Benefit,Benefits granted by Companion 47,,true
+2033,companion-50-benefit,Companion 50 Benefit,Benefits granted by Companion 50,,true
+2036,companion-53-benefit,Companion 53 Benefit,Benefits granted by Companion 53,,true
+2039,companion-56-benefit,Companion 56 Benefit,Benefits granted by Companion 56,,true
+2042,companion-59-benefit,Companion 59 Benefit,Benefits granted by Companion 59,,true
+2045,companion-62-benefit,Companion 62 Benefit,Benefits granted by Companion 62,,true
+2048,companion-65-benefit,Companion 65 Benefit,Benefits granted by Companion 65,,true

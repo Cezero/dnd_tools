@@ -1,14 +1,14 @@
-import type { FeatureProgression, FeatureEntity , CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { FeatureWithRelations, FeatureEntity , CharacterWithAllDetailsResponse } from '@shared/schema';
 import { EntityType, EntityAppliesToType } from '@shared/static-data';
 
 import type { FeatureBonus, FormulaModification } from '../types';
 import { applyFeatureFormula } from '../utils/formulaApplier';
 
 /**
- * Resolve bonuses from resolved feature progressions
+ * Resolve bonuses from resolved feature features
  */
 export function resolveFeatureBonuses(
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     appliesTo: EntityAppliesToType,
     character: CharacterWithAllDetailsResponse,
     level: number,
@@ -19,10 +19,10 @@ export function resolveFeatureBonuses(
 ): FeatureBonus[] {
     const bonuses: FeatureBonus[] = [];
 
-    for (const progression of resolvedProgressions) {
-        if (!progression.entities) continue;
+    for (const feature of resolvedProgressions) {
+        if (!feature.entities) continue;
 
-        for (const entity of progression.entities) {
+        for (const entity of feature.entities) {
             // Check if entity applies to the requested type
             if (entity.appliesTo !== appliesTo) continue;
 
@@ -58,8 +58,8 @@ export function resolveFeatureBonuses(
                 value,
                 source: {
                     type: 'feature',
-                    id: progression.featureId ?? 0,
-                    name: progression.feature?.name ?? 'Unknown Feature',
+                    id: feature.id ?? 0,
+                    name: feature.name ?? 'Unknown Feature',
                 },
                 context: {
                     itemId: entity.appliesToId ?? undefined,
@@ -76,16 +76,16 @@ export function resolveFeatureBonuses(
  * Resolve formula modifications from features
  */
 export function resolveFeatureFormulaModifications(
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     character: CharacterWithAllDetailsResponse,
     level: number
 ): FormulaModification[] {
     const modifications: FormulaModification[] = [];
 
-    for (const progression of resolvedProgressions) {
-        if (!progression.entities) continue;
+    for (const feature of resolvedProgressions) {
+        if (!feature.entities) continue;
 
-        for (const entity of progression.entities) {
+        for (const entity of feature.entities) {
             // Check for ability addition (Monk AC Bonus)
             if (
                 entity.type === EntityType.Bonus &&
@@ -104,8 +104,8 @@ export function resolveFeatureFormulaModifications(
                             },
                             source: {
                                 type: 'feature',
-                                id: progression.featureId ?? 0,
-                                name: progression.feature?.name ?? 'Unknown Feature',
+                                id: feature.id ?? 0,
+                                name: feature.name ?? 'Unknown Feature',
                             },
                         });
                     }

@@ -1,35 +1,37 @@
-import type { FeatureProgression, FeatureEntity } from '@shared/schema';
-import { EntityType, EntityAppliesToType, SpecialFeatureId } from '@shared/static-data';
+import type { FeatureWithRelations, FeatureEntity } from '@shared/schema';
+import { EntityType, EntityAppliesToType, FeatureSourceType } from '@shared/static-data';
 
 /**
- * Utility functions for working with resolved feature progressions.
- * These are pure utility functions that operate on already-resolved progressions.
+ * Utility functions for working with resolved feature features.
+ * These are pure utility functions that operate on already-resolved features.
  * For feature resolution, use the backend CharacterResolutionApi.
  */
 
 /**
- * Check if a specific skill is a class skill based on resolved progressions
+ * Check if a specific skill is a class skill based on resolved features
  * 
  * @param skillId - The skill ID to check
  * @param skillSubId - The skill subtype ID (null for base skill)
- * @param resolvedProgressions - Resolved feature progressions from backend API
+ * @param resolvedProgressions - Resolved feature features from backend API
  * @returns true if the skill is a class skill
  */
 export function isClassSkill(
     skillId: number,
     skillSubId: number | null,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureWithRelations[]
 ): boolean {
-    for (const progression of resolvedProgressions) {
-        // Class skills are identified by progression.featureId === SpecialFeatureId.ClassSkill
-        if (progression.featureId !== SpecialFeatureId.ClassSkill) {
+    for (const feature of resolvedProgressions) {
+        // Class skills are identified by EntityType.Base + EntityAppliesToType.Skill in class features
+        if (feature.sourceType !== FeatureSourceType.Class) {
             continue;
         }
 
-        if (progression.entities) {
-            for (const entity of progression.entities) {
-                // Check if this entity applies to skills
-                if (entity.appliesTo !== EntityAppliesToType.Skill || !entity.appliesToId) {
+        if (feature.entities) {
+            for (const entity of feature.entities) {
+                // Check if this entity is a Base skill entity
+                if (entity.type !== EntityType.Base || 
+                    entity.appliesTo !== EntityAppliesToType.Skill || 
+                    !entity.appliesToId) {
                     continue;
                 }
 
@@ -55,17 +57,17 @@ export function isClassSkill(
 }
 
 /**
- * Get granted feats from resolved feature progressions
+ * Get granted feats from resolved feature features
  * 
- * @param resolvedProgressions - Resolved feature progressions from backend API
+ * @param resolvedProgressions - Resolved feature features from backend API
  * @returns Array of feature entities that grant feats
  */
-export function getGrantedFeats(resolvedProgressions: FeatureProgression[]): FeatureEntity[] {
+export function getGrantedFeats(resolvedProgressions: FeatureWithRelations[]): FeatureEntity[] {
     const grantedFeats: FeatureEntity[] = [];
 
-    for (const progression of resolvedProgressions) {
-        if (progression.entities) {
-            for (const entity of progression.entities) {
+    for (const feature of resolvedProgressions) {
+        if (feature.entities) {
+            for (const entity of feature.entities) {
                 if (entity.type === EntityType.Other &&
                     entity.appliesTo === EntityAppliesToType.Feat) {
                     if (entity.appliesToId) {

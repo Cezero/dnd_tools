@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
-import { FeatureProgression } from '@shared/schema';
+import { FeatureWithRelations } from '@shared/schema';
 
 import { extractEntityIdsForPrecaching } from '../utils/entity-extractor';
 import {
@@ -27,9 +27,9 @@ interface UsePrecacheFeatureEntitiesResult {
 
 /**
  * React hook that precaches all entity names (feats, features, spells, domains, classes, skills, races)
- * referenced in feature progressions. This ensures names are available in cache when formatters need them.
+ * referenced in feature features. This ensures names are available in cache when formatters need them.
  *
- * @param progressions - Feature progressions to extract entity IDs from
+ * @param features - Feature features to extract entity IDs from
  * @param options - Optional configuration
  * @returns Object with precaching state
  *
@@ -37,11 +37,11 @@ interface UsePrecacheFeatureEntitiesResult {
  * ```tsx
  * const { isPrecaching, isComplete } = usePrecacheFeatureEntities(cls.features);
  * if (isPrecaching) return <div>Loading...</div>;
- * // Format progressions after precaching completes
+ * // Format features after precaching completes
  * ```
  */
 export function usePrecacheFeatureEntities(
-    progressions: FeatureProgression[] | undefined | null,
+    features: FeatureWithRelations[] | undefined | null,
     options?: UsePrecacheFeatureEntitiesOptions
 ): UsePrecacheFeatureEntitiesResult {
     const queryClient = useQueryClient();
@@ -52,7 +52,7 @@ export function usePrecacheFeatureEntities(
     const enabled = options?.enabled !== false;
 
     useEffect(() => {
-        if (!enabled || !progressions || progressions.length === 0) {
+        if (!enabled || !features || features.length === 0) {
             setIsPrecaching(false);
             setIsComplete(true);
             return;
@@ -65,7 +65,7 @@ export function usePrecacheFeatureEntities(
 
             try {
                 // Extract all entity IDs that need precaching
-                const entityIds = extractEntityIdsForPrecaching(progressions);
+                const entityIds = extractEntityIdsForPrecaching(features);
 
                 // Create promises for all precaching operations
                 const precachePromises: Promise<void>[] = [];
@@ -125,7 +125,7 @@ export function usePrecacheFeatureEntities(
         };
 
         precacheEntities();
-    }, [progressions, queryClient, enabled, options]);
+    }, [features, queryClient, enabled, options]);
 
     return {
         isPrecaching,

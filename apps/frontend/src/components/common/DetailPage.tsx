@@ -9,6 +9,8 @@ interface DetailPageProps {
     onBack: () => void;
     onEdit: () => void;
     children: React.ReactNode;
+    lockStatus?: { locked: boolean; lockedBy?: number };
+    currentUserId?: number;
 }
 
 export function DetailPage({
@@ -18,7 +20,9 @@ export function DetailPage({
     isAdmin,
     onBack,
     onEdit,
-    children
+    children,
+    lockStatus,
+    currentUserId
 }: DetailPageProps) {
     const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
     const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1";
@@ -57,13 +61,24 @@ export function DetailPage({
                             Back to {pluralize(itemName)}
                         </button>
                         {isAdmin && (
-                            <button
-                                type="button"
-                                onClick={onEdit}
-                                className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500"
-                            >
-                                Edit {itemName}
-                            </button>
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={onEdit}
+                                    disabled={lockStatus?.locked && lockStatus.lockedBy !== currentUserId}
+                                    className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    title={lockStatus?.locked && lockStatus.lockedBy !== currentUserId
+                                        ? `Currently locked by User ${lockStatus.lockedBy}`
+                                        : `Edit ${itemName}`}
+                                >
+                                    Edit {itemName}
+                                </button>
+                                {lockStatus?.locked && lockStatus.lockedBy !== currentUserId && (
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 ml-4">
+                                        Currently locked by User {lockStatus.lockedBy}
+                                    </p>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

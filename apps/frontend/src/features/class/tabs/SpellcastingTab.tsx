@@ -25,8 +25,8 @@ export function SpellcastingTab({
 
                 <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                        <strong>Note:</strong> Casting Ability and Casting Type are now managed through the Feature Progression system.
-                        Use the Features tab to add or modify these values via the class-mechanics feature progression.
+                        <strong>Note:</strong> Casting Ability and Casting Type are now managed through the Feature Feature system.
+                        Use the Features tab to add or modify these values via the class-mechanics feature feature.
                     </p>
                 </div>
 
@@ -42,9 +42,9 @@ export function SpellcastingTab({
                 </div>
             </div>
 
-            {/* Spell Progression */}
+            {/* Spell Feature */}
             <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Spell Progression</h3>
+                <h3 className="text-lg font-semibold">Spell Feature</h3>
                 {state.canCastSpells ? (
                     <>
                         {/* How to Use Info Box */}
@@ -60,11 +60,11 @@ export function SpellcastingTab({
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Spell Slots Progression */}
+                            {/* Spell Slots Feature */}
                             <div>
                                 <h4 className="text-md font-medium mb-3">Spell Slots by Level</h4>
                                 <SpellProgressionEditor
-                                    progression={spellcastingProgression || []}
+                                    feature={spellcastingProgression || []}
                                     originalProgression={spellcastingProgression || []}
                                     onProgressionChange={(newProgression: CreateSpellcastingProgressionRequest[]) => {
                                         if (setSpellcastingProgression) {
@@ -91,12 +91,12 @@ export function SpellcastingTab({
                                 />
                             </div>
 
-                            {/* Spells Known Progression */}
+                            {/* Spells Known Feature */}
                             {state.spellsKnown && (
                                 <div>
                                     <h4 className="text-md font-medium mb-3">Spells Known by Level</h4>
                                     <SpellProgressionEditor
-                                        progression={spellsKnownProgression || []}
+                                        feature={spellsKnownProgression || []}
                                         originalProgression={spellsKnownProgression || []}
                                         onProgressionChange={(newProgression: CreateSpellcastingProgressionRequest[]) => {
                                             if (setSpellsKnownProgression) {
@@ -128,7 +128,7 @@ export function SpellcastingTab({
                 ) : (
                     <div className="border border-gray-200 rounded-md dark:border-gray-600 p-4">
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Spellcasting is disabled for this class. Enable "Can Cast Spells" in the Basic Info tab to configure spell progression.
+                            Spellcasting is disabled for this class. Enable "Can Cast Spells" in the Basic Info tab to configure spell feature.
                         </p>
                     </div>
                 )}

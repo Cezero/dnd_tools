@@ -31,7 +31,7 @@ export const CharacterDetailApi = {
     }),
 
     updateFeatureUses: typedApi<typeof UpdateFeatureUsesRequestSchema, typeof CharacterFeatureUsesSchema, typeof FeatureUsesParamSchema>({
-        path: '/characters/:id/uses/:progressionId/:entityId',
+        path: '/characters/:id/uses/:featureId/:entityId',
         method: 'POST',
         requestSchema: UpdateFeatureUsesRequestSchema,
         paramsSchema: FeatureUsesParamSchema,

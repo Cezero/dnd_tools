@@ -1,9 +1,7 @@
 import { Response, NextFunction } from 'express';
-import { z } from 'zod';
 
 import {
     ValidatedParamsT,
-    ValidatedQueryT,
     ValidatedParamsQueryT,
     ValidatedBodyT,
     ValidatedParamsBodyT,
@@ -11,17 +9,29 @@ import {
 } from '@/util/validated-types';
 import {
     ClassIdParamRequest,
-    ClassIdQuerySchema,
+    ClassIdQueryRequest,
     CreateClassRequest,
     UpdateClassRequest,
     GetAllClassesResponse,
     GetAllClassesQuery,
     DnDClass,
     UpdateResponse,
-    ClassCacheResponse
+    ClassCacheResponse,
 } from '@shared/schema';
 
+import { EntityLockService } from '../shared/entityState/EntityLockService';
+
 import { classService } from './classService';
+
+let entityLockServiceInstance: EntityLockService | null = null;
+
+function getEntityLockService(): EntityLockService {
+    if (!entityLockServiceInstance) {
+        entityLockServiceInstance = new EntityLockService();
+    }
+    return entityLockServiceInstance;
+}
+
 /**
  * Fetches all classes from the database with pagination and filtering.
  */
@@ -32,15 +42,14 @@ export async function GetAllClasses(req: ValidatedBodyT<GetAllClassesQuery, GetA
 
 /**
  * Fetches a single class by its ID (supports both base classes and variants via unified ID system).
- * Optionally accepts character feature choices to enrich progressions with choice data.
+ * Optionally accepts character feature choices to enrich features with choice data.
  */
 export async function GetClassById(
-    req: ValidatedParamsQueryT<ClassIdParamRequest, z.infer<typeof ClassIdQuerySchema>, DnDClass>,
+    req: ValidatedParamsQueryT<ClassIdParamRequest, ClassIdQueryRequest, DnDClass>,
     res: Response,
     _next: NextFunction
 ) {
-    const choices = req.query.characterFeatureChoices;
-    const cls = await classService.getClassById(req.params, choices);
+    const cls = await classService.getClassById(req.params, req.query.characterFeatureChoices);
 
     if (!cls) {
         res.status(404).json({ error: 'Class not found' });
@@ -80,6 +89,27 @@ export async function DeleteClass(req: ValidatedParamsT<ClassIdParamRequest>, re
 export async function GetClassCache(req: ValidatedNoInput<ClassCacheResponse>, res: Response, _next: NextFunction) {
     const classes = await classService.getClassCache();
     res.json(classes);
+}
+
+/**
+ * Gets the lock status for a class.
+ * 
+ * Returns whether the class is currently locked and, if so, which user holds the lock.
+ * This is a read-only operation that doesn't require authentication.
+ */
+export async function GetClassLockStatus(
+    req: ValidatedParamsT<ClassIdParamRequest>,
+    res: Response,
+    _next: NextFunction
+) {
+    const lockService = getEntityLockService();
+    const lockedBy = await lockService.checkLock('class', req.params.id);
+
+    if (lockedBy === null) {
+        res.json({ locked: false });
+    } else {
+        res.json({ locked: true, lockedBy });
+    }
 }
 
 

@@ -61,7 +61,7 @@ export function BasicInfoTab({
                             value={state.editionId}
                             onValueChange={(value) => updateState({ type: ClassEditStateUpdateType.SET_EDITION_ID, payload: { editionId: value as number } })}
                             options={EDITION_LIST}
-                            useAbbreviation={false}
+                            useAbbreviation={true}
                             placeholder="Select edition"
                         />
                         <CustomCheckbox
@@ -93,10 +93,9 @@ export function BasicInfoTab({
             {/* Source References - moved to bottom */}
             <div className="mt-8">
                 <SourceEditor
-                    sources={[]}
-                    onSourcesChange={(_sources) => {
-                        // Source book info is not currently in ClassEditState
-                        // TODO: Add sourceBookInfo to ClassEditState if needed
+                    sources={state.sourceBookInfo || []}
+                    onSourcesChange={(sources) => {
+                        updateState({ type: ClassEditStateUpdateType.SET_SOURCE_BOOK_INFO, payload: { sourceBookInfo: sources.length > 0 ? sources : null } });
                     }}
                     sourceType={SourceType.Classes}
                     editionId={state.editionId as EditionId}

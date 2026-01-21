@@ -8,22 +8,45 @@
 /**
  * API interface for resolution operations.
  * 
- * Provides a consistent interface for session operations across different entity types.
+ * Provides a consistent interface for entity editing operations across different entity types.
  * This interface is implemented by entity-specific API clients (e.g., ClassResolutionApi).
+ * 
+ * **Note**: This interface no longer uses entity-specific sessions. Instead, it uses
+ * user sessions to track editing state. The user's session tracks which entities they're editing.
+ * 
+ * **CRITICAL - Dependency Array Warning**:
+ * Objects implementing this interface (or any API object) should NEVER be included in
+ * React hook dependency arrays (`useEffect`, `useCallback`, `useMemo`). API methods are
+ * stable function references that don't change between renders. Including API objects in
+ * dependency arrays causes infinite re-renders and continuous API queries.
+ * 
+ * **Required Pattern**:
+ * When passing an API object to `useGenericResolution` or similar hooks, the API object
+ * MUST be memoized using `useMemo` to ensure a stable reference across renders:
+ * ```typescript
+ * const api = useMemo(() => ({
+ *   startEditing: ClassResolutionApi.startEditing,
+ *   getState: ClassResolutionApi.getState,
+ *   applyUpdate: ClassResolutionApi.applyUpdate,
+ *   cancel: ClassResolutionApi.cancel
+ * }), []);
+ * ```
  * 
  * **Usage Pattern**:
  * ```typescript
  * const api: ResolutionApi<number, ClassEditState, ClassUpdate, unknown> = {
- *   initializeSession: ClassResolutionApi.initializeSession,
- *   getSessionState: ClassResolutionApi.getSessionState,
+ *   startEditing: ClassResolutionApi.startEditing,
+ *   getState: ClassResolutionApi.getState,
  *   applyUpdate: ClassResolutionApi.applyUpdate,
- *   saveSession: ClassResolutionApi.saveSession,
- *   cancelSession: ClassResolutionApi.cancelSession
+ *   cancel: ClassResolutionApi.cancel
  * };
  * ```
  * 
+ * **Note**: `save` is not part of the API interface. Hooks should override the `save` method
+ * to call the API directly, then call `genericResolution.save()` for state cleanup.
+ * 
  * @template TEntityId - The entity ID type
- * @template TState - The session state type
+ * @template TState - The entity state type
  * @template TUpdate - The update operation type
  * @template TResolved - The resolved result type (may be same as TState or extended)
  * 
@@ -31,8 +54,8 @@
  * ```typescript
  * // Class resolution API implementation
  * export const ClassResolutionApi: ResolutionApi<number, ClassEditState, ClassUpdate, unknown> = {
- *   initializeSession: async (classId) => {
- *     const response = await fetch(`/api/classes/${classId}/session`, { method: 'POST' });
+ *   startEditing: async (classId) => {
+ *     const response = await fetch(`/api/classes/${classId}/start-editing`, { method: 'POST' });
  *     return response.json();
  *   },
  *   // ... other methods
@@ -41,72 +64,61 @@
  */
 export interface ResolutionApi<TEntityId, TState, TUpdate, TResolved> {
     /**
-     * Initialize or resume a session.
+     * Start editing an entity.
      * 
-     * Should return existing session if available, or create new one.
+     * Acquires a lock and adds entity to user's editing list.
      * 
      * @param entityId - The entity ID
-     * @returns Promise resolving to session ID and state
+     * @returns Promise resolving to state
      */
-    initializeSession: (entityId: TEntityId) => Promise<{ sessionId: string; state: TState }>;
+    startEditing: (entityId: TEntityId) => Promise<{ state: TState }>;
 
     /**
-     * Get current session state.
+     * Get current entity state.
      * 
      * @param entityId - The entity ID
-     * @param sessionId - The session ID
-     * @returns Promise resolving to session state
+     * @returns Promise resolving to state
      */
-    getSessionState: (entityId: TEntityId, sessionId: string) => Promise<{ state: TState }>;
+    getState: (entityId: TEntityId) => Promise<{ state: TState }>;
 
     /**
-     * Apply an update to the session.
+     * Apply an update to the entity state.
      * 
      * @param entityId - The entity ID
-     * @param sessionId - The session ID
      * @param update - The update operation
      * @returns Promise resolving to updated state
      */
-    applyUpdate: (entityId: TEntityId, sessionId: string, update: TUpdate) => Promise<{ state: TState }>;
+    applyUpdate: (entityId: TEntityId, update: TUpdate) => Promise<{ state: TState }>;
 
     /**
-     * Save session to database.
+     * Cancel editing without saving.
      * 
      * @param entityId - The entity ID
-     * @param sessionId - The session ID
-     * @returns Promise resolving when save is complete
-     */
-    saveSession: (entityId: TEntityId, sessionId: string) => Promise<void>;
-
-    /**
-     * Cancel session without saving.
-     * 
-     * @param entityId - The entity ID
-     * @param sessionId - The session ID
      * @returns Promise resolving when cancel is complete
      */
-    cancelSession: (entityId: TEntityId, sessionId: string) => Promise<void>;
+    cancel: (entityId: TEntityId) => Promise<void>;
 }
 
 /**
  * Result type for generic resolution hook.
  * 
- * Returned by `useGenericResolution` hook. Provides session state and operations
- * for managing entity editing sessions.
+ * Returned by `useGenericResolution` hook. Provides entity state and operations
+ * for managing entity editing.
  * 
  * **State Management**:
- * - `sessionId`: Current session ID (null if not initialized)
- * - `state`: Current session state (null if not loaded)
+ * - `state`: Current entity state (null if not loaded)
  * - `isLoading`: True during async operations
  * - `error`: Error message if operation failed (null if no error)
  * 
  * **Operations**:
- * - `applyUpdate`: Apply an update to the session
- * - `saveSession`: Save session to database
- * - `cancelSession`: Cancel session without saving
+ * - `applyUpdate`: Apply an update to the entity state
+ * - `save`: Save entity state to database
+ * - `cancel`: Cancel editing without saving
  * - `refreshState`: Refresh state from backend
  * 
- * @template TState - The session state type
+ * **Note**: No longer tracks `sessionId` - editing state is tracked via user sessions.
+ * 
+ * @template TState - The entity state type
  * @template TUpdate - The update operation type
  * 
  * @example
@@ -114,7 +126,7 @@ export interface ResolutionApi<TEntityId, TState, TUpdate, TResolved> {
  * const resolution = useGenericResolution(classId, ClassResolutionApi);
  * 
  * if (resolution.error) {
- *   console.error('Session error:', resolution.error);
+ *   console.error('Error:', resolution.error);
  * }
  * 
  * if (resolution.state) {
@@ -125,21 +137,19 @@ export interface ResolutionApi<TEntityId, TState, TUpdate, TResolved> {
  * ```
  */
 export interface ResolutionHookResult<TState, TUpdate> {
-    /** Current session ID (null if no active session) */
-    sessionId: string | null;
-    /** Current session state (null if not loaded) */
+    /** Current entity state (null if not loaded) */
     state: TState | null;
     /** Loading state for async operations */
     isLoading: boolean;
     /** Error state for failed operations */
     error: string | null;
-    /** Apply an update to the session */
+    /** Apply an update to the entity state */
     applyUpdate: (update: TUpdate) => Promise<TState | null>;
-    /** Save session to database */
-    saveSession: () => Promise<void>;
-    /** Cancel session without saving */
-    cancelSession: () => Promise<void>;
-    /** Refresh session state from backend */
+    /** Save entity state to database */
+    save: () => Promise<void>;
+    /** Cancel editing without saving */
+    cancel: () => Promise<void>;
+    /** Refresh entity state from backend */
     refreshState: () => Promise<void>;
 }
 

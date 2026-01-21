@@ -1,52 +1,178 @@
-import {
-    ProgressionType
-} from '@shared/static-data';
-import { getBABProgression, getGoodSave, getPoorSave } from '@shared/utils';
+import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations } from '@shared/schema';
+import { EntityAppliesToType, EntityType, FeatureSourceType, SavingThrowId } from '@shared/static-data';
 
-export interface ProgressionRow {
-    level: number;
-    bab: string;
-    fort: number;
-    ref: number;
-    will: number;
-    spells?: { [spellLevel: number]: number };
-    spellsKnown?: { [spellLevel: number]: number };
-}
+import type { ClassProgressionConfig, MinimalCharacterForFormula, ProgressionRow } from './types';
 
-export interface ClassProgressionConfig {
-    babProgression: ProgressionType;
-    fortProgression: ProgressionType;
-    refProgression: ProgressionType;
-    willProgression: ProgressionType;
-    spellcastingProgression?: Array<{
-        classLevel: number;
-        slots?: Array<{
-            spellLevel: number;
-            slotsPerDay: number;
-        }>;
-    }>;
-    spellsKnownProgression?: Array<{
-        classLevel: number;
-        slots?: Array<{
-            spellLevel: number;
-            slotsPerDay: number;
-        }>;
-    }>;
+/**
+ * Find BAB entity from feature features for a specific class level
+ */
+function findBABEntity(
+    features: FeatureWithRelations[],
+    level: number,
+    classId?: number
+) {
+    for (const feature of features) {
+        if (feature.sourceType !== FeatureSourceType.Class) continue;
+        if (classId && !feature.classes?.some(c => c.classId === classId)) continue;
+        if (feature.level > level) continue;
+
+        const babEntity = feature.entities?.find(
+            e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.BaseAttackBonus
+        );
+        if (babEntity) {
+            return { entity: babEntity, feature };
+        }
+    }
+    return null;
 }
 
 /**
- * Generates progression data for a class from level 1 to 20
+ * Find saving throw entity from feature features for a specific class level
+ */
+function findSaveEntity(
+    features: FeatureWithRelations[],
+    level: number,
+    saveType: SavingThrowId,
+    classId?: number
+) {
+    for (const feature of features) {
+        if (feature.sourceType !== FeatureSourceType.Class) continue;
+        if (classId && !feature.classes?.some(c => c.classId === classId)) continue;
+        if (feature.level > level) continue;
+
+        const saveEntity = feature.entities?.find(
+            e => e.type === EntityType.Base &&
+                e.appliesTo === EntityAppliesToType.SavingThrow &&
+                e.appliesToId === saveType
+        );
+        if (saveEntity) {
+            return { entity: saveEntity, feature };
+        }
+    }
+    return null;
+}
+
+/**
+ * Calculate BAB value for a level using feature features
+ * For gestalt (multiple classes), finds the best BAB from all classes
+ */
+function calculateBABForLevel(
+    features: FeatureWithRelations[],
+    level: number,
+    classId?: number
+): string {
+    // Create a minimal character object for formula calculation
+    const mockCharacter = {
+        abilityScores: [],
+        advancements: [],
+    } as MinimalCharacterForFormula as CharacterWithAllDetailsResponse;
+
+    let maxBAB = 0;
+
+    // If classId is specified, only use that class
+    // Otherwise (gestalt), find the best BAB from all classes
+    if (classId !== undefined) {
+        const babData = findBABEntity(features, level, classId);
+        if (babData) {
+            const babValue = applyFeatureFormula(babData.entity, mockCharacter, level);
+            if (babValue !== null && babValue !== undefined) {
+                maxBAB = babValue;
+            }
+        }
+    } else {
+        // Gestalt: find all BAB entities and take the best
+        for (const feature of features) {
+            if (feature.sourceType !== FeatureSourceType.Class) continue;
+            if (feature.level > level) continue;
+
+            const babEntity = feature.entities?.find(
+                e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.BaseAttackBonus
+            );
+            if (babEntity) {
+                const babValue = applyFeatureFormula(babEntity, mockCharacter, level);
+                if (babValue !== null && babValue !== undefined) {
+                    maxBAB = Math.max(maxBAB, babValue);
+                }
+            }
+        }
+    }
+
+    // Format iterative BAB like +11/+6/+1 etc.
+    if (maxBAB <= 0) return '+0';
+    const attacks: number[] = [];
+    let current = maxBAB;
+    while (current > 0) {
+        attacks.push(current);
+        current -= 5;
+    }
+    return attacks.map(a => `+${a}`).join('/');
+}
+
+/**
+ * Calculate saving throw value for a level using feature features
+ * For gestalt (multiple classes), finds the best save from all classes
+ */
+function calculateSaveForLevel(
+    features: FeatureWithRelations[],
+    level: number,
+    saveType: SavingThrowId,
+    classId?: number
+): number {
+    // Create a minimal character object for formula calculation
+    const mockCharacter = {
+        abilityScores: [],
+        advancements: [],
+    } as MinimalCharacterForFormula as CharacterWithAllDetailsResponse;
+
+    let maxSave = 0;
+
+    // If classId is specified, only use that class
+    // Otherwise (gestalt), find the best save from all classes
+    if (classId !== undefined) {
+        const saveData = findSaveEntity(features, level, saveType, classId);
+        if (saveData) {
+            const saveValue = applyFeatureFormula(saveData.entity, mockCharacter, level);
+            if (saveValue !== null && saveValue !== undefined) {
+                maxSave = saveValue;
+            }
+        }
+    } else {
+        // Gestalt: find all save entities and take the best
+        for (const feature of features) {
+            if (feature.sourceType !== FeatureSourceType.Class) continue;
+            if (feature.level > level) continue;
+
+            const saveEntity = feature.entities?.find(
+                e => e.type === EntityType.Base &&
+                    e.appliesTo === EntityAppliesToType.SavingThrow &&
+                    e.appliesToId === saveType
+            );
+            if (saveEntity) {
+                const saveValue = applyFeatureFormula(saveEntity, mockCharacter, level);
+                if (saveValue !== null && saveValue !== undefined) {
+                    maxSave = Math.max(maxSave, saveValue);
+                }
+            }
+        }
+    }
+
+    return maxSave;
+}
+
+/**
+ * Generates feature data for a class from level 1 to 20 using feature features
  */
 export function generateClassProgression(config: ClassProgressionConfig): ProgressionRow[] {
-    const progression: ProgressionRow[] = [];
+    const feature: ProgressionRow[] = [];
 
     for (let level = 1; level <= 20; level++) {
         const row: ProgressionRow = {
             level,
-            bab: getBABProgression(level, config.babProgression),
-            fort: config.fortProgression === ProgressionType.good ? getGoodSave(level) : getPoorSave(level),
-            ref: config.refProgression === ProgressionType.good ? getGoodSave(level) : getPoorSave(level),
-            will: config.willProgression === ProgressionType.good ? getGoodSave(level) : getPoorSave(level),
+            bab: calculateBABForLevel(config.features, level, config.classId),
+            fort: calculateSaveForLevel(config.features, level, SavingThrowId.Fortitude, config.classId),
+            ref: calculateSaveForLevel(config.features, level, SavingThrowId.Reflex, config.classId),
+            will: calculateSaveForLevel(config.features, level, SavingThrowId.Will, config.classId),
         };
 
         // Add spellcasting data if available
@@ -73,8 +199,8 @@ export function generateClassProgression(config: ClassProgressionConfig): Progre
             }
         }
 
-        progression.push(row);
+        feature.push(row);
     }
 
-    return progression;
+    return feature;
 }

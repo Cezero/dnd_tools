@@ -30,13 +30,35 @@ The race system frontend follows the shared [Component Architecture](../applicat
 ### **Race-Specific Component Structure**
 
 **RaceList**: Primary component for displaying and managing race collections
-**RaceDetail**: Container component for race detail views with navigation
-**RaceDisplay**: Comprehensive race information display component
-**RaceEdit**: Main race creation and editing interface with tab-based layout
+**RaceDetail**: Container component for race detail views with navigation (uses TanStack Query for database data)
+**RaceDisplay**: Comprehensive race information display component (shows lock status, disables edit when locked)
+**RaceEdit**: Main race creation and editing interface with tab-based layout (uses isolated entity state)
 **Tab Components**: Specialized components for different aspects of race editing
-**RaceApi**: API client for backend communication
+**RaceApi**: API client for backend communication (includes lock status checks)
 
 ## 🔧 **Core Components**
+
+### **RaceDetail Component**
+
+Container component for race detail views. Uses TanStack Query to fetch race data from the database, ensuring viewers always see persisted state, not editing state.
+
+**Key Features**:
+- **Database Fetching**: Uses `RaceQueryHooks.getRaceById` with TanStack Query
+- **Lock Status**: Checks lock status to disable edit button when another user is editing
+- **Cache Management**: Automatically benefits from TanStack Query caching and refetching
+
+**Source File**: `frontend/src/features/race/RaceDetail.tsx`
+
+### **RaceDisplay Component**
+
+Comprehensive display component for viewing complete race information. Shows lock status and disables edit button when race is locked by another user.
+
+**Key Features**:
+- **Lock Status Display**: Shows "Currently locked by User {userId}" when locked by another user
+- **Edit Button Disabled**: Edit button is disabled when locked by another user
+- **Database Data**: Always displays data from database (via TanStack Query cache)
+
+**Source File**: `frontend/src/features/race/RaceDisplay.tsx`
 
 ### **RaceList Component**
 
@@ -77,11 +99,11 @@ Comprehensive display component for viewing complete race information. This comp
 
 ### **RaceEdit Component**
 
-Comprehensive editing interface for creating and modifying races. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern and uses a **state-based pattern with SQLite session storage** for reliable data management.
+Comprehensive editing interface for creating and modifying races. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern and uses a **state-based pattern with Redis session storage** for reliable data management.
 
 **Architecture**: The component uses a centralized state management pattern that mirrors the `CharacterEdit` and `ClassEdit` implementations, providing:
 - **Single Source of Truth**: All race data managed through `useRaceEditState` hook
-- **Backend Session Storage**: SQLite session database for persistent editing sessions
+- **Backend Session Storage**: Redis session storage for persistent editing sessions
 - **Automatic Synchronization**: Frontend state automatically syncs with backend session
 - **Context Preservation**: Race ID and context preserved throughout navigation and feature creation
 - **Deterministic ID Management**: Backend generates temporary IDs for new entities, eliminating signature matching
@@ -104,7 +126,8 @@ interface RaceEditState {
   description: string | null;
   sourceBookInfo: SourceMap[] | null;
   
-  // Feature progressions (id: number for existing, null for new)
+  // Features (id: number for existing, null for new)
+  // Note: FeatureProgression is a type alias for FeatureWithRelationsSchema
   featureProgressions: FeatureProgression[];
   
   // UI state
@@ -112,7 +135,7 @@ interface RaceEditState {
   isFeatureAssocOpen: boolean;
   isProgressionDialogOpen: boolean;
   editingProgression: FeatureProgression | null;
-  preSelectedFeature: FeatureProgression['feature'] | undefined;
+  preSelectedFeature: FeatureProgression | undefined;
 }
 ```
 
@@ -133,7 +156,7 @@ updateState({
 ```
 
 **Session Synchronization**:
-The component automatically synchronizes state changes with the backend SQLite session:
+The component automatically synchronizes state changes with the backend Redis session:
 - **Field Changes**: Individual field changes (name, editionId, etc.) sync via `UPDATE_RACE_FIELD` actions
 - **Progression Changes**: Feature progression changes sync via diff-based detection
 - **Automatic Sync**: `useEffect` hooks watch state changes and send updates to backend session
@@ -152,7 +175,7 @@ The component automatically synchronizes state changes with the backend SQLite s
 3. **Configure Abilities**: Set ability score adjustments and racial bonuses
 4. **Set Languages**: Configure racial languages and language options
 5. **Add Sources**: Link to source books and page references
-6. **Review and Save**: Review all data and save the race (transforms SQLite session → MySQL)
+6. **Review and Save**: Review all data and save the race (transforms Redis session → MySQL)
 
 **Source Files**: 
 - Component: `frontend/src/features/race/RaceEdit.tsx`
@@ -310,7 +333,7 @@ Proper state management for complex race data:
 
 ## 🏛️ **State-Based Pattern Architecture**
 
-The race editing system uses a **state-based pattern with SQLite session storage** that provides reliable data management, context preservation, and deterministic ID handling. This pattern mirrors the `CharacterEdit` and `ClassEdit` implementations.
+The race editing system uses a **state-based pattern with Redis session storage** that provides reliable data management, context preservation, and deterministic ID handling. This pattern mirrors the `CharacterEdit` and `ClassEdit` implementations.
 
 ### **Overview**
 
@@ -319,7 +342,7 @@ The state-based pattern provides:
 - **Context Preservation**: Race ID and context preserved throughout navigation
 - **No Orphaned Data**: Automatic linking of new features/progressions to race
 - **Deterministic IDs**: Backend generates temporary IDs, eliminating signature matching
-- **Persistent Sessions**: SQLite session storage for reliable editing sessions
+- **Persistent Sessions**: Redis session storage for reliable editing sessions
 - **Automatic Synchronization**: Frontend state automatically syncs with backend
 
 ### **State Management Hooks**
@@ -358,9 +381,9 @@ updateState({
 
 #### **useRaceResolution Hook**
 
-Session management hook that handles backend SQLite session lifecycle.
+Hook for managing race editing with user sessions and entity locks.
 
-**Purpose**: Manages editing session initialization, state synchronization, and save operations.
+**Purpose**: Manages race editing lifecycle: start editing, apply updates, save, and cancel.
 
 **Source File**: `frontend/src/features/race/useRaceResolution.ts`
 
@@ -368,28 +391,47 @@ Session management hook that handles backend SQLite session lifecycle.
 ```typescript
 const resolution = useRaceResolution(raceId);
 
-// Initialize/resume session
-await resolution.initializeSession();
+// Start editing (acquires lock, adds to user session)
+// Automatically called on mount if raceId is provided
 
-// Apply update to session
+// Apply update to race state
 await resolution.applyUpdate({
   type: 'UPDATE_RACE_FIELD',
   payload: { field: 'name', value: 'Human' }
 });
 
-// Save session to MySQL
-await resolution.saveSession();
+// Save race state to database
+await resolution.save();
+
+// Cancel editing (releases lock, removes from user session)
+await resolution.cancel();
 ```
 
 **Key Features**:
-- **Automatic Initialization**: Creates or resumes session on mount
-- **State Synchronization**: Syncs frontend state changes to backend session
-- **Save Transformation**: Transforms SQLite session → MySQL on save
+- **Automatic Initialization**: Starts editing on mount if raceId is provided
+- **State Synchronization**: Syncs frontend state changes to backend entity state
+- **Lock Management**: Handles lock acquisition and release automatically
+- **User Session Integration**: Updates user session editing list automatically
 - **Error Handling**: Comprehensive error handling and loading states
+- **State Isolation**: Editing state is isolated per user. Changes are NOT shared via WebSocket.
+- **Cache Invalidation**: After saving, invalidates TanStack Query cache so viewers see updated data.
+
+**Return Value**:
+```typescript
+{
+  raceState: RaceEditState | null;  // Current race state
+  isLoading: boolean;               // Loading state
+  error: string | null;              // Error state
+  applyUpdate: (update: RaceUpdate) => Promise<void>;
+  save: () => Promise<void>;
+  cancel: () => Promise<void>;
+  refreshState: () => Promise<void>;
+}
+```
 
 ### **Session Synchronization**
 
-The component automatically synchronizes state changes with the backend SQLite session through `useEffect` hooks, similar to the class system. See [Class System State-Based Pattern](../class-system/frontend-components.md#state-based-pattern-architecture) for detailed synchronization patterns.
+The component automatically synchronizes state changes with the backend Redis session through `useEffect` hooks, similar to the class system. See [Class System State-Based Pattern](../class-system/frontend-components.md#state-based-pattern-architecture) for detailed synchronization patterns.
 
 ### **ID Management**
 

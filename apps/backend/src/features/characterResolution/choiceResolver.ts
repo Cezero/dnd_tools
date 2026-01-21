@@ -1,6 +1,6 @@
 import { PrismaClient } from '@shared/prisma-client';
-import type { FeatureProgression, FeatureEntity, FeatInQueryResponse, PendingChoice } from '@shared/schema';
-import { EntityType, EntityAppliesToType, FeatureFeatChoiceFilter, FeatureSourceType, CompanionType, SpecialFeatureId } from '@shared/static-data';
+import type { FeatureWithRelations, FeatureEntity, FeatInQueryResponse, PendingChoice } from '@shared/schema';
+import { EntityType, EntityAppliesToType, FeatureFeatChoiceFilter, FeatureSourceType, CompanionType } from '@shared/static-data';
 
 import { FeatureEntityHandlers, type EntityProcessingResult } from './featureEntityHandlers';
 import { domainService } from '../domain/domainService';
@@ -18,18 +18,18 @@ const prisma = new PrismaClient();
  */
 export class ChoiceResolver {
     /**
-     * Identifies pending choices from feature progressions.
+     * Identifies pending choices from feature features.
      * 
-     * Scans progressions for choice entities and creates PendingChoice objects
-     * with appropriate options. Filters out already-made choices and progressions
+     * Scans features for choice entities and creates PendingChoice objects
+     * with appropriate options. Filters out already-made choices and features
      * above the character's current level.
      * 
      * @returns Array of pending choices that require user input
      */
     static async identifyPendingChoices(
-        progressions: FeatureProgression[],
+        features: FeatureWithRelations[],
         editionId?: number,
-        existingChoices?: Array<{ progressionId: number; featureEntityId: number }>,
+        existingChoices?: Array<{ featureId: number; featureEntityId: number }>,
         allFeats?: FeatInQueryResponse[],
         characterLevel?: number,
         classLevels?: Map<number, number>
@@ -40,42 +40,42 @@ export class ChoiceResolver {
         const existingChoicesSet = new Set<string>();
         if (existingChoices) {
             for (const choice of existingChoices) {
-                existingChoicesSet.add(`${choice.progressionId}-${choice.featureEntityId}`);
+                existingChoicesSet.add(`${choice.featureId}-${choice.featureEntityId}`);
             }
         }
 
-        // Filter progressions by level before processing
-        const filteredProgressions = progressions.filter(progression => {
-            // For class progressions, check if the progression level is <= the character's class level
-            if (progression.sourceType === FeatureSourceType.Class && classLevels && progression.classes) {
-                // Check all classes linked to this progression
-                const hasValidLevel = progression.classes.some(c => {
+        // Filter features by level before processing
+        const filteredProgressions = features.filter(feature => {
+            // For class features, check if the feature level is <= the character's class level
+            if (feature.sourceType === FeatureSourceType.Class && classLevels && feature.classes) {
+                // Check all classes linked to this feature
+                const hasValidLevel = feature.classes.some(c => {
                     const classLevel = classLevels.get(c.classId) ?? 0;
-                    return progression.level <= classLevel;
+                    return feature.level <= classLevel;
                 });
                 if (hasValidLevel) return true;
             }
 
-            // For non-class progressions, check against character level if provided
+            // For non-class features, check against character level if provided
             if (characterLevel !== undefined) {
-                return progression.level <= characterLevel;
+                return feature.level <= characterLevel;
             }
 
-            // If no level filtering is provided, include all progressions
+            // If no level filtering is provided, include all features
             return true;
         });
 
-        for (const progression of filteredProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        for (const feature of filteredProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (entity.type === EntityType.Choice) {
                         // Check if this choice has already been made
-                        const choiceKey = `${progression.id}-${entity.id}`;
+                        const choiceKey = `${feature.id}-${entity.id}`;
                         if (existingChoicesSet.has(choiceKey)) {
                             continue;
                         }
 
-                        const choice = await this.createPendingChoice(entity, progression, editionId, allFeats);
+                        const choice = await this.createPendingChoice(entity, feature, editionId, allFeats);
                         if (choice) {
                             choices.push(choice);
                         }
@@ -88,25 +88,25 @@ export class ChoiceResolver {
     }
 
     /**
-     * Resolves a domain choice and returns the granted feature progressions.
+     * Resolves a domain choice and returns the granted feature features.
      * 
-     * First checks if domain progressions already exist in source progressions,
+     * First checks if domain features already exist in source features,
      * otherwise fetches domain features from the backend domain service.
      */
     static async resolveDomainChoice(
         domainId: number,
-        sourceProgressions: FeatureProgression[]
-    ): Promise<FeatureProgression[]> {
-        const grantedProgressions: FeatureProgression[] = [];
+        sourceProgressions: FeatureWithRelations[]
+    ): Promise<FeatureWithRelations[]> {
+        const grantedProgressions: FeatureWithRelations[] = [];
 
-        // First, check if domain progressions already exist in source progressions
-        for (const progression of sourceProgressions) {
-            if (progression.domainId === domainId) {
-                grantedProgressions.push(progression);
+        // First, check if domain features already exist in source features
+        for (const feature of sourceProgressions) {
+            if (feature.domainId === domainId) {
+                grantedProgressions.push(feature);
             }
         }
 
-        // If no progressions found, fetch domain features from backend
+        // If no features found, fetch domain features from backend
         if (grantedProgressions.length === 0) {
             try {
                 const domain = await domainService.getDomainById({ id: domainId });
@@ -122,34 +122,34 @@ export class ChoiceResolver {
     }
 
     /**
-     * Resolves a feat choice and returns the granted feature progressions.
+     * Resolves a feat choice and returns the granted feature features.
      * 
-     * First checks if feat progressions already exist in source progressions,
+     * First checks if feat features already exist in source features,
      * otherwise attempts to fetch feat features from the backend.
      */
     static async resolveFeatChoice(
         featId: number,
-        sourceProgressions: FeatureProgression[]
-    ): Promise<FeatureProgression[]> {
-        const grantedProgressions: FeatureProgression[] = [];
+        sourceProgressions: FeatureWithRelations[]
+    ): Promise<FeatureWithRelations[]> {
+        const grantedProgressions: FeatureWithRelations[] = [];
 
-        // First, check if feat progressions already exist in source progressions
-        for (const progression of sourceProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        // First, check if feat features already exist in source features
+        for (const feature of sourceProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId === featId) {
-                        grantedProgressions.push(progression);
+                        grantedProgressions.push(feature);
                     }
                 }
             }
         }
 
-        // If no progressions found, fetch feat features from backend
+        // If no features found, fetch feat features from backend
         if (grantedProgressions.length === 0) {
             try {
-                // Use featureSystemService to get feat progressions
+                // Use featureSystemService to get feat features
                 // Note: This may need to be implemented if not already available
-                const _featProgressions = await featureSystemService.getFeatureProgressionsByIds([], []);
+                const _featProgressions = await featureSystemService.getFeaturesByIds([], []);
                 // For now, return empty - feat features should be in sourceProgressions
             } catch (error) {
                 console.error(`Error fetching feat ${featId}:`, error);
@@ -164,16 +164,16 @@ export class ChoiceResolver {
      */
     static async resolveSkillChoice(
         skillId: number,
-        sourceProgressions: FeatureProgression[]
-    ): Promise<FeatureProgression[]> {
-        const grantedProgressions: FeatureProgression[] = [];
+        sourceProgressions: FeatureWithRelations[]
+    ): Promise<FeatureWithRelations[]> {
+        const grantedProgressions: FeatureWithRelations[] = [];
 
-        // Find skill progressions for the selected skill
-        for (const progression of sourceProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        // Find skill features for the selected skill
+        for (const feature of sourceProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId === skillId) {
-                        grantedProgressions.push(progression);
+                        grantedProgressions.push(feature);
                     }
                 }
             }
@@ -187,16 +187,16 @@ export class ChoiceResolver {
      */
     static async resolveSpellChoice(
         spellId: number,
-        sourceProgressions: FeatureProgression[]
-    ): Promise<FeatureProgression[]> {
-        const grantedProgressions: FeatureProgression[] = [];
+        sourceProgressions: FeatureWithRelations[]
+    ): Promise<FeatureWithRelations[]> {
+        const grantedProgressions: FeatureWithRelations[] = [];
 
-        // Find spell progressions for the selected spell
-        for (const progression of sourceProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        // Find spell features for the selected spell
+        for (const feature of sourceProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (entity.appliesTo === EntityAppliesToType.Spell && entity.appliesToId === spellId) {
-                        grantedProgressions.push(progression);
+                        grantedProgressions.push(feature);
                     }
                 }
             }
@@ -210,14 +210,14 @@ export class ChoiceResolver {
      */
     static async resolveFeatureChoice(
         featureId: number,
-        sourceProgressions: FeatureProgression[]
-    ): Promise<FeatureProgression[]> {
-        const grantedProgressions: FeatureProgression[] = [];
+        sourceProgressions: FeatureWithRelations[]
+    ): Promise<FeatureWithRelations[]> {
+        const grantedProgressions: FeatureWithRelations[] = [];
 
-        // Find feature progressions for the selected feature
-        for (const progression of sourceProgressions) {
-            if (progression.featureId === featureId) {
-                grantedProgressions.push(progression);
+        // Find feature features for the selected feature
+        for (const feature of sourceProgressions) {
+            if (feature.id === featureId) {
+                grantedProgressions.push(feature);
             }
         }
 
@@ -229,16 +229,16 @@ export class ChoiceResolver {
      */
     static async resolveAnimalCompanionChoice(
         companionId: number,
-        sourceProgressions: FeatureProgression[]
-    ): Promise<FeatureProgression[]> {
-        const grantedProgressions: FeatureProgression[] = [];
+        sourceProgressions: FeatureWithRelations[]
+    ): Promise<FeatureWithRelations[]> {
+        const grantedProgressions: FeatureWithRelations[] = [];
 
-        // Find feature progressions for the selected companion
-        for (const progression of sourceProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        // Find feature features for the selected companion
+        for (const feature of sourceProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (entity.appliesTo === EntityAppliesToType.AnimalCompanion && entity.appliesToId === companionId) {
-                        grantedProgressions.push(progression);
+                        grantedProgressions.push(feature);
                     }
                 }
             }
@@ -256,14 +256,14 @@ export class ChoiceResolver {
      * 
      * @param appliesToType - The EntityAppliesToType value indicating what type of choice this is
      * @param selectedId - The ID of the selected entity (domain, feat, spell, etc.)
-     * @param sourceProgressions - The current feature progressions to search within
-     * @returns Array of feature progressions granted by the choice
+     * @param sourceProgressions - The current feature features to search within
+     * @returns Array of feature features granted by the choice
      */
     static async resolveChoiceByType(
         appliesToType: number,
         selectedId: number,
-        sourceProgressions: FeatureProgression[]
-    ): Promise<FeatureProgression[]> {
+        sourceProgressions: FeatureWithRelations[]
+    ): Promise<FeatureWithRelations[]> {
         switch (appliesToType) {
             case EntityAppliesToType.Domain:
                 return await this.resolveDomainChoice(selectedId, sourceProgressions);
@@ -302,99 +302,95 @@ export class ChoiceResolver {
     }
 
     /**
-     * Adds feature progressions to a target array, avoiding duplicates.
+     * Adds feature features to a target array, avoiding duplicates.
      * 
-     * Optionally processes entities in new progressions before adding them.
-     * This is useful when progressions need their entities processed for
+     * Optionally processes entities in new features before adding them.
+     * This is useful when features need their entities processed for
      * cascading feature resolution.
      * 
-     * @param targetProgressions - Array to add progressions to (modified in place)
-     * @param newProgressions - New progressions to add (checked for duplicates)
+     * @param targetProgressions - Array to add features to (modified in place)
+     * @param newProgressions - New features to add (checked for duplicates)
      * @param options - Configuration options
-     * @param options.processEntities - If true, processes entities in new progressions using FeatureEntityHandlers
+     * @param options.processEntities - If true, processes entities in new features using FeatureEntityHandlers
      * @param options.onEntityProcessed - Optional callback when an entity is processed (for warnings/errors)
      * 
      * @example
      * ```typescript
      * // Simple add without entity processing
-     * ChoiceResolver.addResolvedProgressions(progressions, grantedProgressions);
+     * ChoiceResolver.addResolvedProgressions(features, grantedProgressions);
      * 
      * // Add with entity processing
-     * ChoiceResolver.addResolvedProgressions(progressions, grantedProgressions, {
+     * ChoiceResolver.addResolvedProgressions(features, grantedProgressions, {
      *     processEntities: true,
-     *     onEntityProcessed: (result, progression) => {
+     *     onEntityProcessed: (result, feature) => {
      *         if (result.warnings) warnings.push(...result.warnings);
      *     }
      * });
      * ```
      */
     static addResolvedProgressions(
-        targetProgressions: FeatureProgression[],
-        newProgressions: FeatureProgression[],
+        targetProgressions: FeatureWithRelations[],
+        newProgressions: FeatureWithRelations[],
         options?: {
             processEntities?: boolean;
-            onEntityProcessed?: (result: EntityProcessingResult, progression: FeatureProgression) => void;
+            onEntityProcessed?: (result: EntityProcessingResult, feature: FeatureWithRelations) => void;
         }
     ): void {
-        for (const progression of newProgressions) {
-            // Check if this progression already exists to avoid duplicates
-            const existingProgression = targetProgressions.find(p => p.id === progression.id);
+        for (const feature of newProgressions) {
+            // Check if this feature already exists to avoid duplicates
+            const existingProgression = targetProgressions.find(p => p.id === feature.id);
             if (existingProgression) {
                 continue;
             }
 
             // Optionally process entities if requested
-            if (options?.processEntities && progression.entities) {
-                for (const entity of progression.entities) {
-                    const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
+            if (options?.processEntities && feature.entities) {
+                for (const entity of feature.entities) {
+                    const result = FeatureEntityHandlers.processFeatureEntity(entity, feature);
                     if (options.onEntityProcessed) {
-                        options.onEntityProcessed(result, progression);
+                        options.onEntityProcessed(result, feature);
                     }
                 }
             }
 
-            targetProgressions.push(progression);
+            targetProgressions.push(feature);
         }
     }
 
     /**
-     * Resolves a familiar choice and converts companion benefits to feature progressions.
+     * Resolves a familiar choice and converts companion benefits to feature features.
      * 
-     * First checks if familiar progressions already exist. If not, fetches the companion
-     * from the backend and converts each benefit into a FeatureProgression with
+     * First checks if familiar features already exist. If not, fetches the companion
+     * from the backend and converts each benefit into a FeatureWithRelations with
      * appropriate FeatureEntity objects.
      */
     static async resolveFamiliarChoice(
         companionId: number,
-        sourceProgressions: FeatureProgression[]
-    ): Promise<FeatureProgression[]> {
-        const grantedProgressions: FeatureProgression[] = [];
+        sourceProgressions: FeatureWithRelations[]
+    ): Promise<FeatureWithRelations[]> {
+        const grantedProgressions: FeatureWithRelations[] = [];
 
-        // First, check if familiar progressions already exist in source progressions
-        for (const progression of sourceProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        // First, check if familiar features already exist in source features
+        for (const feature of sourceProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (entity.appliesTo === EntityAppliesToType.Familiar && entity.appliesToId === companionId) {
-                        grantedProgressions.push(progression);
+                        grantedProgressions.push(feature);
                     }
                 }
             }
         }
 
-        // If no progressions found, fetch companion feature progressions from feature system
+        // If no features found, fetch companion feature features from feature system
         if (grantedProgressions.length === 0) {
             try {
-                // Query feature progressions for this companion
-                const companionProgressions = await featureSystemService.getFeatureProgressionsByCompanionId(companionId);
+                // Query feature features for this companion
+                // All features with sourceType: FeatureSourceType.Companion should be included
+                const companionProgressions = await featureSystemService.getFeaturesByCompanionId(companionId);
 
-                // Filter for CompanionBenefit feature progressions
-                const benefitProgressions = companionProgressions.filter(
-                    p => p.featureId === SpecialFeatureId.CompanionBenefit && p.sourceType === FeatureSourceType.Companion
-                );
-
-                grantedProgressions.push(...benefitProgressions);
+                grantedProgressions.push(...companionProgressions);
             } catch (error) {
-                console.error(`Error fetching companion feature progressions for ${companionId}:`, error);
+                console.error(`Error fetching companion feature features for ${companionId}:`, error);
             }
         }
 
@@ -406,7 +402,7 @@ export class ChoiceResolver {
      */
     private static async createPendingChoice(
         entity: FeatureEntity,
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         editionId?: number,
         allFeats?: FeatInQueryResponse[]
     ): Promise<PendingChoice | null> {
@@ -423,7 +419,7 @@ export class ChoiceResolver {
             return null;
         }
 
-        const source = await this.getSourceName(progression);
+        const source = await this.getSourceName(feature);
 
         // Create a descriptive name based on the choice type
         let choiceName = '';
@@ -447,7 +443,7 @@ export class ChoiceResolver {
             choiceName = `${source}: Make a Choice`;
         }
 
-        const optionIds = await this.getChoiceOptions(entity, progression, editionId, allFeats);
+        const optionIds = await this.getChoiceOptions(entity, feature, editionId, allFeats);
         // Filter out invalid options (ID must be > 0 per Zod schema)
         const validOptionIds = optionIds.filter(id => id > 0);
 
@@ -457,12 +453,12 @@ export class ChoiceResolver {
         }
 
         return {
-            id: `${progression.id}-${entity.id}`,
+            id: `${feature.id}-${entity.id}`,
             name: choiceName,
             type: entity.appliesTo,
             description: choiceName,
             source,
-            level: progression.level,
+            level: feature.level,
             required: true,
             options: validOptionIds,
             maxSelections: entity.value || 1,
@@ -475,7 +471,7 @@ export class ChoiceResolver {
      */
     private static async getChoiceOptions(
         entity: FeatureEntity,
-        _progression: FeatureProgression,
+        _progression: FeatureWithRelations,
         editionId?: number,
         allFeats?: FeatInQueryResponse[]
     ): Promise<number[]> {
@@ -586,10 +582,10 @@ export class ChoiceResolver {
     /**
      * Get source name for display
      */
-    private static async getSourceName(progression: FeatureProgression): Promise<string> {
+    private static async getSourceName(feature: FeatureWithRelations): Promise<string> {
         // Check for class name via many-to-many relationship
-        if (progression.classes && progression.classes.length > 0) {
-            const firstClassId = progression.classes[0].classId;
+        if (feature.classes && feature.classes.length > 0) {
+            const firstClassId = feature.classes[0].classId;
             const classData = await prisma.class.findUnique({
                 where: { id: firstClassId },
                 select: { name: true }
@@ -600,8 +596,8 @@ export class ChoiceResolver {
         }
 
         // Check for race name via many-to-many relationship
-        if (progression.races && progression.races.length > 0) {
-            const firstRaceId = progression.races[0].raceId;
+        if (feature.races && feature.races.length > 0) {
+            const firstRaceId = feature.races[0].raceId;
             const raceData = await prisma.race.findUnique({
                 where: { id: firstRaceId },
                 select: { name: true }
@@ -612,18 +608,18 @@ export class ChoiceResolver {
         }
 
         // Fallback to feature name
-        if (progression.feature?.name) {
-            return progression.feature.name;
+        if (feature.name) {
+            return feature.name;
         }
 
         // Fallback to source type if no class, race, or feature name available
-        if (progression.sourceType === FeatureSourceType.Class) {
+        if (feature.sourceType === FeatureSourceType.Class) {
             return 'Class';
         }
-        if (progression.sourceType === FeatureSourceType.Race) {
+        if (feature.sourceType === FeatureSourceType.Race) {
             return 'Race';
         }
-        if (progression.sourceType === FeatureSourceType.Domain) {
+        if (feature.sourceType === FeatureSourceType.Domain) {
             return 'Domain';
         }
         return 'Unknown Source';

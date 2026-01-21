@@ -10,7 +10,7 @@ import { isEqual } from 'lodash';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
-import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
@@ -21,16 +21,20 @@ import {
     CreateClassSchema,
     UpdateClassSchema,
     CreateClassRequest,
-    FeatureProgression,
+    Feature,
+    FeatureWithRelations,
     FeatureEntity,
+    SpellcastingProgressionWithSlots,
+    SourceMap,
 } from '@shared/schema';
 import {
     EntityType,
-    SpecialFeatureId,
     EntityAppliesToType,
     FeatureSourceType,
     ClassUpdateType,
 } from '@shared/static-data';
+
+import { useFeatureStateStore } from '@/lib/stores/FeatureStateStore';
 
 import { ClassApi } from './ClassApi';
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
@@ -60,6 +64,7 @@ export default function ClassEdit() {
     const classId = id !== 'new' ? parseInt(id) : null;
     const resolution = useClassResolution(classId);
     const { state, updateState } = useClassEditState();
+    const featureStateStore = useFeatureStateStore();
 
     // UI-only state (not part of class edit state)
     const [message, setMessage] = useState('');
@@ -71,57 +76,118 @@ export default function ClassEdit() {
     const isLoading = resolution.isLoading || isSaving;
 
     /**
-     * Helper function to create a feature progression.
+     * Helper function to create a feature feature.
      * 
      * **Backend-Managed IDs Pattern**: The backend now handles all ID generation.
-     * For new progressions, we set id to null and let the backend generate IDs.
+     * For new features, we set id to null and let the backend generate IDs.
      * 
-     * @param baseProgression - Partial progression data to merge with defaults
-     * @returns A complete FeatureProgression with id: null for new items
+     * @param baseProgression - Partial feature data to merge with defaults
+     * @returns A complete FeatureWithRelations with id: null for new items
      */
-    const createFeatureProgression = useCallback((baseProgression: Partial<FeatureProgression>): FeatureProgression => {
+    const createFeature = useCallback((baseProgression: Partial<FeatureWithRelations>): FeatureWithRelations => {
         return {
             id: null, // Backend will generate ID
-            sourceType: FeatureSourceType.Class,
-            classId: classId || 0,
-            raceId: null,
-            domainId: null, // Set domainId to null for class-based progressions
-            level: 1, // Default to level 1
+            slug: baseProgression.slug || '',
+            name: baseProgression.name || '',
+            description: baseProgression.description || '',
+            displayInCharacterSheet: baseProgression.displayInCharacterSheet ?? true,
+            sourceType: baseProgression.sourceType ?? FeatureSourceType.Class,
+            domainId: baseProgression.domainId ?? null,
+            featId: baseProgression.featId ?? null,
+            companionId: baseProgression.companionId ?? null,
+            editionId: baseProgression.editionId ?? null,
+            level: baseProgression.level ?? 1,
             ...baseProgression,
-        } as FeatureProgression;
-    }, [classId]);
+        } as FeatureWithRelations;
+    }, []);
 
     // Ref to track if we've already processed the newFeature
     const processedNewFeatureRef = useRef<boolean>(false);
     // Ref to track current preSelectedFeature
-    const preSelectedFeatureRef = useRef<FeatureProgression['feature'] | undefined>(undefined);
+    const preSelectedFeatureRef = useRef<FeatureWithRelations | undefined>(undefined);
+    // Ref to track latest formData to avoid dependency issues in setFormData
+    const formDataRef = useRef<ClassFormData | null>(null);
 
-    // Update ref when preSelectedFeature changes
+    // Update ref when preSelectedFeatureId changes
+    // Note: We load the full feature from FeatureStateStore when needed
     useEffect(() => {
-        preSelectedFeatureRef.current = state.preSelectedFeature;
-    }, [state.preSelectedFeature]);
+        // preSelectedFeatureRef is no longer used since we use preSelectedFeatureId
+        // This effect can be removed or used to load feature from FeatureStateStore if needed
+    }, [state.preSelectedFeatureId]);
 
     // Track previous values to avoid unnecessary updates and infinite loops
     const prevStateRef = useRef<typeof resolution.classState>(null);
+    // Track previous featureIds to detect changes (declared early for use in initialization)
+    const prevFeaturesRef = useRef<number[]>([]);
+    const prevSpellcastingRef = useRef<SpellcastingProgressionWithSlots[] | null>(null);
+    const prevSpellsKnownRef = useRef<SpellcastingProgressionWithSlots[] | null>(null);
+
+    // Track if we're currently initializing to prevent sync effects from running
+    const isInitializingRef = useRef(false);
+
+    // Ref to store last memoized classState for reference stability
+    const lastMemoizedClassStateRef = useRef<typeof resolution.classState>(null);
+
+    // Memoize classState to prevent unnecessary effect re-runs when reference changes but data is the same
+    // This stabilizes the reference so the effect only runs when data actually changes
+    const memoizedClassState = useMemo(() => {
+        if (!resolution.classState) {
+            lastMemoizedClassStateRef.current = null;
+            return null;
+        }
+        // If data hasn't changed, return previous memoized value to maintain reference stability
+        if (lastMemoizedClassStateRef.current && isEqual(lastMemoizedClassStateRef.current, resolution.classState)) {
+            return lastMemoizedClassStateRef.current;
+        }
+        // Data has changed, update ref and return new value
+        lastMemoizedClassStateRef.current = resolution.classState;
+        return resolution.classState;
+    }, [resolution.classState]);
 
     /**
      * Initialize state from session when classState becomes available.
-     * This happens after the session is initialized or resumed.
+     * Only initializes if the session state data has actually changed (deep comparison).
      */
     useEffect(() => {
-        if (!resolution.classState) {
+        if (!memoizedClassState) {
             return;
         }
 
-        // Only update if the state has actually changed (avoid infinite loops)
-        const currentState = resolution.classState;
-        if (prevStateRef.current && isEqual(prevStateRef.current, currentState)) {
+        const sessionState = memoizedClassState;
+
+        // Check if current state already matches session state - if so, skip initialization
+        const stateMatches =
+            state.classId === sessionState.classId &&
+            state.name === sessionState.name &&
+            state.abbreviation === sessionState.abbreviation &&
+            state.editionId === sessionState.editionId &&
+            state.isPrestige === sessionState.isPrestige &&
+            state.isVisible === sessionState.isVisible &&
+            state.canCastSpells === sessionState.canCastSpells &&
+            state.spellsKnown === sessionState.spellsKnown &&
+            state.isDivine === sessionState.isDivine &&
+            state.description === sessionState.description &&
+            isEqual(state.sourceBookInfo, sessionState.sourceBookInfo) &&
+            isEqual(state.featureIds, sessionState.featureIds) &&
+            isEqual(state.spellcastingProgression, sessionState.spellcastingProgression) &&
+            isEqual(state.spellsKnownProgression, sessionState.spellsKnownProgression);
+
+        // Use deep equality to check if session state data has actually changed
+        // This prevents re-initialization when applyUpdate returns a new object with same data
+        if (prevStateRef.current && isEqual(prevStateRef.current, sessionState)) {
             return;
         }
-        prevStateRef.current = currentState;
+
+        if (stateMatches) {
+            // State already matches, update prevStateRef and return
+            prevStateRef.current = sessionState;
+            return;
+        }
+
+        // Set flag to prevent sync effects from running during initialization
+        isInitializingRef.current = true;
 
         // Populate state from session
-        const sessionState = resolution.classState!;
         updateState({ type: ClassEditStateUpdateType.SET_CLASS_ID, payload: { classId: sessionState.classId } });
         updateState({ type: ClassEditStateUpdateType.SET_NAME, payload: { name: sessionState.name } });
         updateState({ type: ClassEditStateUpdateType.SET_ABBREVIATION, payload: { abbreviation: sessionState.abbreviation } });
@@ -132,7 +198,8 @@ export default function ClassEdit() {
         updateState({ type: ClassEditStateUpdateType.SET_SPELLS_KNOWN, payload: { spellsKnown: sessionState.spellsKnown } });
         updateState({ type: ClassEditStateUpdateType.SET_IS_DIVINE, payload: { isDivine: sessionState.isDivine } });
         updateState({ type: ClassEditStateUpdateType.SET_DESCRIPTION, payload: { description: sessionState.description } });
-        updateState({ type: ClassEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: sessionState.featureProgressions } });
+        updateState({ type: ClassEditStateUpdateType.SET_SOURCE_BOOK_INFO, payload: { sourceBookInfo: sessionState.sourceBookInfo ?? null } });
+        updateState({ type: ClassEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: sessionState.featureIds } });
         updateState({ type: ClassEditStateUpdateType.SET_SPELLCASTING_PROGRESSION, payload: { progression: sessionState.spellcastingProgression } });
         updateState({ type: ClassEditStateUpdateType.SET_SPELLS_KNOWN_PROGRESSION, payload: { progression: sessionState.spellsKnownProgression } });
 
@@ -149,7 +216,39 @@ export default function ClassEdit() {
             spellcastingProgression: sessionState.spellcastingProgression,
             ...(classId && { id: classId })
         });
-    }, [resolution.classState, updateState, classId, resolution]);
+
+        // Update prevStateRef AFTER initialization completes to prevent re-triggering
+        prevStateRef.current = sessionState;
+
+        // Clear initialization flag after a brief delay to allow state updates to complete
+        // Use setTimeout to ensure this happens after all state updates are applied
+        setTimeout(() => {
+            isInitializingRef.current = false;
+        }, 0);
+
+        // Update prev refs to match session state so sync effects don't detect changes
+        prevClassFieldsRef.current = {
+            name: sessionState.name,
+            abbreviation: sessionState.abbreviation,
+            editionId: sessionState.editionId,
+            isPrestige: sessionState.isPrestige,
+            isVisible: sessionState.isVisible,
+            canCastSpells: sessionState.canCastSpells,
+            spellsKnown: sessionState.spellsKnown,
+            isDivine: sessionState.isDivine,
+            description: sessionState.description,
+            sourceBookInfo: sessionState.sourceBookInfo,
+        };
+        prevFeaturesRef.current = [...sessionState.featureIds];
+        prevSpellcastingRef.current = sessionState.spellcastingProgression;
+        prevSpellsKnownRef.current = sessionState.spellsKnownProgression;
+    }, [memoizedClassState, updateState, classId]);
+
+    // Load features from FeatureStateStore using featureIds
+    // Declare early so it can be used in callbacks
+    const [loadedFeatures, setLoadedFeatures] = useState<FeatureWithRelations[]>([]);
+    const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
+    const prevFeatureIdsRef = useRef<number[]>([]);
 
     // Determine which schema to use based on whether we're creating or editing
     const schema = useMemo(() => {
@@ -160,50 +259,47 @@ export default function ClassEdit() {
      * Handles adding a class skill via the feature system.
      */
     const handleAddSkill = useCallback((skillId: number) => {
-        ClassSkillService.addSkill(state.featureProgressions, (progressions) => {
-            updateState({ type: ClassEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: progressions } });
+        ClassSkillService.addSkill(loadedFeatures, (features) => {
+            // Update featureIds based on the updated features
+            const updatedFeatureIds = features.map(f => f.id).filter((id): id is number => id !== null);
+            updateState({ type: ClassEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
         }, skillId, classId || 0);
-    }, [state.featureProgressions, updateState, classId]);
+    }, [loadedFeatures, updateState, classId]);
 
     /**
      * Handles removing a class skill via the feature system.
      */
     const handleRemoveSkill = useCallback((skillId: number) => {
-        ClassSkillService.removeSkill(state.featureProgressions, (progressions) => {
-            updateState({ type: ClassEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: progressions } });
+        ClassSkillService.removeSkill(loadedFeatures, (features) => {
+            // Update featureIds based on the updated features
+            const updatedFeatureIds = features.map(f => f.id).filter((id): id is number => id !== null);
+            updateState({ type: ClassEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
         }, skillId);
-    }, [state.featureProgressions, updateState]);
+    }, [loadedFeatures, updateState]);
 
     /**
      * Handles adding a proficiency via the feature system.
      */
     const handleAddProficiency = useCallback(async (featId: number, itemId: number) => {
         try {
-            const prev = state.featureProgressions;
-            // Check if class proficiency progression already exists
-            let classProficiencyProgression = prev.find(fp =>
-                fp.featureId === SpecialFeatureId.ClassProficiency
+            // Check if class proficiency feature already exists (class source with Base proficiency entities)
+            let classProficiencyFeature = loadedFeatures.find(fp =>
+                fp.sourceType === FeatureSourceType.Class &&
+                fp.classes?.some(c => c.classId === (id !== 'new' ? parseInt(id) : 0)) &&
+                fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency)
             );
 
-            let updatedProgressions = prev;
-            if (!classProficiencyProgression) {
-                // Create the main class proficiency progression if it doesn't exist
-                classProficiencyProgression = createFeatureProgression({
-                    featureId: SpecialFeatureId.ClassProficiency,
-                    feature: {
-                        id: SpecialFeatureId.ClassProficiency,
-                        slug: 'class-proficiency',
-                        name: 'Class Proficiency',
-                        description: 'Class proficiency feature',
-                        displayInCharacterSheet: true,
-                    },
-                    entities: []
-                });
-                updatedProgressions = [...prev, classProficiencyProgression];
+            if (!classProficiencyFeature) {
+                // Create the main class proficiency feature if it doesn't exist
+                // This needs to be done via the feature state system
+                // For now, we'll need to create it via API and then link it
+                // TODO: Implement proficiency feature creation via feature state system
+                console.warn('Class proficiency feature creation not yet implemented via feature state system');
+                return;
             }
 
             // Check if this specific proficiency already exists
-            const existingProficiency = classProficiencyProgression.entities?.find(e =>
+            const existingProficiency = classProficiencyFeature.entities?.find(e =>
                 e.appliesTo === EntityAppliesToType.Proficiency &&
                 e.appliesToId === featId &&
                 e.appliesToSubId === itemId
@@ -213,47 +309,26 @@ export default function ClassEdit() {
                 return;
             }
 
-            // Add the proficiency as an entity
-            // Note: featId parameter is actually the proficiency type ID (from ProficiencyFeat.proficiencyTypeId)
-            const newEntity: FeatureEntity = {
-                id: null, // Backend will generate ID
-                progressionId: classProficiencyProgression.id || 0,
-                type: EntityType.Other,
-                value: 0,
-                appliesTo: EntityAppliesToType.Proficiency,
-                appliesToId: featId, // This is actually the proficiency type ID
-                appliesToSubId: itemId,
-                bonusType: null,
-                filterType: null,
-                groupingId: 1, // Group all class proficiencies together as one feature
-                displayInDetail: true,
-            };
-
-            // Create a new array with the updated progression
-            const finalProgressions = updatedProgressions.map(p => {
-                if (p.id === classProficiencyProgression.id) {
-                    return {
-                        ...p,
-                        entities: [...(p.entities || []), newEntity]
-                    };
-                }
-                return p;
-            });
-
-            updateState({ type: ClassEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: finalProgressions } });
+            // Add the proficiency as an entity via feature state system
+            // This requires editing the feature state, which should be done via FeatureEditForm
+            // For now, we'll need to update the feature state directly
+            // TODO: Implement proficiency entity addition via feature state system
+            console.warn('Proficiency entity addition not yet implemented via feature state system');
         } catch (error) {
             console.error('Failed to add proficiency:', error);
         }
-    }, [state.featureProgressions, createFeatureProgression, updateState]);
+    }, [loadedFeatures, id]);
 
     /**
      * Handles removing a proficiency via the feature system.
      */
     const handleRemoveProficiency = useCallback((featId: number, itemId: number) => {
-        ClassProficiencyService.removeProficiency(state.featureProgressions, (progressions) => {
-            updateState({ type: ClassEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: progressions } });
+        ClassProficiencyService.removeProficiency(loadedFeatures, (features) => {
+            // Update featureIds based on the updated features
+            const updatedFeatureIds = features.map(f => f.id).filter((id): id is number => id !== null);
+            updateState({ type: ClassEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
         }, featId, itemId);
-    }, [state.featureProgressions, updateState]);
+    }, [loadedFeatures, updateState]);
 
     // Derive formData from state (single source of truth)
     // This is used for form validation only - tabs should use state directly
@@ -271,10 +346,15 @@ export default function ClassEdit() {
         ...(id !== 'new' && state.classId ? { id: state.classId } : {})
     }), [state, id]);
 
+    // Update formData ref whenever formData changes
+    useEffect(() => {
+        formDataRef.current = formData;
+    }, [formData]);
+
     // Wrapper for setFormData that updates state instead
     // This allows form validation to work while tabs use state directly
     const setFormData = useCallback((data: ClassFormData | ((prev: ClassFormData) => ClassFormData)) => {
-        const newData = typeof data === 'function' ? data(formData) : data;
+        const newData = typeof data === 'function' ? data(formDataRef.current || formData) : data;
 
         // Update state via updateState for each field
         if (newData.name !== undefined && newData.name !== state.name) {
@@ -307,7 +387,7 @@ export default function ClassEdit() {
         // Note: spellcastingProgression and spellsKnownProgression are synced via dedicated useEffect hooks
         // and have different types in formData (CreateSpellcastingProgressionRequest[]) vs state (SpellcastingProgressionWithSlots[])
         // so we don't sync them here
-    }, [formData, state, updateState]);
+    }, [state, updateState]);
 
     // Tab configuration - use state instead of formData
     const tabs: TabConfig[] = [
@@ -321,106 +401,180 @@ export default function ClassEdit() {
 
     const CurrentTabComponent = tabs.find(tab => tab.id === state.activeTab)?.component;
 
-    /**
-     * Handles adding a feature progression to the class.
-     */
-    const handleAddProgression = useCallback((progression: FeatureProgression) => {
-        // The progression should now include feature data from FeatureProgressionDetailEdit
-        // But provide fallback in case it doesn't
-        const progressionWithFeature = {
-            ...progression,
-            feature: progression.feature || (preSelectedFeatureRef.current ? {
-                id: preSelectedFeatureRef.current.id,
-                name: preSelectedFeatureRef.current.name,
-                description: preSelectedFeatureRef.current.description || '',
-                slug: preSelectedFeatureRef.current.slug,
-                displayInCharacterSheet: true,
-            } : {
-                id: progression.featureId,
-                name: `Feature ${progression.featureId}`,
-                description: '',
-                slug: `feature-${progression.featureId}`,
-                displayInCharacterSheet: true,
-            })
+    useEffect(() => {
+        // Only reload if featureIds actually changed
+        const featureIdsChanged =
+            prevFeatureIdsRef.current.length !== state.featureIds.length ||
+            prevFeatureIdsRef.current.some((id, index) => id !== state.featureIds[index]);
+
+        if (!featureIdsChanged && prevFeatureIdsRef.current.length > 0) {
+            return;
+        }
+
+        const loadFeatures = async () => {
+            if (state.featureIds.length === 0) {
+                setLoadedFeatures([]);
+                prevFeatureIdsRef.current = [];
+                return;
+            }
+
+            setIsLoadingFeatures(true);
+            try {
+                const features: FeatureWithRelations[] = [];
+                const validFeatureIds: number[] = [];
+                const missingFeatureIds: number[] = [];
+
+                for (const featureId of state.featureIds) {
+                    try {
+                        // For read-only viewing, use loadFeatureData to avoid creating sessions
+                        const featureData = await featureStateStore.loadFeatureData(featureId);
+                        if (featureData) {
+                            features.push(featureData);
+                            validFeatureIds.push(featureId);
+                        }
+                    } catch (error) {
+                        // Handle missing features gracefully
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (errorMessage.includes('not found') || errorMessage.includes('Not Found')) {
+                            console.warn(`Feature ${featureId} not found, removing from class feature list`);
+                            missingFeatureIds.push(featureId);
+                        } else {
+                            // Re-throw unexpected errors
+                            throw error;
+                        }
+                    }
+                }
+
+                setLoadedFeatures(features);
+                prevFeatureIdsRef.current = [...validFeatureIds];
+
+                // Remove missing feature IDs from state if any were found
+                if (missingFeatureIds.length > 0) {
+                    const updatedFeatureIds = state.featureIds.filter(id => !missingFeatureIds.includes(id));
+                    if (updatedFeatureIds.length !== state.featureIds.length) {
+                        updateState({
+                            type: ClassEditStateUpdateType.SET_FEATURE_IDS,
+                            payload: { featureIds: updatedFeatureIds }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading features:', error);
+            } finally {
+                setIsLoadingFeatures(false);
+            }
         };
 
-        // Always add as a new progression - allow multiple progressions per feature/level
-        updateState({ type: ClassEditStateUpdateType.ADD_FEATURE_PROGRESSION, payload: { progression: progressionWithFeature } });
-    }, [updateState]);
+        loadFeatures();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.featureIds]); // Only depend on featureIds, not featureStateStore
 
     /**
-     * Handles adding a feature to the class by creating a default level 1 progression.
+     * Handles linking a feature to the class.
+     * Features are now managed independently via the feature state system.
+     */
+    const handleAddProgression = useCallback(async (feature: FeatureWithRelations) => {
+        // Load feature data (no session needed for linking)
+        // Note: We don't check if loaded because we're just linking, not editing
+        await featureStateStore.loadFeatureData(feature.id);
+
+        // Link feature to class (updates FeatureClassMap)
+        updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: feature.id } });
+
+        // Also apply update to class state
+        if (resolution.classState && classId) {
+            await resolution.applyUpdate({
+                type: ClassUpdateType.LinkFeature,
+                payload: { featureId: feature.id }
+            });
+        }
+    }, [updateState, featureStateStore, resolution, classId]);
+
+    /**
+     * Handles adding a feature to the class by creating a default level 1 feature.
      */
     const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
         try {
-            // Fetch the feature's existing progressions to copy entities
-            const existingProgressions = await FeatureSystemApi.getFeatureProgressions(undefined, { id: feature.id });
+            // Fetch the feature's existing features to copy entities
+            const existingProgressions = await FeatureSystemApi.getFeatures(undefined, { id: feature.id });
 
-            // Find the first progression with entities to copy, or use empty entities
+            // Find the first feature with entities to copy, or use empty entities
             const sourceProgression = existingProgressions.find(p => p.entities && p.entities.length > 0);
             const entitiesToCopy = sourceProgression?.entities || [];
 
-            const defaultProgression: FeatureProgression = createFeatureProgression({
-                featureId: feature.id,
-                feature: {
-                    id: feature.id,
-                    name: feature.name,
-                    description: feature.description,
-                    slug: feature.slug,
-                    displayInCharacterSheet: sourceProgression?.feature?.displayInCharacterSheet ?? true,
-                    prerequisites: sourceProgression?.feature?.prerequisites || []
-                },
+            const defaultProgression: FeatureWithRelations = createFeature({
+                id: feature.id,
+                name: feature.name,
+                description: feature.description,
+                slug: feature.slug,
+                displayInCharacterSheet: sourceProgression?.displayInCharacterSheet ?? true,
+                prerequisites: sourceProgression?.prerequisites || [],
                 entities: entitiesToCopy.map(entity => ({
                     ...entity,
                     id: null, // Backend will generate ID
-                    progressionId: null // Will be set when progression is saved
+                    // featureId will be set when feature is saved (FeatureEntity.featureId references Feature.id)
                 }))
             });
 
-            updateState({ type: ClassEditStateUpdateType.ADD_FEATURE_PROGRESSION, payload: { progression: defaultProgression } });
+            // Link feature to class
+            updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: feature.id } });
+
+            // Also apply update to class state
+            if (resolution.classState && classId) {
+                await resolution.applyUpdate({
+                    type: ClassUpdateType.LinkFeature,
+                    payload: { featureId: feature.id }
+                });
+            }
         } catch (error) {
-            console.error('Failed to fetch feature progressions:', error);
-            // Fallback to creating progression without entities
-            const defaultProgression: FeatureProgression = createFeatureProgression({
-                featureId: feature.id,
-                feature: {
-                    id: feature.id,
-                    name: feature.name,
-                    description: feature.description,
-                    slug: feature.slug,
-                    displayInCharacterSheet: true,
-                },
-                entities: [],
+            console.error('Failed to link feature:', error);
+        }
+    }, [updateState, resolution, classId]);
+
+    /**
+     * Handles unlinking a feature from the class.
+     * Features are now managed independently via the feature state system.
+     */
+    const handleRemoveProgression = useCallback(async (featureId: number) => {
+        // Unlink feature from class (updates FeatureClassMap)
+        updateState({ type: ClassEditStateUpdateType.UNLINK_FEATURE, payload: { featureId } });
+
+        // Also apply update to class state
+        if (resolution.classState && classId) {
+            await resolution.applyUpdate({
+                type: ClassUpdateType.UnlinkFeature,
+                payload: { featureId }
             });
-            updateState({ type: ClassEditStateUpdateType.ADD_FEATURE_PROGRESSION, payload: { progression: defaultProgression } });
         }
-    }, [createFeatureProgression, updateState]);
+    }, [updateState, resolution, classId]);
 
     /**
-     * Handles the removal of a feature progression from the class.
+     * Handles updating a feature.
+     * Features are now managed independently via the feature state system.
+     * This handler is called when FeatureEditForm saves a feature.
+     * The feature state is already updated by FeatureEditForm, so we just need to
+     * ensure the feature is linked to the class if it isn't already.
      */
-    const handleRemoveProgression = useCallback((progressionId: number) => {
-        updateState({ type: ClassEditStateUpdateType.REMOVE_FEATURE_PROGRESSION, payload: { progressionId } });
-    }, [updateState]);
+    const handleUpdateProgression = useCallback(async (oldProgression: FeatureWithRelations, updatedProgression: FeatureWithRelations) => {
+        // Feature state is already updated by FeatureEditForm via the state system
+        // Just ensure it's linked to the class
+        if (!state.featureIds.includes(updatedProgression.id)) {
+            updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: updatedProgression.id } });
 
-    /**
-     * Handles updating a feature progression.
-     */
-    const handleUpdateProgression = useCallback((oldProgression: FeatureProgression, updatedProgression: FeatureProgression) => {
-        if (oldProgression.id) {
-            updateState({ type: ClassEditStateUpdateType.UPDATE_FEATURE_PROGRESSION, payload: { progressionId: oldProgression.id, progression: updatedProgression } });
-        } else {
-            // If no ID, just add as new
-            updateState({ type: ClassEditStateUpdateType.ADD_FEATURE_PROGRESSION, payload: { progression: updatedProgression } });
+            if (resolution.classState && classId) {
+                await resolution.applyUpdate({
+                    type: ClassUpdateType.LinkFeature,
+                    payload: { featureId: updatedProgression.id }
+                });
+            }
         }
-    }, [updateState]);
+    }, [updateState, state.featureIds, resolution, classId]);
 
     /**
-     * Opens the progression dialog for editing an existing progression.
+     * Opens the feature dialog for editing an existing feature.
      */
-    const handleEditProgression = useCallback((progression: FeatureProgression) => {
-        updateState({ type: ClassEditStateUpdateType.SET_EDITING_PROGRESSION, payload: { editingProgression: progression } });
-        updateState({ type: ClassEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: true } });
+    const handleEditProgression = useCallback((feature: FeatureWithRelations) => {
+        updateState({ type: ClassEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: feature.id } });
     }, [updateState]);
 
     // Use the validated form hook
@@ -441,7 +595,7 @@ export default function ClassEdit() {
         if (id === 'new') {
             setCls(formData);
         }
-    }, [id, formData, setFormData]);
+    }, [id, formData]);
 
     // Track previous state values to avoid unnecessary syncs
     const prevClassFieldsRef = useRef<{
@@ -454,7 +608,14 @@ export default function ClassEdit() {
         spellsKnown?: boolean;
         isDivine?: boolean;
         description?: string | null;
+        sourceBookInfo?: SourceMap[] | null;
     }>({});
+
+    // Use refs to access resolution values to avoid dependency on changing references
+    const resolutionRef = useRef(resolution);
+    useEffect(() => {
+        resolutionRef.current = resolution;
+    }, [resolution]);
 
     /**
      * Sync class field changes to backend session.
@@ -463,10 +624,33 @@ export default function ClassEdit() {
      * Watches class fields for changes.
      */
     useEffect(() => {
-        const { sessionId, applyUpdate } = resolution;
+        const { applyUpdate } = resolutionRef.current;
 
-        // Only sync if session is initialized and we have a class ID
-        if (!classId || !sessionId) {
+        // Only sync if class state is loaded and we have a class ID
+        if (!classId || !resolutionRef.current.classState) {
+            return;
+        }
+
+        // Early return if state fields haven't changed (prevents unnecessary re-runs)
+        const stateFieldsChanged =
+            state.name !== prevClassFieldsRef.current.name ||
+            state.abbreviation !== prevClassFieldsRef.current.abbreviation ||
+            state.editionId !== prevClassFieldsRef.current.editionId ||
+            state.isPrestige !== prevClassFieldsRef.current.isPrestige ||
+            state.isVisible !== prevClassFieldsRef.current.isVisible ||
+            state.canCastSpells !== prevClassFieldsRef.current.canCastSpells ||
+            state.spellsKnown !== prevClassFieldsRef.current.spellsKnown ||
+            state.isDivine !== prevClassFieldsRef.current.isDivine ||
+            state.description !== prevClassFieldsRef.current.description ||
+            !isEqual(state.sourceBookInfo, prevClassFieldsRef.current.sourceBookInfo);
+
+        // If nothing has changed, skip this run entirely
+        if (!stateFieldsChanged) {
+            return;
+        }
+
+        // Don't sync during initialization to prevent loops
+        if (isInitializingRef.current) {
             return;
         }
 
@@ -482,8 +666,42 @@ export default function ClassEdit() {
                 spellsKnown: state.spellsKnown,
                 isDivine: state.isDivine,
                 description: state.description,
+                sourceBookInfo: state.sourceBookInfo,
             };
             return;
+        }
+
+        // Don't sync if current state matches session state (prevents loop during initialization)
+        if (resolutionRef.current.classState) {
+            const sessionState = resolutionRef.current.classState;
+            const stateMatchesSession =
+                state.name === sessionState.name &&
+                state.abbreviation === sessionState.abbreviation &&
+                state.editionId === sessionState.editionId &&
+                state.isPrestige === sessionState.isPrestige &&
+                state.isVisible === sessionState.isVisible &&
+                state.canCastSpells === sessionState.canCastSpells &&
+                state.spellsKnown === sessionState.spellsKnown &&
+                state.isDivine === sessionState.isDivine &&
+                state.description === sessionState.description &&
+                isEqual(state.sourceBookInfo, sessionState.sourceBookInfo);
+
+            if (stateMatchesSession) {
+                // Update prev refs to match current state
+                prevClassFieldsRef.current = {
+                    name: state.name,
+                    abbreviation: state.abbreviation,
+                    editionId: state.editionId,
+                    isPrestige: state.isPrestige,
+                    isVisible: state.isVisible,
+                    canCastSpells: state.canCastSpells,
+                    spellsKnown: state.spellsKnown,
+                    isDivine: state.isDivine,
+                    description: state.description,
+                    sourceBookInfo: state.sourceBookInfo,
+                };
+                return;
+            }
         }
 
         // Sync individual field changes
@@ -516,6 +734,9 @@ export default function ClassEdit() {
         if (state.description !== prevClassFieldsRef.current.description) {
             fieldsToSync.push({ field: 'description', value: state.description });
         }
+        if (!isEqual(state.sourceBookInfo, prevClassFieldsRef.current.sourceBookInfo)) {
+            fieldsToSync.push({ field: 'sourceBookInfo', value: state.sourceBookInfo });
+        }
 
         // Apply all field updates
         fieldsToSync.forEach(({ field, value }) => {
@@ -538,193 +759,95 @@ export default function ClassEdit() {
             spellsKnown: state.spellsKnown,
             isDivine: state.isDivine,
             description: state.description,
+            sourceBookInfo: state.sourceBookInfo,
         };
-    }, [classId, resolution, state.name, state.abbreviation, state.editionId, state.isPrestige, state.isVisible, state.canCastSpells, state.spellsKnown, state.isDivine, state.description]);
-
-    // Track previous progressions to detect changes
-    const prevProgressionsRef = useRef<FeatureProgression[]>([]);
-    const prevSpellcastingRef = useRef<typeof state.spellcastingProgression | null>(null);
-    const prevSpellsKnownRef = useRef<typeof state.spellsKnownProgression | null>(null);
+    }, [classId, state.name, state.abbreviation, state.editionId, state.isPrestige, state.isVisible, state.canCastSpells, state.spellsKnown, state.isDivine, state.description, state.sourceBookInfo]);
 
     /**
-     * Sync feature progressions to backend session.
+     * Sync feature features to backend session.
      * 
-     * Detects ADD/UPDATE/REMOVE operations by comparing previous and current progressions.
+     * Detects ADD/UPDATE/REMOVE operations by comparing previous and current features.
      */
     useEffect(() => {
-        const { sessionId, applyUpdate } = resolution;
+        const { applyUpdate } = resolutionRef.current;
 
-        if (!classId || !sessionId) {
+        if (!classId || !resolutionRef.current.classState) {
             return;
         }
 
-        const prevProgressions = prevProgressionsRef.current;
-        const currentProgressions = state.featureProgressions;
+        // Don't sync during initialization to prevent loops
+        if (isInitializingRef.current) {
+            return;
+        }
+
+        // Don't sync if current state matches session state (prevents loop during initialization)
+        if (resolutionRef.current.classState && isEqual(state.featureIds, resolutionRef.current.classState.featureIds)) {
+            prevFeaturesRef.current = [...state.featureIds];
+            return;
+        }
+
+        const prevFeatureIds = prevFeaturesRef.current;
+        const currentFeatureIds = state.featureIds;
 
         // Initialize ref on first sync (don't send updates on initial load)
-        if (prevProgressions.length === 0 && currentProgressions.length > 0) {
-            prevProgressionsRef.current = [...currentProgressions];
+        if (prevFeatureIds.length === 0 && currentFeatureIds.length > 0) {
+            prevFeaturesRef.current = [...currentFeatureIds];
             return;
         }
 
-        // Detect removed progressions
-        const removedProgressions = prevProgressions.filter(prev =>
-            !currentProgressions.some(curr => curr.id === prev.id)
+        // Detect removed features
+        const removedFeatureIds = prevFeatureIds.filter(prevId =>
+            !currentFeatureIds.includes(prevId)
         );
-        removedProgressions.forEach(progression => {
-            if (progression.id) {
-                applyUpdate({
-                    type: ClassUpdateType.RemoveProgression,
-                    payload: { progressionId: progression.id }
-                }).catch(error => {
-                    console.error('Failed to sync progression removal:', error);
-                });
-            }
-        });
-
-        // Detect added progressions
-        // This includes:
-        // 1. New progressions with null ID
-        // 2. Progressions that got IDs assigned by backend (were null, now have ID) - match by featureId/level
-        // 3. Progressions with IDs that weren't in previous list
-        const addedProgressions = currentProgressions.filter(curr => {
-            // If it has an ID, check if it was in previous list
-            if (curr.id) {
-                const wasInPrevious = prevProgressions.some(prev => prev.id === curr.id);
-                if (wasInPrevious) return false; // Already exists, not new
-
-                // Check if this was a null-ID progression that got an ID assigned
-                // Match by featureId and level
-                const wasNullIdProgression = prevProgressions.some(prev =>
-                    !prev.id && prev.featureId === curr.featureId && prev.level === curr.level
-                );
-                if (wasNullIdProgression) {
-                    // This progression got an ID assigned - don't add again, it will be handled by update
-                    return false;
-                }
-
-                // New progression with ID
-                return true;
-            }
-
-            // New progression without ID - check if we already have a matching null-ID progression
-            const hasMatchingNullId = prevProgressions.some(prev =>
-                !prev.id && prev.featureId === curr.featureId && prev.level === curr.level
-            );
-            if (hasMatchingNullId) {
-                // This is the same progression, just hasn't gotten an ID yet
-                return false;
-            }
-
-            // Brand new progression
-            return true;
-        });
-
-        addedProgressions.forEach(progression => {
+        removedFeatureIds.forEach(featureId => {
             applyUpdate({
-                type: ClassUpdateType.AddProgression,
-                payload: { progression }
+                type: ClassUpdateType.UnlinkFeature,
+                payload: { featureId }
             }).catch(error => {
-                console.error('Failed to sync progression addition:', error);
+                console.error('Failed to sync feature removal:', error);
             });
         });
 
-        // Detect updated progressions
-        // This includes:
-        // 1. Progressions with IDs that changed
-        // 2. Progressions that got IDs assigned (were null, now have ID) - match by featureId/level
-        currentProgressions.forEach(current => {
-            let previous: FeatureProgression | undefined;
+        // Detect added features
+        const addedFeatureIds = currentFeatureIds.filter(currentId =>
+            !prevFeatureIds.includes(currentId)
+        );
 
-            if (current.id) {
-                // Progression with ID - find by ID
-                previous = prevProgressions.find(p => p.id === current.id);
-
-                // Also check if this was a null-ID progression that got an ID
-                if (!previous) {
-                    previous = prevProgressions.find(p =>
-                        !p.id && p.featureId === current.featureId && p.level === current.level
-                    );
-                }
-            } else {
-                // Progression without ID - find by featureId and level
-                previous = prevProgressions.find(p =>
-                    !p.id && p.featureId === current.featureId && p.level === current.level
-                );
-            }
-
-            if (previous) {
-                // Compare objects to detect changes (excluding entities for now)
-                const prevWithoutEntities = { ...previous, entities: undefined };
-                const currWithoutEntities = { ...current, entities: undefined };
-
-                const changes: Partial<FeatureProgression> = {};
-                let hasChanges = false;
-
-                if (!isEqual(prevWithoutEntities, currWithoutEntities)) {
-                    if (previous.level !== current.level) {
-                        changes.level = current.level;
-                        hasChanges = true;
-                    }
-                    if (previous.featureId !== current.featureId) {
-                        changes.featureId = current.featureId;
-                        hasChanges = true;
-                    }
-                    if (previous.editionId !== current.editionId) {
-                        changes.editionId = current.editionId;
-                        hasChanges = true;
-                    }
-                    if (previous.domainId !== current.domainId) {
-                        changes.domainId = current.domainId;
-                        hasChanges = true;
-                    }
-                    if (previous.featId !== current.featId) {
-                        changes.featId = current.featId;
-                        hasChanges = true;
-                    }
-                    if (previous.companionId !== current.companionId) {
-                        changes.companionId = current.companionId;
-                        hasChanges = true;
-                    }
-                    if (previous.sourceType !== current.sourceType) {
-                        changes.sourceType = current.sourceType;
-                        hasChanges = true;
-                    }
-                }
-
-                // Check entity changes separately (more complex diff)
-                if (!isEqual(previous.entities || [], current.entities || [])) {
-                    // For now, sync entire entities array. Could be optimized to detect individual entity changes.
-                    changes.entities = current.entities;
-                    hasChanges = true;
-                }
-
-                // Check display conditions
-                if (!isEqual(previous.displayConditions || [], current.displayConditions || [])) {
-                    changes.displayConditions = current.displayConditions;
-                    hasChanges = true;
-                }
-
-                if (hasChanges) {
-                    applyUpdate({
-                        type: ClassUpdateType.UpdateProgression,
-                        payload: { progressionId: current.id, progression: changes }
-                    }).catch(error => {
-                        console.error('Failed to sync progression update:', error);
-                    });
-                }
-            }
+        addedFeatureIds.forEach(featureId => {
+            applyUpdate({
+                type: ClassUpdateType.LinkFeature,
+                payload: { featureId }
+            }).catch(error => {
+                console.error('Failed to sync feature addition:', error);
+            });
         });
 
+        // Features are now managed independently, so we don't need to detect updates here
+        // Feature updates are handled by the feature state system
+        // We only need to sync featureIds (link/unlink)
+
         // Update ref for next comparison
-        prevProgressionsRef.current = [...currentProgressions];
-    }, [classId, resolution, state.featureProgressions]);
+        prevFeaturesRef.current = [...currentFeatureIds];
+    }, [classId, state.featureIds]);
 
     /**
-     * Sync spellcasting progression to backend session.
+     * Sync spellcasting feature to backend session.
      */
     useEffect(() => {
-        if (!classId || !resolution.sessionId) {
+        const { applyUpdate } = resolutionRef.current;
+
+        if (!classId || !resolutionRef.current.classState) {
+            return;
+        }
+
+        // Don't sync during initialization to prevent loops
+        if (isInitializingRef.current) {
+            return;
+        }
+
+        // Don't sync if current state matches session state (prevents loop during initialization)
+        if (resolutionRef.current.classState && isEqual(state.spellcastingProgression, resolutionRef.current.classState.spellcastingProgression)) {
+            prevSpellcastingRef.current = state.spellcastingProgression;
             return;
         }
 
@@ -738,21 +861,34 @@ export default function ClassEdit() {
             return;
         }
 
-        resolution.applyUpdate({
+        applyUpdate({
             type: ClassUpdateType.SetSpellcastingProgression,
             payload: { progression: state.spellcastingProgression }
         }).catch(error => {
-            console.error('Failed to sync spellcasting progression:', error);
+            console.error('Failed to sync spellcasting feature:', error);
         });
 
         prevSpellcastingRef.current = currentSpellcasting;
-    }, [classId, resolution.sessionId, resolution.applyUpdate, state.spellcastingProgression, resolution]);
+    }, [classId, state.spellcastingProgression]);
 
     /**
-     * Sync spells known progression to backend session.
+     * Sync spells known feature to backend session.
      */
     useEffect(() => {
-        if (!classId || !resolution.sessionId) {
+        const { applyUpdate } = resolutionRef.current;
+
+        if (!classId || !resolutionRef.current.classState) {
+            return;
+        }
+
+        // Don't sync during initialization to prevent loops
+        if (isInitializingRef.current) {
+            return;
+        }
+
+        // Don't sync if current state matches session state (prevents loop during initialization)
+        if (resolutionRef.current.classState && isEqual(state.spellsKnownProgression, resolutionRef.current.classState.spellsKnownProgression)) {
+            prevSpellsKnownRef.current = state.spellsKnownProgression;
             return;
         }
 
@@ -766,15 +902,15 @@ export default function ClassEdit() {
             return;
         }
 
-        resolution.applyUpdate({
+        applyUpdate({
             type: ClassUpdateType.SetSpellsKnownProgression,
             payload: { progression: state.spellsKnownProgression }
         }).catch(error => {
-            console.error('Failed to sync spells known progression:', error);
+            console.error('Failed to sync spells known feature:', error);
         });
 
         prevSpellsKnownRef.current = currentSpellsKnown;
-    }, [classId, resolution.sessionId, resolution.applyUpdate, state.spellsKnownProgression, resolution]);
+    }, [classId, state.spellsKnownProgression]);
 
     // Handle new feature from association dialog
     useEffect(() => {
@@ -782,24 +918,24 @@ export default function ClassEdit() {
             const newFeature = location.state.newFeature;
             processedNewFeatureRef.current = true;
 
-            // Add the new feature progression to the list
-            const newProgression: FeatureProgression = createFeatureProgression({
-                featureId: newFeature.featureId,
-                feature: {
-                    id: newFeature.featureId,
-                    name: newFeature.name,
-                    description: newFeature.description || '',
-                    slug: newFeature.slug,
-                    displayInCharacterSheet: true,
-                    summary: null,
-                },
+            // Add the new feature feature to the list
+            const newProgression: FeatureWithRelations = createFeature({
+                id: newFeature.featureId,
+                name: newFeature.name,
+                description: newFeature.description || '',
+                slug: newFeature.slug,
+                displayInCharacterSheet: true,
+                summary: null,
                 entities: [],
             });
-            updateState({ type: ClassEditStateUpdateType.ADD_FEATURE_PROGRESSION, payload: { progression: newProgression } });
+            // Link the new feature to the class
+            if (newProgression.id) {
+                updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: newProgression.id } });
+            }
             // Clear the state
             navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location.state?.newFeature, navigate, location.pathname, createFeatureProgression, updateState]);
+    }, [location.state?.newFeature, navigate, location.pathname, createFeature, updateState]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -828,12 +964,12 @@ export default function ClassEdit() {
                     spellsKnown: state.spellsKnown,
                     isDivine: state.isDivine,
                     description: state.description || '',
-                    features: state.featureProgressions.map(prog => {
+                    features: loadedFeatures.map(prog => {
                         const { classes: _classes, races: _races, ...progressionData } = prog;
                         return {
                             ...progressionData,
                             entities: prog.entities?.map(entity => {
-                                const { progressionId: __, ...entityData } = entity;
+                                const { featureId: __, ...entityData } = entity;
                                 if (entityData.formulaParams && entityData.formulaParams.formulaId) {
                                     const formulaParamsData = { ...entityData.formulaParams };
                                     delete (formulaParamsData as { id?: unknown }).id;
@@ -879,12 +1015,12 @@ export default function ClassEdit() {
                 setTimeout(() => navigate(`/classes/${newClass.id}`), 1500);
             } else {
                 // For existing classes, use session save
-                if (!resolution.sessionId) {
-                    setError('Session not initialized. Please wait for the session to load.');
+                if (!resolution.classState) {
+                    setError('Class state not loaded. Please wait for the state to load.');
                     return;
                 }
 
-                await resolution.saveSession();
+                await resolution.save();
                 setMessage('Class updated successfully!');
 
                 // Invalidate class caches
@@ -953,28 +1089,23 @@ export default function ClassEdit() {
         setCls(formData);
     }
 
-    // Group progressions by feature for display
-    const progressionsByFeature = state.featureProgressions.reduce((acc, progression) => {
-        const featureId = progression.featureId;
+    // Group features by feature for display (using loadedFeatures)
+    const featuresByFeature = loadedFeatures.reduce((acc, feature) => {
+        const featureId = feature.id;
         if (!acc[featureId]) {
             acc[featureId] = {
-                feature: progression.feature ? {
-                    id: progression.feature.id,
-                    name: progression.feature.name,
-                    description: progression.feature.description || '',
-                    slug: progression.feature.slug
-                } : {
-                    id: featureId,
-                    name: `Feature ${featureId}`,
-                    description: '',
-                    slug: `feature-${featureId}`
+                feature: {
+                    id: feature.id,
+                    name: feature.name,
+                    description: feature.description || '',
+                    slug: feature.slug
                 },
-                progressions: []
+                features: []
             };
         }
-        acc[featureId].progressions.push(progression);
+        acc[featureId].features.push(feature);
         return acc;
-    }, {} as Record<number, { feature: { id: number; name: string; description: string; slug: string }; progressions: FeatureProgression[] }>);
+    }, {} as Record<number, { feature: { id: number; name: string; description: string; slug: string }; features: FeatureWithRelations[] }>);
 
     return (
         <div className="w-4/5 mx-auto p-6">
@@ -1038,24 +1169,21 @@ export default function ClassEdit() {
                             <CurrentTabComponent
                                 state={state}
                                 updateState={updateState}
-                                formData={formData}
-                                setFormData={setFormData}
                                 validation={form.validation}
                                 isLoading={isLoading}
-                                featureProgressions={state.featureProgressions}
-                                setFeatureProgressions={(progressions) => updateState({ type: ClassEditStateUpdateType.SET_FEATURE_PROGRESSIONS, payload: { featureProgressions: progressions } })}
+                                features={loadedFeatures}
+                                setFeatures={(features) => {
+                                    // Update featureIds based on the features
+                                    const updatedFeatureIds = features.map(f => f.id).filter((id): id is number => id !== null);
+                                    updateState({ type: ClassEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
+                                }}
                                 spellcastingProgression={state.spellcastingProgression}
                                 setSpellcastingProgression={(progression) => updateState({ type: ClassEditStateUpdateType.SET_SPELLCASTING_PROGRESSION, payload: { progression } })}
                                 spellsKnownProgression={state.spellsKnownProgression}
                                 setSpellsKnownProgression={(progression) => updateState({ type: ClassEditStateUpdateType.SET_SPELLS_KNOWN_PROGRESSION, payload: { progression } })}
                                 isFeatureAssocOpen={state.isFeatureAssocOpen}
                                 setIsFeatureAssocOpen={(open) => updateState({ type: ClassEditStateUpdateType.SET_IS_FEATURE_ASSOC_OPEN, payload: { isFeatureAssocOpen: open } })}
-                                isProgressionDialogOpen={state.isProgressionDialogOpen}
-                                setIsProgressionDialogOpen={(open) => updateState({ type: ClassEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: open } })}
-                                editingProgression={state.editingProgression}
-                                setEditingProgression={(progression) => updateState({ type: ClassEditStateUpdateType.SET_EDITING_PROGRESSION, payload: { editingProgression: progression } })}
-                                preSelectedFeature={state.preSelectedFeature}
-                                setPreSelectedFeature={(feature) => updateState({ type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE, payload: { preSelectedFeature: feature } })}
+                                // editingFeatureId and preSelectedFeatureId are handled internally by FeaturesManager
                                 onRemoveProgression={handleRemoveProgression}
                                 onAddFeature={handleAddFeature}
                                 onEditProgression={handleEditProgression}
@@ -1098,35 +1226,68 @@ export default function ClassEdit() {
                     console.warn('ClassEdit onSave handler called but not used - change detection handled by FeaturesManager');
                     updateState({ type: ClassEditStateUpdateType.SET_IS_FEATURE_ASSOC_OPEN, payload: { isFeatureAssocOpen: false } });
                 }}
-                initialSelectedFeatureIds={Object.keys(progressionsByFeature)
-                    .map(id => parseInt(id))
-                    .filter(featureId =>
-                        featureId !== SpecialFeatureId.ClassSkill &&
-                        featureId !== SpecialFeatureId.ClassProficiency
-                    )}
+                initialSelectedFeatureIds={state.featureIds.filter(featureId => {
+                    // Filter out class skills and proficiencies (identified by Base entities)
+                    const feature = loadedFeatures.find(f => f.id === featureId);
+                    if (!feature) return true;
+                    const hasClassSkills = feature.sourceType === FeatureSourceType.Class &&
+                        feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill);
+                    const hasProficiencies = feature.sourceType === FeatureSourceType.Class &&
+                        feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency);
+                    return !hasClassSkills && !hasProficiencies;
+                })}
                 classId={id !== 'new' ? parseInt(id) : undefined}
             />
 
-            {/* Feature Progression Dialog */}
-            <FeatureProgressionDetailEdit
-                isOpen={state.isProgressionDialogOpen}
+            {/* Feature Edit Dialog */}
+            <FeatureEditForm
+                isOpen={!!state.editingFeatureId || !!state.preSelectedFeatureId}
                 onClose={() => {
-                    updateState({ type: ClassEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: false } });
-                    updateState({ type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE, payload: { preSelectedFeature: undefined } });
+                    updateState({ type: ClassEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: null } });
+                    updateState({ type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID, payload: { preSelectedFeatureId: undefined } });
                 }}
-                progression={state.editingProgression}
-                onSave={(progression) => {
-                    if (state.editingProgression) {
-                        handleUpdateProgression(state.editingProgression, progression);
-                    } else {
-                        handleAddProgression(progression);
+                featureId={
+                    // Ensure featureId is never 0 - treat 0 as invalid and use 'new' instead
+                    state.editingFeatureId && state.editingFeatureId > 0
+                        ? state.editingFeatureId
+                        : state.preSelectedFeatureId && state.preSelectedFeatureId > 0
+                            ? state.preSelectedFeatureId
+                            : 'new'
+                }
+                onSave={async (feature: Feature, features: FeatureWithRelations[], featureId: number) => {
+                    const featureWithRelations = features[0] || feature as FeatureWithRelations;
+                    
+                    // Ensure the featureId is in the class's feature list
+                    // The feature was already saved via state system, we just need to track its ID
+                    // The useEffect hook will automatically sync the link to the backend
+                    const currentFeatureIds = state.featureIds || [];
+                    if (!currentFeatureIds.includes(featureId)) {
+                        // Add the feature ID to the class's feature list
+                        updateState({
+                            type: ClassEditStateUpdateType.LINK_FEATURE,
+                            payload: { featureId }
+                        });
                     }
-                    updateState({ type: ClassEditStateUpdateType.SET_IS_PROGRESSION_DIALOG_OPEN, payload: { isProgressionDialogOpen: false } });
-                    updateState({ type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE, payload: { preSelectedFeature: undefined } });
+                    
+                    // Refresh session state to get updated feature data from backend
+                    if (state.editingFeatureId && resolution.refreshState) {
+                        await resolution.refreshState();
+                    }
+                    
+                    updateState({ type: ClassEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: null } });
+                    updateState({ type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID, payload: { preSelectedFeatureId: undefined } });
                 }}
-                preSelectedFeature={state.preSelectedFeature}
-                showSourceTypeSelector={false}
-                editionId={formData.editionId}
+                mode="modal"
+                context={
+                    classId
+                        ? {
+                            sourceType: FeatureSourceType.Class,
+                            parentId: classId,
+                            parentType: 'class',
+                            editionId: state.editionId ?? null
+                        }
+                        : undefined
+                }
             />
         </div>
     );

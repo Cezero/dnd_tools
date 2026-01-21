@@ -16,7 +16,7 @@ export const FeaturePrerequisiteSchema = z.object({
     minValue: z.number().int(),
 });
 
-// Core Feature Schema
+// Core Feature Schema (unified model)
 export const FeatureSchema = z.object({
     id: commonValidations.positiveInt('Feature ID'),
     slug: commonValidations.slug(),
@@ -24,6 +24,15 @@ export const FeatureSchema = z.object({
     description: commonValidations.description(10000),
     summary: z.string().max(10000, 'Summary must be less than 10000 characters').nullable().optional().describe('Can contain template placeholders {{placeholder}} which will be resolved dynamically'),
     displayInCharacterSheet: z.boolean().default(true),
+
+    // Progression fields (sourceType, level, domainId, featId, companionId, editionId)
+    sourceType: z.enum(FeatureSourceType),
+    level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
+    domainId: z.number().int().nullable(), // Reference to domain for domain-granted features
+    featId: z.number().int().nullable(), // Reference to Feat (same pattern as domainId)
+    companionId: z.number().int().nullable(), // Reference to Companion for companion-granted features
+    editionId: z.number().int().nullable(), // Reference to edition for edition-granted features
+
     prerequisites: z.array(FeaturePrerequisiteSchema).optional(),
 });
 
@@ -100,22 +109,28 @@ export const FeatureFormulaParamsSchema = z.object({
     valuesRepresent: z.enum(ConditionalScalingValueType).optional().nullable(),
     cumulative: z.boolean().default(false),
 
-    // Control whether to include the progression level in the formula calculation
+    // Control whether to include the feature level in the formula calculation
     includeProgressionLevel: z.boolean().default(true),
+    // When true, returns 0 for levels below formulaStartLevel instead of null or scalingValue
+    featureLevelZero: z.boolean().default(false),
 
     // Division-based formula parameters (for LEVEL_DIVIDED_BY and LEVEL_DIVIDED_BY_PLUS_BASE)
     divisor: commonValidations.positiveInt('Divisor').optional().nullable(),
     baseValue: z.number().int().optional().nullable(),
+
+    // Starting value for formulas that need a different starting value than the increment (e.g., EVERY_N_LEVELS)
+    startingValue: z.number().int().optional().nullable(),
 });
 
 /**
  * Formula calculation parameters for runtime formula evaluation
- * Extends FeatureFormulaParamsSchema but converts nullable baseValue/divisor to optional undefined,
+ * Extends FeatureFormulaParamsSchema but converts nullable baseValue/divisor/startingValue to optional undefined,
  * and adds runtime calculation fields (level, startLevel, scalingValue, context)
  */
 export const FormulaCalculationParamsSchema = FeatureFormulaParamsSchema.omit({
     baseValue: true,
     divisor: true,
+    startingValue: true,
 }).extend({
     level: z.number().int().min(1),
     startLevel: z.number().int().min(1),
@@ -127,6 +142,7 @@ export const FormulaCalculationParamsSchema = FeatureFormulaParamsSchema.omit({
     }),
     baseValue: z.number().int().optional(), // Override: optional (undefined) instead of nullable
     divisor: z.number().int().positive().optional(), // Override: optional (undefined) instead of nullable
+    startingValue: z.number().int().optional(), // Override: optional (undefined) instead of nullable
 });
 
 export const FeatureEntityConditionSchema = z.object({
@@ -136,16 +152,16 @@ export const FeatureEntityConditionSchema = z.object({
     conditionValue: z.number().int(),
 });
 
-export const FeatureProgressionConditionSchema = z.object({
-    id: commonValidations.positiveInt('Progression condition ID'),
-    progressionId: commonValidations.positiveInt('Progression ID'),
+export const FeatureConditionSchema = z.object({
+    id: commonValidations.positiveInt('Feature condition ID'),
+    featureId: commonValidations.positiveInt('Feature ID'),
     conditionType: z.enum(FeatureEntityConditionType),
     conditionValue: z.number().int(),
 });
 
 export const FeatureEntitySchema = z.object({
     id: commonValidations.positiveInt('Entity ID'),
-    progressionId: commonValidations.positiveInt('Progression ID'),
+    featureId: commonValidations.positiveInt('Feature ID'),
     type: z.enum(EntityType),
     appliesTo: z.enum(EntityAppliesToType),
     appliesToId: z.number().int().nullable(), // ID reference - frontend should look up from cache
@@ -160,47 +176,36 @@ export const FeatureEntitySchema = z.object({
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
 });
 
-// Feature Progression Schema (the main one used for bulk operations)
-export const FeatureProgressionSchema = z.object({
-    id: commonValidations.positiveInt('Progression ID'),
-    sourceType: z.enum(FeatureSourceType),
-    level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
-    featureId: commonValidations.positiveInt('Feature ID'),
-    domainId: z.number().int().nullable(), // Reference to domain for domain-granted features
-    featId: z.number().int().nullable(), // NEW: Reference to Feat (same pattern as domainId)
-    companionId: z.number().int().nullable(), // NEW: Reference to Companion for companion-granted features
-    editionId: z.number().int().nullable(), // Reference to edition for edition-granted features
-    feature: FeatureSchema.optional(),
-    class: z.object({
-        name: z.string(),
-        abbreviation: z.string(),
-    }).optional(),
-    // Many-to-many relationship for shared progressions
+// Feature Schema with relations
+// This is the main schema used for feature operations
+export const FeatureWithRelationsSchema = FeatureSchema.extend({
+    // Many-to-many relationship for shared features
     // Only includes classId - frontend can fetch name/abbreviation from cache
     // NOTE: These arrays are typically excluded from API responses to reduce payload size.
     // They are only included in character resolution responses, and even then are filtered
     // to only include classes/races the character is actually associated with.
     classes: z.array(z.object({
-        progressionId: z.number().int(),
+        featureId: z.number().int(),
         classId: z.number().int(),
     })).optional(),
     races: z.array(z.object({
-        progressionId: z.number().int(),
+        featureId: z.number().int(),
         raceId: z.number().int(),
     })).optional(),
     entities: z.array(FeatureEntitySchema).optional(),
     spellcasting: SpellcastingLinkSchema.optional(),
-    displayConditions: z.array(FeatureProgressionConditionSchema).optional(),
+    displayConditions: z.array(FeatureConditionSchema).optional(),
 });
+
 
 export const CreateFeatureEntityConditionSchema = FeatureEntityConditionSchema.omit({
     id: true,
     featureEntityId: true,
 });
 
-export const CreateFeatureProgressionConditionSchema = FeatureProgressionConditionSchema.omit({
+export const CreateFeatureConditionSchema = FeatureConditionSchema.omit({
     id: true,
-    progressionId: true,
+    featureId: true,
 });
 
 export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit({
@@ -212,11 +217,12 @@ export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit(
     cumulative: z.boolean().optional(),
     divisor: commonValidations.positiveInt('Divisor').optional().nullable(),
     baseValue: z.number().int().optional().nullable(),
+    startingValue: z.number().int().optional().nullable(),
 });
 
 export const CreateFeatureEntitySchema = FeatureEntitySchema.omit({
     id: true,
-    progressionId: true,
+    featureId: true,
     conditions: true,
     formulaParams: true,
     formulaParamsId: true,
@@ -225,41 +231,39 @@ export const CreateFeatureEntitySchema = FeatureEntitySchema.omit({
     formulaParams: CreateFeatureFormulaParamsSchema.optional().nullable(),
 }).strip(); // Explicitly strip unknown fields
 
-// Schema for creating feature progressions (used in bulk operations)
-export const CreateFeatureProgressionSchema = FeatureProgressionSchema.omit({
+// Schema for creating features with relations (includes classes/races arrays)
+// This is the base schema that CreateFeatureRequestSchema is derived from
+export const CreateFeatureWithRelationsRequestSchema = FeatureWithRelationsSchema.omit({
     id: true,
-    feature: true,
-    class: true,
     spellcasting: true,
 }).extend({
     entities: z.array(CreateFeatureEntitySchema).optional(),
-    displayConditions: z.array(CreateFeatureProgressionConditionSchema).optional(),
+    displayConditions: z.array(CreateFeatureConditionSchema).optional(),
+    prerequisites: z.array(FeaturePrerequisiteSchema.omit({
+        id: true,
+        featureId: true,
+    })).optional(),
 });
 
-// Request schema for creating/updating feature progressions (omits classes/races arrays)
+// Request schema for creating/updating features (omits classes/races arrays)
 // These arrays are managed by the backend based on context (classId, raceId, etc.)
 // and should not be sent in requests
-export const CreateFeatureProgressionRequestSchema = CreateFeatureProgressionSchema.omit({
+export const CreateFeatureRequestSchema = CreateFeatureWithRelationsRequestSchema.omit({
     classes: true,
     races: true,
 });
 
-export const UpdateFeatureProgressionSchema = CreateFeatureProgressionRequestSchema.partial().extend({
+
+export const UpdateFeatureSchema = CreateFeatureRequestSchema.partial().extend({
     id: z.number().int().optional()
 }).strip(); // Explicitly strip unknown fields from nested entities
 
-// Response schema for feature progressions (omits classes/races arrays)
+// Response schema for features (omits classes/races arrays)
 // These arrays are only included in character resolution responses where they're needed
 // and filtered to only include classes/races relevant to the character
-export const FeatureProgressionResponseSchema = FeatureProgressionSchema.omit({
+export const FeatureResponseSchema = FeatureWithRelationsSchema.omit({
     classes: true,
     races: true,
-});
-
-// Feature with relations (used for feature detail views)
-export const FeatureWithRelationsSchema = FeatureSchema.extend({
-    progressions: z.array(FeatureProgressionResponseSchema).optional(),
-    prerequisites: z.array(FeaturePrerequisiteSchema).optional(),
 });
 
 // Parameter schemas
@@ -280,9 +284,15 @@ export const FeatureQuerySchema = z.object({
     cumulative: optionalBooleanParam(),
 });
 
-// Request schemas for feature management
-export const CreateFeatureSchema = FeatureSchema.omit({
+// Request schemas for feature management (basic feature without progression fields)
+export const CreateFeatureBasicSchema = FeatureSchema.omit({
     id: true,
+    sourceType: true,
+    level: true,
+    domainId: true,
+    featId: true,
+    companionId: true,
+    editionId: true,
 }).extend({
     prerequisites: z.array(FeaturePrerequisiteSchema.omit({
         id: true,
@@ -290,7 +300,10 @@ export const CreateFeatureSchema = FeatureSchema.omit({
     })).optional(),
 });
 
-export const UpdateFeatureSchema = CreateFeatureSchema.partial();
+// Alias for backward compatibility
+export const CreateFeatureSchema = CreateFeatureBasicSchema;
+
+export const UpdateFeatureBasicSchema = CreateFeatureBasicSchema.partial();
 
 // Response schemas
 export const GetAllFeaturesResponseSchema = QueryResponseSchema.extend({
@@ -299,22 +312,24 @@ export const GetAllFeaturesResponseSchema = QueryResponseSchema.extend({
 
 export const GetFeatureResponseSchema = FeatureSchema.extend({
     prerequisites: z.array(FeaturePrerequisiteSchema).optional(),
+    entities: z.array(FeatureEntitySchema).optional(),
+    displayConditions: z.array(FeatureConditionSchema).optional(),
 });
 
-// Feature Progression management schemas
-// Note: UpdateFeatureProgressionSchema already omits classes/races via CreateFeatureProgressionRequestSchema
-export const UpdateFeatureProgressionsRequestSchema = z.object({
-    progressions: z.array(UpdateFeatureProgressionSchema),
-});
+// Feature management schemas
+// Note: UpdateFeatureSchema already omits classes/races via CreateFeatureRequestSchema
+export const UpdateFeaturesRequestSchema = z.object({
+    features: z.array(UpdateFeatureSchema),
+}).describe('Request schema for updating multiple features');
 
-export const GetFeatureProgressionsResponseSchema = z.array(FeatureProgressionResponseSchema);
+export const GetFeaturesResponseSchema = z.array(FeatureResponseSchema);
 
 // Response schema for feature list endpoint
 export const GetFeatureListResponseSchema = z.array(FeatureListSchema);
 
-// Schema for creating feature progressions in frontend forms (allows featureId to be 0 for new features)
+// Schema for creating features in frontend forms (allows featureId to be 0 for new features)
 // Uses request schema which omits classes/races
-export const CreateFeatureProgressionFormSchema = CreateFeatureProgressionRequestSchema.extend({
+export const CreateFeatureFormSchema = CreateFeatureRequestSchema.extend({
     featureId: commonValidations.nonNegativeInt('Feature ID'),
 });
 
@@ -328,27 +343,26 @@ export type EditionIdParamRequest = z.infer<typeof EditionIdParamSchema>;
 export type FeatureSlugParamRequest = z.infer<typeof FeatureSlugParamSchema>;
 export type FeatureQueryRequest = z.infer<typeof FeatureQuerySchema>;
 export type GetAllFeaturesResponse = z.infer<typeof GetAllFeaturesResponseSchema>;
-export type CreateFeatureRequest = z.infer<typeof CreateFeatureSchema>;
-export type UpdateFeatureRequest = z.infer<typeof UpdateFeatureSchema>;
+export type CreateFeatureBasicRequest = z.infer<typeof CreateFeatureSchema>;
+export type UpdateFeatureBasicRequest = z.infer<typeof UpdateFeatureBasicSchema>;
 export type GetFeatureResponse = z.infer<typeof GetFeatureResponseSchema>;
 export type FeatureIdParam = z.input<typeof FeatureIdParamSchema>;
 export type FeaturePrerequisite = z.infer<typeof FeaturePrerequisiteSchema>;
 export type FeatureWithRelations = z.infer<typeof FeatureWithRelationsSchema>;
-export type CreateFeatureProgressionRequest = z.infer<typeof CreateFeatureProgressionRequestSchema>;
-export type CreateFeatureProgressionFormRequest = z.infer<typeof CreateFeatureProgressionFormSchema>;
-export type FeatureProgression = z.infer<typeof FeatureProgressionSchema>;
+export type CreateFeatureRequest = z.infer<typeof CreateFeatureRequestSchema>;
+export type CreateFeatureFormRequest = z.infer<typeof CreateFeatureFormSchema>;
 export type FeatureEntity = z.infer<typeof FeatureEntitySchema>;
 export type CreateFeatureEntityRequest = z.infer<typeof CreateFeatureEntitySchema>;
 export type CreateFeatureEntityConditionRequest = z.infer<typeof CreateFeatureEntityConditionSchema>;
 export type CreateFeatureFormulaParamsRequest = z.infer<typeof CreateFeatureFormulaParamsSchema>;
-export type UpdateFeatureProgression = z.infer<typeof UpdateFeatureProgressionSchema>;
+export type UpdateFeature = z.infer<typeof UpdateFeatureSchema>;
 
 export type FeatureEntityCondition = z.infer<typeof FeatureEntityConditionSchema>;
-export type FeatureProgressionCondition = z.infer<typeof FeatureProgressionConditionSchema>;
-export type CreateFeatureProgressionConditionRequest = z.infer<typeof CreateFeatureProgressionConditionSchema>;
+export type FeatureCondition = z.infer<typeof FeatureConditionSchema>;
+export type CreateFeatureConditionRequest = z.infer<typeof CreateFeatureConditionSchema>;
 export type FeatureFormulaParams = z.infer<typeof FeatureFormulaParamsSchema>;
-export type GetFeatureProgressionsResponse = z.infer<typeof GetFeatureProgressionsResponseSchema>;
-export type UpdateFeatureProgressionsRequest = z.infer<typeof UpdateFeatureProgressionsRequestSchema>;
+export type GetFeaturesResponse = z.infer<typeof GetFeaturesResponseSchema>;
+export type UpdateFeaturesRequest = z.infer<typeof UpdateFeaturesRequestSchema>;
 export type FeatureList = z.infer<typeof FeatureListSchema>;
 export type GetFeatureListResponse = z.infer<typeof GetFeatureListResponseSchema>;
 
@@ -373,16 +387,16 @@ export const EntityArraySchema = z.array(FeatureEntitySchema);
 export const CloneClassFeaturesRequestSchema = z.object({
     sourceClassId: commonValidations.positiveInt('Source class ID'),
     targetClassId: commonValidations.positiveInt('Target class ID'),
-    forkProgressions: z.boolean().default(false).optional(),
+    forkFeatures: z.boolean().default(false).optional(),
 });
 
-export const ForkProgressionRequestSchema = z.object({
-    progressionId: commonValidations.positiveInt('Progression ID'),
+export const ForkFeatureRequestSchema = z.object({
+    featureId: commonValidations.positiveInt('Feature ID'),
     classId: commonValidations.positiveInt('Class ID'),
 });
 
-export const ForkProgressionResponseSchema = z.object({
-    forkedProgressionId: commonValidations.positiveInt('Forked progression ID'),
+export const ForkFeatureResponseSchema = z.object({
+    forkedFeatureId: commonValidations.positiveInt('Forked feature ID'),
 });
 
 // Re-export common response types
@@ -394,5 +408,5 @@ export type EntityArray = z.infer<typeof EntityArraySchema>;
 export type FormulaParamsData = z.infer<typeof FeatureFormulaParamsSchema>;
 export type FormulaCalculationParams = z.infer<typeof FormulaCalculationParamsSchema>;
 export type CloneClassFeaturesRequest = z.infer<typeof CloneClassFeaturesRequestSchema>;
-export type ForkProgressionRequest = z.infer<typeof ForkProgressionRequestSchema>;
-export type ForkProgressionResponse = z.infer<typeof ForkProgressionResponseSchema>;
+export type ForkFeatureRequest = z.infer<typeof ForkFeatureRequestSchema>;
+export type ForkFeatureResponse = z.infer<typeof ForkFeatureResponseSchema>;

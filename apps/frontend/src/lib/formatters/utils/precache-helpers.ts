@@ -19,7 +19,7 @@ import type {
 
 /**
  * Precaches a feat if it's not already in cache.
- * Checks individual cache, full list cache, and legacy cache formats.
+ * Checks individual cache, full list cache, and bulk cache formats.
  */
 export async function precacheFeat(
     queryClient: QueryClient,

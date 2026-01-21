@@ -134,38 +134,40 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
                                 </button>
                                 <button
                                     type="button"
-                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600 mr-2"
+                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600"
                                     onClick={handleAddSelectedItems}
                                 >
                                     Apply Changes
                                 </button>
-                                <button
-                                    type="button"
-                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600"
-                                    onClick={() => {
-                                        if (onCreateNew) {
-                                            onCreateNew();
-                                        } else {
-                                            onClose();
-                                            const returnPath = parentType === 'class'
-                                                ? `/classes/${parentId}/edit`
-                                                : parentType === 'race'
-                                                    ? `/races/${parentId}/edit`
-                                                    : '/features';
+                                {(onCreateNew || createNewRoute) && (
+                                    <button
+                                        type="button"
+                                        className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600 ml-2"
+                                        onClick={() => {
+                                            if (onCreateNew) {
+                                                onCreateNew();
+                                            } else if (createNewRoute) {
+                                                onClose();
+                                                const returnPath = parentType === 'class'
+                                                    ? `/classes/${parentId}/edit`
+                                                    : parentType === 'race'
+                                                        ? `/races/${parentId}/edit`
+                                                        : '/features';
 
-                                            navigate(createNewRoute, {
-                                                state: {
-                                                    from: 'ListSelectionDialog',
-                                                    parentId: parentId,
-                                                    parentType: parentType,
-                                                    returnPath: returnPath
-                                                }
-                                            });
-                                        }
-                                    }}
-                                >
-                                    {createNewButtonText}
-                                </button>
+                                                navigate(createNewRoute, {
+                                                    state: {
+                                                        from: 'ListSelectionDialog',
+                                                        parentId: parentId,
+                                                        parentType: parentType,
+                                                        returnPath: returnPath
+                                                    }
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        {createNewButtonText || 'Create New'}
+                                    </button>
+                                )}
                             </div>
                         </form>
                     </div>

@@ -1,4 +1,4 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import type { CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
@@ -29,7 +29,7 @@ export interface AbilityScoreBreakdownMap extends BreakdownMap {
 export function getAbilityScore(
     character: CharacterWithAllDetailsResponse,
     abilityId: number,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureWithRelations[]
 ): CalculationResult<AbilityScoreBreakdownMap> {
     // Get base ability score
     const abilityScore = character.abilityScores.find(a => a.abilityId === abilityId);
@@ -44,9 +44,9 @@ export function getAbilityScore(
                 // Check if this is an ability score increase choice for this ability
                 if (choice.appliesToId === abilityId) {
                     // Verify this choice is for an ability score increase entity
-                    // by checking resolved progressions for matching entity
+                    // by checking resolved features for matching entity
                     const matchingProgression = resolvedProgressions.find(
-                        p => p.id === choice.progressionId
+                        p => p.id === choice.featureId
                     );
                     if (matchingProgression?.entities) {
                         const matchingEntity = matchingProgression.entities.find(
@@ -61,8 +61,7 @@ export function getAbilityScore(
                 }
             }
         }
-        // Legacy support: also check abilityId field for backward compatibility
-        // This can be removed once all characters are migrated to feature choices
+        // Also check abilityId field (for characters not yet using feature choices)
         if (advancement.abilityId === abilityId) {
             advancementBonus += 1;
         }
@@ -104,7 +103,7 @@ export function getAbilityScore(
 export function getAbilityModifierWithBonuses(
     character: CharacterWithAllDetailsResponse,
     abilityId: number,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureWithRelations[]
 ): number {
     const result = getAbilityScore(character, abilityId, resolvedProgressions);
     return GetAbilityModifier(result.value);

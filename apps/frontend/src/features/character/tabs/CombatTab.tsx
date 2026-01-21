@@ -300,7 +300,7 @@ export function CombatTab({
         return { assignedAttacks: assigned, unassignedAttacks: unassigned };
     }, [state.attackDefinitions, formattedCharacter, processAllAttackDefinitions]);
 
-    // For backward compatibility, keep calculatedAttacks as assigned attacks only (for drag-and-drop)
+    // Keep calculatedAttacks as assigned attacks only (for drag-and-drop)
     const calculatedAttacks = assignedAttacks;
 
     const handleAddAttack = () => {

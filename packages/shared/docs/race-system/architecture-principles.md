@@ -54,19 +54,20 @@ The race system integrates with the feature system through a **consumer-coordina
 #### **Integration Pattern**
 ```
 Race (Identity Coordinator)
-├── FeatureProgression (Racial Feature Assignments)
-│   ├── FeatureModifier (Racial Bonuses and Adjustments)
-│   ├── FeatureChoice (Racial Selections and Options)
-│   └── FeatureSpecialEffect (Unique Racial Abilities)
+├── Feature (Racial Features, via FeatureRaceMap)
+│   ├── FeatureEntity (Racial Bonuses, Choices, Abilities)
+│   └── FeatureCondition (Display Conditions)
 └── Feature System (Business Logic Engine)
 ```
 
 #### **Service Layer Abstraction**
 The race system uses the **consolidated feature system service** for all feature operations:
-- **FeatureSystemService**: Central service handling all FeatureProgression operations
+- **FeatureSystemService**: Central service handling all feature operations
 - **RaceService**: Consumer service that delegates to consolidated methods
-- **Single Source of Truth**: All FeatureProgression operations go through FeatureSystemService
+- **Single Source of Truth**: All feature operations go through FeatureSystemService
 - **Transaction Safety**: Consistent transaction patterns across all services
+
+**Note**: `FeatureProgression` is maintained as a type alias for `FeatureWithRelationsSchema` for backward compatibility, but the database model is now unified as `Feature`.
 
 ### **4. Size and Movement System**
 
@@ -117,10 +118,10 @@ The system uses **LanguageService** for language management:
 The race system provides the foundation for racial ability score adjustments through the feature system.
 
 #### **Ability Adjustment Pattern**
-**Implementation**: FeatureModifier with ModifierAppliesToType.Ability
+**Implementation**: FeatureEntity with EntityType.Base and EntityAppliesToType.Ability
 - **Ability Identification**: Uses appliesToId to specify which ability is adjusted
 - **Adjustment Value**: Uses value field for the bonus/penalty amount
-- **Special Feature**: Uses SpecialFeatureId.AbilityAdjustment for identification
+- **Feature Pattern**: Uses normal features (e.g., "Elf Ability Adjustments") with EntityType.Base entities
 
 #### **Ability Service Integration**
 The system provides specialized UI components for ability adjustments:
@@ -134,16 +135,16 @@ The system provides specialized UI components for ability adjustments:
 
 ```mermaid
 erDiagram
-    Race ||--o{ FeatureProgression : "has many"
+    Race ||--o{ FeatureRaceMap : "has many"
     Race ||--o{ RaceSourceMap : "has many"
     Race ||--o{ UserCharacter : "has many"
     
-    FeatureProgression ||--o{ FeatureModifier : "has many"
-    FeatureProgression ||--o{ FeatureChoice : "has many"
-    FeatureProgression ||--o{ FeatureSpecialEffect : "has many"
+    Feature ||--o{ FeatureEntity : "has many"
+    Feature ||--o{ FeatureCondition : "has many"
+    Feature ||--o{ FeatureRaceMap : "has many"
     
-    FeatureModifier ||--o{ FeatureModifierCondition : "has many"
-    FeatureModifier ||--o| FeatureFormulaParams : "has optional"
+    FeatureEntity ||--o{ FeatureEntityCondition : "has many"
+    FeatureEntity ||--o| FeatureFormulaParams : "has optional"
     
     Race {
         int id PK
@@ -156,11 +157,21 @@ erDiagram
         int favoredClassId
     }
     
-    FeatureProgression {
+    Feature {
         int id PK
-        int featureId FK
+        string slug
+        string name
+        string description
         int sourceType
         int level
+        int domainId FK
+        int featId FK
+        int companionId FK
+        int editionId FK
+    }
+    
+    FeatureRaceMap {
+        int featureId FK
         int raceId FK
     }
     
@@ -183,13 +194,21 @@ erDiagram
   - Provide language and ability foundations
 - **Examples**: Dwarf (small size, slow speed), Elf (medium size, standard speed)
 
-#### **FeatureProgression (Feature Integration)**
-- **Dependencies**: References Race and Feature
+#### **Feature (Feature Integration)**
+- **Dependencies**: References Race via FeatureRaceMap
 - **Responsibilities**:
-  - Link features to races with level requirements
+  - Define features with level requirements and source tracking
   - Coordinate feature system integration
   - Manage racial feature scaling and progression
 - **Examples**: "Dwarf Ability Adjustments" at level 1, "Elf Low-Light Vision" at level 1
+
+#### **FeatureRaceMap (Many-to-Many Junction)**
+- **Dependencies**: References Feature and Race
+- **Responsibilities**:
+  - Link features to races via many-to-many relationship
+  - Enable feature sharing across multiple races
+  - Support efficient variant race creation
+- **Examples**: Shared "Ability Adjustments" feature across multiple races
 
 #### **RaceSourceMap (Source Attribution)**
 - **Dependencies**: References Race and SourceBook
@@ -217,15 +236,15 @@ The race system acts as a **coordinator** for the feature system:
 ```
 Character (Consumer)
 ├── Race (Identity Coordinator)
-│   └── FeatureProgression (Racial Feature Assignments)
+│   └── Feature (Racial Features, via FeatureRaceMap)
 └── Feature System (Business Logic Engine)
-    ├── FeatureModifier (Calculations)
-    ├── FeatureChoice (Selections)
+    ├── FeatureEntity (Calculations, Selections, Abilities)
+    └── FeatureCondition (Display Conditions)
     └── FeatureSpecialEffect (Effects)
 ```
 
 #### **Data Flow**
-1. **Race Definition**: Races define feature assignments through FeatureProgression
+1. **Race Definition**: Races define feature assignments through Feature records linked via FeatureRaceMap
 2. **Character Creation**: Characters select races
 3. **Feature Calculation**: Feature system calculates applicable racial features
 4. **Result Application**: Calculated features are applied to character statistics
@@ -237,7 +256,7 @@ The race system provides the foundation for language capabilities:
 #### **Integration Pattern**
 ```
 Race (Language Foundation)
-├── FeatureProgression (Language Assignments)
+├── Feature (Language Assignments, via FeatureRaceMap)
 │   └── FeatureModifier (Language Grants)
 └── Language System (Language Management)
     ├── Automatic Languages (Known by all)

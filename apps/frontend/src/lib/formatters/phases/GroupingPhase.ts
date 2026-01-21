@@ -1,5 +1,5 @@
 import type {
-    FeatureProgression,
+    FeatureWithRelations,
     FeatureEntityCondition
 } from '@shared/schema';
 import { FeatureEntityConditionType, EntityAppliesToType } from '@shared/static-data';
@@ -25,7 +25,7 @@ export class GroupingPhase {
      */
     groupWithinLevel(
         formattedItems: FormattedItemWithLevel[],
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         context?: DisplayContext
     ): GroupedLevelItem[] {
         if (formattedItems.length === 0) {
@@ -76,11 +76,10 @@ export class GroupingPhase {
 
                         results.push({
                             level,
-                            featureId: progression.featureId,
+                            featureId: feature.id,
                             formattedValue,
                             breakdown: { components: [] }, // Simplified for now
-                            descriptionLevel: progression.level,
-                            progressionId: progression.id,
+                            descriptionLevel: feature.level,
                             entityAppliesTo: item.entityAppliesTo,
                             groupingId: item.groupingId
                         });
@@ -130,11 +129,10 @@ export class GroupingPhase {
 
                     results.push({
                         level,
-                        featureId: progression.featureId,
+                        featureId: feature.id,
                         formattedValue,
                         breakdown: { components: [] }, // Simplified for now
-                        descriptionLevel: progression.level,
-                        progressionId: progression.id,
+                        descriptionLevel: feature.level,
                         entityAppliesTo: firstItem.entityAppliesTo,
                         groupingId: firstItem.groupingId
                     });

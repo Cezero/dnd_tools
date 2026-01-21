@@ -38,7 +38,7 @@ export function OverviewTab({ character, formattedCharacter, state, updateState,
     // Get race name from cache
     const raceName = character.raceId ? getRaceNameFromCache(character.raceId) : null;
 
-    // Extract sizeId from resolved progressions
+    // Extract sizeId from resolved features
     const raceMechanics = character.raceId && resolvedProgressions
         ? extractRaceMechanics(resolvedProgressions, character.raceId)
         : { sizeId: null };

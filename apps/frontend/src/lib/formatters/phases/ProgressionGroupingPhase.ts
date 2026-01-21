@@ -3,12 +3,12 @@ import type {
 } from '../types';
 
 /**
- * Phase 4: Within-Progression Grouping
- * Handles grouping entities within a progression by featureId at each level
+ * Phase 4: Within-Feature Grouping
+ * Handles grouping entities within a feature by featureId at each level
  */
 export class ProgressionGroupingPhase {
     /**
-     * Group entities within a progression by featureId at each level
+     * Group entities within a feature by featureId at each level
      * This groups all entities with the same featureId at each level, regardless of groupingId
      */
     groupWithinProgression(
@@ -57,7 +57,6 @@ export class ProgressionGroupingPhase {
                             formattedValue: combinedValue,
                             breakdown: { components: [] },
                             descriptionLevel: firstItem.descriptionLevel,
-                            progressionId: firstItem.progressionId,
                             entityAppliesTo: undefined,
                             groupingId: 0 // Reset to 0 since we're now grouping by featureId
                         });

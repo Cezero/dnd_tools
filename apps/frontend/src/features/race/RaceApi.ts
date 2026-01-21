@@ -7,6 +7,7 @@ import {
     GetAllRacesResponseSchema,
     BaseRaceSchema,
     CreateRaceSchema,
+    EntityLockStatusSchema,
 } from '@shared/schema';
 
 /**
@@ -63,5 +64,12 @@ export const RaceApi = {
         method: 'DELETE',
         paramsSchema: RaceIdParamSchema,
         responseSchema: UpdateResponseSchema,
+    }),
+
+    getRaceLockStatus: typedApi<undefined, typeof EntityLockStatusSchema, typeof RaceIdParamSchema>({
+        path: '/races/:id/lock-status',
+        method: 'GET',
+        paramsSchema: RaceIdParamSchema,
+        responseSchema: EntityLockStatusSchema,
     }),
 };

@@ -132,7 +132,7 @@ export interface ListSelectionDialogProps<T extends BaseItem, U extends BaseSele
     /** Item description for UI text */
     itemDesc: string;
     /** Route to navigate to for creating new items */
-    createNewRoute: string;
+    createNewRoute?: string;
     /** Optional callback for creating new items (if provided, used instead of navigating) */
     onCreateNew?: () => void;
     /** Function to transform selected items to the expected format */
@@ -140,5 +140,5 @@ export interface ListSelectionDialogProps<T extends BaseItem, U extends BaseSele
     /** Title for the dialog */
     dialogTitle: string;
     /** Button text for creating new items */
-    createNewButtonText: string;
+    createNewButtonText?: string;
 }

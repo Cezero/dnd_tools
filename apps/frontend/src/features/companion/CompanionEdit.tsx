@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
-import { FeatureProgressionDetailEdit } from '@/components/feature-system/FeatureProgressionDetailEdit';
+import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
@@ -14,8 +14,8 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { MonsterSearchInput } from '@/components/forms/MonsterSearchInput';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
-import { CreateCompanionRequest, UpdateCompanionRequest, UpdateCompanionSchema, CreateCompanionSchema, CompanionWithRelations, FeatureProgression } from '@shared/schema';
-import { COMPANION_TYPE_LIST, CompanionType, SpecialFeatureId, FeatureSourceType, MonsterTypeId } from '@shared/static-data';
+import { CreateCompanionRequest, UpdateCompanionRequest, UpdateCompanionSchema, CreateCompanionSchema, CompanionWithRelations, Feature, FeatureWithRelations } from '@shared/schema';
+import { COMPANION_TYPE_LIST, CompanionType, FeatureSourceType, MonsterTypeId } from '@shared/static-data';
 
 type CompanionFormData = CreateCompanionRequest | UpdateCompanionRequest;
 
@@ -33,10 +33,10 @@ export function CompanionEdit() {
     const [companion, setCompanion] = useState<CompanionWithRelations | null>(null);
     const [isLoadingCompanion, setIsLoadingCompanion] = useState(false);
     const [companionError, setCompanionError] = useState<Error | null>(null);
-    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
+    const [features, setFeatures] = useState<FeatureWithRelations[]>([]);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
-    const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
-    const [preSelectedFeature, setPreSelectedFeature] = useState<FeatureProgression['feature'] | null>(null);
+    const [editingProgression, setEditingProgression] = useState<FeatureWithRelations | null>(null);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<FeatureWithRelations | null>(null);
     const [isSavingProgression, setIsSavingProgression] = useState(false);
 
     // Fetch monster cache to get monster names
@@ -54,7 +54,7 @@ export function CompanionEdit() {
         setFormData
     );
 
-    // Load companion data and feature progressions
+    // Load companion data and feature features
     useEffect(() => {
         const fetchCompanion = async () => {
             if (isNew || !id) {
@@ -79,8 +79,8 @@ export function CompanionEdit() {
                         minLevel: fetchedCompanion.minLevel || undefined,
                     });
 
-                    // Use feature progressions from companion response
-                    setFeatureProgressions(fetchedCompanion.features || []);
+                    // Use feature features from companion response
+                    setFeatures(fetchedCompanion.features || []);
                 }
             } catch (err) {
                 const error = err instanceof Error ? err : new Error('Failed to fetch companion');
@@ -94,30 +94,26 @@ export function CompanionEdit() {
         fetchCompanion();
     }, [id, isNew]);
 
-    const handleEditProgression = useCallback((progression: FeatureProgression) => {
-        setEditingProgression(progression);
+    const handleEditProgression = useCallback((feature: FeatureWithRelations) => {
+        setEditingProgression(feature);
         setPreSelectedFeature(null);
         setIsProgressionDialogOpen(true);
     }, []);
 
     const handleRemoveProgression = useCallback(async (progressionId: number) => {
         try {
-            // Delete by updating with empty progressions array for that feature
-            const progression = featureProgressions.find(p => p.id === progressionId);
-            if (!progression) {
+            // Delete by updating with empty features array for that feature
+            const feature = features.find(p => p.id === progressionId);
+            if (!feature) {
                 return;
             }
 
-            // Get remaining progressions for this feature
-            const remainingProgressions = featureProgressions
-                .filter(p => p.id !== progressionId && p.featureId === progression.featureId)
+            // Get remaining features for this feature
+            const remainingProgressions = features
+                .filter(p => p.id !== progressionId && p.id === feature.id)
                 .map(p => ({
                     ...p,
-                    feature: p.feature ? {
-                        id: p.feature.id,
-                        name: p.feature.name,
-                        slug: p.feature.slug
-                    } : undefined,
+                    // FeatureWithRelations is now the unified Feature model, no need to add feature property
                     entities: p.entities?.map(e => ({
                         ...e,
                         conditions: e.conditions?.map(c => ({
@@ -126,9 +122,9 @@ export function CompanionEdit() {
                     })),
                 }));
 
-            await FeatureSystemApi.updateFeatureProgressions(
-                { progressions: remainingProgressions },
-                { id: progression.featureId }
+            await FeatureSystemApi.updateFeatures(
+                { features: remainingProgressions },
+                { id: feature.id }
             );
 
             // Refetch companion to get updated features
@@ -137,7 +133,7 @@ export function CompanionEdit() {
                 if (!isNaN(companionId)) {
                     const refetchedCompanion = await CompanionQueryHooks.getCompanionById(companionId);
                     if (refetchedCompanion) {
-                        setFeatureProgressions(refetchedCompanion.features || []);
+                        setFeatures(refetchedCompanion.features || []);
                     }
                 }
             }
@@ -147,9 +143,9 @@ export function CompanionEdit() {
                 exact: false
             });
         } catch (err) {
-            console.error('Error removing feature progression:', err);
+            console.error('Error removing feature feature:', err);
         }
-    }, [id, queryClient, featureProgressions]);
+    }, [id, queryClient, features]);
 
     const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
         const companionId = id && id !== 'new' ? parseInt(id, 10) : undefined;
@@ -159,35 +155,25 @@ export function CompanionEdit() {
         }
 
         try {
-            const newProgression: FeatureProgression = {
-                id: 0,
-                featureId: feature.id,
+            const newProgression: FeatureWithRelations = {
+                id: feature.id,
+                name: feature.name,
+                slug: feature.slug,
+                description: feature.description,
+                displayInCharacterSheet: true,
                 companionId: companionId,
                 sourceType: FeatureSourceType.Companion,
                 level: 1,
                 domainId: null,
                 featId: null,
-                entities: [],
-                feature: {
-                    id: feature.id,
-                    name: feature.name,
-                    description: feature.description,
-                    slug: feature.slug,
-                    summary: null,
-                    displayInCharacterSheet: true,
-                    prerequisites: []
-                }
+                entities: []
             };
 
-            // Add to existing progressions for this feature
-            const existingProgressions = featureProgressions.filter(p => p.featureId === feature.id);
+            // Add to existing features for this feature
+            const existingProgressions = features.filter(p => p.id === feature.id);
             const updatedProgressions = [...existingProgressions, newProgression].map(p => ({
                 ...p,
-                feature: p.feature ? {
-                    id: p.feature.id,
-                    name: p.feature.name,
-                    slug: p.feature.slug
-                } : undefined,
+                // FeatureWithRelations is now the unified Feature model, no need to add feature property
                 entities: p.entities?.map(e => ({
                     ...e,
                     conditions: e.conditions?.map(c => ({
@@ -196,15 +182,15 @@ export function CompanionEdit() {
                 })),
             }));
 
-            await FeatureSystemApi.updateFeatureProgressions(
-                { progressions: updatedProgressions },
+            await FeatureSystemApi.updateFeatures(
+                { features: updatedProgressions },
                 { id: feature.id }
             );
 
             // Refetch companion to get updated features
             const refetchedCompanion = await CompanionQueryHooks.getCompanionById(companionId);
             if (refetchedCompanion) {
-                setFeatureProgressions(refetchedCompanion.features || []);
+                setFeatures(refetchedCompanion.features || []);
             }
 
             queryClient.invalidateQueries({
@@ -214,33 +200,29 @@ export function CompanionEdit() {
         } catch (err) {
             console.error('Error adding feature:', err);
         }
-    }, [id, queryClient, featureProgressions]);
+    }, [id, queryClient, features]);
 
-    const handleSaveProgression = async (progression: FeatureProgression) => {
+    const handleSaveProgression = async (feature: FeatureWithRelations) => {
         setIsSavingProgression(true);
         try {
-            if (!progression.featureId) {
-                console.error('Cannot save progression: missing featureId', progression);
+            if (!feature.id) {
+                console.error('Cannot save feature: missing featureId', feature);
                 return;
             }
 
             const companionId = id && id !== 'new' ? parseInt(id, 10) : undefined;
             if (!companionId) {
-                console.error('Cannot save progression: companion ID is required');
+                console.error('Cannot save feature: companion ID is required');
                 return;
             }
 
             // Ensure companionId and sourceType are set correctly
             const progressionData = {
-                ...progression,
+                ...feature,
                 companionId: companionId,
                 sourceType: FeatureSourceType.Companion,
-                feature: progression.feature ? {
-                    id: progression.feature.id,
-                    name: progression.feature.name,
-                    slug: progression.feature.slug
-                } : undefined,
-                entities: progression.entities?.map(e => ({
+                // FeatureWithRelations is now the unified Feature model, no need to add feature property
+                entities: feature.entities?.map(e => ({
                     ...e,
                     conditions: e.conditions?.map(c => ({
                         ...c
@@ -248,9 +230,9 @@ export function CompanionEdit() {
                 })),
             };
 
-            await FeatureSystemApi.updateFeatureProgressions(
-                { progressions: [progressionData] },
-                { id: progression.featureId }
+            await FeatureSystemApi.updateFeatures(
+                { features: [progressionData] },
+                { id: feature.id }
             );
 
             // Close the dialog
@@ -264,22 +246,22 @@ export function CompanionEdit() {
                 if (!isNaN(companionId)) {
                     const refetchedCompanion = await CompanionQueryHooks.getCompanionById(companionId);
                     if (refetchedCompanion) {
-                        setFeatureProgressions(refetchedCompanion.features || []);
+                        setFeatures(refetchedCompanion.features || []);
                     }
                 }
             }
 
             // Invalidate queries
             queryClient.invalidateQueries({
-                queryKey: ['features', 'progressions', progression.featureId]
+                queryKey: ['features', 'features', feature.id]
             });
             queryClient.invalidateQueries({
                 queryKey: ['features'],
                 exact: false
             });
         } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to save feature progression');
-            console.error('Error saving feature progression:', error);
+            const error = err instanceof Error ? err : new Error('Failed to save feature feature');
+            console.error('Error saving feature feature:', error);
         } finally {
             setIsSavingProgression(false);
         }
@@ -407,36 +389,57 @@ export function CompanionEdit() {
                     {!isNew && companionId && (
                         <div>
                             <FeaturesManager
-                                featureProgressions={featureProgressions}
-                                onEditProgression={handleEditProgression}
-                                onRemoveProgression={handleRemoveProgression}
-                                onAddFeature={handleAddFeature}
+                                state={{
+                                    features,
+                                    editingProgression,
+                                    isProgressionDialogOpen,
+                                    preSelectedFeature
+                                }}
+                                updateState={(update) => {
+                                    if (update.type === 'SET_EDITING_PROGRESSION') {
+                                        setEditingProgression(update.payload.editingProgression);
+                                    } else if (update.type === 'SET_IS_PROGRESSION_DIALOG_OPEN') {
+                                        setIsProgressionDialogOpen(update.payload.isProgressionDialogOpen);
+                                    } else if (update.type === 'SET_PRE_SELECTED_FEATURE') {
+                                        setPreSelectedFeature(update.payload.preSelectedFeature);
+                                    } else if (update.type === 'REMOVE_FEATURE_PROGRESSION') {
+                                        handleRemoveProgression(update.payload.featureId);
+                                    } else if (update.type === 'SET_FEATURES') {
+                                        setFeatures(update.payload.features);
+                                    }
+                                }}
                                 contextType={FeatureSourceType.Companion}
                                 contextId={companionId}
                                 title="Companion Benefits"
                                 emptyMessage="No benefits configured for this companion"
                                 excludeSpecialFeatures={[]}
-                                setEditingProgression={setEditingProgression}
-                                setPreSelectedFeature={setPreSelectedFeature}
-                                setIsProgressionDialogOpen={setIsProgressionDialogOpen}
                             />
                         </div>
                     )}
                 </div>
             </ValidatedForm>
 
-            {/* Feature Progression Edit Dialog */}
-            <FeatureProgressionDetailEdit
+            {/* Feature Feature Edit Dialog */}
+            <FeatureEditForm
                 isOpen={isProgressionDialogOpen}
                 onClose={() => {
                     setIsProgressionDialogOpen(false);
                     setEditingProgression(null);
                     setPreSelectedFeature(null);
                 }}
-                progression={editingProgression}
-                onSave={handleSaveProgression}
-                preSelectedFeature={preSelectedFeature || undefined}
-                showSourceTypeSelector={false}
+                featureId={
+                    editingProgression?.id
+                        ? editingProgression.id
+                        : preSelectedFeature?.id
+                            ? preSelectedFeature.id
+                            : 'new'
+                }
+                onSave={(feature: Feature, features: FeatureWithRelations[]) => {
+                    const featureWithRelations = features[0] || feature as FeatureWithRelations;
+                    handleSaveProgression(featureWithRelations);
+                }}
+                mode="modal"
+                // Note: companion not supported in FeatureEditContext, companionId is set directly on feature
             />
         </div>
     );

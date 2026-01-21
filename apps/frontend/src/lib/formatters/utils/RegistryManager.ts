@@ -31,7 +31,7 @@ export class RegistryManager {
     }
 
     /**
-     * Get the default progression generator
+     * Get the default feature generator
      */
     getDefaultProgressionGenerator() {
         return calculatorRegistry.getDefaultProgressionGenerator();

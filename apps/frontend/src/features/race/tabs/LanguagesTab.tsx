@@ -9,16 +9,15 @@ import type { RaceTabProps } from './types';
 import { LanguageService } from '../../../lib/LanguageService';
 
 export function LanguagesTab({
-    formData: _formData,
-    featureProgressions = [],
+    features = [],
     onAddLanguage,
     onRemoveLanguage
 }: RaceTabProps): React.JSX.Element {
-    // Helper functions to extract languages from feature progression
+    // Helper functions to extract languages from feature feature
     const getLanguages = () => {
         // Use LanguageService to extract languages
-        const automaticLanguageIds = LanguageService.getAutomaticLanguages(featureProgressions);
-        const bonusLanguageIds = LanguageService.getBonusLanguages(featureProgressions);
+        const automaticLanguageIds = LanguageService.getAutomaticLanguages(features);
+        const bonusLanguageIds = LanguageService.getBonusLanguages(features);
 
         const automaticLanguages = automaticLanguageIds.map(languageId => ({
             languageId,

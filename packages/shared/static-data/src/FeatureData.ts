@@ -1,16 +1,5 @@
 import { AppliesToType, BaseMap, CoreComponent } from "./types";
 
-export const SpecialFeatureId = {
-    ClassSkill: 1,
-    ClassProficiency: 2,
-    AutomaticLanguage: 3,
-    BonusLanguage: 4,
-    AbilityAdjustment: 5,
-    CompanionBenefit: 6,
-} as const;
-
-export type SpecialFeatureId = typeof SpecialFeatureId[keyof typeof SpecialFeatureId];
-
 export const FeatureSourceType = {
     Race: 0,
     Class: 1,
@@ -245,6 +234,8 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.SpellcastingProgression, // Spellcasting progression reference
         EntityAppliesToType.CastingAbility, // Casting ability
         EntityAppliesToType.CastingType, // Casting type
+        EntityAppliesToType.Proficiency, // Class proficiencies (Base type for class proficiency features)
+        EntityAppliesToType.Skill, // Class skills (Base type for class skill features)
     ],
     [EntityType.Other]: [
         EntityAppliesToType.Other,

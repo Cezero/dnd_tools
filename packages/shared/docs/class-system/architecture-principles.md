@@ -99,9 +99,8 @@ The class system integrates with the feature system through a **consumer-coordin
 #### **Integration Pattern**
 ```
 Class (Coordinator)
-├── FeatureProgression (Feature Assignments)
-│   ├── FeatureModifier (Numeric Effects)
-│   ├── FeatureChoice (Player Selections)
+├── Feature (Feature Assignments, via FeatureClassMap)
+│   ├── FeatureEntity (Numeric Effects, Choices, Special Effects)
 │   └── FeatureSpecialEffect (Unique Abilities)
 └── Feature System (Business Logic Engine)
 ```
@@ -134,18 +133,20 @@ The class system follows the project-wide **static data philosophy** for perform
 
 ```mermaid
 erDiagram
-    Class ||--o{ FeatureProgression : "has many"
+    Class ||--o{ FeatureClassMap : "has many"
     Class ||--o{ SpellcastingProgression : "has many"
     Class ||--o{ ClassSpellsKnown : "has optional"
     Class ||--o{ ClassSourceMap : "has many"
     Class ||--o{ SpellLevelMap : "has many"
     
+    Feature ||--o{ FeatureClassMap : "has many"
+    Feature ||--o{ FeatureEntity : "has many"
+    
     SpellcastingProgression ||--o{ SpellcastingSlot : "has many"
     ClassSpellsKnown ||--o{ SpellcastingSlot : "has many"
     
-    FeatureProgression ||--o{ FeatureModifier : "has many"
-    FeatureProgression ||--o{ FeatureChoice : "has many"
-    FeatureProgression ||--o{ FeatureSpecialEffect : "has many"
+    FeatureEntity ||--o{ FeatureEntityCondition : "has many"
+    FeatureEntity ||--o| FeatureFormulaParams : "has optional"
     
     Class {
         int id PK
@@ -163,11 +164,21 @@ erDiagram
         int willSaveProgression
     }
     
-    FeatureProgression {
+    Feature {
         int id PK
-        int featureId FK
+        string slug
+        string name
+        string description
         int sourceType
         int level
+        int domainId FK
+        int featId FK
+        int companionId FK
+        int editionId
+    }
+    
+    FeatureClassMap {
+        int featureId FK
         int classId FK
     }
     
@@ -181,7 +192,7 @@ erDiagram
     
     SpellcastingSlot {
         int id PK
-        int progressionId FK
+        int featureId FK
         int spellLevel
         int slotsPerDay
         int spellsKnown
@@ -212,8 +223,8 @@ erDiagram
   - Provide spellcasting foundation
 - **Examples**: Fighter (combat-focused), Wizard (spellcasting-focused)
 
-#### **FeatureProgression (Feature Integration)**
-- **Dependencies**: References Class and Feature
+#### **Feature (Feature Integration)**
+- **Dependencies**: Linked to Class via FeatureClassMap junction table
 - **Responsibilities**:
   - Link features to classes with level requirements
   - Coordinate feature system integration
@@ -254,15 +265,15 @@ The class system acts as a **coordinator** for the feature system:
 ```
 Character (Consumer)
 ├── Class (Coordinator)
-│   └── FeatureProgression (Feature Assignments)
+│   └── Feature (Feature Assignments, via FeatureClassMap)
 └── Feature System (Business Logic Engine)
-    ├── FeatureModifier (Calculations)
+    ├── FeatureEntity (Calculations)
     ├── FeatureChoice (Selections)
     └── FeatureSpecialEffect (Effects)
 ```
 
 #### **Data Flow**
-1. **Class Definition**: Classes define feature assignments through FeatureProgression
+1. **Class Definition**: Classes define feature assignments through Feature records linked via FeatureClassMap
 2. **Character Creation**: Characters select classes and levels
 3. **Feature Calculation**: Feature system calculates applicable features based on class data
 4. **Result Application**: Calculated features are applied to character statistics

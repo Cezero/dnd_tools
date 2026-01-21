@@ -43,7 +43,7 @@ The feat system integrates with static data following the shared [Static Data In
 
 The base schema for feat validation, defining all required and optional fields with proper validation rules.
 
-**Purpose**: Validates core feat data including name, type, and descriptions. Benefits and prerequisites are handled through the Feature system (FeatureProgression).
+**Purpose**: Validates core feat data including name, type, and descriptions. Benefits and prerequisites are handled through the Feature system (Feature).
 
 **Key Validations**:
 - **`name`**: Required string, 1-200 characters, trimmed for display
@@ -54,8 +54,10 @@ The base schema for feat validation, defining all required and optional fields w
 - **`isVisible`**: Optional boolean, defaults to true, controls feat visibility
 - **`editionId`**: Required positive integer for edition reference
 - **`sourceBookInfo`**: Optional array of source book references
-- **`featureProgressions`**: Optional array of FeatureProgression entries (benefits and prerequisites)
-- **Note**: `description` and `summary` are not part of BaseFeatSchema - they come from associated Features via FeatureProgression
+- **`featureProgressions`**: Optional array of Feature entries (benefits and prerequisites) - maintained as `featureProgressions` for backward compatibility (FeatureProgression is a type alias for FeatureWithRelationsSchema)
+- **Note**: `description` and `summary` are not part of BaseFeatSchema - they come from associated Features via `featId` foreign key relationship
+
+**Note**: `FeatureProgression` is maintained as a type alias for `FeatureWithRelationsSchema` for backward compatibility, but the database model is now unified as `Feature`.
 
 **Usage**: Primary validation for feat data in API requests and responses.
 
@@ -92,7 +94,7 @@ Schema for feat ID parameter validation in URL paths.
 
 Benefits and prerequisites are now validated through the Feature system schemas:
 
-- **FeatureProgressionSchema**: Validates FeatureProgression entries that link feats to features
+- **FeatureProgressionSchema**: Validates Feature entries that link feats to features (FeatureProgression is a type alias for FeatureWithRelationsSchema)
 - **FeatureEntitySchema**: Validates FeatureEntity entries that define feat benefits
 - **FeaturePrerequisiteSchema**: Validates FeaturePrerequisite entries that define feat prerequisites
 
@@ -143,8 +145,8 @@ Schema for feats with feature information (description and summary).
 **IMPORTANT**: This is a composite schema where:
 - **`id`**: Comes from `Feat.id` (the feat's database ID)
 - **`name`**: Comes from `Feat.name` (the feat's name)
-- **`description`**: Comes from the associated `Feature.description` (via `FeatureProgression`)
-- **`summary`**: Comes from the associated `Feature.summary` (via `FeatureProgression`)
+- **`description`**: Comes from the associated `Feature.description` (via Feature with featId reference)
+- **`summary`**: Comes from the associated `Feature.summary` (via Feature with featId reference)
 
 **Key Validations**:
 - **`id`**: Required positive integer (from Feat table)

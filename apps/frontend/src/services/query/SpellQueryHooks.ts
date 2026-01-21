@@ -222,14 +222,10 @@ const spellsForClassConfig = createQueryHooks({
 });
 
 export const SpellQueryHooks = {
-    // Keep existing hooks for backward compatibility during transition
-    useGetAllSpells: spellsConfig.useQuery,
+    // React Query hooks
     useGetSpellById: spellByIdConfig.useQuery,
-    useUpdateSpell: updateSpellConfig.useMutation,
-    useDeleteSpell: deleteSpellConfig.useMutation,
-    useGetSpellsForClass: spellsForClassConfig.useQuery,
 
-    // Add imperative methods
+    // Imperative methods
     getAllSpells: (params?: unknown) => spellsConfig.fetch(params),
     getSpellById: (spellId: number) => spellByIdConfig.fetch({ pathParams: { id: spellId } }),
     updateSpell: (spellId: number, data: unknown, queryClient?: QueryClient) => updateSpellConfig.mutate({

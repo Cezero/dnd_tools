@@ -9,7 +9,7 @@ import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
 import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import type { CharacterWithAllDetailsResponse, FeatureProgression, DnDClass, ItemWithDetails, PendingChoice } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations, DnDClass, ItemWithDetails, PendingChoice } from '@shared/schema';
 import { DisplayType } from '@shared/static-data';
 
 import type { CharacterExplorerData } from './types';
@@ -18,7 +18,7 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
     const queryClient = useQueryClient();
 
     const [character, setCharacter] = useState<CharacterWithAllDetailsResponse | null>(null);
-    const [resolvedProgressions, setResolvedProgressions] = useState<FeatureProgression[]>([]);
+    const [resolvedProgressions, setResolvedProgressions] = useState<FeatureWithRelations[]>([]);
     const [resolutionContext, setResolutionContext] = useState<ResolutionContext | null>(null);
     const [pendingChoices, setPendingChoices] = useState<PendingChoice[]>([]);
     const [classSkills, setClassSkills] = useState<Array<{ skillId: number; skillSubId: number | null }>>([]);
@@ -101,7 +101,7 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
                         classDetails: undefined, // Not needed for display
                         secondaryClassDetails: undefined, // Not needed for display
                         isGestalt: !!advancement.secondaryClassId,
-                        userChoices: undefined, // Already applied in resolved progressions
+                        userChoices: undefined, // Already applied in resolved features
                         includePendingChoices: false,
                         resolveCascading: true,
                         maxResolutionDepth: 10,
@@ -221,7 +221,7 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
             ),
             raceId: character.raceId ?? undefined,
             sizeId: (() => {
-                // Extract sizeId from resolved progressions
+                // Extract sizeId from resolved features
                 if (character.raceId && resolvedProgressions.length > 0) {
                     const raceMechanics = extractRaceMechanics(resolvedProgressions, character.raceId);
                     return raceMechanics.sizeId ?? undefined;

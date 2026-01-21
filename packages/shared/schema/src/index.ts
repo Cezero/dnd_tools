@@ -16,6 +16,7 @@ export * from './spell.js';
 export * from './sourcebook.js';
 export * from './item.js';
 export * from './feature.js';
+export * from './featureResolution.js';
 export * from './spellcasting.js';
 export * from './transformationForm.js';
 export * from './domain.js';

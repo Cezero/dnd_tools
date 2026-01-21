@@ -14,6 +14,7 @@ import {
     UpdateClass,
     DeleteClass,
     GetClassCache,
+    GetClassLockStatus,
 } from './classController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -24,6 +25,7 @@ const { router: ClassRouter, get, post, put, delete: deleteRoute } = buildValida
 post('/query', { body: GetAllClassesQuerySchema }, GetAllClasses);
 get('/cache', {}, GetClassCache);
 get('/:id', { params: ClassIdParamSchema, query: ClassIdQuerySchema }, GetClassById);
+get('/:id/lock-status', { params: ClassIdParamSchema }, GetClassLockStatus);
 
 // Class Write Routes
 post('/', requireAdmin, { body: CreateClassSchema }, CreateClass);

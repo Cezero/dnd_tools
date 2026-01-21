@@ -4,13 +4,12 @@ import type { CombatValuesResult, CombatValuesBreakdownMap, DamageComponents } f
 import { SaveType } from '@/lib/character-calculation/calculations/savingThrows';
 import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
 import type { BreakdownMap, BreakdownComponent as CalculationBreakdownComponent } from '@/lib/character-calculation/types';
+import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
 import { canUseTwoHanded, isTwoHandedWeapon } from '@/lib/character-calculation/utils/weaponHelpers';
-import { extractBABProgression } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
 import { getSkillSummaryById, getSkillSelectFull, getFeatNameFromCache, getItemNameFromCache, getFeatureNameFromCache, getSpellNameFromCache, getDomainNameFromCache } from '@/services/cache';
-import type { FeatureProgression, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
-import { EntityAppliesToType, EntityType, AbilityId, SpecialFeatureId, CalculationMethodType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
-import { getBABProgression } from '@shared/utils';
+import type { FeatureWithRelations, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
+import { EntityAppliesToType, EntityType, AbilityId, FeatureSourceType, CalculationMethodType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
 
 import { conditionLabelerRegistry } from './condition-labeler-registry';
 import { conditionValueFormatterRegistry } from './condition-value-formatter-registry';
@@ -44,11 +43,11 @@ import { getCharacterBAB } from '../attack-calculation/utils';
 
 export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     protected formatProgressions(
-        progressions: FeatureProgression[],
+        features: FeatureWithRelations[],
         context?: DisplayContext,
         showLabels: boolean = true
     ): CharacterSheetDisplayResult {
-        // Process all progressions through phases 1-4 (skip grouping phases)
+        // Process all features through phases 1-4 (skip grouping phases)
         const allFormattedItems: FormattedItemWithLevel[] = [];
 
         // Set displayBonusType to false for character sheet display
@@ -57,9 +56,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             displayBonusType: false
         };
 
-        for (const progression of progressions) {
-            const calculatedValues = this.generateValues(progression, characterSheetContext);
-            const formattedItems = this.formattingPhase.formatItems(calculatedValues, progression.level, showLabels, characterSheetContext);
+        for (const feature of features) {
+            const calculatedValues = this.generateValues(feature, characterSheetContext);
+            const formattedItems = this.formattingPhase.formatItems(calculatedValues, feature.level, showLabels, characterSheetContext);
             allFormattedItems.push(...formattedItems);
         }
 
@@ -276,7 +275,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     protected createDisplayResult(
         withinProgressionGrouped: GroupedLevelItem[],
         context?: DisplayContext,
-        _progression?: FeatureProgression
+        _progression?: FeatureWithRelations
     ): DisplayResult {
         // DisplayType.CharacterSheet: filter to current character level only
         const currentLevel = context?.character?.classLevels ?
@@ -478,7 +477,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             : attackBonusFormatter.format({
                 id: 0,
                 type: 0,
-                progressionId: 0,
+                featureId: 0,
                 appliesTo: null,
                 value: attackResult.value,
                 calculatedValue: null,
@@ -498,7 +497,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         const critical = criticalFormatter.format({
             id: 0,
             type: 0,
-            progressionId: 0,
+            featureId: 0,
             appliesTo: null,
             value: attackResult.critical,
             calculatedValue: null,
@@ -511,7 +510,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             ? distanceFormatter.format({
                 id: 0,
                 type: 0,
-                progressionId: 0,
+                featureId: 0,
                 appliesTo: null,
                 value: attackResult.range,
                 calculatedValue: null,
@@ -525,7 +524,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             ? weightFormatter.format({
                 id: 0,
                 type: 0,
-                progressionId: 0,
+                featureId: 0,
                 appliesTo: null,
                 value: typeof item.weight === 'object' && 'toNumber' in item.weight
                     ? item.weight.toNumber()
@@ -541,7 +540,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             ? damageTypeFormatter.format({
                 id: 0,
                 type: 0,
-                progressionId: 0,
+                featureId: 0,
                 appliesTo: null,
                 appliesToId: parseInt(item.weapon.damageType, 10),
                 value: null,
@@ -556,7 +555,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             ? sizeCategoryFormatter.format({
                 id: 0,
                 type: 0,
-                progressionId: 0,
+                featureId: 0,
                 appliesTo: null,
                 appliesToId: item.sizeId,
                 value: 0, // Use 0 to indicate no value modifier, just display size category name
@@ -595,7 +594,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      */
     formatCharacter(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         items: ItemWithDetails[],
         characterItems: CharacterItem[],
         classDetailsMap: Map<number, DnDClass>,
@@ -612,7 +611,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             context
         );
 
-        // 2. Format skills using progressions
+        // 2. Format skills using features
         const skills = this.formatSkills(
             character,
             resolvedProgressions,
@@ -622,7 +621,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             context
         );
 
-        // 3. Format saving throws using progressions
+        // 3. Format saving throws using features
         const savingThrows = this.formatSavingThrows(
             character,
             resolvedProgressions,
@@ -631,7 +630,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             context
         );
 
-        // 4. Format armor class using progressions
+        // 4. Format armor class using features
         const armorClass = this.formatArmorClass(
             character,
             resolvedProgressions,
@@ -640,21 +639,21 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             context
         );
 
-        // 5. Format feats using progressions
+        // 5. Format feats using features
         const feats = this.formatFeats(
             character,
             resolvedProgressions,
             context
         );
 
-        // 6. Format features using progressions
+        // 6. Format features using features
         const features = this.formatFeatures(
             character,
             resolvedProgressions,
             context
         );
 
-        // 7. Format proficiencies using progressions
+        // 7. Format proficiencies using features
         const proficiencies = this.formatProficiencies(resolvedProgressions, context);
 
         // 8. Format abilities
@@ -701,7 +700,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      */
     private formatAttacks(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         items: ItemWithDetails[],
         characterItems: CharacterItem[],
         classDetailsMap: Map<number, DnDClass>,
@@ -713,7 +712,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             return attacks;
         }
 
-        // Get attack bonuses from progressions using phased processing
+        // Get attack bonuses from features using phased processing
         const _attackProgressions = resolvedProgressions.filter(prog =>
             prog.entities?.some(entity => entity.appliesTo === EntityAppliesToType.Attack)
         );
@@ -783,11 +782,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     }
 
     /**
-     * Format skills using progressions
+     * Format skills using features
      */
     private formatSkills(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         _items: ItemWithDetails[],
         _characterItems: CharacterItem[],
         classDetailsMap: Map<number, DnDClass>,
@@ -795,7 +794,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     ): FormattedSkill[] {
         const skills: FormattedSkill[] = [];
 
-        // Get skill bonuses from progressions using formatProgressions
+        // Get skill bonuses from features using formatProgressions
         const skillProgressions = resolvedProgressions.filter(prog =>
             prog.entities?.some(entity => entity.appliesTo === EntityAppliesToType.Skill)
         );
@@ -853,7 +852,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 skillEntryMap.set(key, entry);
             }
 
-            // Check if skill is a class skill - use backend-provided classSkills if available, otherwise fall back to checking progressions
+            // Check if skill is a class skill - use backend-provided classSkills if available, otherwise fall back to checking features
             let isClassSkillValue = false;
             if (_context?.classSkills) {
                 // Use backend-provided class skills array
@@ -862,7 +861,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     (cs.skillSubId === skillEntry.skillSubId || (cs.skillSubId === null && skillEntry.skillSubId === null))
                 );
             } else {
-                // Fallback to checking resolved progressions (for backward compatibility)
+                // Fallback to checking resolved features
                 isClassSkillValue = isClassSkill(
                     skillEntry.skillId,
                     skillEntry.skillSubId,
@@ -877,7 +876,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
         }
 
-        // Get skill bonuses - use backend-provided skillBonuses if available, otherwise calculate from progressions
+        // Get skill bonuses - use backend-provided skillBonuses if available, otherwise calculate from features
         if (_context?.skillBonuses) {
             // Use backend-provided skill bonuses array
             for (const bonus of _context.skillBonuses) {
@@ -897,11 +896,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 entry.miscBonus += bonus.bonus;
             }
         } else {
-            // Fallback to calculating from progressions (for backward compatibility)
-            for (const progression of skillProgressions) {
-                if (!progression.entities) continue;
+            // Fallback to calculating from features
+            for (const feature of skillProgressions) {
+                if (!feature.entities) continue;
 
-                for (const entity of progression.entities) {
+                for (const entity of feature.entities) {
                     if (entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId) {
                         // Skip entities with conditions - these are conditional modifiers and should not be included in misc bonus
                         if (entity.conditions && entity.conditions.length > 0) {
@@ -922,7 +921,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                         if (bonusValue !== 0) {
                             // Match the key format used for skill entries: skillId|skillSubId|customSubtype
                             // For bonuses, we use the appliesToId as skillId and appliesToSubId as skillSubId
-                            // customSubtype is null for bonuses from progressions
+                            // customSubtype is null for bonuses from features
                             const key = `${entity.appliesToId}|${entity.appliesToSubId ?? 'null'}|null`;
                             let entry = skillEntryMap.get(key);
                             // If entry doesn't exist, create it (for skills with bonuses but no ranks)
@@ -954,7 +953,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             const ranks = Math.floor(entry.totalRanks);
             const total = ranks + abilityMod + entry.miscBonus;
 
-            // Check if class skill - use backend-provided classSkills if available, otherwise fall back to checking progressions
+            // Check if class skill - use backend-provided classSkills if available, otherwise fall back to checking features
             let isClassSkillValue = false;
             if (_context?.classSkills) {
                 // Use backend-provided class skills array
@@ -963,7 +962,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     (cs.skillSubId === entry.skillSubId || (cs.skillSubId === null && entry.skillSubId === null))
                 );
             } else {
-                // Fallback to checking resolved progressions (for backward compatibility)
+                // Fallback to checking resolved features
                 isClassSkillValue = isClassSkill(
                     entry.skillId,
                     entry.skillSubId,
@@ -1035,13 +1034,14 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                             (cs.skillSubId === null)
                         );
                     } else {
-                        // Fallback to checking resolved progressions
+                        // Fallback to checking resolved features
                         for (const [classId] of classLevelCounts.entries()) {
                             const classDetails = classDetailsMap.get(classId);
                             if (classDetails?.features) {
                                 const hasClassSkill = classDetails.features.some(prog =>
-                                    prog.featureId === SpecialFeatureId.ClassSkill &&
+                                    prog.sourceType === FeatureSourceType.Class &&
                                     prog.entities?.some(entity =>
+                                        entity.type === EntityType.Base &&
                                         entity.appliesTo === EntityAppliesToType.Skill &&
                                         entity.appliesToId === skillData.id &&
                                         (entity.appliesToSubId === -1 || entity.appliesToSubId === null)
@@ -1093,11 +1093,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     }
 
     /**
-     * Format saving throws using progressions
+     * Format saving throws using features
      */
     private formatSavingThrows(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         _items: ItemWithDetails[],
         classDetailsMap: Map<number, DnDClass>,
         _context?: DisplayContext
@@ -1168,11 +1168,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     }
 
     /**
-     * Format armor class using progressions
+     * Format armor class using features
      */
     private formatArmorClass(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         items: ItemWithDetails[],
         characterItems: CharacterItem[],
         _context?: DisplayContext
@@ -1222,12 +1222,12 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     }
 
     /**
-     * Format feats using progressions
+     * Format feats using features
      * Now includes feats from both AdvancementFeat and CharacterFeatureChoice sources
      */
     private formatFeats(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         _context?: DisplayContext
     ): FormattedFeat[] {
         const feats: FormattedFeat[] = [];
@@ -1236,11 +1236,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         // Get all feats from both sources using unified accessor
         const allCharacterFeats = getAllCharacterFeats(character, resolvedProgressions);
 
-        // Create a map of featId -> feat name from resolved progressions
+        // Create a map of featId -> feat name from resolved features
         const featNameMap = new Map<number, string>();
-        for (const progression of resolvedProgressions) {
-            if (!progression.entities) continue;
-            for (const entity of progression.entities) {
+        for (const feature of resolvedProgressions) {
+            if (!feature.entities) continue;
+            for (const entity of feature.entities) {
                 if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
                     const featName = getFeatNameFromCache(entity.appliesToId);
                     if (featName) {
@@ -1293,12 +1293,12 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             });
         }
 
-        // Also include feats from resolved progressions that might not be in allCharacterFeats
+        // Also include feats from resolved features that might not be in allCharacterFeats
         // (e.g., granted feats that aren't stored as choices or advancements)
-        for (const progression of resolvedProgressions) {
-            if (!progression.entities) continue;
+        for (const feature of resolvedProgressions) {
+            if (!feature.entities) continue;
 
-            for (const entity of progression.entities) {
+            for (const entity of feature.entities) {
                 if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
                     // Skip if already processed
                     if (processedFeatIds.has(entity.appliesToId)) {
@@ -1317,10 +1317,10 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                         formattedValue,
                         breakdown: {
                             components: [
-                                { source: progression.feature?.name || 'Feature', value: 1, type: CalculationMethodType.base }
+                                { source: feature.name || 'Feature', value: 1, type: CalculationMethodType.base }
                             ]
                         },
-                        level: progression.level
+                        level: feature.level
                     });
                 }
             }
@@ -1330,11 +1330,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     }
 
     /**
-     * Format features using progressions
+     * Format features using features
      */
     private formatFeatures(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         context?: DisplayContext
     ): FormattedFeature[] {
         const features: FormattedFeature[] = [];
@@ -1347,15 +1347,15 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
         }
 
-        // Build a map of choices keyed by progressionId-featureEntityId for quick lookup
+        // Build a map of choices keyed by featureId-featureEntityId for quick lookup
         const choiceMap = new Map<string, CharacterFeatureChoice>();
         for (const choice of allFeatureChoices) {
-            const key = `${choice.progressionId}-${choice.featureEntityId}`;
+            const key = `${choice.featureId}-${choice.featureEntityId}`;
             choiceMap.set(key, choice);
         }
 
         // Build a map of domainId to domain name from resolvedProgressions
-        // This extracts domain information from domain-granted feature progressions
+        // This extracts domain information from domain-granted feature features
         const domainMap = new Map<number, string>();
         for (const prog of resolvedProgressions) {
             if (prog.domainId) {
@@ -1381,24 +1381,24 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         // Extract features from individualEntities (CharacterSheetDisplayResult uses individualEntities, not levelEntries)
         if (displayResult.individualEntities && displayResult.individualEntities.length > 0) {
             for (const entity of displayResult.individualEntities) {
-                // Get featureId from the entity's progression
-                const progression = resolvedProgressions.find(p =>
+                // Get featureId from the entity's feature
+                const feature = resolvedProgressions.find(p =>
                     p.entities?.some(e => e.id === entity.entity?.id)
                 );
-                const featureId = progression?.featureId || 0;
+                const featureId = feature?.id || 0;
 
                 // Check if this entity is a choice entity that has a selected value
                 let formattedValue = entity.formattedValue;
                 let breakdown = entity.breakdown;
-                if (entity.entity && progression) {
-                    const entityData = progression.entities?.find(e => e.id === entity.entity?.id);
+                if (entity.entity && feature) {
+                    const entityData = feature.entities?.find(e => e.id === entity.entity?.id);
                     // Check both entityData.type and entity.entity.type to ensure we catch choice entities
                     const isChoiceEntity = entityData && entityData.appliesTo &&
                         (entityData.type === EntityType.Choice || entity.entity.type === EntityType.Choice);
 
                     if (isChoiceEntity && entityData) {
                         // This is a choice entity - check if there's a matching featureChoice
-                        const choiceKey = `${progression.id}-${entityData.id}`;
+                        const choiceKey = `${feature.id}-${entityData.id}`;
                         const choice = choiceMap.get(choiceKey);
 
                         if (choice && choice.appliesToId) {
@@ -1425,7 +1425,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
                 features.push({
                     featureId,
-                    featureName: progression?.feature?.name || `Feature ${featureId}`,
+                    featureName: feature?.name || `Feature ${featureId}`,
                     formattedValue,
                     breakdown,
                     level: entity.level
@@ -1484,7 +1484,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     private resolveChoiceEntityName(
         choice: CharacterFeatureChoice,
         entity: FeatureEntity,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         context?: DisplayContext,
         domainMap?: Map<number, string>
     ): string | null {
@@ -1511,14 +1511,14 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     }
                 }
 
-                // Look for progressions with matching domainId in resolvedProgressions
+                // Look for features with matching domainId in resolvedProgressions
                 // These are the domain-granted features that were added when the domain was selected
                 const domainProgressions = resolvedProgressions.filter(
                     prog => prog.domainId === choice.appliesToId
                 );
 
                 if (domainProgressions.length > 0) {
-                    // Try to get domain name from entities in domain progressions
+                    // Try to get domain name from entities in domain features
                     for (const prog of domainProgressions) {
                         if (prog.entities) {
                             for (const ent of prog.entities) {
@@ -1546,10 +1546,10 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
 
             case EntityAppliesToType.Feature: {
-                // Check if feature data is in resolved progressions
+                // Check if feature data is in resolved features
                 for (const prog of resolvedProgressions) {
-                    if (prog.featureId === choice.appliesToId && prog.feature) {
-                        return prog.feature.name;
+                    if (prog.id === choice.featureId) {
+                        return prog.name;
                     }
                     if (prog.entities) {
                         for (const ent of prog.entities) {
@@ -1576,7 +1576,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
 
             case EntityAppliesToType.Spell: {
-                // Check if spell data is in resolved progressions
+                // Check if spell data is in resolved features
                 for (const prog of resolvedProgressions) {
                     if (prog.entities) {
                         for (const ent of prog.entities) {
@@ -1599,18 +1599,18 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     }
 
     /**
-     * Format proficiencies using progressions
+     * Format proficiencies using features
      */
     private formatProficiencies(
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         context?: DisplayContext
     ): FormattedProficiency[] {
         const proficiencies: FormattedProficiency[] = [];
 
-        // Filter for proficiency progressions - include both ClassProficiency special feature
-        // and any progression that has proficiency entities (for racial weapon proficiencies, etc.)
+        // Filter for proficiency features - include class proficiencies (Base type) and other proficiency entities
         const proficiencyProgressions = resolvedProgressions.filter(p =>
-            p.featureId === SpecialFeatureId.ClassProficiency ||
+            (p.sourceType === FeatureSourceType.Class &&
+                p.entities?.some(entity => entity.type === EntityType.Base && entity.appliesTo === EntityAppliesToType.Proficiency)) ||
             (p.entities?.some(entity => entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.Proficiency) ?? false)
         );
 
@@ -1668,7 +1668,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      */
     private _formatAbilities(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         _context?: DisplayContext
     ): FormattedAbilityScore[] {
         const abilities: FormattedAbilityScore[] = [];
@@ -1693,7 +1693,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      */
     private _formatInitiative(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         _context?: DisplayContext
     ): FormattedInitiative {
         const result = CharacterCalculationService.getInitiative(character, resolvedProgressions);
@@ -1709,17 +1709,17 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     /**
      * Format base attack bonus
      * 
-     * For gestalt characters, uses the best BAB progression (already filtered by backend).
+     * For gestalt characters, uses the best BAB feature (already filtered by backend).
      * For non-gestalt multiclass, sums BAB from all classes.
      */
     private _formatBaseAttackBonus(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         classDetailsMap: Map<number, DnDClass>,
         resolvedFormulaValues?: Record<string, number>
     ): string {
         // Use getCharacterBAB which handles pre-resolved formula values when available,
-        // falling back to extracting ProgressionType for backward compatibility
+        // falling back to extracting ProgressionType if resolved values not available
         const totalBAB = getCharacterBAB(
             character,
             classDetailsMap,
@@ -1743,7 +1743,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      */
     private _formatGrapple(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         classDetailsMap: Map<number, DnDClass>,
         _context?: DisplayContext
     ): FormattedGrapple {
@@ -1756,13 +1756,29 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         let totalBAB = 0;
         for (const [classId, level] of classLevelCounts.entries()) {
-            // Extract BAB progression from resolved progressions
-            const babProgression = extractBABProgression(resolvedProgressions, classId);
-            if (babProgression !== null && babProgression !== undefined) {
-                const babString = getBABProgression(level, babProgression);
-                const match = babString.match(/\+(\d+)/);
-                if (match) {
-                    totalBAB += parseInt(match[1], 10);
+            // Calculate BAB directly from formula entities
+            const classProgressions = resolvedProgressions.filter(p =>
+                p.sourceType === FeatureSourceType.Class &&
+                p.classes?.some(c => c.classId === classId) &&
+                p.entities?.some(e =>
+                    e.type === EntityType.Base &&
+                    e.appliesTo === EntityAppliesToType.BaseAttackBonus
+                )
+            );
+
+            for (const feature of classProgressions) {
+                if (feature.entities) {
+                    for (const entity of feature.entities) {
+                        if (entity.type === EntityType.Base &&
+                            entity.appliesTo === EntityAppliesToType.BaseAttackBonus &&
+                            entity.formulaParams) {
+                            const babValue = applyFeatureFormula(entity, character, level);
+                            if (babValue !== null && babValue !== undefined) {
+                                totalBAB += babValue;
+                                break; // Only use first matching entity per feature
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1797,7 +1813,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      */
     private _formatSpeed(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         race: Race | null
     ): string {
         const result = CharacterCalculationService.getSpeed(character, resolvedProgressions, race);

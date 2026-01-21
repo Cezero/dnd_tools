@@ -100,7 +100,7 @@ Defines available companions, familiars, and animal companions that characters c
 
 **Usage**: Defines companions that can be selected by characters (e.g., wizard familiars, druid animal companions). Links to Monster model for statistics. Companion benefits are managed through the unified Feature system using `FeatureProgression` with `sourceType: FeatureSourceType.Companion` and `companionId` set to this companion.
 
-**Migration Note**: Companion benefits were consolidated from the old `CompanionBenefitMap` and `CompanionBenefitCondition` models into the unified Feature system. Benefits are now defined as `FeatureProgression` records with `featureId: SpecialFeatureId.CompanionBenefit`, `sourceType: FeatureSourceType.Companion`, and `companionId` linking to this companion.
+**Migration Note**: Companion benefits were consolidated from the old `CompanionBenefitMap` and `CompanionBenefitCondition` models into the unified Feature system. Benefits are now defined as `FeatureProgression` records with distinct named features (e.g., "Cat Familiar Benefit"), `sourceType: FeatureSourceType.Companion`, and `companionId` linking to this companion.
 
 **Source File**: [`apps/backend/prisma/schema.prisma`](../../../../apps/backend/prisma/schema.prisma) (Companion model)
 

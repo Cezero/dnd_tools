@@ -1,4 +1,4 @@
-import type { CharacterWithAllDetailsResponse, ItemWithDetails, CharacterItem as CharacterItemSchema, FeatCacheEntry, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, ItemWithDetails, CharacterItem as CharacterItemSchema, FeatCacheEntry, FeatureWithRelations } from '@shared/schema';
 import { EntityAppliesToType } from '@shared/static-data';
 
 import type { AttackDefinition , Money } from '../types';
@@ -21,7 +21,7 @@ export interface FeatSubIdSelectionModalProps {
     onClose: () => void;
     onConfirm: (weaponId: number) => void;
     feat: FeatCacheEntry | null;
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
 }
 
 /**

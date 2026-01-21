@@ -37,15 +37,16 @@ The feature system frontend follows the shared [Component Architecture](../appli
 
 ### **Feature-Specific Component Structure**
 
-**FeatureEditForm**: Reusable feature creation and editing component supporting both modal and embedded modes
+**FeatureEditForm**: Reusable feature creation and editing component supporting both modal and embedded modes (uses isolated entity state)
 **FeatureEdit**: Full-page feature editor that uses FeatureEditForm in embedded mode
-**FeatureDetail**: Feature display and detail view
+**FeatureDetail**: Feature display and detail view (uses TanStack Query for database data, shows lock status)
 **FeatureDisplay**: Component for displaying features with prerequisites and progressions
 **FeaturesManager**: Embeddable feature management component for class/race/domain/feat editing contexts
 **FeatureProgressionDetailEdit**: Complex progression editing with unified feature entities
 **ArrayPairEditor**: Utility component for editing array-based data
-**FeatureSystemApi**: API client for backend communication
+**FeatureSystemApi**: API client for backend communication (includes lock status checks)
 **FeatureSystemService**: Service layer for feature operations
+**FeatureStateStore**: Cache for feature data from database (does NOT subscribe to editing state changes)
 
 ## 🔧 **Core Components**
 
@@ -256,10 +257,12 @@ Type-safe API client for backend communication.
 - **Error Handling**: Comprehensive error handling and user feedback
 - **Request/Response Validation**: Zod schema validation for all requests and responses
 - **Authentication**: Proper authentication handling for admin operations
+- **Lock Status**: Methods to check if features are locked by other users
 
 **Core Methods**:
 - **getAllFeatures**: Retrieve all features with optional filtering
-- **getFeatureById**: Retrieve specific feature by ID
+- **getFeatureById**: Retrieve specific feature by ID (from database)
+- **getFeatureLockStatus**: Check if feature is locked and by which user
 - **createFeature**: Create new feature
 - **updateFeature**: Update existing feature
 - **deleteFeature**: Delete feature
@@ -267,6 +270,20 @@ Type-safe API client for backend communication.
 - **updateFeatureProgressions**: Update feature progressions
 
 **Source File**: `apps/frontend/src/components/feature-system/FeatureSystemApi.ts`
+
+### **FeatureStateStore**
+
+Global store for caching feature data from the database.
+
+**Purpose**: Provides caching for feature data fetched from the database. Does NOT subscribe to editing state changes.
+
+**Key Features**:
+- **Database Caching**: Caches feature data fetched from database via `FeatureSystemApi.getFeatureById`
+- **No WebSocket**: Does NOT subscribe to editing state changes (editing state is isolated)
+- **Viewing Only**: Use `loadFeatureData` for viewing features (fetches from database)
+- **Editing**: Use `useFeatureResolution` hook for editing (uses isolated entity state)
+
+**Source File**: `apps/frontend/src/lib/stores/FeatureStateStore.tsx`
 
 ### **FeatureSystemService**
 

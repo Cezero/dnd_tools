@@ -32,24 +32,6 @@ Defines the source types for feature progressions, determining how features are 
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureSourceType definition)
 
-### **SpecialFeatureId**
-
-Defines special feature IDs used for container features and system-level features that don't represent traditional character abilities.
-
-**Purpose**: Identifies special features that serve as containers or system-level features, such as companion benefits or class skills.
-
-**Values**:
-- **`ClassSkill` (1)**: Container feature for class skill grants
-- **`ClassProficiency` (2)**: Container feature for class proficiency grants
-- **`AutomaticLanguage` (3)**: Container feature for automatic language grants
-- **`BonusLanguage` (4)**: Container feature for bonus language grants
-- **`AbilityAdjustment` (5)**: Container feature for ability score adjustments
-- **`CompanionBenefit` (6)**: Container feature for companion benefits (e.g., familiar benefits, animal companion benefits)
-
-**Usage**: Used as `featureId` in `FeatureProgression` to create container features that group related entities. Companion benefits use `SpecialFeatureId.CompanionBenefit` with `sourceType: FeatureSourceType.Companion` and `companionId` set to the specific companion.
-
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (SpecialFeatureId definition)
-
 ### **EntityType**
 
 Defines the types of entities that features can provide, affecting how they are calculated and applied through the unified entity approach.
@@ -444,6 +426,7 @@ Based on analysis of actual class implementations (Monk, Bard, and Druid classes
 **Formula**: @FormulaId.EVERY_N_LEVELS (2)
 **Real Example**: Bardic Music abilities improving every 3 levels
 **Implementation**: `formulaId: 2, interval: 3, includeProgressionLevel: true`
+**Advanced Usage**: Use `startingValue` parameter to set a different starting value than the increment amount. Example: "start at 2 and then add 1 every 2 levels" → `formulaId: 2, interval: 2, startingValue: 2` with `entity.value: 1`
 
 #### **Delayed Progression Pattern**
 **Use Case**: Features that start at different levels than the base feature

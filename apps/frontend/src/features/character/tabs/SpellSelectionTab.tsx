@@ -24,9 +24,9 @@ import type { SpellSelectionEntry } from './types';
  * 
  * **Spell Selection Data**: Uses spell selection data from resolved character response (architecturally correct).
  * - Spell selection data (spells list, domain spells, availableFreeSpells) is calculated during
- *   character resolution using resolved progressions
+ *   character resolution using resolved features
  * - Data is accessed via `resolvedData.spellSelection?.[classId]`
- * - This is architecturally correct since spell selection data depends on resolved progressions,
+ * - This is architecturally correct since spell selection data depends on resolved features,
  *   class choices, domain choices, and feat choices - all part of the resolved character
  * 
  * **Backend Validation**: Spell level validation is handled by the backend in `syncSpellsKnown()`.
@@ -77,9 +77,9 @@ export function SpellSelectionTab({
 
     // Check if selected class is a spellbook class
     const isSpellbookClass = useMemo(() => {
-        if (!selectedClassId || !resolvedData?.progressions) return false;
-        return hasSpellbook(resolvedData.progressions, selectedClassId);
-    }, [selectedClassId, resolvedData?.progressions]);
+        if (!selectedClassId || !resolvedData?.features) return false;
+        return hasSpellbook(resolvedData.features, selectedClassId);
+    }, [selectedClassId, resolvedData?.features]);
 
     // Get current advancement for free spell tracking
     const currentAdvancement = useMemo(() => {
@@ -89,7 +89,7 @@ export function SpellSelectionTab({
             .sort((a, b) => b.level - a.level)[0] ?? null;
     }, [character?.advancements, selectedClassId]);
 
-    // Get spell selection data from resolved character (architecturally correct - data depends on resolved progressions)
+    // Get spell selection data from resolved character (architecturally correct - data depends on resolved features)
     // Access spellSelection if it exists, regardless of isLoading (isLoading can be true during updates while data exists)
     const classSpellSelection = useMemo(() => {
         if (!selectedClassId) return undefined;
@@ -215,19 +215,19 @@ export function SpellSelectionTab({
         return counts;
     }, [state.spellsKnown, selectedClassId, spellData]);
 
-    // Get max spells per level from spellcasting progression
+    // Get max spells per level from spellcasting feature
     const maxSpellsPerLevel = useMemo(() => {
         if (!selectedClass?.spellcastingProgression) return new Map<number, number>();
 
         const maxSpells = new Map<number, number>();
-        for (const progression of selectedClass.spellcastingProgression) {
-            if (progression.classLevel <= classLevel) {
-                for (const slot of progression.slots || []) {
+        for (const feature of selectedClass.spellcastingProgression) {
+            if (feature.classLevel <= classLevel) {
+                for (const slot of feature.slots || []) {
                     if (slot.spellLevel >= 0 && slot.spellLevel <= 9) {
-                        // For spellsKnown classes, check classSpellsKnown progression
+                        // For spellsKnown classes, check classSpellsKnown feature
                         if (selectedClass.spellsKnown && selectedClass.spellsKnownProgression) {
                             const knownProg = selectedClass.spellsKnownProgression.find(
-                                p => p.classLevel === progression.classLevel
+                                p => p.classLevel === feature.classLevel
                             );
                             if (knownProg?.slots) {
                                 const knownSlot = knownProg.slots.find(s => s.spellLevel === slot.spellLevel);

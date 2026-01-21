@@ -3,7 +3,7 @@
  * 
  * This service provides comprehensive class management capabilities including:
  * - Class CRUD operations (create, read, update, delete)
- * - Class feature progression management through feature system integration
+ * - Class feature feature management through feature system integration
  * - Spellcasting integration for classes with spellcasting abilities
  * - Variant class relationship management
  * - Formula parameter handling for class features
@@ -12,7 +12,7 @@
  * - Feature System Integration: All class features are managed through the feature
  *   system service, ensuring consistency with other feature sources (races, domains)
  * - Spellcasting Support: Integrates with spell system for class spell lists and
- *   spell progression management
+ *   spell feature management
  * - Variant Classes: Supports variant classes that modify base class features
  * - Formula Parameters: Handles complex feature formulas with conditional scaling
  * 
@@ -39,15 +39,15 @@ import {
     CreateSpellcastingProgressionRequest,
     CreateSpellcastingSlotRequest,
     ClassCacheResponse,
-    CreateFeatureProgressionRequest,
-    UpdateFeatureProgression,
+    CreateFeatureRequest,
+    UpdateFeature,
 } from '@shared/schema';
 import { FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
 import { buildEditionWhereClause } from '@shared/utils';
 
 import type { ClassService } from './types';
 import { featureSystemService } from '../featureSystem/featureSystemService';
-import type { FeatureProgressionContext } from '../featureSystem/types';
+import type { FeatureContext } from '../featureSystem/types';
 
 const prisma = new PrismaClient();
 
@@ -122,7 +122,7 @@ export const classService: ClassService = {
 
     async getClassById(
         query: ClassIdParamRequest,
-        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+        characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
     ): Promise<DnDClass | null> {
         const classData = await prisma.class.findUnique({
             where: { id: query.id },
@@ -133,16 +133,6 @@ export const classService: ClassService = {
                         pageNumber: true
                     }
                 },
-                spellcastingProgression: {
-                    include: {
-                        slots: true,
-                    },
-                },
-                classSpellsKnown: {
-                    include: {
-                        slots: true,
-                    },
-                },
             },
         });
 
@@ -150,16 +140,18 @@ export const classService: ClassService = {
             return null;
         }
 
-        // Get feature progressions using the new architecture
-        // Pass character feature choices to enrich progressions with choice data
-        const features = await featureSystemService.getFeatureProgressionsByClassId(query.id, characterFeatureChoices);
+        // Get feature features using the new architecture
+        // Pass character feature choices to enrich features with choice data
+        const features = await featureSystemService.getFeaturesByClassId(query.id, characterFeatureChoices);
 
-        // Combine class data with enriched feature progressions
+        // Combine class data with enriched feature features
+        // Spellcasting is now handled via FeatureWithRelations, so these fields are null
         const transformedClassData = {
             ...classData,
             features,
-            spellcastingProgression: classData.spellcastingProgression ?? null,
-            spellsKnownProgression: classData.classSpellsKnown ?? null,
+            spellcastingProgression: null,
+            spellsKnownProgression: null,
+            sourceBookInfo: classData.sourceBookInfo !== undefined ? classData.sourceBookInfo : null,
         };
 
         return transformedClassData as DnDClass;
@@ -182,14 +174,18 @@ export const classService: ClassService = {
                 },
             });
 
-            // Create feature progressions using consolidated feature system service
-            // Convert UpdateFeatureProgression[] to CreateFeatureProgressionRequest[] by providing defaults
+            // Create feature features using consolidated feature system service
+            // Convert UpdateFeature[] to CreateFeatureRequest[] by providing defaults
             if (features && features.length > 0) {
-                const context: FeatureProgressionContext = { classId: classResult.id };
-                const createProgressions: CreateFeatureProgressionRequest[] = features.map(prog => ({
+                const context: FeatureContext = { classId: classResult.id };
+                const createProgressions: CreateFeatureRequest[] = features.map(prog => ({
+                    name: prog.name ?? '',
+                    slug: prog.slug ?? '',
+                    description: prog.description ?? '',
+                    summary: prog.summary ?? null,
+                    displayInCharacterSheet: prog.displayInCharacterSheet ?? true,
                     level: prog.level ?? 1,
                     sourceType: prog.sourceType ?? FeatureSourceType.Class,
-                    featureId: prog.featureId!,
                     domainId: prog.domainId ?? null,
                     featId: prog.featId ?? null,
                     companionId: prog.companionId ?? null,
@@ -197,20 +193,19 @@ export const classService: ClassService = {
                     entities: prog.entities,
                     displayConditions: prog.displayConditions,
                 }));
-                await featureSystemService.createMultipleFeatureProgressions(createProgressions, context);
+                await featureSystemService.createMultipleFeatures(createProgressions, context);
             }
 
-            // Create spellcasting progression (spell slots)
-            // Phase 3: Also create FeatureProgression entries that link to SpellcastingProgression
+            // Create spellcasting feature (spell slots)
+            // Phase 3: Also create FeatureWithRelations entries that link to SpellcastingProgression
             if (spellcastingProgression && spellcastingProgression.length > 0) {
-                for (const progression of spellcastingProgression as CreateSpellcastingProgressionRequest[]) {
-                    const { slots, ...progressionData } = progression;
+                for (const spellcastingFeature of spellcastingProgression as CreateSpellcastingProgressionRequest[]) {
+                    const { slots, ...progressionData } = spellcastingFeature;
 
-                    // Create the spellcasting progression (keep classId for backward compatibility)
+                    // Create the spellcasting feature
                     const createdSpellcastingProgression = await tx.spellcastingProgression.create({
                         data: {
                             ...progressionData,
-                            classId: classResult.id, // Keep for backward compatibility
                             spellcastingType: classResult.spellsKnown ? 2 : 1, // 1 = SpellsPerDay, 2 = SpellsKnown
                         },
                     });
@@ -225,38 +220,23 @@ export const classService: ClassService = {
                         });
                     }
 
-                    // Phase 3: Create FeatureProgression that links to this SpellcastingProgression
-                    // Find or create spellcasting feature
-                    let spellcastingFeature = await tx.feature.findFirst({
-                        where: {
-                            slug: `spellcasting-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`
-                        }
-                    });
-
-                    if (!spellcastingFeature) {
-                        spellcastingFeature = await tx.feature.create({
-                            data: {
-                                slug: `spellcasting-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`,
-                                name: `${classResult.name} Spellcasting`,
-                                description: `Spellcasting ability for ${classResult.name}`,
-                                displayInCharacterSheet: false
-                            }
-                        });
-                    }
-
-                    // Create FeatureProgression for spellcasting
-                    const featureProgression = await tx.featureProgression.create({
+                    // Phase 3: Create FeatureWithRelations that links to this SpellcastingProgression
+                    // Create Feature for spellcasting (merged Feature/FeatureWithRelations)
+                    const feature = await tx.feature.create({
                         data: {
+                            slug: `spellcasting-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`,
+                            name: `${classResult.name} Spellcasting`,
+                            description: `Spellcasting ability for ${classResult.name}`,
+                            displayInCharacterSheet: false,
                             sourceType: FeatureSourceType.Class,
-                            level: 1,
-                            featureId: spellcastingFeature.id
+                            level: 1
                         }
                     });
 
                     // Link to class via many-to-many relationship
-                    await tx.featureProgressionClassMap.create({
+                    await tx.featureClassMap.create({
                         data: {
-                            progressionId: featureProgression.id,
+                            featureId: feature.id,
                             classId: classResult.id
                         }
                     });
@@ -264,7 +244,7 @@ export const classService: ClassService = {
                     // Create FeatureEntity for SpellcastingProgression reference
                     await tx.featureEntity.create({
                         data: {
-                            progressionId: featureProgression.id,
+                            featureId: feature.id,
                             type: EntityType.Base,
                             appliesTo: EntityAppliesToType.SpellcastingProgression,
                             appliesToId: null,
@@ -276,31 +256,29 @@ export const classService: ClassService = {
                         }
                     });
 
-                    // Note: Casting ability and type should be added via feature progressions
+                    // Note: Casting ability and type should be added via feature features
                     // They are no longer stored directly on the Class model
 
-                    // Link SpellcastingProgression to FeatureProgression
+                    // Link SpellcastingProgression to Feature
                     await tx.spellcastingProgression.update({
                         where: { id: createdSpellcastingProgression.id },
                         data: {
-                            featureProgressionId: featureProgression.id
+                            featureId: feature.id
                         }
                     });
                 }
             }
 
-            // Create spells known progression
-            // Phase 3: Also create FeatureProgression entries that link to SpellcastingProgression
+            // Create spells known feature
+            // Phase 3: Also create FeatureWithRelations entries that link to SpellcastingProgression
             if (spellsKnownProgression && spellsKnownProgression.length > 0) {
-                for (const progression of spellsKnownProgression as CreateSpellcastingProgressionRequest[]) {
-                    const { slots, ...progressionData } = progression;
+                for (const feature of spellsKnownProgression as CreateSpellcastingProgressionRequest[]) {
+                    const { slots, ...progressionData } = feature;
 
-                    // Create the spells known progression (keep classId for backward compatibility)
+                    // Create the spells known feature
                     const createdSpellsKnownProgression = await tx.spellcastingProgression.create({
                         data: {
                             ...progressionData,
-                            classId: classResult.id, // Keep for backward compatibility
-                            classSpellsKnownId: classResult.id, // Link to the class via spells known relation
                             spellcastingType: 2, // 2 = SpellsKnown
                         },
                     });
@@ -315,39 +293,24 @@ export const classService: ClassService = {
                         });
                     }
 
-                    // Phase 3: Create FeatureProgression that links to this SpellcastingProgression
-                    // Note: Since featureProgressionId is unique, spells-known gets its own FeatureProgression
-                    // Find or create spellcasting feature for spells-known
-                    let spellsKnownFeature = await tx.feature.findFirst({
-                        where: {
-                            slug: `spellcasting-spells-known-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`
-                        }
-                    });
-
-                    if (!spellsKnownFeature) {
-                        spellsKnownFeature = await tx.feature.create({
-                            data: {
-                                slug: `spellcasting-spells-known-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`,
-                                name: `${classResult.name} Spells Known`,
-                                description: `Spells known progression for ${classResult.name}`,
-                                displayInCharacterSheet: false
-                            }
-                        });
-                    }
-
-                    // Create FeatureProgression for spells-known
-                    const spellsKnownFeatureProgression = await tx.featureProgression.create({
+                    // Phase 3: Create Feature that links to this SpellcastingProgression
+                    // Note: Since featureId is unique, spells-known gets its own Feature
+                    // Create Feature for spells-known (merged Feature/FeatureWithRelations)
+                    const spellsKnownFeature = await tx.feature.create({
                         data: {
+                            slug: `spellcasting-spells-known-${classResult.name.toLowerCase().replace(/\s+/g, '-')}`,
+                            name: `${classResult.name} Spells Known`,
+                            description: `Spells known feature for ${classResult.name}`,
+                            displayInCharacterSheet: false,
                             sourceType: FeatureSourceType.Class,
-                            level: 1,
-                            featureId: spellsKnownFeature.id
+                            level: 1
                         }
                     });
 
                     // Link to class via many-to-many relationship
-                    await tx.featureProgressionClassMap.create({
+                    await tx.featureClassMap.create({
                         data: {
-                            progressionId: spellsKnownFeatureProgression.id,
+                            featureId: spellsKnownFeature.id,
                             classId: classResult.id
                         }
                     });
@@ -355,7 +318,7 @@ export const classService: ClassService = {
                     // Create FeatureEntity for SpellsKnown SpellcastingProgression reference
                     await tx.featureEntity.create({
                         data: {
-                            progressionId: spellsKnownFeatureProgression.id,
+                            featureId: spellsKnownFeature.id,
                             type: EntityType.Other,
                             appliesTo: EntityAppliesToType.SpellcastingProgression,
                             appliesToId: null,
@@ -367,11 +330,11 @@ export const classService: ClassService = {
                         }
                     });
 
-                    // Link SpellcastingProgression to FeatureProgression
+                    // Link SpellcastingProgression to FeatureWithRelations
                     await tx.spellcastingProgression.update({
                         where: { id: createdSpellsKnownProgression.id },
                         data: {
-                            featureProgressionId: spellsKnownFeatureProgression.id
+                            featureId: spellsKnownFeature.id
                         }
                     });
                 }
@@ -384,56 +347,45 @@ export const classService: ClassService = {
     },
 
     async updateClass(query: ClassIdParamRequest, data: UpdateClassRequest) {
-        // Track orphaned progression IDs to clean up after the main transaction completes
-        const orphanedProgressionIdsToCleanup: number[] = [];
-
         await prisma.$transaction(async (tx) => {
             // Delete existing source book mappings
             await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
 
-            // Delete existing spellcasting progression and slots
-            const existingSpellcastingProgressions = await tx.spellcastingProgression.findMany({
-                where: { classId: query.id, classSpellsKnownId: null },
-                select: { id: true }
+            // Delete existing spellcasting feature and slots
+            // Find via FeatureClassMap links
+            const classFeatures = await tx.featureClassMap.findMany({
+                where: {
+                    classId: query.id
+                },
+                select: { featureId: true }
             });
 
-            if (existingSpellcastingProgressions.length > 0) {
-                const progressionIds = existingSpellcastingProgressions.map(p => p.id);
+            const featureIds = classFeatures.map(fp => fp.featureId);
 
-                // Delete related slots first
-                await tx.spellcastingSlot.deleteMany({
-                    where: { progressionId: { in: progressionIds } }
+            if (featureIds.length > 0) {
+                const existingSpellcastingProgressions = await tx.spellcastingProgression.findMany({
+                    where: { featureId: { in: featureIds } },
+                    select: { id: true }
                 });
 
-                // Delete the progressions
-                await tx.spellcastingProgression.deleteMany({
-                    where: { id: { in: progressionIds } }
-                });
-            }
+                if (existingSpellcastingProgressions.length > 0) {
+                    const progressionIds = existingSpellcastingProgressions.map(p => p.id);
 
-            // Delete existing spells known progression and slots
-            const existingSpellsKnownProgressions = await tx.spellcastingProgression.findMany({
-                where: { classSpellsKnownId: query.id },
-                select: { id: true }
-            });
+                    // Delete related slots first
+                    await tx.spellcastingSlot.deleteMany({
+                        where: { progressionId: { in: progressionIds } }
+                    });
 
-            if (existingSpellsKnownProgressions.length > 0) {
-                const progressionIds = existingSpellsKnownProgressions.map(p => p.id);
-
-                // Delete related slots first
-                await tx.spellcastingSlot.deleteMany({
-                    where: { progressionId: { in: progressionIds } }
-                });
-
-                // Delete the progressions
-                await tx.spellcastingProgression.deleteMany({
-                    where: { id: { in: progressionIds } }
-                });
+                    // Delete the features
+                    await tx.spellcastingProgression.deleteMany({
+                        where: { id: { in: progressionIds } }
+                    });
+                }
             }
 
             const { features, spellcastingProgression, spellsKnownProgression, ...classData } = data;
 
-            // Remove deprecated fields that are now stored in feature progressions
+            // Remove deprecated fields that are now stored in feature features
             const { hitDie: _hitDie, skillPoints: _skillPoints, babProgression: _babProgression, fortProgression: _fortProgression, refProgression: _refProgression, willProgression: _willProgression, ...validClassData } = classData as Record<string, unknown>;
 
             // Update the class
@@ -450,160 +402,54 @@ export const classService: ClassService = {
                 },
             });
 
-            // Update/create feature progressions using new upsert logic
+            // Sync FeatureClassMap links
+            // Features are already saved via state system, we only need to sync the links
             if (features && features.length > 0) {
-                console.log(`[ClassService] Updating class ${query.id} with ${features.length} feature progressions`);
+                console.log(`[ClassService] Syncing FeatureClassMap for class ${query.id} with ${features.length} features`);
 
-                // Type guard for progressions with real database ID (update requests)
-                // Always Send IDs Pattern: Frontend always sends IDs (temporary or real), we filter out
-                // temporary IDs here to identify progressions that should be updated vs created
-                type ProgressionWithId = UpdateFeatureProgression & { id: number };
-                const hasId = (p: UpdateFeatureProgression): p is ProgressionWithId => {
-                    return 'id' in p &&
-                        typeof (p as { id?: number }).id === 'number' &&
-                        !isTemporaryId((p as { id: number }).id); // Filter out temporary IDs - only real DB IDs indicate updates
-                };
-
-                // Log incoming progressions and their IDs
-                const progressionsWithIds = features.filter(hasId);
-                const progressionsWithTemporaryIds = features.filter(p =>
-                    'id' in p &&
-                    typeof (p as { id?: number }).id === 'number' &&
-                    isTemporaryId((p as { id: number }).id)
-                );
-                const progressionsWithoutIds = features.filter(p => !('id' in p) || (p as { id?: number }).id === undefined || (p as { id?: number }).id === null);
-
-                console.log(`[ClassService] Progressions breakdown: ${progressionsWithIds.length} with real IDs, ${progressionsWithTemporaryIds.length} with temporary IDs, ${progressionsWithoutIds.length} without IDs`);
-                if (progressionsWithIds.length > 0) {
-                    console.log(`[ClassService] Real progression IDs: ${progressionsWithIds.map(p => (p as { id: number }).id).join(', ')}`);
-                }
-
-                // Get featureIds for existing progressions (those with real database IDs)
-                const progressionIds = progressionsWithIds.map(p => p.id);
-
-                const existingProgressions = progressionIds.length > 0
-                    ? await tx.featureProgression.findMany({
-                        where: { id: { in: progressionIds } },
-                        select: { id: true, featureId: true }
-                    })
-                    : [];
-
-                if (progressionIds.length > 0) {
-                    console.log(`[ClassService] Found ${existingProgressions.length} existing progressions out of ${progressionIds.length} requested`);
-                    if (existingProgressions.length < progressionIds.length) {
-                        const foundIds = new Set(existingProgressions.map(p => p.id));
-                        const missingIds = progressionIds.filter(id => !foundIds.has(id));
-                        console.error(`[ClassService] WARNING: ${missingIds.length} progression IDs not found in database: ${missingIds.join(', ')}`);
+                // Extract feature IDs from the features array
+                // Features should have id fields (they were already saved via state system)
+                const featureIds: number[] = [];
+                for (const feature of features) {
+                    if (feature.id && typeof feature.id === 'number' && !isTemporaryId(feature.id)) {
+                        featureIds.push(feature.id);
                     }
                 }
 
-                // Group progressions by featureId
-                // Cast to UpdateFeatureProgression[] since updateFeatureProgressions expects that type
-                const progressionsByFeatureId = new Map<number, UpdateFeatureProgression[]>();
+                console.log(`[ClassService] Extracted ${featureIds.length} feature IDs: ${featureIds.join(', ')}`);
 
-                // For existing progressions, group by their featureId
-                for (const progression of features) {
-                    if (hasId(progression)) {
-                        const existing = existingProgressions.find(p => p.id === progression.id);
-                        if (existing) {
-                            const featureId = existing.featureId;
-                            if (!progressionsByFeatureId.has(featureId)) {
-                                progressionsByFeatureId.set(featureId, []);
-                            }
-                            // Cast to UpdateFeatureProgression since it has id
-                            progressionsByFeatureId.get(featureId)!.push(progression as UpdateFeatureProgression);
-                        }
-                    } else if (progression.featureId !== undefined && progression.featureId !== null) {
-                        // New progression - need featureId from progression data
-                        // For new progressions in class updates, they should have featureId
-                        const featureId = progression.featureId;
-                        if (!progressionsByFeatureId.has(featureId)) {
-                            progressionsByFeatureId.set(featureId, []);
-                        }
-                        // Cast to UpdateFeatureProgression (id will be undefined, which is valid)
-                        progressionsByFeatureId.get(featureId)!.push(progression as UpdateFeatureProgression);
-                    }
-                }
-
-                // Update progressions for each feature
-                for (const [featureId, progressions] of progressionsByFeatureId) {
-                    console.log(`[ClassService] Updating ${progressions.length} progressions for feature ${featureId}`);
-                    await featureSystemService.updateFeatureProgressions(featureId, progressions);
-                }
-
-                // After updating, rebuild finalProgressionIds by re-querying the database
-                // This ensures we only include progression IDs that actually exist after updates
-                const finalProgressionIds: number[] = [];
-
-                // For progressions with real database IDs: verify they still exist after update
-                for (const progressionId of progressionIds) {
-                    const stillExists = await tx.featureProgression.findUnique({
-                        where: { id: progressionId },
+                // Verify all feature IDs exist in database
+                if (featureIds.length > 0) {
+                    const existingFeatures = await tx.feature.findMany({
+                        where: { id: { in: featureIds } },
                         select: { id: true }
                     });
-                    if (stillExists) {
-                        finalProgressionIds.push(progressionId);
+
+                    const foundIds = new Set(existingFeatures.map(f => f.id));
+                    const missingIds = featureIds.filter(id => !foundIds.has(id));
+
+                    if (missingIds.length > 0) {
+                        console.error(`[ClassService] WARNING: ${missingIds.length} feature IDs not found in database: ${missingIds.join(', ')}`);
+                        // Filter out missing IDs
+                        const validFeatureIds = featureIds.filter(id => foundIds.has(id));
+                        await featureSystemService.syncClassFeatures(query.id, validFeatureIds, tx);
                     } else {
-                        console.error(`[ClassService] WARNING: Progression ${progressionId} was deleted during updateFeatureProgressions`);
+                        // All IDs are valid, sync links
+                        await featureSystemService.syncClassFeatures(query.id, featureIds, tx);
                     }
-                }
-
-                // For new progressions (those without real IDs or with temporary IDs), find them by matching characteristics
-                const newProgressions = features.filter(p => !hasId(p));
-                console.log(`[ClassService] Finding ${newProgressions.length} new progressions by matching characteristics`);
-                for (const newProgression of newProgressions) {
-                    if (newProgression.featureId !== undefined && newProgression.featureId !== null) {
-                        const featureId = newProgression.featureId;
-                        // Find matching progression by level, sourceType, and other characteristics
-                        const matching = await tx.featureProgression.findFirst({
-                            where: {
-                                featureId,
-                                level: newProgression.level ?? 1,
-                                sourceType: newProgression.sourceType ?? 0,
-                                domainId: newProgression.domainId ?? null,
-                                featId: newProgression.featId ?? null,
-                                companionId: newProgression.companionId ?? null,
-                                editionId: newProgression.editionId ?? null,
-                            },
-                            orderBy: { id: 'desc' }, // Get the most recently created
-                            select: { id: true }
-                        });
-                        if (matching) {
-                            finalProgressionIds.push(matching.id);
-                            console.log(`[ClassService] Found new progression ${matching.id} for feature ${featureId}`);
-                        } else {
-                            console.error(`[ClassService] WARNING: Could not find new progression for feature ${featureId} after creation`);
-                        }
-                    }
-                }
-
-                console.log(`[ClassService] Final progression IDs for sync: ${finalProgressionIds.length} progressions (${finalProgressionIds.join(', ')})`);
-                if (finalProgressionIds.length === 0 && features.length > 0) {
-                    console.error(`[ClassService] CRITICAL WARNING: No valid progression IDs found after update, but ${features.length} progressions were provided. This will remove all FeatureProgressionClassMap entries!`);
-                }
-
-                // Sync FeatureProgressionClassMap entries for this class
-                console.log(`[ClassService] Syncing FeatureProgressionClassMap for class ${query.id} with ${finalProgressionIds.length} progression IDs`);
-                const orphanedProgressionIds = await featureSystemService.syncClassFeatureProgressions(query.id, finalProgressionIds, tx);
-
-                // Clean up orphaned progressions in a separate transaction after the main update completes
-                if (orphanedProgressionIds.length > 0) {
-                    // Store for cleanup after transaction commits
-                    orphanedProgressionIdsToCleanup.push(...orphanedProgressionIds);
+                } else {
+                    console.warn(`[ClassService] No valid feature IDs found in features array`);
+                    // Sync to empty list (removes all links for this class)
+                    await featureSystemService.syncClassFeatures(query.id, [], tx);
                 }
             } else {
                 // No features provided - sync to empty list (removes all links for this class)
-                console.log(`[ClassService] No features provided for class ${query.id}, removing all FeatureProgressionClassMap entries`);
-                const orphanedProgressionIds = await featureSystemService.syncClassFeatureProgressions(query.id, [], tx);
-
-                // Clean up orphaned progressions in a separate transaction after the main update completes
-                if (orphanedProgressionIds.length > 0) {
-                    orphanedProgressionIdsToCleanup.push(...orphanedProgressionIds);
-                }
+                console.log(`[ClassService] No features provided for class ${query.id}, removing all FeatureClassMap entries`);
+                await featureSystemService.syncClassFeatures(query.id, [], tx);
             }
 
-            // Create new spellcasting progression (spell slots)
-            // Phase 3: Also create FeatureProgression entries that link to SpellcastingProgression
+            // Create new spellcasting feature (spell slots)
+            // Phase 3: Also create FeatureWithRelations entries that link to SpellcastingProgression
             if (spellcastingProgression && spellcastingProgression.length > 0) {
                 // Get updated class data for spellcasting info
                 const updatedClass = await tx.class.findUnique({
@@ -618,14 +464,13 @@ export const classService: ClassService = {
                     throw new Error('Class not found');
                 }
 
-                for (const progression of spellcastingProgression as CreateSpellcastingProgressionRequest[]) {
-                    const { slots, ...progressionData } = progression;
+                for (const spellcastingFeature of spellcastingProgression as CreateSpellcastingProgressionRequest[]) {
+                    const { slots, ...progressionData } = spellcastingFeature;
 
-                    // Create the spellcasting progression (keep classId for backward compatibility)
+                    // Create the spellcasting feature
                     const createdSpellcastingProgression = await tx.spellcastingProgression.create({
                         data: {
                             ...progressionData,
-                            classId: query.id, // Keep for backward compatibility
                             spellcastingType: updatedClass.spellsKnown ? 2 : 1, // 1 = SpellsPerDay, 2 = SpellsKnown
                         },
                     });
@@ -640,38 +485,23 @@ export const classService: ClassService = {
                         });
                     }
 
-                    // Phase 3: Create FeatureProgression that links to this SpellcastingProgression
-                    // Find or create spellcasting feature
-                    let spellcastingFeature = await tx.feature.findFirst({
-                        where: {
-                            slug: `spellcasting-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`
-                        }
-                    });
-
-                    if (!spellcastingFeature) {
-                        spellcastingFeature = await tx.feature.create({
-                            data: {
-                                slug: `spellcasting-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`,
-                                name: `${updatedClass.name} Spellcasting`,
-                                description: `Spellcasting ability for ${updatedClass.name}`,
-                                displayInCharacterSheet: false
-                            }
-                        });
-                    }
-
-                    // Create FeatureProgression for spellcasting
-                    const featureProgression = await tx.featureProgression.create({
+                    // Phase 3: Create FeatureWithRelations that links to this SpellcastingProgression
+                    // Create Feature for spellcasting (merged Feature/FeatureWithRelations)
+                    const feature = await tx.feature.create({
                         data: {
+                            slug: `spellcasting-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`,
+                            name: `${updatedClass.name} Spellcasting`,
+                            description: `Spellcasting ability for ${updatedClass.name}`,
+                            displayInCharacterSheet: false,
                             sourceType: FeatureSourceType.Class,
-                            level: 1,
-                            featureId: spellcastingFeature.id
+                            level: 1
                         }
                     });
 
                     // Link to class via many-to-many relationship
-                    await tx.featureProgressionClassMap.create({
+                    await tx.featureClassMap.create({
                         data: {
-                            progressionId: featureProgression.id,
+                            featureId: feature.id,
                             classId: query.id
                         }
                     });
@@ -679,7 +509,7 @@ export const classService: ClassService = {
                     // Create FeatureEntity for SpellcastingProgression reference
                     await tx.featureEntity.create({
                         data: {
-                            progressionId: featureProgression.id,
+                            featureId: feature.id,
                             type: EntityType.Base,
                             appliesTo: EntityAppliesToType.SpellcastingProgression,
                             appliesToId: null,
@@ -691,21 +521,21 @@ export const classService: ClassService = {
                         }
                     });
 
-                    // Note: Casting ability and type should be added via feature progressions
+                    // Note: Casting ability and type should be added via features
                     // They are no longer stored directly on the Class model
 
-                    // Link SpellcastingProgression to FeatureProgression
+                    // Link SpellcastingProgression to Feature
                     await tx.spellcastingProgression.update({
                         where: { id: createdSpellcastingProgression.id },
                         data: {
-                            featureProgressionId: featureProgression.id
+                            featureId: feature.id
                         }
                     });
                 }
             }
 
-            // Create new spells known progression
-            // Phase 3: Also create FeatureProgression entries that link to SpellcastingProgression
+            // Create new spells known feature
+            // Phase 3: Also create FeatureWithRelations entries that link to SpellcastingProgression
             if (spellsKnownProgression && spellsKnownProgression.length > 0) {
                 // Get updated class data for spellcasting info
                 const updatedClass = await tx.class.findUnique({
@@ -720,15 +550,13 @@ export const classService: ClassService = {
                     throw new Error('Class not found');
                 }
 
-                for (const progression of spellsKnownProgression as CreateSpellcastingProgressionRequest[]) {
-                    const { slots, ...progressionData } = progression;
+                for (const feature of spellsKnownProgression as CreateSpellcastingProgressionRequest[]) {
+                    const { slots, ...progressionData } = feature;
 
-                    // Create the spells known progression (keep classId for backward compatibility)
+                    // Create the spells known feature
                     const createdSpellsKnownProgression = await tx.spellcastingProgression.create({
                         data: {
                             ...progressionData,
-                            classId: query.id, // Keep for backward compatibility
-                            classSpellsKnownId: query.id, // Link to the class via spells known relation
                             spellcastingType: 2, // 2 = SpellsKnown
                         },
                     });
@@ -743,39 +571,24 @@ export const classService: ClassService = {
                         });
                     }
 
-                    // Phase 3: Create FeatureProgression that links to this SpellcastingProgression
-                    // Note: Since featureProgressionId is unique, spells-known gets its own FeatureProgression
-                    // Find or create spellcasting feature for spells-known
-                    let spellsKnownFeature = await tx.feature.findFirst({
-                        where: {
-                            slug: `spellcasting-spells-known-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`
-                        }
-                    });
-
-                    if (!spellsKnownFeature) {
-                        spellsKnownFeature = await tx.feature.create({
-                            data: {
-                                slug: `spellcasting-spells-known-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`,
-                                name: `${updatedClass.name} Spells Known`,
-                                description: `Spells known progression for ${updatedClass.name}`,
-                                displayInCharacterSheet: false
-                            }
-                        });
-                    }
-
-                    // Create FeatureProgression for spells-known
-                    const spellsKnownFeatureProgression = await tx.featureProgression.create({
+                    // Phase 3: Create Feature that links to this SpellcastingProgression
+                    // Note: Since featureId is unique, spells-known gets its own Feature
+                    // Create Feature for spells-known (merged Feature/FeatureWithRelations)
+                    const spellsKnownFeature = await tx.feature.create({
                         data: {
+                            slug: `spellcasting-spells-known-${updatedClass.name.toLowerCase().replace(/\s+/g, '-')}`,
+                            name: `${updatedClass.name} Spells Known`,
+                            description: `Spells known feature for ${updatedClass.name}`,
+                            displayInCharacterSheet: false,
                             sourceType: FeatureSourceType.Class,
-                            level: 1,
-                            featureId: spellsKnownFeature.id
+                            level: 1
                         }
                     });
 
                     // Link to class via many-to-many relationship
-                    await tx.featureProgressionClassMap.create({
+                    await tx.featureClassMap.create({
                         data: {
-                            progressionId: spellsKnownFeatureProgression.id,
+                            featureId: spellsKnownFeature.id,
                             classId: query.id
                         }
                     });
@@ -783,7 +596,7 @@ export const classService: ClassService = {
                     // Create FeatureEntity for SpellsKnown SpellcastingProgression reference
                     await tx.featureEntity.create({
                         data: {
-                            progressionId: spellsKnownFeatureProgression.id,
+                            featureId: spellsKnownFeature.id,
                             type: EntityType.Other,
                             appliesTo: EntityAppliesToType.SpellcastingProgression,
                             appliesToId: null,
@@ -795,11 +608,11 @@ export const classService: ClassService = {
                         }
                     });
 
-                    // Link SpellcastingProgression to FeatureProgression
+                    // Link SpellcastingProgression to Feature
                     await tx.spellcastingProgression.update({
                         where: { id: createdSpellsKnownProgression.id },
                         data: {
-                            featureProgressionId: spellsKnownFeatureProgression.id
+                            featureId: spellsKnownFeature.id
                         }
                     });
                 }
@@ -807,16 +620,6 @@ export const classService: ClassService = {
         }, {
             timeout: 60000 // 60 seconds timeout for large operations
         });
-
-        // Clean up orphaned progressions in a separate transaction after the main update succeeds
-        if (orphanedProgressionIdsToCleanup.length > 0) {
-            try {
-                await featureSystemService.cleanupOrphanedProgressions(orphanedProgressionIdsToCleanup);
-            } catch (error) {
-                // Log error but don't fail the class update - orphan cleanup is a separate concern
-                console.error(`[ClassService] Failed to clean up ${orphanedProgressionIdsToCleanup.length} orphaned progressions:`, error);
-            }
-        }
 
         return { message: 'Class updated successfully' };
     },

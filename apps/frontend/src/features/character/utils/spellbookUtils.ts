@@ -1,4 +1,4 @@
-import type { FeatureProgression, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
+import type { FeatureWithRelations, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 import { EntityType, EntityAppliesToType } from '@shared/static-data';
 
 /**
@@ -6,7 +6,7 @@ import { EntityType, EntityAppliesToType } from '@shared/static-data';
  * 
  * **Frontend-only utilities**: These functions are used for display logic and UI state management.
  * Spell selection data (spells list, availableFreeSpells) now comes from the resolved character
- * response (architecturally correct - data depends on resolved progressions).
+ * response (architecturally correct - data depends on resolved features).
  * 
  * **Backend validation**: Spell level validation is handled by the backend in syncSpellsKnown().
  * The frontend allows optimistic selection and the backend validates and rejects invalid spells.
@@ -16,22 +16,22 @@ import { EntityType, EntityAppliesToType } from '@shared/static-data';
  * Check if a class has a spellbook (uses spellbook spell management).
  * 
  * Determines if a class uses the spellbook system by checking for `EntityAppliesToType.SpellbookSpell`
- * entities in the resolved progressions. Spellbook classes (e.g., Wizard) track spells differently
+ * entities in the resolved features. Spellbook classes (e.g., Wizard) track spells differently
  * from spellsKnown classes (e.g., Sorcerer, Bard).
  * 
- * @param resolvedProgressions - All resolved feature progressions for the character
+ * @param resolvedProgressions - All resolved feature features for the character
  * @param classId - The class to check
  * @returns True if the class has spellbook spell entities, false otherwise
  */
 export function hasSpellbook(
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     classId: number
 ): boolean {
-    for (const progression of resolvedProgressions) {
-        // Check if this progression applies to the class via many-to-many relationship
-        const appliesToClass = progression.classes && progression.classes.some(c => c.classId === classId);
-        if (appliesToClass && progression.entities) {
-            for (const entity of progression.entities) {
+    for (const feature of resolvedProgressions) {
+        // Check if this feature applies to the class via many-to-many relationship
+        const appliesToClass = feature.classes && feature.classes.some(c => c.classId === classId);
+        if (appliesToClass && feature.entities) {
+            for (const entity of feature.entities) {
                 if (entity.type === EntityType.Choice &&
                     entity.appliesTo === EntityAppliesToType.SpellbookSpell) {
                     return true;
@@ -54,28 +54,28 @@ export function hasSpellbook(
  * records. Instead, they are considered "known" if this grant feature exists. This is similar to how
  * proficiencies are handled.
  * 
- * @param resolvedProgressions - All resolved feature progressions for the character
- * @param classId - The class to check (filters class-specific progressions)
+ * @param resolvedProgressions - All resolved feature features for the character
+ * @param classId - The class to check (filters class-specific features)
  * @returns True if the class has the 0th level spell grant feature, false otherwise
  */
 export function hasZeroLevelSpellbookSpellsGrant(
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     classId: number
 ): boolean {
-    for (const progression of resolvedProgressions) {
-        // Filter by classId if progression is class-specific (check many-to-many relationship)
-        if (progression.classes && progression.classes.length > 0) {
-            const appliesToClass = progression.classes.some(c => c.classId === classId);
+    for (const feature of resolvedProgressions) {
+        // Filter by classId if feature is class-specific (check many-to-many relationship)
+        if (feature.classes && feature.classes.length > 0) {
+            const appliesToClass = feature.classes.some(c => c.classId === classId);
             if (!appliesToClass) {
                 continue;
             }
         }
 
-        if (!progression.entities) {
+        if (!feature.entities) {
             continue;
         }
 
-        for (const entity of progression.entities) {
+        for (const entity of feature.entities) {
             // Check if this entity grants all 0th level spellbook spells
             if (
                 entity.type === EntityType.Other &&

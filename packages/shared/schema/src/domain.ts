@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
-import { CreateFeatureProgressionRequestSchema, FeatureProgressionResponseSchema } from './feature.js';
+import { CreateFeatureRequestSchema, FeatureResponseSchema } from './feature.js';
 
 export const DomainIdParamSchema = z.object({
     id: numericParam(),
@@ -27,7 +27,7 @@ export const BaseDomainSchema = z.object({
     domainSpells: z.array(DomainSpellSchema).nullable(),
     deityIds: z.array(commonValidations.positiveInt()).nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureProgressionResponseSchema).nullable(),
+    features: z.array(FeatureResponseSchema).nullable(),
 });
 
 export const DomainSchema = BaseDomainSchema.extend({
@@ -66,13 +66,13 @@ export const CreateDomainSchema = BaseDomainSchema.omit({
 }).extend({
     domainSpells: z.array(CreateDomainSpellSchema).nullable(),
     deityIds: z.array(commonValidations.positiveInt()).nullable(),
-    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
+    features: z.array(CreateFeatureRequestSchema).nullable(),
 });
 
 export const UpdateDomainSchema = CreateDomainSchema.omit({
     features: true,
 }).extend({
-    features: z.array(CreateFeatureProgressionRequestSchema).nullable(),
+    features: z.array(CreateFeatureRequestSchema).nullable(),
 }).partial();
 
 export type DomainIdParamRequest = z.infer<typeof DomainIdParamSchema>;

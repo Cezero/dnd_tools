@@ -1,11 +1,11 @@
 import type { ResolutionContext } from '@/features/character/types';
 import type { FormattedCharacterResult, DisplayResult } from '@/lib/formatters/types';
-import type { CharacterWithAllDetailsResponse, FeatureProgression, PendingChoice } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations, PendingChoice } from '@shared/schema';
 import type { DisplayType } from '@shared/static-data';
 
 export interface CharacterExplorerData {
     character: CharacterWithAllDetailsResponse | null;
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     formattedCharacterResult: FormattedCharacterResult | null;
     formattedDisplayResult: DisplayResult | null;
     resolutionContext: ResolutionContext | null;

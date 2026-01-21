@@ -3,7 +3,7 @@ import z from "zod";
 import { numericParam, commonValidations } from "./common";
 import { QueryResponseSchema } from "./query";
 import { TrickSchema, CharacterCompanionTrickSchema } from "./trick";
-import { FeatureProgressionResponseSchema } from "./feature";
+import { FeatureResponseSchema } from "./feature";
 
 // Companion Schema
 export const CompanionSchema = z.object({
@@ -27,7 +27,7 @@ export const CharacterCompanionSchema = z.object({
 // Companion with relations schema
 // monster object removed - frontend should resolve monster names from monsters-cache using monsterId
 export const CompanionWithRelationsSchema = CompanionSchema.extend({
-    features: z.array(FeatureProgressionResponseSchema).optional(),
+    features: z.array(FeatureResponseSchema).optional(),
 });
 
 /**

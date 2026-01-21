@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
-import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import {
     ValidatedForm,
@@ -12,7 +12,7 @@ import {
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
-import { CreateDomainRequest, UpdateDomainRequest, UpdateDomainSchema, CreateDomainSchema, FeatureProgression, Feature, CreateFeatureProgressionRequest, Domain } from '@shared/schema';
+import { CreateDomainRequest, UpdateDomainRequest, UpdateDomainSchema, CreateDomainSchema, FeatureWithRelations, Feature, CreateFeatureRequest, Domain } from '@shared/schema';
 import { EDITION_LIST, SourceType, FeatureSourceType } from '@shared/static-data';
 
 // Type definitions for the form state
@@ -33,11 +33,11 @@ export function DomainEdit() {
     const [isUpdating, setIsUpdating] = useState(false);
 
     // Feature management state (separate from form data)
-    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
+    const [features, setFeatures] = useState<FeatureWithRelations[]>([]);
 
-    // Progression dialog state
+    // Feature dialog state
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
-    const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
+    const [editingProgression, setEditingProgression] = useState<FeatureWithRelations | null>(null);
     const [preSelectedFeature, setPreSelectedFeature] = useState<Feature | null | undefined>(undefined);
 
     const fromListParams = location.state?.fromListParams || '';
@@ -69,49 +69,47 @@ export function DomainEdit() {
         }
     );
 
-    // FeatureProgression management handlers
+    // FeatureWithRelations management handlers
     const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
         // Create a new feature object
-        const newFeature: Feature = {
+        // FeatureWithRelations is now the unified Feature model
+        // Create feature directly with feature fields
+
+        // Create a default feature for the new feature
+        // FeatureWithRelations is now the unified Feature model
+        const defaultProgression: FeatureWithRelations = {
             id: feature.id,
             name: feature.name,
             slug: feature.slug,
             description: feature.description,
             displayInCharacterSheet: true,
-            prerequisites: []
-        };
-
-        // Create a default progression for the new feature
-        const defaultProgression: FeatureProgression = {
-            id: Date.now() + Math.random(),
             sourceType: FeatureSourceType.Domain,
             domainId: id === 'new' ? 0 : parseInt(id as string),
             level: 1,
-            featureId: feature.id,
             entities: [],
-            feature: newFeature
+            prerequisites: []
         };
-        setFeatureProgressions(prev => [...prev, defaultProgression]);
+        setFeatures(prev => [...prev, defaultProgression]);
     }, [id]);
 
-    const handleEditProgression = useCallback((progression: FeatureProgression) => {
-        setEditingProgression(progression);
+    const handleEditProgression = useCallback((feature: FeatureWithRelations) => {
+        setEditingProgression(feature);
         setIsProgressionDialogOpen(true);
     }, []);
 
     const handleRemoveProgression = useCallback((progressionId: number) => {
-        setFeatureProgressions(prev => prev.filter(p => p.id !== progressionId));
+        setFeatures(prev => prev.filter(p => p.id !== progressionId));
     }, []);
 
-    const handleSaveProgression = useCallback((progression: FeatureProgression) => {
+    const handleSaveProgression = useCallback((feature: FeatureWithRelations) => {
         if (editingProgression) {
-            // Update existing progression
-            setFeatureProgressions(prev => prev.map(p =>
-                p.id === editingProgression.id ? progression : p
+            // Update existing feature
+            setFeatures(prev => prev.map(p =>
+                p.id === editingProgression.id ? feature : p
             ));
         } else {
-            // Add new progression
-            setFeatureProgressions(prev => [...prev, progression]);
+            // Add new feature
+            setFeatures(prev => [...prev, feature]);
         }
 
         setIsProgressionDialogOpen(false);
@@ -132,11 +130,12 @@ export function DomainEdit() {
                 // Transform the domain data for the form
                 const formDomainData: DomainFormData = {
                     ...fetchedDomain,
-                    features: fetchedDomain.features?.map(progression => {
-                        const { feature: _feature, ...progressionData } = progression;
+                    features: fetchedDomain.features?.map(feature => {
+                        // FeatureWithRelations is now the unified Feature model, no need to remove feature property
+                        const progressionData = feature;
                         return {
                             ...progressionData,
-                            entities: progression.entities || []
+                            entities: feature.entities || []
                         };
                     }) || []
                 };
@@ -144,8 +143,8 @@ export function DomainEdit() {
                 setFormData(formDomainData);
                 setDomain(fetchedDomain);
 
-                // Set feature progressions for display
-                setFeatureProgressions(fetchedDomain.features || []);
+                // Set feature features for display
+                setFeatures(fetchedDomain.features || []);
             } catch (err) {
                 const error = err instanceof Error ? err : new Error('Failed to fetch domain');
                 setError(error.message);
@@ -168,17 +167,17 @@ export function DomainEdit() {
         }
 
         try {
-            // Map features to progressions, ensuring featureIds match
-            const validProgressions = featureProgressions.map(progression => {
-                const { id: _, ...progressionData } = progression;
+            // Map features to features, ensuring featureIds match
+            const validProgressions = features.map(feature => {
+                const { id: _, ...progressionData } = feature;
                 return {
                     ...progressionData,
-                    entities: progression.entities?.map(entity => {
-                        const { id: _, progressionId: __, ...entityData } = entity;
+                    entities: feature.entities?.map(entity => {
+                        const { id: _, featureId: __, ...entityData } = entity;
                         return entityData;
                     }) || []
                 };
-            }) as CreateFeatureProgressionRequest[];
+            }) as CreateFeatureRequest[];
 
             const domainData = {
                 ...formData,
@@ -332,18 +331,30 @@ export function DomainEdit() {
                 {/* Domain Features Section */}
                 <div className="mt-6">
                     <FeaturesManager
-                        featureProgressions={featureProgressions}
-                        onEditProgression={handleEditProgression}
-                        onRemoveProgression={handleRemoveProgression}
-                        onAddFeature={handleAddFeature}
+                        state={{
+                            features,
+                            editingProgression,
+                            isProgressionDialogOpen,
+                            preSelectedFeature: preSelectedFeature ?? null
+                        }}
+                        updateState={(update) => {
+                            if (update.type === 'SET_EDITING_PROGRESSION') {
+                                setEditingProgression(update.payload.editingProgression);
+                            } else if (update.type === 'SET_IS_PROGRESSION_DIALOG_OPEN') {
+                                setIsProgressionDialogOpen(update.payload.isProgressionDialogOpen);
+                            } else if (update.type === 'SET_PRE_SELECTED_FEATURE') {
+                                setPreSelectedFeature(update.payload.preSelectedFeature);
+                            } else if (update.type === 'REMOVE_FEATURE_PROGRESSION') {
+                                handleRemoveProgression(update.payload.featureId);
+                            } else if (update.type === 'SET_FEATURES') {
+                                setFeatures(update.payload.features);
+                            }
+                        }}
                         contextType={FeatureSourceType.Domain}
                         contextId={id === 'new' ? 0 : parseInt(id as string)}
                         parentType="domain"
                         title="Domain Features"
                         emptyMessage="No features added. Click 'Add Feature' to add domain-granted features."
-                        setEditingProgression={setEditingProgression}
-                        setPreSelectedFeature={(feature) => setPreSelectedFeature(feature ?? null)}
-                        setIsProgressionDialogOpen={setIsProgressionDialogOpen}
                     />
                 </div>
 
@@ -365,18 +376,35 @@ export function DomainEdit() {
                 </div>
             </ValidatedForm>
 
-            {/* Feature Progression Dialog */}
-            <FeatureProgressionDetailEdit
+            {/* Feature Feature Dialog */}
+            <FeatureEditForm
                 isOpen={isProgressionDialogOpen}
                 onClose={() => {
                     setIsProgressionDialogOpen(false);
                     setEditingProgression(null);
                     setPreSelectedFeature(undefined);
                 }}
-                progression={editingProgression}
-                onSave={handleSaveProgression}
-                preSelectedFeature={preSelectedFeature}
-                showSourceTypeSelector={false}
+                featureId={
+                    editingProgression?.id
+                        ? editingProgression.id
+                        : preSelectedFeature?.id
+                            ? preSelectedFeature.id
+                            : 'new'
+                }
+                onSave={(feature: Feature, features: FeatureWithRelations[]) => {
+                    const featureWithRelations = features[0] || feature as FeatureWithRelations;
+                    handleSaveProgression(featureWithRelations);
+                }}
+                mode="modal"
+                context={
+                    id && id !== 'new'
+                        ? {
+                              sourceType: FeatureSourceType.Domain,
+                              parentId: parseInt(id),
+                              parentType: 'domain'
+                          }
+                        : undefined
+                }
             />
         </div>
     );

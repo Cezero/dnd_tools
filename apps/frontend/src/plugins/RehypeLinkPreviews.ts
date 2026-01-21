@@ -22,7 +22,6 @@ export function RehypeLinkPreviews() {
                 const props = node.properties as {
                     href?: string;
                     className?: string[];
-                    'data-preview'?: string;
                     'data-entity-type'?: string;
                     'data-entity-id'?: string;
                     [key: string]: unknown;
@@ -33,7 +32,7 @@ export function RehypeLinkPreviews() {
                     const match = href.match(pattern);
                     if (match) {
                         const entityId = match[1];
-                        
+
                         // Only add attributes if they're not already present
                         // (to avoid overwriting attributes from createEntityLink)
                         if (!props['data-entity-type']) {
@@ -42,7 +41,7 @@ export function RehypeLinkPreviews() {
                         if (!props['data-entity-id']) {
                             props['data-entity-id'] = entityId;
                         }
-                        
+
                         // Ensure entity-link class is present
                         if (!props.className) {
                             props.className = [];
@@ -50,12 +49,7 @@ export function RehypeLinkPreviews() {
                         if (Array.isArray(props.className) && !props.className.includes('entity-link')) {
                             props.className.push('entity-link');
                         }
-                        
-                        // Keep existing data-preview for backward compatibility
-                        if (!props['data-preview']) {
-                            props['data-preview'] = href;
-                        }
-                        
+
                         break;
                     }
                 }

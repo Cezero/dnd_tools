@@ -4,8 +4,8 @@ import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calcul
 import { getQueryClient } from '@/lib/formatters/utils/queryClientAccessor';
 import { getClassNameFromCache, getFeatSummaryById, getRaceSummaryById } from '@/services/cache';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import type { Feat, FeatureProgression } from '@shared/schema';
-import { EntityAppliesToType, EntityType, FeatureSourceType, LANGUAGE_MAP, SpecialFeatureId } from '@shared/static-data';
+import type { Feat, FeatureWithRelations } from '@shared/schema';
+import { EntityAppliesToType, EntityType, FeatureSourceType, LANGUAGE_MAP } from '@shared/static-data';
 
 import type { FeaturesTabProps } from './types';
 
@@ -31,20 +31,15 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
 
     // Get race features (filtered and deduplicated)
     const raceFeatures = React.useMemo(() => {
-        const raceFeatureMap = new Map<number, FeatureProgression>();
+        const raceFeatureMap = new Map<number, FeatureWithRelations>();
 
-        for (const progression of resolvedProgressions) {
+        for (const feature of resolvedProgressions) {
             if (
-                progression.sourceType === FeatureSourceType.Race &&
-                progression.featureId !== SpecialFeatureId.ClassProficiency &&
-                progression.featureId !== SpecialFeatureId.ClassSkill &&
-                progression.featureId !== SpecialFeatureId.AutomaticLanguage &&
-                progression.featureId !== SpecialFeatureId.BonusLanguage &&
-                progression.featureId !== SpecialFeatureId.AbilityAdjustment &&
-                progression.level <= character.advancements.length &&
-                !raceFeatureMap.has(progression.featureId)
+                feature.sourceType === FeatureSourceType.Race &&
+                feature.level <= character.advancements.length &&
+                !raceFeatureMap.has(feature.id)
             ) {
-                raceFeatureMap.set(progression.featureId, progression);
+                raceFeatureMap.set(feature.id, feature);
             }
         }
 
@@ -53,30 +48,24 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
 
     // Get class features (grouped by class, filtered and deduplicated)
     const classFeaturesByClass = React.useMemo(() => {
-        const classFeaturesMap = new Map<number, Map<number, FeatureProgression>>();
+        const classFeaturesMap = new Map<number, Map<number, FeatureWithRelations>>();
 
-        for (const progression of resolvedProgressions) {
+        for (const feature of resolvedProgressions) {
             if (
-                progression.sourceType === FeatureSourceType.Class &&
-                progression.featureId !== SpecialFeatureId.ClassProficiency &&
-                progression.featureId !== SpecialFeatureId.ClassSkill &&
-                progression.featureId !== SpecialFeatureId.AutomaticLanguage &&
-                progression.featureId !== SpecialFeatureId.BonusLanguage &&
-                progression.featureId !== SpecialFeatureId.AbilityAdjustment &&
-                progression.feature &&
-                progression.classes && progression.classes.length > 0
+                feature.sourceType === FeatureSourceType.Class &&
+                feature.classes && feature.classes.length > 0
             ) {
-                // Process each class linked to this progression
-                for (const classLink of progression.classes) {
+                // Process each class linked to this feature
+                for (const classLink of feature.classes) {
                     const linkedClassId = classLink.classId;
                     // Check if feature is active at the specific class level (not total character level)
-                    if (progression.level <= (classLevelCounts.get(linkedClassId) ?? 0)) {
+                    if (feature.level <= (classLevelCounts.get(linkedClassId) ?? 0)) {
                         if (!classFeaturesMap.has(linkedClassId)) {
                             classFeaturesMap.set(linkedClassId, new Map());
                         }
                         const classFeatures = classFeaturesMap.get(linkedClassId)!;
-                        if (!classFeatures.has(progression.featureId)) {
-                            classFeatures.set(progression.featureId, progression);
+                        if (!classFeatures.has(feature.id)) {
+                            classFeatures.set(feature.id, feature);
                         }
                     }
                 }
@@ -95,9 +84,9 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
     const processedFeats = React.useMemo(() => {
         // Filter out proficiencies
         const nonProficiencyFeats = formattedCharacter.feats?.filter(feat => {
-            for (const progression of resolvedProgressions) {
-                if (!progression.entities) continue;
-                for (const entity of progression.entities) {
+            for (const feature of resolvedProgressions) {
+                if (!feature.entities) continue;
+                for (const entity of feature.entities) {
                     if (entity.type === EntityType.Other &&
                         entity.appliesTo === EntityAppliesToType.Proficiency &&
                         entity.appliesToId === feat.featId) {
@@ -117,19 +106,19 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
         }
 
         // Get auto-granted feats
-        const autoGrantedFeats = new Map<number, { featId: number; level: number; sourceFeature: string; progressionId: number }>();
-        for (const progression of resolvedProgressions) {
-            if (!progression.entities) continue;
-            for (const entity of progression.entities) {
+        const autoGrantedFeats = new Map<number, { featId: number; level: number; sourceFeature: string; featureId: number }>();
+        for (const feature of resolvedProgressions) {
+            if (!feature.entities) continue;
+            for (const entity of feature.entities) {
                 if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
                     if (entity.type !== EntityType.Choice && !featSourceMap.has(entity.appliesToId)) {
                         const isInFormattedFeats = formattedCharacter.feats?.some(f => f.featId === entity.appliesToId);
                         if (isInFormattedFeats) {
                             autoGrantedFeats.set(entity.appliesToId, {
                                 featId: entity.appliesToId,
-                                level: progression.level,
-                                sourceFeature: progression.feature?.name || 'Feature',
-                                progressionId: progression.id
+                                level: feature.level,
+                                sourceFeature: feature.name || 'Feature',
+                                featureId: feature.id
                             });
                         }
                     }
@@ -151,14 +140,14 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
             const autoGranted = autoGrantedFeats.get(feat.featId);
 
             if (autoGranted) {
-                const progression = resolvedProgressions.find(p => p.id === autoGranted.progressionId);
+                const feature = resolvedProgressions.find(p => p.id === autoGranted.featureId);
                 let featureName = autoGranted.sourceFeature;
-                if (progression?.sourceType === FeatureSourceType.Race) {
+                if (feature?.sourceType === FeatureSourceType.Race) {
                     const raceData = character.raceId ? getRaceSummaryById(character.raceId) : null;
                     const raceName = raceData?.name || 'Race';
                     featureName = `${raceName} ${featureName}`;
-                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classes && progression.classes.length > 0) {
-                    const firstClassId = progression.classes[0].classId;
+                } else if (feature?.sourceType === FeatureSourceType.Class && feature.classes && feature.classes.length > 0) {
+                    const firstClassId = feature.classes[0].classId;
                     const className = getClassNameFromCache(firstClassId) || 'Class';
                     featureName = `${className} Granted`;
                 }
@@ -169,14 +158,14 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                 }
                 featCategoriesMap.get(header)!.feats.push({ feat, sourceFeature: autoGranted.sourceFeature });
             } else if (characterFeat?.source === 'choice' && characterFeat.sourceFeature) {
-                const progression = resolvedProgressions.find(p => p.id === characterFeat.sourceFeature?.progressionId);
+                const feature = resolvedProgressions.find(p => p.id === characterFeat.sourceFeature?.featureId);
                 let featureName = characterFeat.sourceFeature.featureName;
-                if (progression?.sourceType === FeatureSourceType.Race) {
+                if (feature?.sourceType === FeatureSourceType.Race) {
                     const raceData = character.raceId ? getRaceSummaryById(character.raceId) : null;
                     const raceName = raceData?.name || 'Race';
                     featureName = `${raceName} ${featureName}`;
-                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classes && progression.classes.length > 0) {
-                    const firstClassId = progression.classes[0].classId;
+                } else if (feature?.sourceType === FeatureSourceType.Class && feature.classes && feature.classes.length > 0) {
+                    const firstClassId = feature.classes[0].classId;
                     const className = getClassNameFromCache(firstClassId) || 'Class';
                     featureName = `${className} ${featureName}`;
                 }
@@ -208,7 +197,7 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
             .sort();
     }, [character.characterLanguages]);
 
-    // Pre-fetch all feats to get their full details with featureProgressions
+    // Pre-fetch all feats to get their full details with features
     const [featDetailsMap, setFeatDetailsMap] = React.useState<Map<number, Feat | null>>(new Map());
 
     React.useEffect(() => {
@@ -260,14 +249,14 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                         {character.raceId ? (getRaceSummaryById(character.raceId)?.name || 'Race') : 'Race'} Features
                     </h3>
                     <div className="space-y-2">
-                        {raceFeatures.map((progression) => {
-                            const featureName = progression.feature?.name || '';
-                            const summary = progression.feature?.summary || '';
+                        {raceFeatures.map((feature) => {
+                            const featureName = feature.name || '';
+                            const summary = feature.summary || '';
                             if (!featureName && !summary) return null;
 
                             return (
                                 <div
-                                    key={progression.id}
+                                    key={feature.id}
                                     className="py-2 border-b border-gray-200 dark:border-gray-700"
                                 >
                                     <div className="font-semibold text-gray-900 dark:text-white">
@@ -298,14 +287,14 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                             {className} Features
                         </h3>
                         <div className="space-y-2">
-                            {features.map((progression) => {
-                                const featureName = progression.feature?.name || '';
-                                const summary = progression.feature?.summary || '';
+                            {features.map((feature) => {
+                                const featureName = feature.name || '';
+                                const summary = feature.summary || '';
                                 if (!featureName && !summary) return null;
 
                                 return (
                                     <div
-                                        key={progression.id}
+                                        key={feature.id}
                                         className="py-2 border-b border-gray-200 dark:border-gray-700"
                                     >
                                         <div className="font-semibold text-gray-900 dark:text-white">
@@ -347,18 +336,18 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                                             || feat.featName
                                             || `Feat ${feat.featId}`;
 
-                                        // Get feat summary from the associated Feature via featureProgressions
+                                        // Get feat summary from the associated Feature via features
                                         // The feat summary is stored in the Feature table, not the Feat table
                                         let featSummary: string | null = null;
 
                                         if (fullFeat) {
-                                            // Type assertion: fullFeat is Feat which has optional featureProgressions
-                                            const featWithProgressions = fullFeat as Feat & { featureProgressions?: FeatureProgression[] };
-                                            if (featWithProgressions.featureProgressions && featWithProgressions.featureProgressions.length > 0) {
-                                                // Use the first feature progression's feature summary
-                                                const firstProgression = featWithProgressions.featureProgressions[0];
-                                                if (firstProgression?.feature?.summary) {
-                                                    featSummary = firstProgression.feature.summary;
+                                            // Type assertion: fullFeat is Feat which has optional features
+                                            const featWithProgressions = fullFeat as Feat & { features?: FeatureWithRelations[] };
+                                            if (featWithProgressions.features && featWithProgressions.features.length > 0) {
+                                                // Use the first feature feature's feature summary
+                                                const firstProgression = featWithProgressions.features[0];
+                                                if (firstProgression?.summary) {
+                                                    featSummary = firstProgression.summary;
                                                 }
                                             }
                                         }
@@ -366,10 +355,10 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                                         // Fallback: try to find it in resolvedProgressions
                                         if (!featSummary) {
                                             const featProgression = resolvedProgressions.find(
-                                                p => p.featId === feat.featId && p.feature
+                                                p => p.featId === feat.featId
                                             );
-                                            if (featProgression?.feature?.summary) {
-                                                featSummary = featProgression.feature.summary;
+                                            if (featProgression?.summary) {
+                                                featSummary = featProgression.summary;
                                             }
                                         }
 

@@ -16,7 +16,7 @@ import {
 
 import type { FeatService } from './types';
 import { featureSystemService } from '../featureSystem/index';
-import type { FeatureProgressionContext } from '../featureSystem/types';
+import type { FeatureContext } from '../featureSystem/types';
 
 
 const prisma = new PrismaClient();
@@ -58,17 +58,17 @@ export const featService: FeatService = {
      * This method returns a lightweight schema containing only:
      * - id: from Feat.id
      * - name: from Feat.name
-     * - description: from the associated Feature.description (via FeatureProgression)
-     * - summary: from the associated Feature.summary (via FeatureProgression)
+     * - description: from the associated Feature.description (via FeatureWithRelations)
+     * - summary: from the associated Feature.summary (via FeatureWithRelations)
      * 
      * IMPORTANT: This is a composite schema where:
      * - id and name come from the Feat table
      * - description and summary come from the associated Feature table
      * 
      * If a feat has no associated feature, description and summary will be null.
-     * If a feat has multiple feature progressions, the first one's feature is used.
+     * If a feat has multiple feature features, the first one's feature is used.
      * 
-     * This endpoint is optimized for list views where full feat data and progressions
+     * This endpoint is optimized for list views where full feat data and features
      * are not needed, but feature description/summary are required for display.
      */
     async getAllFeatsWithFeatureInfo(): Promise<GetAllFeatsWithFeatureInfoResponse> {
@@ -91,18 +91,18 @@ export const featService: FeatService = {
             };
         }
 
-        // Get feature progressions for all feats
-        const progressions = await featureSystemService.getFeatureProgressionsByFeatIds(featIds);
+        // Get feature features for all feats
+        const features = await featureSystemService.getFeaturesByFeatIds(featIds);
 
-        // Create a map of featId -> feature (using first progression if multiple exist)
+        // Create a map of featId -> feature (using first feature if multiple exist)
         const featFeatureMap = new Map<number, { description: string | null; summary: string | null }>();
-        for (const progression of progressions) {
-            if (progression.featId && progression.feature) {
-                // Only set if not already set (use first progression)
-                if (!featFeatureMap.has(progression.featId)) {
-                    featFeatureMap.set(progression.featId, {
-                        description: progression.feature.description || null,
-                        summary: progression.feature.summary || null,
+        for (const feature of features) {
+            if (feature.featId) {
+                // Only set if not already set (use first feature)
+                if (!featFeatureMap.has(feature.featId)) {
+                    featFeatureMap.set(feature.featId, {
+                        description: feature.description || null,
+                        summary: feature.summary || null,
                     });
                 }
             }
@@ -177,20 +177,20 @@ export const featService: FeatService = {
             return null;
         }
 
-        // Get fully populated feature progressions using the feature system service
-        const progressions = await featureSystemService.getFeatureProgressionsByFeatIds([query.id]);
+        // Get fully populated feature features using the feature system service
+        const features = await featureSystemService.getFeaturesByFeatIds([query.id]);
 
-        // Attach progressions to the feat object
+        // Attach features to the feat object
         return {
             ...feat,
-            featureProgressions: progressions,
+            features: features,
         } as GetFeatByIdResponse;
     },
 
     async createFeat(data: CreateFeatRequest): Promise<CreateResponse> {
         const result = await prisma.$transaction(async (tx) => {
             // benefits and prereqs are no longer part of the Feat model - handled via Feature system
-            const { sourceBookInfo, featureProgressions, ...featData } = data;
+            const { sourceBookInfo, features, ...featData } = data;
             const newFeat = await tx.feat.create({
                 data: {
                     ...featData,
@@ -203,10 +203,10 @@ export const featService: FeatService = {
                 },
             });
 
-            // Create feature progressions if provided
-            if (featureProgressions && featureProgressions.length > 0) {
-                const context: FeatureProgressionContext = { featId: newFeat.id };
-                await featureSystemService.createMultipleFeatureProgressions(featureProgressions, context, tx);
+            // Create feature features if provided
+            if (features && features.length > 0) {
+                const context: FeatureContext = { featId: newFeat.id };
+                await featureSystemService.createMultipleFeatures(features, context, tx);
             }
 
             return newFeat.id;

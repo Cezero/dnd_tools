@@ -2,7 +2,7 @@ import { getFeatByIdFromCache } from '@/services/cache/featCache';
 import type {
     CharacterWithAllDetailsResponse,
     CharacterFeatureChoice,
-    FeatureProgression,
+    FeatureWithRelations,
 } from '@shared/schema';
 import { AttackBonusAppliesTo, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
@@ -34,12 +34,12 @@ function findFeatureChoiceForFeat(
 }
 
 /**
- * Find feat progression for a given featId
+ * Find feat feature for a given featId
  */
 function findFeatProgression(
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     featId: number
-): FeatureProgression | null {
+): FeatureWithRelations | null {
     return resolvedProgressions.find(
         p => p.sourceType === FeatureSourceType.Feat && p.featId === featId
     ) || null;
@@ -54,23 +54,23 @@ export function resolveFeatBenefits(
     character: CharacterWithAllDetailsResponse,
     appliesTo: EntityAppliesToType,
     context?: FeatBenefitContext,
-    resolvedProgressions?: FeatureProgression[]
+    resolvedProgressions?: FeatureWithRelations[]
 ): FeatBenefit[] {
     const benefits: FeatBenefit[] = [];
 
     // Get all feats from both sources using unified accessor
-    // If resolvedProgressions not provided, fall back to old method for backward compatibility
+    // If resolvedProgressions not provided, return empty array (e.g., during initial load)
     const allFeats = resolvedProgressions
         ? getAllCharacterFeats(character, resolvedProgressions)
         : [];
 
-    // Use unified accessor if available, otherwise fall back to old method
+    // Process feats if features are available
     if (allFeats.length > 0 && resolvedProgressions) {
-        // Process feats from unified accessor using FeatureEntity from progressions
+        // Process feats from unified accessor using FeatureEntity from features
         for (const characterFeat of allFeats) {
-            // Find the progression for this feat
-            const progression = findFeatProgression(resolvedProgressions, characterFeat.featId);
-            if (!progression || !progression.entities) {
+            // Find the feature for this feat
+            const feature = findFeatProgression(resolvedProgressions, characterFeat.featId);
+            if (!feature || !feature.entities) {
                 continue;
             }
 
@@ -78,7 +78,7 @@ export function resolveFeatBenefits(
             const feat = getFeatByIdFromCache(characterFeat.featId);
 
             // Find entities that match the appliesTo type
-            for (const entity of progression.entities) {
+            for (const entity of feature.entities) {
                 if (entity.appliesTo !== appliesTo) continue;
 
                 // For proficiency, check entity type and appliesTo
@@ -130,7 +130,7 @@ export function resolveFeatBenefits(
                         source: {
                             type: 'feat',
                             id: characterFeat.featId,
-                            name: feat?.name || progression.feature?.name || 'Unknown Feat',
+                            name: feat?.name || feature.name || 'Unknown Feat',
                         },
                         context: {
                             itemId: subId ?? undefined,
@@ -149,7 +149,7 @@ export function resolveFeatBenefits(
                         source: {
                             type: 'feat',
                             id: characterFeat.featId,
-                            name: feat?.name || progression.feature?.name || 'Unknown Feat',
+                            name: feat?.name || feature.name || 'Unknown Feat',
                         },
                         context: {
                             itemId: entity.appliesToId ?? undefined,
@@ -158,10 +158,6 @@ export function resolveFeatBenefits(
                 }
             }
         }
-    } else {
-        // Fallback: if resolvedProgressions not provided, return empty (should not happen in new system)
-        // This is kept for backward compatibility during transition
-        // Note: This is expected in some cases (e.g., during initial load before progressions are resolved)
     }
 
     return benefits;
@@ -174,23 +170,23 @@ export function resolveFeatBenefits(
 export function resolveFeatFormulaModifications(
     character: CharacterWithAllDetailsResponse,
     context?: FeatBenefitContext,
-    resolvedProgressions?: FeatureProgression[]
+    resolvedProgressions?: FeatureWithRelations[]
 ): FormulaModification[] {
     const modifications: FormulaModification[] = [];
 
     // Get all feats from both sources using unified accessor
-    // If resolvedProgressions not provided, fall back to old method for backward compatibility
+    // If resolvedProgressions not provided, return empty array (e.g., during initial load)
     const allFeats = resolvedProgressions
         ? getAllCharacterFeats(character, resolvedProgressions)
         : [];
 
-    // Use unified accessor if available
+    // Process feats if features are available
     if (allFeats.length > 0 && resolvedProgressions) {
-        // Process feats from unified accessor using FeatureEntity from progressions
+        // Process feats from unified accessor using FeatureEntity from features
         for (const characterFeat of allFeats) {
-            // Find the progression for this feat
-            const progression = findFeatProgression(resolvedProgressions, characterFeat.featId);
-            if (!progression || !progression.entities) {
+            // Find the feature for this feat
+            const feature = findFeatProgression(resolvedProgressions, characterFeat.featId);
+            if (!feature || !feature.entities) {
                 continue;
             }
 
@@ -200,7 +196,7 @@ export function resolveFeatFormulaModifications(
             // once the proper FeatureEntity-based formula modification system is implemented.
             // 
             // The proper implementation should:
-            // 1. Check progression.entities for entities that represent formula modifications
+            // 1. Check feature.entities for entities that represent formula modifications
             // 2. Extract ability_replacement parameters from entity data (fromAbility, toAbility)
             // 3. Extract weapon type conditions from entity conditions or appliesToSubId
             // 4. Build FormulaModification objects from entity data, not hardcoded name checks

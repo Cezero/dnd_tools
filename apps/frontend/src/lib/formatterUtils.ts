@@ -4,7 +4,7 @@ import { FeatureBonusType } from "@shared/static-data";
  * Format a value with a sign (+ for positive, - for negative)
  * Handles null/undefined values by returning empty string and logging details
  */
-export function formatSignedValue(value: number | null | undefined, context?: { entityId?: number; progressionId?: number; appliesTo?: number; caller?: string }): string {
+export function formatSignedValue(value: number | null | undefined, context?: { entityId?: number; featureId?: number; appliesTo?: number; caller?: string }): string {
     if (value === null || value === undefined) {
         console.warn('[Formatter] Null or undefined value passed to formatSignedValue:', {
             value,

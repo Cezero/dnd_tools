@@ -60,16 +60,9 @@ const deleteClassConfig = createQueryHooks({
 });
 
 export const ClassQueryHooks = {
-    // Keep existing hooks for backward compatibility during transition
-    useGetClasses: classesConfig.useQuery,
-    useGetClassById: classByIdConfig.useQuery,
-    useCreateClass: createClassConfig.useMutation,
-    useUpdateClass: updateClassConfig.useMutation,
-    useDeleteClass: deleteClassConfig.useMutation,
-
-    // Add imperative methods
+    // Imperative methods
     getClasses: (data: unknown) => classesConfig.fetch({ requestData: data }),
-    getClassById: (classId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => {
+    getClassById: (classId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => {
         const queryParams: { characterFeatureChoices?: string } = {};
         if (characterFeatureChoices && characterFeatureChoices.length > 0) {
             queryParams.characterFeatureChoices = JSON.stringify(characterFeatureChoices);
@@ -90,7 +83,7 @@ export const ClassQueryHooks = {
 
     // Expose query functions for advanced usage
     getClassesQueryFn: classesConfig.queryFn,
-    getClassByIdQueryFn: (params: { pathParams: { id: number }; queryParams?: { characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> } }) => {
+    getClassByIdQueryFn: (params: { pathParams: { id: number }; queryParams?: { characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> } }) => {
         const queryData: { characterFeatureChoices?: string } = {};
         if (params.queryParams?.characterFeatureChoices && params.queryParams.characterFeatureChoices.length > 0) {
             queryData.characterFeatureChoices = JSON.stringify(params.queryParams.characterFeatureChoices);

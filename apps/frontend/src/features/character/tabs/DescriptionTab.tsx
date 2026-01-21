@@ -315,13 +315,13 @@ export function DescriptionTab({
             };
         }
 
-        // Calculate automatic languages from all progressions (any source)
-        const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.progressions || []);
+        // Calculate automatic languages from all features (any source)
+        const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.features || []);
 
-        // Calculate available bonus languages from all progressions (any source)
+        // Calculate available bonus languages from all features (any source)
         // Remove duplicates since a language can be available from multiple sources
         const availableBonusLanguages = Array.from(new Set(
-            LanguageService.getBonusLanguages(resolvedData.progressions || [])
+            LanguageService.getBonusLanguages(resolvedData.features || [])
         ));
 
         // Calculate INT modifier
@@ -361,7 +361,7 @@ export function DescriptionTab({
             maxBonusLanguages,
             allKnownLanguages
         };
-    }, [state.raceId, state.abilityScores, state.selectedBonusLanguages, state.skillRanks, resolvedData.progressions]);
+    }, [state.raceId, state.abilityScores, state.selectedBonusLanguages, state.skillRanks, resolvedData.features]);
 
     // Handle adding a bonus language
     const handleAddBonusLanguage = useCallback((languageId: number) => {

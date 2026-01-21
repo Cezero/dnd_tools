@@ -24,7 +24,7 @@ import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatWithFeatureInfo, ItemWithDetails, FeatureProgression } from '@shared/schema';
+import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatWithFeatureInfo, ItemWithDetails, FeatureWithRelations } from '@shared/schema';
 import { EditionId, DisplayType, EntityType, EntityAppliesToType } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
@@ -115,9 +115,9 @@ export function CharacterEdit(): React.JSX.Element {
     }, [user, isAuthLoading, updateState]);
 
     // Use imperative API for race, class, and secondary class details
-    const [raceDetailsData, setRaceDetailsData] = useState<(Race & { features?: FeatureProgression[] }) | null>(null);
-    const [classDetailsData, setClassDetailsData] = useState<(DnDClass & { features?: FeatureProgression[] }) | null>(null);
-    const [secondaryClassDetailsData, setSecondaryClassDetailsData] = useState<(DnDClass & { features?: FeatureProgression[] }) | null>(null);
+    const [raceDetailsData, setRaceDetailsData] = useState<(Race & { features?: FeatureWithRelations[] }) | null>(null);
+    const [classDetailsData, setClassDetailsData] = useState<(DnDClass & { features?: FeatureWithRelations[] }) | null>(null);
+    const [secondaryClassDetailsData, setSecondaryClassDetailsData] = useState<(DnDClass & { features?: FeatureWithRelations[] }) | null>(null);
 
     // Calculate class levels from characterData for filtering feat choices by class level
     const classLevels = useMemo(() => {
@@ -141,7 +141,7 @@ export function CharacterEdit(): React.JSX.Element {
     const resolvedData = useMemo(() => {
         if (!resolution.resolvedCharacter) {
             return {
-                progressions: [],
+                features: [],
                 classSkills: [],
                 skillBonuses: [],
                 pendingChoices: [],
@@ -154,13 +154,13 @@ export function CharacterEdit(): React.JSX.Element {
         }
 
         return {
-            progressions: resolution.resolvedCharacter.resolvedProgressions,
+            features: resolution.resolvedCharacter.resolvedProgressions,
             classSkills: resolution.resolvedCharacter.classSkills.map((skill): { skillId: number; skillSubId: number | null } => ({ skillId: skill.skillId, skillSubId: skill.skillSubId ?? null })),
             skillBonuses: resolution.resolvedCharacter.skillBonuses.map((bonus): { skillId: number; skillSubId: number | null; bonus: number; source: string } => ({ skillId: bonus.skillId, skillSubId: bonus.skillSubId ?? null, bonus: bonus.bonus, source: bonus.source })),
             pendingChoices: resolution.resolvedCharacter.pendingChoices,
             grantedFeats: resolution.resolvedCharacter.grantedFeats.map(featId => ({
                 id: 0,
-                progressionId: 0,
+                featureId: 0,
                 type: EntityType.Bonus,
                 appliesTo: EntityAppliesToType.Feat,
                 appliesToId: featId,
@@ -398,7 +398,7 @@ export function CharacterEdit(): React.JSX.Element {
                 resolution.applyUpdate({
                     type: 'MAKE_CHOICE',
                     payload: {
-                        progressionId: choice.progressionId,
+                        featureId: choice.featureId,
                         featureEntityId: choice.featureEntityId,
                         appliesToId: choice.appliesToId,
                         appliesToSubId: choice.appliesToSubId ?? null
@@ -456,53 +456,6 @@ export function CharacterEdit(): React.JSX.Element {
             prevSpellsKnownRef.current = state.spellsKnown;
         }
     }, [state.characterId, state.currentAdvancementId, state.spellsKnown, resolution.sessionId, resolution.refreshState, queryClient]);
-
-    // Handle choice selection - apply update to resolution session
-    // NOTE: This handler is kept for backward compatibility but should not be called directly
-    // from tabs. Tabs should update state.featureChoices and let the useEffect hook handle sync.
-    const handleChoiceSelection = useCallback(async (choiceType: number, selectedId: number, _features: FeatureProgression[]) => {
-        if (!state.characterId || !resolution.sessionId) {
-            console.warn('Cannot save choice: session not initialized');
-            return;
-        }
-
-        // Find the pending choice to get progressionId and featureEntityId
-        const pendingChoice = resolvedData.pendingChoices.find(p =>
-            p.type === choiceType && p.options.includes(selectedId)
-        );
-
-        if (!pendingChoice) {
-            console.warn(`Pending choice not found for type ${choiceType}, id ${selectedId}`);
-            return;
-        }
-
-        // Extract progressionId and featureEntityId from pending choice ID
-        const [progressionIdStr, featureEntityIdStr] = pendingChoice.id.split('-');
-        const progressionId = parseInt(progressionIdStr, 10);
-        const featureEntityId = parseInt(featureEntityIdStr, 10);
-
-        if (isNaN(progressionId) || isNaN(featureEntityId)) {
-            console.warn(`Invalid pending choice ID: ${pendingChoice.id}`);
-            return;
-        }
-
-        // Apply update via resolution API
-        try {
-            const update: CharacterUpdate = {
-                type: 'MAKE_CHOICE',
-                payload: {
-                    progressionId,
-                    featureEntityId,
-                    appliesToId: selectedId,
-                    appliesToSubId: null
-                }
-            };
-
-            await resolution.applyUpdate(update);
-        } catch (error) {
-            console.error('Failed to apply choice update:', error);
-        }
-    }, [state.characterId, resolution, resolvedData.pendingChoices]);
 
     // Handle skill rank update - sync to backend resolution API
     const handleSkillRankUpdate = useCallback(async (skillId: number, skillSubId: number | null, customSubtype: string | null, pointsSpent: number) => {
@@ -927,9 +880,9 @@ export function CharacterEdit(): React.JSX.Element {
             // Calculate all languages to save
             const allLanguages: number[] = [];
 
-            // Add automatic languages from feature progressions (any source)
-            if (resolvedData.progressions && resolvedData.progressions.length > 0) {
-                const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.progressions);
+            // Add automatic languages from feature features (any source)
+            if (resolvedData.features && resolvedData.features.length > 0) {
+                const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.features);
                 allLanguages.push(...automaticLanguages);
             }
 
@@ -1011,7 +964,7 @@ export function CharacterEdit(): React.JSX.Element {
                     // Include feature choices (choices made in ChoicesTab)
                     // Omit id, characterId, and advancementId as per CreateCharacterFeatureChoiceSchema
                     featureChoices: state.featureChoices.length > 0 ? state.featureChoices.map(choice => ({
-                        progressionId: choice.progressionId,
+                        featureId: choice.featureId,
                         featureEntityId: choice.featureEntityId,
                         appliesToId: choice.appliesToId,
                         appliesToSubId: choice.appliesToSubId ?? null,
@@ -1219,7 +1172,7 @@ export function CharacterEdit(): React.JSX.Element {
             await generateCharacterPdf(
                 character,
                 classDetailsMap,
-                resolvedData.progressions,
+                resolvedData.features,
                 queryClient,
                 raceData,
                 resolvedData.classSkills.map(skill => ({ skillId: skill.skillId, skillSubId: skill.skillSubId ?? null })),
@@ -1307,11 +1260,11 @@ export function CharacterEdit(): React.JSX.Element {
     }, [characterData, queryClient]);
 
     // Cache formatted character
-    // Create a stable key for progressions to prevent unnecessary recalculations
+    // Create a stable key for features to prevent unnecessary recalculations
     const progressionsKey = useMemo(() => {
-        if (!resolvedData.progressions) return '';
-        return resolvedData.progressions.map(p => p.id).sort((a, b) => a - b).join(',');
-    }, [resolvedData.progressions]);
+        if (!resolvedData.features) return '';
+        return resolvedData.features.map(p => p.id).sort((a, b) => a - b).join(',');
+    }, [resolvedData.features]);
 
     // Create a stable key for skill ranks to ensure formattedCharacter recalculates when ranks change
     const skillRanksKey = useMemo(() => {
@@ -1319,7 +1272,7 @@ export function CharacterEdit(): React.JSX.Element {
     }, [state.skillRanks]);
 
     const formattedCharacter = useMemo(() => {
-        if (!characterData || !resolvedData.progressions || classDetailsMap.size === 0 || items.length === 0) {
+        if (!characterData || !resolvedData.features || classDetailsMap.size === 0 || items.length === 0) {
             return null;
         }
 
@@ -1341,9 +1294,9 @@ export function CharacterEdit(): React.JSX.Element {
             ),
             raceId: characterData.raceId ?? undefined,
             sizeId: (() => {
-                // Extract sizeId from resolved progressions
-                if (characterData.raceId && resolvedData.progressions) {
-                    const raceMechanics = extractRaceMechanics(resolvedData.progressions, characterData.raceId);
+                // Extract sizeId from resolved features
+                if (characterData.raceId && resolvedData.features) {
+                    const raceMechanics = extractRaceMechanics(resolvedData.features, characterData.raceId);
                     return raceMechanics.sizeId ?? undefined;
                 }
                 return undefined;
@@ -1353,7 +1306,7 @@ export function CharacterEdit(): React.JSX.Element {
         try {
             return characterSheetStrategy.formatCharacter(
                 characterData,
-                resolvedData.progressions,
+                resolvedData.features,
                 items,
                 characterData.characterItems || [],
                 classDetailsMap,
@@ -1387,9 +1340,9 @@ export function CharacterEdit(): React.JSX.Element {
         // Get all languages from character
         const allLanguageIds = characterData.characterLanguages.map(cl => cl.languageId);
 
-        // Calculate automatic languages from all progressions (any source)
-        // Use empty array if progressions aren't resolved yet - will update when they resolve
-        const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.progressions || []);
+        // Calculate automatic languages from all features (any source)
+        // Use empty array if features aren't resolved yet - will update when they resolve
+        const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.features || []);
 
         // Get skill-based languages from skill ranks (skills with no max rank limit, e.g., Speak Language)
         const skillBasedLanguages = state.skillRanks
@@ -1422,7 +1375,7 @@ export function CharacterEdit(): React.JSX.Element {
                 payload: { selectedBonusLanguages: bonusLanguages }
             });
         }
-    }, [characterData?.characterLanguages, resolvedData.progressions, state.skillRanks, updateState]);
+    }, [characterData?.characterLanguages, resolvedData.features, state.skillRanks, updateState]);
 
     // Tab configuration
 
@@ -1520,7 +1473,6 @@ export function CharacterEdit(): React.JSX.Element {
         resolvedData,
         isLoading: isResolving,
         triggerFeatureResolution,
-        handleChoiceSelection,
         handleSkillRankUpdate,
         formattedCharacter,
         sharedData: {

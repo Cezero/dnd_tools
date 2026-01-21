@@ -1,5 +1,5 @@
 import type { FormattedCharacterResult } from '@/lib/formatters/types';
-import type { CharacterWithAllDetailsResponse, DnDClass, Spell, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, DnDClass, Spell, FeatureWithRelations } from '@shared/schema';
 
 import type { CharacterDetailState, CharacterDetailStateUpdate, CharacterResolutionReturn } from '../types';
 
@@ -9,7 +9,7 @@ import type { CharacterDetailState, CharacterDetailStateUpdate, CharacterResolut
 export interface SkillsTabProps {
     character: CharacterWithAllDetailsResponse;
     formattedCharacter: FormattedCharacterResult;
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     characterId: number;
 }
 
@@ -19,7 +19,7 @@ export interface SkillsTabProps {
 export interface EquipmentTabProps {
     character: CharacterWithAllDetailsResponse;
     formattedCharacter: FormattedCharacterResult;
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     characterId: number;
     items: import('@shared/schema').ItemWithDetails[];
     state: CharacterDetailState;
@@ -47,7 +47,7 @@ export type GroupedItem = {
 export interface OverviewTabProps {
     character: CharacterWithAllDetailsResponse;
     formattedCharacter: FormattedCharacterResult;
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     characterId: number;
     state: CharacterDetailState;
     updateState: (update: CharacterDetailStateUpdate) => void;
@@ -59,7 +59,7 @@ export interface OverviewTabProps {
 export interface SpellsTabProps {
     character: CharacterWithAllDetailsResponse;
     formattedCharacter: FormattedCharacterResult;
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     characterId: number;
     classDetailsMap: Map<number, DnDClass>;
     state: CharacterDetailState;
@@ -99,6 +99,6 @@ export type SpellEntry = {
 export interface FeaturesTabProps {
     character: CharacterWithAllDetailsResponse;
     formattedCharacter: FormattedCharacterResult;
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     characterId: number;
 }

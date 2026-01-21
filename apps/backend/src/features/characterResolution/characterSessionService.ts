@@ -2,9 +2,9 @@ import { v4 as uuidv4 } from 'uuid';
 
 import type { CharacterWithAllDetailsResponse, ClassSpellSelection, DnDClass, FeatInQueryResponse } from '@shared/schema';
 
+import type { CharacterEditState, ResolutionResult } from './types';
 import { getRedisClient } from '../shared/session/redisClient';
 import type { RedisSessionClient } from '../shared/session/types';
-import type { CharacterEditState, ResolutionResult } from './types';
 
 /**
  * Extended resolution result with derived data for frontend
@@ -17,7 +17,7 @@ export interface ResolvedCharacterResult extends ResolutionResult {
     classSkills: Array<{ skillId: number; skillSubId: number | null }>;
     skillBonuses: Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }>;
     grantedFeats: number[];
-    /** Count of feat slots/choices available to the character. Calculated from resolved progressions. */
+    /** Count of feat slots/choices available to the character. Calculated from resolved features. */
     availableFeatsCount: number;
     availableFighterBonusFeats: number;
     /** List of feats the character qualifies for, filtered by prerequisites, proficiencies, owned feats, etc. */
@@ -256,11 +256,11 @@ export class CharacterSessionService {
      * 
      * This ensures that the resolution session stays synchronized with the character's
      * spell state, allowing subsequent spell operations to use the updated resolved
-     * progressions for validation.
+     * features for validation.
      * 
      * @param sessionKey - The session key (characterId:userId) to update
      * @param characterState - Updated character edit state (includes new/removed spells)
-     * @param resolvedResult - Updated resolved character result (includes new resolved progressions)
+     * @param resolvedResult - Updated resolved character result (includes new resolved features)
      * @throws Error if the session is not found
      * 
      * @see characterService.addSpellKnown - Calls this after adding a spell
@@ -347,31 +347,4 @@ export class CharacterSessionService {
         await this.redis.del([redisKey, sessionIdRedisKey, indexRedisKey]);
     }
 
-    /**
-     * Removes all expired sessions from Redis.
-     * 
-     * **Note**: This method is kept for backward compatibility but is no longer needed.
-     * Redis automatically removes expired keys using TTL. This method does nothing.
-     * 
-     * @returns Promise resolving to 0 (no manual cleanup needed)
-     * 
-     * @deprecated Redis TTL handles expiration automatically
-     */
-    async cleanupExpiredSessions(): Promise<number> {
-        // Redis handles expiration automatically via TTL
-        // No manual cleanup needed
-        return 0;
-    }
-
-    /**
-     * Cleans up the service.
-     * 
-     * **Note**: Redis connection is managed as a singleton and should remain open
-     * for the application lifetime. This method does nothing but is kept for
-     * backward compatibility.
-     */
-    destroy(): void {
-        // Redis connection is managed as a singleton
-        // No cleanup needed here
-    }
 }

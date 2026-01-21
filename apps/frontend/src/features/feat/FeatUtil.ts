@@ -1,23 +1,23 @@
 import { displayStrategyFactory } from '@/lib/formatters';
-import { FeatureEntity, FeatureProgression } from '@shared/schema';
+import { FeatureEntity, FeatureWithRelations } from '@shared/schema';
 import { DisplayType, EntityAppliesToType, FeatureSourceType } from '@shared/static-data';
 
 /**
  * Format a FeatureEntity using the display strategy system
- * Uses the actual FeatureProgression to ensure proper context (sourceType, featId, etc.)
+ * Uses the actual FeatureWithRelations to ensure proper context (sourceType, featId, etc.)
  */
-export const formatFeatureEntity = (entity: FeatureEntity, progression: FeatureProgression): string => {
+export const formatFeatureEntity = (entity: FeatureEntity, feature: FeatureWithRelations): string => {
     try {
-        // Create a progression with just this entity for formatting
-        const entityProgression: FeatureProgression = {
-            ...progression,
+        // Create a feature with just this entity for formatting
+        const entityProgression: FeatureWithRelations = {
+            ...feature,
             entities: [entity],
         };
 
         // Use Display Strategy to properly orchestrate the formatting process
         const detailStrategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
         const displayResult = detailStrategy.format(entityProgression, {
-            currentLevel: progression.level || 1,
+            currentLevel: feature.level || 1,
             showBreakdown: false,
         });
 

@@ -1,10 +1,11 @@
-import { CreateFeatureProgressionRequest } from '@shared/schema';
+import { CreateFeatureRequest } from '@shared/schema';
 import {
-    SpecialFeatureId,
-    EntityAppliesToType
+    EntityAppliesToType,
+    EntityType,
+    FeatureSourceType
 } from '@shared/static-data';
 
-// Type definitions for feature progressions with relations
+// Type definitions for feature features with relations
 interface FeatureEntity {
     id: number;
     type: number;
@@ -22,24 +23,24 @@ interface FeatureEntityCondition {
     type: number;
     conditionValue: string | null;
 }
-interface FeatureProgressionWithRelations {
+interface FeatureWithRelations {
     id: number;
     sourceType: number;
     level: number;
     featureId: number;
-    // REMOVED: appliesToType and appliesTo - redundant with SpecialFeatureId
+    // Note: Uses normal features with EntityType.Base entities
     entities?: FeatureEntity[];
     effects?: unknown[];
 }
 
 export class LanguageService {
     /**
-     * Extract automatic languages from feature progressions
-     * @param progressions Array of feature progressions
+     * Extract automatic languages from feature features
+     * @param features Array of feature features
      * @returns Array of language IDs that are automatically granted
      */
-    static getAutomaticLanguages(progressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[]): number[] {
-        return progressions
+    static getAutomaticLanguages(features: FeatureWithRelations[] | CreateFeatureRequest[]): number[] {
+        return features
             .flatMap(prog =>
                 prog.entities
                     ?.filter(entity => entity.appliesTo === EntityAppliesToType.AutomaticLanguage && entity.appliesToId)
@@ -49,12 +50,12 @@ export class LanguageService {
     }
 
     /**
-     * Extract available bonus languages from feature progressions
-     * @param progressions Array of feature progressions
+     * Extract available bonus languages from feature features
+     * @param features Array of feature features
      * @returns Array of language IDs available as bonus languages
      */
-    static getBonusLanguages(progressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[]): number[] {
-        return progressions
+    static getBonusLanguages(features: FeatureWithRelations[] | CreateFeatureRequest[]): number[] {
+        return features
             .flatMap(prog =>
                 prog.entities
                     ?.filter(entity =>
@@ -67,12 +68,12 @@ export class LanguageService {
     }
 
     /**
-     * Extract class-granted bonus languages from feature progressions
-     * @param progressions Array of feature progressions
+     * Extract class-granted bonus languages from feature features
+     * @param features Array of feature features
      * @returns Array of language IDs granted by classes as bonus languages
      */
-    static getClassBonusLanguages(progressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[]): number[] {
-        return progressions
+    static getClassBonusLanguages(features: FeatureWithRelations[] | CreateFeatureRequest[]): number[] {
+        return features
             .filter(prog => this.isClassBonusLanguageFeature(prog))
             .flatMap(prog =>
                 prog.entities
@@ -86,23 +87,28 @@ export class LanguageService {
     }
 
     /**
-     * Get bonus language choice configuration from feature progressions
-     * @param progressions Array of feature progressions
+     * Get bonus language choice configuration from feature features
+     * @param features Array of feature features
      * @returns Array of feature choices for bonus languages
      */
-    static getBonusLanguageChoices(progressions: FeatureProgressionWithRelations[]): FeatureEntity[] {
-        return progressions
-            .filter(prog => prog.featureId === SpecialFeatureId.BonusLanguage)
+    static getBonusLanguageChoices(features: FeatureWithRelations[]): FeatureEntity[] {
+        return features
+            .filter(prog =>
+                prog.entities?.some(e =>
+                    e.type === EntityType.Base &&
+                    e.appliesTo === EntityAppliesToType.BonusLanguage
+                )
+            )
             .flatMap(prog => prog.entities || []);
     }
 
     /**
-     * Extract class-granted automatic languages from feature progressions
-     * @param progressions Array of feature progressions
+     * Extract class-granted automatic languages from feature features
+     * @param features Array of feature features
      * @returns Array of language IDs granted by classes as automatic languages
      */
-    static getClassAutomaticLanguages(progressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[]): number[] {
-        return progressions
+    static getClassAutomaticLanguages(features: FeatureWithRelations[] | CreateFeatureRequest[]): number[] {
+        return features
             .filter(prog => this.isClassLanguageFeature(prog))
             .flatMap(prog =>
                 prog.entities
@@ -116,35 +122,46 @@ export class LanguageService {
     }
 
     /**
-     * Check if a feature progression is a class language feature (automatic or bonus)
-     * @param progression Feature progression to check
+     * Check if a feature feature is a class language feature (automatic or bonus)
+     * @param feature Feature feature to check
      * @returns True if this is a class language feature
      */
-    static isClassLanguageFeature(progression: FeatureProgressionWithRelations | CreateFeatureProgressionRequest): boolean {
-        return progression.sourceType === 1 && // FeatureSourceType.Class
-            (progression.featureId === SpecialFeatureId.AutomaticLanguage || progression.featureId === SpecialFeatureId.BonusLanguage);
+    static isClassLanguageFeature(feature: FeatureWithRelations | CreateFeatureRequest): boolean {
+        if (feature.sourceType !== FeatureSourceType.Class) {
+            return false;
+        }
+        // Both FeatureWithRelations and CreateFeatureRequest have optional entities
+        // Both entity types have type and appliesTo as numbers
+        if (!feature.entities || feature.entities.length === 0) {
+            return false;
+        }
+        return feature.entities.some(e =>
+            e.type === EntityType.Base &&
+            (e.appliesTo === EntityAppliesToType.AutomaticLanguage ||
+                e.appliesTo === EntityAppliesToType.BonusLanguage)
+        );
     }
 
     /**
-     * Check if a feature progression is a class bonus language feature
-     * @param progression Feature progression to check
+     * Check if a feature feature is a class bonus language feature
+     * @param feature Feature feature to check
      * @returns True if this is a class bonus language feature
      */
-    static isClassBonusLanguageFeature(progression: FeatureProgressionWithRelations | CreateFeatureProgressionRequest): boolean {
-        return this.isClassLanguageFeature(progression) &&
-            progression.entities?.some(entity => entity.appliesTo === EntityAppliesToType.BonusLanguage);
+    static isClassBonusLanguageFeature(feature: FeatureWithRelations | CreateFeatureRequest): boolean {
+        return this.isClassLanguageFeature(feature) &&
+            feature.entities?.some(entity => entity.appliesTo === EntityAppliesToType.BonusLanguage);
     }
 
     /**
      * Get all available bonus languages (racial + class) for a character
-     * @param raceProgressions Race feature progressions
-     * @param classProgressions Class feature progressions
+     * @param raceProgressions Race feature features
+     * @param classProgressions Class feature features
      * @param intModifier Character's Intelligence modifier
      * @returns Array of unique language IDs available as bonus languages
      */
     static getCombinedBonusLanguages(
-        raceProgressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[],
-        classProgressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[]
+        raceProgressions: FeatureWithRelations[] | CreateFeatureRequest[],
+        classProgressions: FeatureWithRelations[] | CreateFeatureRequest[]
     ): number[] {
         // Get racial bonus languages
         const racialLanguages = this.getBonusLanguages(raceProgressions);
@@ -168,14 +185,14 @@ export class LanguageService {
 
     /**
      * Get all languages available to a character (automatic + bonus)
-     * @param raceProgressions Race feature progressions
-     * @param classProgressions Class feature progressions
+     * @param raceProgressions Race feature features
+     * @param classProgressions Class feature features
      * @param intModifier Character's Intelligence modifier
      * @returns Object with automatic and bonus language arrays
      */
     static getAllAvailableLanguages(
-        raceProgressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[],
-        classProgressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[],
+        raceProgressions: FeatureWithRelations[] | CreateFeatureRequest[],
+        classProgressions: FeatureWithRelations[] | CreateFeatureRequest[],
         intModifier: number
     ): {
         automatic: number[];

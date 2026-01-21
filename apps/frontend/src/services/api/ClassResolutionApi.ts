@@ -1,72 +1,73 @@
 import { Api } from '@/services/Api';
 import type {
     ClassUpdate,
-    ClassEditState,
-    InitializeClassSessionResponse,
-    GetClassSessionStateResponse,
+    StartClassEditingResponse,
+    GetClassStateResponse,
     ApplyClassUpdateResponse,
+    SaveClassStateResponse,
+    CancelClassEditingResponse,
 } from '@shared/schema';
 import {
-    InitializeClassSessionResponseSchema,
-    GetClassSessionStateResponseSchema,
+    StartClassEditingResponseSchema,
+    GetClassStateResponseSchema,
     ApplyClassUpdateBodySchema,
     ApplyClassUpdateResponseSchema,
+    SaveClassStateResponseSchema,
+    CancelClassEditingResponseSchema,
 } from '@shared/schema';
 
 /**
  * Class resolution API client.
  * 
- * Provides typed methods for interacting with the class editing session backend API.
- * All methods handle session lifecycle management and class updates.
+ * Provides typed methods for interacting with the class editing backend API.
+ * All methods handle class state management and updates using user sessions.
  * 
- * @see ClassResolutionApi.initializeSession - Create or resume a class editing session
- * @see ClassResolutionApi.getSessionState - Get current session state
- * @see ClassResolutionApi.applyUpdate - Apply updates to a session
- * @see ClassResolutionApi.saveSession - Save session to database
- * @see ClassResolutionApi.cancelSession - Cancel session without saving
+ * @see ClassResolutionApi.startEditing - Start editing a class (acquires lock, adds to user session)
+ * @see ClassResolutionApi.getState - Get current class state
+ * @see ClassResolutionApi.applyUpdate - Apply updates to class state
+ * @see ClassResolutionApi.save - Save class state to database
+ * @see ClassResolutionApi.cancel - Cancel editing without saving
  */
 export const ClassResolutionApi = {
     /**
-     * Initialize or resume a class editing session
+     * Start editing a class.
+     * 
+     * Acquires a lock on the class and adds it to the user's editing list.
      */
-    initializeSession: async (classId: number): Promise<InitializeClassSessionResponse> => {
-        return Api<InitializeClassSessionResponse>(
-            `/classes/${classId}/session`,
+    startEditing: async (classId: number): Promise<StartClassEditingResponse> => {
+        return Api<StartClassEditingResponse>(
+            `/classes/${classId}/start-editing`,
             {
                 method: 'POST',
-                responseSchema: InitializeClassSessionResponseSchema,
+                responseSchema: StartClassEditingResponseSchema,
             }
         );
     },
 
     /**
-     * Get current session state
+     * Get current class state.
      */
-    getSessionState: async (
-        classId: number,
-        sessionId: string
-    ): Promise<GetClassSessionStateResponse> => {
-        return Api<GetClassSessionStateResponse>(
-            `/classes/${classId}/session/${sessionId}`,
+    getState: async (classId: number): Promise<GetClassStateResponse> => {
+        return Api<GetClassStateResponse>(
+            `/classes/${classId}/state`,
             {
                 method: 'GET',
-                responseSchema: GetClassSessionStateResponseSchema,
+                responseSchema: GetClassStateResponseSchema,
             }
         );
     },
 
     /**
-     * Apply an update to the session
+     * Apply an update to the class state.
      */
     applyUpdate: async (
         classId: number,
-        sessionId: string,
         update: ClassUpdate
     ): Promise<ApplyClassUpdateResponse> => {
         return Api<ApplyClassUpdateResponse>(
-            `/classes/${classId}/session/${sessionId}`,
+            `/classes/${classId}/update`,
             {
-                method: 'PATCH',
+                method: 'PUT',
                 body: { update },
                 requestSchema: ApplyClassUpdateBodySchema,
                 responseSchema: ApplyClassUpdateResponseSchema,
@@ -75,26 +76,27 @@ export const ClassResolutionApi = {
     },
 
     /**
-     * Save session to database
+     * Save class state to database.
      */
-    saveSession: async (classId: number, sessionId: string): Promise<{ class: any }> => {
-        // TODO: Add proper schema for save response
-        return Api<{ class: any }>(
-            `/classes/${classId}/session/${sessionId}/save`,
+    save: async (classId: number): Promise<SaveClassStateResponse> => {
+        return Api<SaveClassStateResponse>(
+            `/classes/${classId}/save`,
             {
                 method: 'POST',
+                responseSchema: SaveClassStateResponseSchema,
             }
         );
     },
 
     /**
-     * Cancel session without saving
+     * Cancel editing without saving.
      */
-    cancelSession: async (classId: number, sessionId: string): Promise<void> => {
-        return Api<void>(
-            `/classes/${classId}/session/${sessionId}`,
+    cancel: async (classId: number): Promise<CancelClassEditingResponse> => {
+        return Api<CancelClassEditingResponse>(
+            `/classes/${classId}/cancel`,
             {
-                method: 'DELETE',
+                method: 'POST',
+                responseSchema: CancelClassEditingResponseSchema,
             }
         );
     },

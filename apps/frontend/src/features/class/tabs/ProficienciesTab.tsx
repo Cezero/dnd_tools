@@ -7,16 +7,14 @@ import { ClassProficiencyService } from '@/features/class/ClassProficiencyServic
 import { displayStrategyFactory } from '@/lib/formatters';
 import type { CharacterSheetDisplayResult, FormattedEntityResult } from '@/lib/formatters/types';
 import { useCacheFunctions } from '@/services/cache/CacheFunctions';
-import { DisplayType, SpecialFeatureId, PROFICIENCY_TYPE_LIST, PROFICIENCY_TYPES, ITEM_TYPE_ENUM, PROFICIENCY_TYPE_ENUM, CoreComponent } from '@shared/static-data';
+import { DisplayType, EntityType, EntityAppliesToType, FeatureSourceType, PROFICIENCY_TYPE_LIST, PROFICIENCY_TYPES, ITEM_TYPE_ENUM, PROFICIENCY_TYPE_ENUM, CoreComponent } from '@shared/static-data';
 
 import type { ClassTabProps, ProficiencyItem } from './types';
 
 export function ProficienciesTab({
-    formData: _formData,
-    setFormData: _setFormData,
     validation: _validation,
     isLoading: _isLoading = false,
-    featureProgressions = [],
+    features = [],
     onAddProficiency,
     onRemoveProficiency
 }: ClassTabProps): React.JSX.Element {
@@ -86,12 +84,13 @@ export function ProficienciesTab({
         return classProficiencies.some(modifier => modifier.appliesToId === proficiencyTypeId && modifier.appliesToSubId === itemId);
     };
 
-    const classProficiencies = ClassProficiencyService.getClassProficiencies(featureProgressions);
+    const classProficiencies = ClassProficiencyService.getClassProficiencies(features);
 
 
-    // Find proficiency progressions for display strategy
-    const proficiencyProgressions = featureProgressions.filter(progression =>
-        progression.featureId === SpecialFeatureId.ClassProficiency
+    // Find proficiency features for display strategy
+    const proficiencyProgressions = features.filter(feature =>
+        feature.sourceType === FeatureSourceType.Class &&
+        feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency)
     );
 
     // Use CharacterSheet strategy to format proficiencies individually

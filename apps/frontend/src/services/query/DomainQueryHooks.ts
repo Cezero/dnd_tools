@@ -57,14 +57,11 @@ const deleteDomainConfig = createQueryHooks({
 });
 
 export const DomainQueryHooks = {
-    // Keep existing hooks for backward compatibility during transition
+    // React Query hooks
     useGetDomains: domainsConfig.useQuery,
     useGetDomainById: domainByIdConfig.useQuery,
-    useCreateDomain: createDomainConfig.useMutation,
-    useUpdateDomain: updateDomainConfig.useMutation,
-    useDeleteDomain: deleteDomainConfig.useMutation,
 
-    // Add imperative methods
+    // Imperative methods
     getDomains: (params?: unknown) => domainsConfig.fetch(params),
     getDomainById: (domainId: number) => domainByIdConfig.fetch({ pathParams: { id: domainId } }),
     createDomain: (data: unknown) => createDomainConfig.mutate({ requestData: data }),

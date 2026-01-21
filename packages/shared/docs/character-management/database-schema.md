@@ -161,17 +161,23 @@ Defines character feature choices for character advancement.
 **Key Fields**:
 - **`id`**: Unique identifier for the feature choice record
 - **`characterId`**: Reference to the character
-- **`featureChoiceId`**: Reference to the feature choice
-- **`progressionId`**: Reference to the feature progression
+- **`featureId`**: Reference to the feature
 - **`advancementId`**: Reference to the character advancement
-- **`key`**: Key for the feature choice
-- **`value`**: Value selected for the feature choice
+- **`featureEntityId`**: Reference to the feature entity that defines the choice
+- **`appliesToId`**: The selected value ID (e.g., feat ID, domain ID)
+- **`appliesToSubId`**: Sub-value ID for complex choices (e.g., feat sub-ID)
 - **`choiceIndex`**: Index for the choice if multiple choices are available
+- **`choiceGroupId`**: Identifier for grouping related choices
+- **`choiceData`**: JSON data for complex choice information
+- **`linkedChoiceGroupId`**: Identifier for linked choice groups (if applicable)
 
 **Relationships**:
-- **`featureProgression`**: Links to the feature progression
-- **`featureChoice`**: Links to the feature choice
+- **`feature`**: Links to the feature
+- **`featureEntity`**: Links to the feature entity that defines the choice
 - **`advancement`**: Links to the character advancement
+
+**Constraints**:
+- **Unique Constraint**: `@@unique([advancementId, featureId, featureEntityId])` - Ensures one choice per advancement/feature/entity combination
 
 **Usage**: Provides feature choice data for character feature progression tracking.
 
@@ -239,14 +245,20 @@ Tracks feature uses for characters, including current uses, maximum uses, and fr
 **Key Fields**:
 - **`id`**: Unique identifier for the feature uses record
 - **`characterId`**: Reference to the character
-- **`progressionId`**: Reference to the feature progression
+- **`featureId`**: Reference to the feature
 - **`featureEntityId`**: Reference to the feature entity
 - **`currentUses`**: Current number of uses remaining (default: 0)
 - **`maxUses`**: Maximum number of uses available
-- **`frequency`**: Frequency type (PER_DAY, PER_WEEK, PER_LEVEL, PER_ENCOUNTER)
+- **`frequency`**: Frequency type (PER_DAY, PER_WEEK, PER_LEVEL, PER_ENCOUNTER) - references @USES_FREQUENCY_ENUM
 
 **Relationships**:
 - **`character`**: Links to the character
+- **`feature`**: Links to the feature
+- **`featureEntity`**: Links to the feature entity
+
+**Constraints**:
+- **Unique Constraint**: `@@unique([characterId, featureId, featureEntityId])` - Ensures one uses record per character/feature/entity combination
+- **Indexes**: `@@index([characterId])` - Indexed for efficient queries by character
 - **`progression`**: Links to the feature progression
 - **`featureEntity`**: Links to the feature entity
 
@@ -383,12 +395,15 @@ erDiagram
     CharacterFeatureChoice {
         int id PK
         int characterId FK
-        int featureChoiceId FK
-        int progressionId FK
+        int featureId FK
         int advancementId FK
-        string key
-        string value
+        int featureEntityId FK
+        int appliesToId
+        int appliesToSubId
         int choiceIndex
+        string choiceGroupId
+        json choiceData
+        string linkedChoiceGroupId
     }
     
     CharacterSpellPreparation {
@@ -441,7 +456,7 @@ erDiagram
 ### **Unique Constraints**
 
 **Character Advancement**: Unique constraint on `(characterId, level, version)` for multiple advancement versions
-**Character Feature Choice**: Unique constraint on `(advancementId, progressionId, key)` for feature choice tracking
+**Character Feature Choice**: Unique constraint on `(advancementId, featureId, featureEntityId)` for feature choice tracking
 **Character Spell Preparation**: Primary key on `(characterId, prepKey)` for spell preparation tracking
 **Spell Preparation Metamagic**: Primary key on `(characterId, prepKey, featId)` for metamagic tracking
 

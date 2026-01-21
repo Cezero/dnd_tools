@@ -220,7 +220,7 @@ The `CharacterDetailApi` (`apps/frontend/src/features/character/CharacterDetailA
 
 **Uses Tracking**:
 - `getCharacterUses(characterId)`: Get all feature uses for character
-- `updateFeatureUses(characterId, progressionId, entityId, delta)`: Update feature uses
+- `updateFeatureUses(characterId, featureId, entityId, delta)`: Update feature uses
 - `resetDailyUses(characterId)`: Reset daily uses (PER_DAY frequency)
 - `resetAllUses(characterId)`: Reset all uses
 

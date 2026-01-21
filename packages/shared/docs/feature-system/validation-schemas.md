@@ -41,18 +41,26 @@ The feature system integrates with static data following the shared [Static Data
 
 ### **FeatureSchema**
 
-The base schema for feature validation, defining all required and optional fields with proper validation rules.
+The base schema for feature validation, defining all required and optional fields with proper validation rules. This schema includes both the core feature definition and progression-specific fields (merged from the previous Feature and FeatureProgression models).
 
-**Purpose**: Validates core feature data including name, description, and prerequisites.
+**Purpose**: Validates core feature data including name, description, prerequisites, and progression details (level, source type, source references).
 
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
 - **`slug`**: Required string, 1-100 characters, trimmed, unique identifier
 - **`name`**: Required string, 1-100 characters, trimmed for display
 - **`description`**: Required string, maximum 10000 characters for detailed descriptions
+- **`summary`**: Optional string for summary text (can contain template placeholders)
+- **`displayInCharacterSheet`**: Optional boolean for display control (default: true)
+- **`sourceType`**: Required integer, references @FeatureSourceType enum (Race, Class, Domain, Feat, Companion, Edition, etc.)
+- **`level`**: Required integer, 1-20 range for character level when feature is granted
+- **`domainId`**: Optional integer for domain-granted features
+- **`featId`**: Optional integer for feat-granted features
+- **`companionId`**: Optional integer for companion-granted features
+- **`editionId`**: Optional integer for edition-granted features
 - **`prerequisites`**: Optional array of prerequisite schemas for requirements
 
-**Usage**: Primary validation for feature data in API requests and responses.
+**Usage**: Primary validation for feature data in API requests and responses. This schema now includes all fields that were previously split between Feature and FeatureProgression.
 
 **Source File**: `packages/shared/schema/src/feature.ts` (FeatureSchema definition)
 
@@ -83,31 +91,35 @@ Schema for feature prerequisites, defining requirements that must be met before 
 
 ## 🔧 **Feature Progression Schemas**
 
-### **FeatureProgressionSchema**
+### **FeatureProgressionSchema** (Alias for FeatureWithRelationsSchema)
 
-The main schema for feature progression validation, used for bulk operations and complex feature definitions.
+The main schema for feature validation with relations, used for bulk operations and complex feature definitions. This schema includes the feature definition along with related entities, classes, races, and other relationships.
 
-**Purpose**: Validates feature progression data including source tracking, level requirements, and associated entities.
+**Purpose**: Validates feature data including source tracking, level requirements, and associated entities. This schema is used when features are returned with their full relationship data.
 
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
-- **`sourceType`**: Required integer, 0-1 range (0=Race, 1=Class)
+- **`slug`**: Required string, 1-100 characters, trimmed, unique identifier
+- **`name`**: Required string, 1-100 characters, trimmed for display
+- **`description`**: Required string, maximum 10000 characters for detailed descriptions
+- **`summary`**: Optional string for summary text
+- **`displayInCharacterSheet`**: Optional boolean for display control (default: true)
+- **`sourceType`**: Required integer, references @FeatureSourceType enum
 - **`level`**: Required integer, 1-20 range for character level
-- **`featureId`**: Required positive integer linking to the feature
-- **`variantOverrideId`**: Optional integer for class variant overrides
 - **`domainId`**: Optional integer for domain-granted features
 - **`featId`**: Optional integer for feat-granted features
 - **`companionId`**: Optional integer for companion-granted features
-- **`classes`**: Optional array of class mappings via many-to-many relationship (for shared progressions)
-- **`races`**: Optional array of race mappings via many-to-many relationship (for shared progressions)
-- **`feature`**: Optional nested feature schema for complete data
-- **`class`**: Optional class summary object for display
+- **`editionId`**: Optional integer for edition-granted features
+- **`classes`**: Optional array of class mappings via `FeatureClassMap` (for shared features)
+- **`races`**: Optional array of race mappings via `FeatureRaceMap` (for shared features)
 - **`entities`**: Optional array of feature entity schemas (unified approach)
 - **`spellcasting`**: Optional spellcasting link schema
 
-**Usage**: Primary validation for feature progression data in complex operations.
+**Note**: `FeatureProgressionSchema` is maintained as a backward-compatibility alias for `FeatureWithRelationsSchema`. The schema now represents the unified Feature model with all progression fields included directly.
 
-**Source File**: `packages/shared/schema/src/feature.ts` (FeatureProgressionSchema definition)
+**Usage**: Primary validation for feature data with relations in complex operations and API responses.
+
+**Source File**: `packages/shared/schema/src/feature.ts` (FeatureProgressionSchema definition, alias for FeatureWithRelationsSchema)
 
 ### **CreateFeatureProgressionSchema**
 
@@ -149,7 +161,7 @@ The unified schema that handles all types of feature effects including modifiers
 
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
-- **`progressionId`**: Required positive integer linking to the feature progression
+- **`featureId`**: Required positive integer linking to the feature
 - **`type`**: Required enum value from @EntityType (Bonus, Quantity, Replacement, Other, Choice, Allocation). Note: Proficiencies use EntityType.Other (3) with appliesTo = EntityAppliesToType.Proficiency (36)
 - **`appliesTo`**: Required enum value from @EntityAppliesToType for target specification
 - **`appliesToId`**: Optional positive integer for specific target ID (references other system IDs)
@@ -274,7 +286,7 @@ Schema for creating new feature entities, omitting read-only fields and includin
 **Purpose**: Validates data for creating new feature entities without requiring existing IDs or computed fields.
 
 **Key Differences from Base Schema**:
-- **Omits**: `id`, `progressionId`, `conditions`, `formulaParams`, `formulaParamsId`, `item`
+- **Omits**: `id`, `featureId`, `conditions`, `formulaParams`, `formulaParamsId`, `item`
 - **Includes**: Nested creation schemas for conditions and formula parameters
 - **Validation**: Ensures proper entity type and appliesTo constraints
 
@@ -312,6 +324,36 @@ Schema for creating new feature entity conditions, omitting read-only fields.
 
 **Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureEntityConditionSchema definition)
 
+### **FeatureConditionSchema**
+
+Schema for feature conditions (display conditions), defining when features should be displayed.
+
+**Purpose**: Validates condition data for conditional feature display.
+
+**Key Validations**:
+- **`id`**: Required positive integer for unique identification
+- **`featureId`**: Required positive integer linking to the feature
+- **`conditionType`**: Required enum value from @FeatureEntityConditionType (reuses the same enum as FeatureEntityCondition)
+- **`conditionValue`**: Required integer for condition value
+
+**Usage**: Validates condition data for conditional feature display.
+
+**Source File**: `packages/shared/schema/src/feature.ts` (FeatureConditionSchema definition)
+
+### **CreateFeatureConditionSchema**
+
+Schema for creating new feature conditions (display conditions), omitting read-only fields.
+
+**Purpose**: Validates data for creating new feature conditions without requiring existing IDs.
+
+**Key Differences from Base Schema**:
+- **Omits**: `id`, `featureId` (read-only fields)
+- **Validation**: Ensures proper condition type and value constraints
+
+**Usage**: Validates feature condition creation requests in API endpoints.
+
+**Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureConditionSchema definition)
+
 ### **FeatureFormulaParamsSchema**
 
 Schema for formula parameters, defining mathematical progression calculations.
@@ -329,6 +371,10 @@ Schema for formula parameters, defining mathematical progression calculations.
 - **`valuesRepresent`**: Optional enum value from @ConditionalScalingValueType
 - **`cumulative`**: Optional boolean for value accumulation (default: false)
 - **`includeProgressionLevel`**: Optional boolean for progression level inclusion (default: true)
+- **`featureLevelZero`**: Optional boolean that returns 0 for levels below formulaStartLevel instead of null or scalingValue (default: false)
+- **`divisor`**: Optional positive integer for division-based formulas (e.g., floor(level / divisor))
+- **`baseValue`**: Optional integer for base value in division-based formulas (e.g., floor(level / divisor) + baseValue)
+- **`startingValue`**: Optional integer for starting value in formulas that need a different starting value than the increment (e.g., @FormulaId.EVERY_N_LEVELS). Defaults to entity.value if not set.
 
 **Formula Types and Usage Patterns**:
 
@@ -340,9 +386,10 @@ Schema for formula parameters, defining mathematical progression calculations.
 
 #### **@FormulaId.EVERY_N_LEVELS (2) - Interval-Based Progression**
 **Purpose**: Features that improve at regular level intervals
-**Parameters**: `interval` (e.g., 3 for every 3 levels), `formulaStartLevel` (optional for delayed progressions)
+**Parameters**: `interval` (e.g., 3 for every 3 levels), `formulaStartLevel` (optional for delayed progressions), `startingValue` (optional starting value, defaults to entity.value)
 **Real Example**: Bardic Music abilities improving every 3 levels, Druid features improving every 2 levels
 **Usage**: `formulaId: 2, interval: 3, includeProgressionLevel: true`
+**Advanced Usage**: Use `startingValue` to create progressions like "start at 2 and then add 1 every 2 levels": `formulaId: 2, interval: 2, startingValue: 2` with `entity.value: 1`
 
 #### **@FormulaId.THRESHOLD_BASED (3) - Complex Threshold Progression**
 **Purpose**: Features with non-linear progression at specific level milestones
@@ -372,6 +419,9 @@ Schema for formula parameters, defining mathematical progression calculations.
 - **Formula Start Level**: Use `formulaStartLevel` to delay feature progression
 - **Example**: Feature starts at 8th level but scales from that point
 - **Usage**: `formulaStartLevel: 8, includeProgressionLevel: true`
+- **Feature Level Zero**: Use `featureLevelZero: true` to return 0 for levels below formulaStartLevel
+- **Example**: Feature at level 1, formulaStartLevel: 2, featureLevelZero: true → L1: 0, L2: 1, L4: 2
+- **Usage**: `formulaStartLevel: 2, featureLevelZero: true, includeProgressionLevel: false`
 
 **Usage**: Validates formula parameter data for dynamic feature calculations.
 
@@ -556,9 +606,9 @@ The feature system follows the shared [Error Handling Patterns](../application-o
 ### **Cross-Reference Validation**
 
 #### **Foreign Key Validation**
-**Invalid Progression ID**: When `progressionId` references non-existent feature progression
-**Example**: `progressionId: 99999` when progression doesn't exist
-**Error Message**: "Feature progression with ID 99999 does not exist."
+**Invalid Feature ID**: When `featureId` references non-existent feature
+**Example**: `featureId: 99999` when feature doesn't exist
+**Error Message**: "Feature with ID 99999 does not exist."
 
 **Invalid Formula Params ID**: When `formulaParamsId` references non-existent formula parameters
 **Example**: `formulaParamsId: 99999` when formula parameters don't exist
@@ -571,10 +621,10 @@ The feature system follows the shared [Error Handling Patterns](../application-o
 **Example**: `level: 25` for feature progression
 **Error Message**: "Level must be between 1 and 20."
 
-#### **Progression Logic Validation**
-**Invalid Progression Order**: When feature progressions don't follow logical order
-**Example**: Level 5 feature before Level 1 feature
-**Error Message**: "Feature progressions must be in ascending level order."
+#### **Feature Logic Validation**
+**Invalid Feature Order**: When features don't follow logical level order
+**Example**: Level 5 feature before Level 1 feature for the same source
+**Error Message**: "Features should be in ascending level order for consistent progression."
 
 ### **Data Integrity Validation**
 
@@ -584,9 +634,9 @@ The feature system follows the shared [Error Handling Patterns](../application-o
 **Error Message**: "Circular reference detected: Feature cannot reference itself."
 
 #### **Orphaned Entity Detection**
-**Entities Without Progressions**: When entities exist without valid progressions
-**Example**: Entity with `progressionId: null`
-**Error Message**: "Feature entities must be associated with valid feature progressions."
+**Entities Without Features**: When entities exist without valid features
+**Example**: Entity with `featureId: null` or invalid featureId
+**Error Message**: "Feature entities must be associated with valid features."
 
 ### **Performance Validation**
 

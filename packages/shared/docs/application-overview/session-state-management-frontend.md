@@ -496,7 +496,7 @@ graph LR
 1. **Component uses Edit State Hook**: Component calls `updateState()` to modify state
 2. **Sync Utilities detect changes**: `useFieldsSync` or `useFieldSync` detect state changes
 3. **Resolution Hook applies updates**: Sync utilities call `resolution.applyUpdate()`
-4. **Backend updates session**: API updates session in SQLite
+4. **Backend updates session**: API updates session in Redis
 5. **State flows back**: Updated state flows back through resolution hook
 
 ## State Management Patterns

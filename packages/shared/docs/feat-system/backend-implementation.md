@@ -50,7 +50,9 @@ The central service for all feat management operations, providing comprehensive 
 
 **Key Responsibilities**:
 - **Feat CRUD**: Create, read, update, and delete feat definitions
-- **Feature System Integration**: Manage feat relationships with Feature system (FeatureProgression, FeatureEntity, FeaturePrerequisite)
+- **Feature System Integration**: Manage feat relationships with Feature system (Feature, FeatureEntity, FeaturePrerequisite)
+
+**Note**: `FeatureProgression` is maintained as a type alias for `FeatureWithRelationsSchema` for backward compatibility, but the database model is now unified as `Feature`.
 - **Transaction Safety**: Ensure data consistency through proper transaction handling
 - **Validation**: Validate feat data and relationships
 
@@ -77,7 +79,7 @@ The central service for all feat management operations, providing comprehensive 
 
 **featQuery**: Retrieves feats with advanced filtering
 - **Parameters**: Query request with query type (currently only 'all' is supported)
-- **Business Logic**: Loads all feats ordered by name (proficiency identification is handled via FeatureProgressions, not query filtering)
+- **Business Logic**: Loads all feats ordered by name (proficiency identification is handled via Features, not query filtering)
 - **Returns**: Array of feats with total count
 
 **getFeatById**: Retrieves a specific feat by ID with full related data
@@ -87,7 +89,7 @@ The central service for all feat management operations, providing comprehensive 
 
 **createFeat**: Creates a new feat with validation and feature progression management
 - **Parameters**: Complete feat creation data including optional `featureProgressions` array
-- **Business Logic**: Creates feat in database, then creates FeatureProgression entries if provided (via `featureSystemService.createMultipleFeatureProgressions`)
+- **Business Logic**: Creates feat in database, then creates Feature entries if provided (via `featureSystemService.createMultipleFeatureProgressions`)
 - **Returns**: Created feat ID and success message
 
 **updateFeat**: Updates an existing feat
@@ -217,7 +219,7 @@ The feat system routes follow the shared [RESTful API Structure](../application-
 
 All feat benefits and prerequisites are managed through the Feature system:
 
-**Benefits**: Defined via FeatureEntity entries within FeatureProgression entries
+**Benefits**: Defined via FeatureEntity entries within Feature entries (sourceType: Feat)
 - **EntityAppliesToType**: Specifies what the benefit applies to (Attack, SavingThrow, Skill, Proficiency, etc.)
 - **appliesToId**: The specific entity ID (skill ID, ability ID, etc.)
 - **appliesToSubId**: Optional sub-identifier for special contexts (e.g., AttackBonusAppliesTo for two-weapon fighting)
@@ -228,7 +230,7 @@ All feat benefits and prerequisites are managed through the Feature system:
 - **appliesToId**: The specific entity ID (ability ID, skill ID, feat ID, etc.)
 - **minValue**: The minimum required value
 
-**Integration Pattern**: Benefits and prerequisites are managed through the Feature system service (`featureSystemService`), not directly by the feat service. The feat service creates FeatureProgression entries when creating feats, but all benefit/prerequisite management is handled by the Feature system.
+**Integration Pattern**: Benefits and prerequisites are managed through the Feature system service (`featureSystemService`), not directly by the feat service. The feat service creates Feature entries (with sourceType: Feat) when creating feats, but all benefit/prerequisite management is handled by the Feature system.
 
 **Related Documentation**: [Feature System Backend Implementation](../feature-system/backend-implementation.md)
 
@@ -287,14 +289,16 @@ The feat system integrates with the character system through feat selection and 
 
 The feat system is fully integrated with the Feature system:
 
-**Feat Benefits and Prerequisites**: All feat benefits and prerequisites are defined through FeatureProgression entries:
-- **FeatureProgression**: Links feats to Features (sourceType: Feat)
+**Feat Benefits and Prerequisites**: All feat benefits and prerequisites are defined through Feature entries:
+- **Feature**: Links feats to the feature system (sourceType: Feat, featId: references Feat.id)
 - **FeatureEntity**: Defines feat benefits (skill bonuses, attack bonuses, proficiencies, etc.)
 - **FeaturePrerequisite**: Defines feat prerequisites (ability scores, skills, feats, BAB, etc.)
 
 **Feature Descriptions**: Feat descriptions and summaries come from associated Features, not the Feat model itself.
 
-**Integration Pattern**: When creating a feat, `featureProgressions` can be included in the request. The feat service creates the feat, then calls `featureSystemService.createMultipleFeatureProgressions()` to create the FeatureProgression entries. All benefit and prerequisite management is handled through the Feature system service.
+**Integration Pattern**: When creating a feat, `featureProgressions` can be included in the request. The feat service creates the feat, then calls `featureSystemService.createMultipleFeatureProgressions()` to create the Feature entries (with sourceType: Feat and featId set). All benefit and prerequisite management is handled through the Feature system service.
+
+**Note**: The `featureProgressions` field name and `FeatureProgression` type are maintained for backward compatibility, but they now represent the unified `Feature` model.
 
 **Related Documentation**: [Feature System Backend Implementation](../feature-system/backend-implementation.md)
 

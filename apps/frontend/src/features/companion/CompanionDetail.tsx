@@ -5,7 +5,7 @@ import { EntityLink } from '@/components/entity-link';
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import { getMonsterNameFromCache } from '@/services/cache';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
-import { COMPANION_TYPE_MAP, SpecialFeatureId, FeatureSourceType } from '@shared/static-data';
+import { COMPANION_TYPE_MAP, FeatureSourceType } from '@shared/static-data';
 
 export function CompanionDetail() {
     const { id } = useParams();
@@ -21,9 +21,10 @@ export function CompanionDetail() {
         enabled: isValidId
     });
 
-    // Get companion benefit progression from companion.features
+    // Get companion benefit feature from companion.features
+    // All features with sourceType: FeatureSourceType.Companion should be included
     const benefitProgression = companion?.features?.find(
-        p => p.featureId === SpecialFeatureId.CompanionBenefit && p.sourceType === FeatureSourceType.Companion
+        p => p.sourceType === FeatureSourceType.Companion
     ) || null;
 
     if (isLoading) return (
@@ -98,8 +99,8 @@ export function CompanionDetail() {
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Benefits</h3>
                                 <FeatureDisplay
-                                    feature={benefitProgression.feature}
-                                    progressions={[benefitProgression]}
+                                    feature={benefitProgression}
+                                    features={[benefitProgression]}
                                     showAddProgressionButton={false}
                                 />
                             </div>

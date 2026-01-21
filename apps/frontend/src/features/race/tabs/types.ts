@@ -1,5 +1,5 @@
 import { useZodValidation } from '@/hooks/useZodValidation';
-import type { CreateRaceRequest, FeatureProgression, UpdateRaceRequest } from '@shared/schema';
+import type { CreateRaceRequest, FeatureWithRelations, UpdateRaceRequest } from '@shared/schema';
 
 import type { RaceEditState, RaceEditStateUpdate } from '../types';
 
@@ -11,26 +11,23 @@ export interface RaceTabProps {
     // State-based props (preferred)
     state: RaceEditState;
     updateState: (update: RaceEditStateUpdate) => void;
-    // Legacy form validation props (kept for backward compatibility)
-    formData?: RaceFormData;
-    setFormData?: (data: RaceFormData) => void;
     validation: ReturnType<typeof useZodValidation>;
     isLoading?: boolean;
-    featureProgressions?: FeatureProgression[];
-    setFeatureProgressions?: (progressions: FeatureProgression[]) => void;
+    features?: FeatureWithRelations[];
+    setFeatures?: (features: FeatureWithRelations[]) => void;
 
     // Dialog state and handlers
     isFeatureAssocOpen?: boolean;
     setIsFeatureAssocOpen?: (open: boolean) => void;
     isProgressionDialogOpen?: boolean;
     setIsProgressionDialogOpen?: (open: boolean) => void;
-    editingProgression?: FeatureProgression | null;
-    setEditingProgression?: (progression: FeatureProgression | null) => void;
-    preSelectedFeature?: FeatureProgression['feature'] | null;
-    setPreSelectedFeature?: (feature: FeatureProgression['feature'] | null) => void;
+    editingProgression?: FeatureWithRelations | null;
+    setEditingProgression?: (feature: FeatureWithRelations | null) => void;
+    preSelectedFeature?: FeatureWithRelations | null;
+    setPreSelectedFeature?: (feature: FeatureWithRelations | null) => void;
 
     // Feature management callbacks
-    onEditProgression?: (progression: FeatureProgression) => void;
+    onEditProgression?: (feature: FeatureWithRelations) => void;
     onRemoveProgression?: (progressionId: number) => void;
     onAddFeature?: (feature: { id: number; name: string; description: string; slug: string }) => void;
 

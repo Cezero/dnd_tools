@@ -27,7 +27,7 @@ import type {
     CharacterAttackDefinition,
     // NEW: Spell types
     Spell,
-    FeatureProgression,
+    FeatureWithRelations,
     // NEW: Character detail request types
     UpdateNotesRequest,
     CharacterFeatureUses,
@@ -98,12 +98,12 @@ export interface CharacterService {
 
     // NEW: Spell selection methods
     getCharacterDomains: (characterId: number, classId: number) => Promise<number[]>;
-    getAvailableSpellsForClass: (characterId: number, classId: number, resolvedProgressions?: FeatureProgression[]) => Promise<{
+    getAvailableSpellsForClass: (characterId: number, classId: number, resolvedProgressions?: FeatureWithRelations[]) => Promise<{
         spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean; isFreeGrant?: boolean }>;
         domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }>;
         availableFreeSpells?: number;
     }>;
-    addSpellKnown: (characterId: number, classId: number, spellId: number, advancementId: number, isFreeGrant?: boolean, resolvedProgressions?: FeatureProgression[]) => Promise<AddSpellKnownResponse>;
+    addSpellKnown: (characterId: number, classId: number, spellId: number, advancementId: number, isFreeGrant?: boolean, resolvedProgressions?: FeatureWithRelations[]) => Promise<AddSpellKnownResponse>;
     removeSpellKnown: (characterId: number, spellId: number, advancementId: number) => Promise<RemoveSpellKnownResponse>;
     getMaxCastableSpellLevel: (classId: number, characterLevel: number) => Promise<number>;
     validateSpellLevelForAdvancement: (classId: number, advancementLevel: number, spellLevel: number) => Promise<boolean>;
@@ -111,7 +111,7 @@ export interface CharacterService {
 
     // NEW: Character detail methods (uses tracking, money, items, wounds, spell cast)
     getCharacterUses: (characterId: number) => Promise<CharacterFeatureUses[]>;
-    updateFeatureUses: (characterId: number, progressionId: number, entityId: number, delta: number) => Promise<CharacterFeatureUses>;
+    updateFeatureUses: (characterId: number, featureId: number, entityId: number, delta: number) => Promise<CharacterFeatureUses>;
     resetDailyUses: (characterId: number) => Promise<UpdateResponse>;
     resetAllUses: (characterId: number) => Promise<UpdateResponse>;
     resetDailySpellPreparations: (characterId: number) => Promise<UpdateResponse>;

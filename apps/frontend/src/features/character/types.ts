@@ -1,7 +1,7 @@
 import React from 'react';
 
 import type { FormattedCharacterResult } from '@/lib/formatters';
-import type { FeatureProgression, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterFeatureChoice, CharacterDisallowedSource, FeatWithFeatureInfo, FeatInQueryResponse, PendingChoice, SkillBonus, ClassSpellSelection, ItemWithDetails } from '@shared/schema';
+import type { FeatureWithRelations, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterFeatureChoice, CharacterDisallowedSource, FeatWithFeatureInfo, FeatInQueryResponse, PendingChoice, SkillBonus, ClassSpellSelection, ItemWithDetails } from '@shared/schema';
 import { PROFICIENCY_TYPE_ENUM, ResolutionStepType, CoreComponent, SpellSlotType } from '@shared/static-data';
 
 import { useCharacterResolution } from './useCharacterResolution';
@@ -78,7 +78,7 @@ export interface ClassTabState {
     classId: number | null;
     /** Secondary class ID (for gestalt characters) */
     secondaryClassId: number | null;
-    /** Whether this is a gestalt character (dual-class progression) */
+    /** Whether this is a gestalt character (dual-class feature) */
     isGestalt: boolean;
     /** Character level */
     level: number;
@@ -418,8 +418,8 @@ export interface AnalogSkillInfo {
  * features grant other features (e.g., a feat that grants bonus feats).
  */
 export interface CascadingResolutionResult {
-    /** All resolved feature progressions */
-    resolvedProgressions: FeatureProgression[];
+    /** All resolved feature features */
+    resolvedProgressions: FeatureWithRelations[];
     /** Warning messages from resolution */
     warnings: string[];
     /** Error messages from resolution */
@@ -512,7 +512,7 @@ export interface ResolutionContext {
 }
 
 export interface ResolutionResult {
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     pendingChoices: PendingChoice[];
     warnings: string[];
     errors: string[];
@@ -573,7 +573,7 @@ export interface ResolvedFeatures {
 }
 
 // ============================================================================
-// Gestalt Progression Display Types
+// Gestalt Feature Display Types
 // ============================================================================
 export interface GestaltProgressionDisplayProps {
     primaryClass: DnDClass;
@@ -604,7 +604,7 @@ export interface UseFeatureResolutionProps {
 }
 
 export interface FeatureResolutionReturn {
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     isLoading: boolean;
     error: string | null;
     isClassSkill: (skillId: number, skillSubId?: number | null) => boolean;
@@ -672,7 +672,7 @@ export interface CharacterEditState {
     // ============================================================================
 
     // Core Resolution Results
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     isLoadingResolution: boolean;
     resolutionError: string | null;
 
@@ -796,7 +796,7 @@ export type CharacterEditStateUpdate =
     | { type: CharacterEditStateUpdateType.SET_MONEY; payload: { money: Money } }
     | {
         type: CharacterEditStateUpdateType.SET_RESOLVED_DATA; payload: {
-            resolvedProgressions: FeatureProgression[];
+            resolvedProgressions: FeatureWithRelations[];
             classSkills: Array<{ skillId: number; skillSubId: number | null }>;
             skillBonuses: SkillBonus[];
             pendingChoices: PendingChoice[];
@@ -818,7 +818,7 @@ export interface TabComponentProps {
     state: CharacterEditState;
     updateState: (update: CharacterEditStateUpdate) => void;
     resolvedData: {
-        progressions: FeatureProgression[];
+        features: FeatureWithRelations[];
         classSkills: Array<{ skillId: number; skillSubId: number | null }>;
         skillBonuses: SkillBonus[];
         pendingChoices: PendingChoice[];
@@ -832,7 +832,6 @@ export interface TabComponentProps {
     };
     isLoading: boolean;
     triggerFeatureResolution: () => Promise<void>;
-    handleChoiceSelection?: (choiceType: number, selectedId: number, features: FeatureProgression[]) => Promise<void>;
     handleSkillRankUpdate?: (skillId: number, skillSubId: number | null, customSubtype: string | null, pointsSpent: number) => Promise<void>;
     formattedCharacter?: FormattedCharacterResult | null;
     // Shared data fetched in CharacterEdit and passed to all tabs
@@ -855,9 +854,9 @@ export interface TabComponentProps {
 }
 
 /**
- * Source types for tracking where pooled FeatureProgressions originate.
+ * Source types for tracking where pooled Features originate.
  * 
- * Frontend-specific enum for runtime tracking of progression sources.
+ * Frontend-specific enum for runtime tracking of feature sources.
  * This is distinct from FeatureSourceType in @shared/static-data which
  * represents database source types. This enum tracks runtime pooling sources
  * including SecondaryClass for gestalt character support.
@@ -867,35 +866,35 @@ export interface TabComponentProps {
  * 
  * @see FeatureSourceType - Database source type enum in @shared/static-data/FeatureData.ts
  */
-export enum FeatureProgressionSourceType {
-    /** Progression from racial features */
+export enum FeatureSourceType {
+    /** Feature from racial features */
     Race = 1,
-    /** Progression from primary class features */
+    /** Feature from primary class features */
     Class = 2,
-    /** Progression from secondary class (gestalt only) */
+    /** Feature from secondary class (gestalt only) */
     SecondaryClass = 3,
-    /** Progression from feat-granted features */
+    /** Feature from feat-granted features */
     Feat = 4,
-    /** Progression from domain-granted features */
+    /** Feature from domain-granted features */
     Domain = 5,
-    /** Progression from spell-granted features */
+    /** Feature from spell-granted features */
     Spell = 6,
-    /** Progression from other feature grants */
+    /** Feature from other feature grants */
     Feature = 7,
-    /** Progression from user choices */
+    /** Feature from user choices */
     Choice = 8
 }
 
 /**
- * A FeatureProgression with source tracking for UI pooling.
+ * A FeatureWithRelations with source tracking for UI pooling.
  * 
- * Frontend-specific type that extends FeatureProgression with metadata
- * about where the progression came from. Used for grouping and displaying
- * progressions by source in the character editor.
+ * Frontend-specific type that extends FeatureWithRelations with metadata
+ * about where the feature came from. Used for grouping and displaying
+ * features by source in the character editor.
  */
-export interface PooledFeatureProgression extends FeatureProgression {
-    /** The type of source that provided this progression */
-    poolSourceType: FeatureProgressionSourceType;
+export interface PooledFeature extends FeatureWithRelations {
+    /** The type of source that provided this feature */
+    poolSourceType: FeatureSourceType;
     /** The ID of the source (raceId, classId, domainId, etc.) */
     sourceId: number;
     /** For choices, which choice index this represents */
@@ -1014,7 +1013,7 @@ export type CharacterResolutionReturn = ReturnType<typeof useCharacterResolution
 export interface DescriptionTabProps {
     character: CharacterWithAllDetailsResponse;
     formattedCharacter: FormattedCharacterResult;
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     characterId: number;
     state: CharacterDetailState;
     updateState: (update: CharacterDetailStateUpdate) => void;

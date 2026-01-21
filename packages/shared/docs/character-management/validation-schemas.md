@@ -266,12 +266,15 @@ Schema for character feature choice validation.
 **Key Validations**:
 - **`id`**: Required positive integer for feature choice identification
 - **`characterId`**: Required positive integer for character reference
-- **`featureChoiceId`**: Required positive integer for feature choice reference
-- **`progressionId`**: Required positive integer for progression reference
+- **`featureId`**: Required positive integer for feature reference
 - **`advancementId`**: Required positive integer for advancement reference
-- **`key`**: Optional string for choice key
-- **`value`**: Required string for choice value
-- **`choiceIndex`**: Optional integer for choice index
+- **`featureEntityId`**: Required positive integer for feature entity reference
+- **`appliesToId`**: Required integer for the selected value ID
+- **`appliesToSubId`**: Optional integer or null for sub-value ID
+- **`choiceIndex`**: Optional integer or null for choice index
+- **`choiceGroupId`**: Optional string or null for choice group identifier
+- **`choiceData`**: Optional JSON object for complex choice information
+- **`linkedChoiceGroupId`**: Optional string or null for linked choice group identifier
 
 **Usage**: Validates character feature choice data in API requests and responses.
 

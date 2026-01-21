@@ -57,14 +57,11 @@ const deleteSkillConfig = createQueryHooks({
 });
 
 export const SkillQueryHooks = {
-    // Keep existing hooks for backward compatibility during transition
+    // React Query hooks
     useGetSkills: skillsConfig.useQuery,
     useGetSkillById: skillByIdConfig.useQuery,
-    useCreateSkill: createSkillConfig.useMutation,
-    useUpdateSkill: updateSkillConfig.useMutation,
-    useDeleteSkill: deleteSkillConfig.useMutation,
 
-    // Add imperative methods
+    // Imperative methods
     getSkills: (params?: unknown) => skillsConfig.fetch(params),
     getSkillById: (skillId: number) => skillByIdConfig.fetch({ pathParams: { id: skillId } }),
     createSkill: (data: unknown) => createSkillConfig.mutate({ requestData: data }),

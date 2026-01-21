@@ -1,36 +1,30 @@
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { useQueryClient } from '@tanstack/react-query';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
-import { useAuthAuto } from '@/components/auth';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { FeatureProgression } from '@shared/schema';
+import { FeatureWithRelations } from '@shared/schema';
 import { DisplayType } from '@shared/static-data';
 
 import { FeatureDisplayProps } from './types';
 
 export function FeatureDisplay({
     feature,
-    progressions,
+    features,
     onEditProgression,
     onRemoveProgression,
     onAddProgression,
     showAddProgressionButton = true,
     className = '',
-    onEditFeature,
     parentType: _parentType,
     parentId: _parentId
 }: FeatureDisplayProps): React.JSX.Element {
-    const { isAdmin } = useAuthAuto();
-    const queryClient = useQueryClient();
+    // Precache all entities referenced in feature features
+    usePrecacheFeatureEntities(features);
 
-    // Precache all entities referenced in feature progressions
-    usePrecacheFeatureEntities(progressions);
-
-    const handleEditProgression = (progression: FeatureProgression) => {
-        onEditProgression?.(progression);
+    const handleEditProgression = (feature: FeatureWithRelations) => {
+        onEditProgression?.(feature);
     };
 
     const handleRemoveProgression = (progressionId: number) => {
@@ -39,12 +33,6 @@ export function FeatureDisplay({
 
     const handleAddProgression = () => {
         onAddProgression?.(feature);
-    };
-
-    const handleEditFeature = () => {
-        if (feature?.id && onEditFeature) {
-            onEditFeature(feature.id);
-        }
     };
 
     return (
@@ -59,24 +47,14 @@ export function FeatureDisplay({
                                     ({feature?.slug || `feature-${feature?.id || 'unknown'}`})
                                 </span>
                             </div>
-                            {isAdmin && onEditFeature && feature?.id && (
-                                <button
-                                    type="button"
-                                    onClick={handleEditFeature}
-                                    className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500"
-                                    title="Edit feature definition"
-                                >
-                                    <PencilIcon className="h-4 w-4" />
-                                </button>
-                            )}
                         </div>
                     </div>
                     {/* Show prerequisites if they exist - use formatting system (Phase 6) */}
                     {feature.prerequisites && feature.prerequisites.length > 0 && (() => {
                         // Format prerequisites using the display strategy system
-                        // Use the first progression if available, otherwise create a minimal one for formatting
-                        // IMPORTANT: Always use the feature prop's prerequisites, not the progression's feature prerequisites
-                        const baseProgression = progressions?.[0];
+                        // Use the first feature if available, otherwise create a minimal one for formatting
+                        // IMPORTANT: Always use the feature prop's prerequisites, not the feature's feature prerequisites
+                        const baseProgression = features?.[0];
 
                         // Create a feature object that definitely has prerequisites from the prop
                         const featureWithPrerequisites = {
@@ -84,18 +62,19 @@ export function FeatureDisplay({
                             prerequisites: feature.prerequisites // Explicitly use the prop's prerequisites
                         };
 
-                        const progressionForFormatting: FeatureProgression = baseProgression
+                        // FeatureWithRelations is now the unified Feature model, so use it directly
+                        // Merge prerequisites from the feature prop if available
+                        const progressionForFormatting: FeatureWithRelations = baseProgression
                             ? {
                                 ...baseProgression,
-                                feature: featureWithPrerequisites // Always use the feature prop with prerequisites
+                                prerequisites: feature.prerequisites || baseProgression.prerequisites
                             }
                             : {
-                                id: 0,
+                                ...featureWithPrerequisites,
+                                id: feature.id || 0,
                                 sourceType: 0,
                                 level: 1,
-                                featureId: feature.id || 0,
-                                feature: featureWithPrerequisites
-                            } as FeatureProgression;
+                            } as FeatureWithRelations;
 
                         const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
                         const displayResult = strategy.format(progressionForFormatting);
@@ -124,29 +103,29 @@ export function FeatureDisplay({
                 )}
             </div>
 
-            {/* Feature Progressions */}
+            {/* Feature Features */}
             <div className="p-2">
                 <div className="flex flex-wrap gap-2 items-start">
-                    {/* Use display strategy for ALL progressions */}
-                    {progressions.map((progression, progIndex) => (
+                    {/* Use display strategy for ALL features */}
+                    {features.map((feature, progIndex) => (
                         <div key={progIndex} className="flex items-start gap-1">
                             <button
                                 type="button"
-                                onClick={() => handleEditProgression(progression)}
+                                onClick={() => handleEditProgression(feature)}
                                 className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-left"
-                                title="Edit progression details"
+                                title="Edit feature details"
                             >
                                 {(() => {
                                     const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-                                    const result = strategy.format(progression);
+                                    const result = strategy.format(feature);
                                     return result.formattedValue || 'No preview';
                                 })()}
                             </button>
                             <button
                                 type="button"
-                                onClick={() => handleRemoveProgression(progression.id)}
+                                onClick={() => handleRemoveProgression(feature.id)}
                                 className="text-red-500 hover:text-red-700"
-                                title="Remove Progression"
+                                title="Remove Feature"
                             >
                                 <TrashIcon className="h-4 w-4" />
                             </button>
@@ -158,7 +137,7 @@ export function FeatureDisplay({
                             onClick={handleAddProgression}
                             className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                         >
-                            Add Progression
+                            Add Feature
                         </button>
                     )}
                 </div>

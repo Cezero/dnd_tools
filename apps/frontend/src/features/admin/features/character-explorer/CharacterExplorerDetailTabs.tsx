@@ -13,10 +13,10 @@ export function CharacterExplorerDetailTabs({
     onDisplayTypeChange,
 }: CharacterExplorerDetailTabsProps): React.JSX.Element {
     switch (activeTab) {
-        case 'resolved-progressions':
+        case 'resolved-features':
             return (
                 <div>
-                    <h2 className="text-xl font-semibold mb-4">Resolved Progressions</h2>
+                    <h2 className="text-xl font-semibold mb-4">Resolved Features</h2>
                     <JsonViewer
                         data={explorerData.resolvedProgressions}
                         loading={explorerData.isLoading}

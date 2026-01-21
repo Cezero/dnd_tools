@@ -1,6 +1,6 @@
 import type {
     CharacterWithAllDetailsResponse,
-    FeatureProgression,
+    FeatureWithRelations,
     DnDClass,
 } from '@shared/schema';
 
@@ -23,7 +23,7 @@ export class CharacterCalculationService {
     static getAbilityScore(
         character: CharacterWithAllDetailsResponse,
         abilityId: number,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureWithRelations[]
     ) {
         return getAbilityScore(character, abilityId, resolvedProgressions);
     }
@@ -34,7 +34,7 @@ export class CharacterCalculationService {
     static getAbilityModifier(
         character: CharacterWithAllDetailsResponse,
         abilityId: number,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureWithRelations[]
     ): number {
         return getAbilityModifierWithBonuses(character, abilityId, resolvedProgressions);
     }
@@ -44,7 +44,7 @@ export class CharacterCalculationService {
      */
     static getAC(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         items?: Array<{ id: number; armor?: { bonus: number | null }; weapon?: unknown }>
     ) {
         return getAC(character, resolvedProgressions, items);
@@ -55,7 +55,7 @@ export class CharacterCalculationService {
      */
     static getTouchAC(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>
     ): number {
         return getTouchAC(character, resolvedProgressions, items);
@@ -66,7 +66,7 @@ export class CharacterCalculationService {
      */
     static getFlatFootedAC(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>
     ): number {
         return getFlatFootedAC(character, resolvedProgressions, items);
@@ -77,7 +77,7 @@ export class CharacterCalculationService {
      */
     static getInitiative(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureWithRelations[]
     ) {
         return getInitiative(character, resolvedProgressions);
     }
@@ -87,7 +87,7 @@ export class CharacterCalculationService {
      */
     static getSpeed(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         race: import('@shared/schema').Race | null
     ) {
         return getSpeed(character, resolvedProgressions, race);
@@ -99,7 +99,7 @@ export class CharacterCalculationService {
     static getSavingThrow(
         character: CharacterWithAllDetailsResponse,
         saveType: number,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         classDetailsMap: Map<number, DnDClass>
     ) {
         return getSavingThrow(character, saveType, resolvedProgressions, classDetailsMap);
@@ -111,7 +111,7 @@ export class CharacterCalculationService {
      */
     static getCombatValues(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         context: CombatCalculationContext,
         classDetailsMap: Map<number, DnDClass>
     ): CombatValuesResult[] {

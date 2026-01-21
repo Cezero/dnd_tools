@@ -27,19 +27,19 @@ export const BaseFeatSchema = z.object({
     sourceBookInfo: z.array(SourceMapSchema).optional(),
 });
 
-import { FeatureProgressionResponseSchema, CreateFeatureProgressionRequestSchema } from './feature.js';
+import { FeatureResponseSchema, CreateFeatureRequestSchema } from './feature.js';
 
 export const FeatSchema = BaseFeatSchema.extend({
     id: commonValidations.positiveInt('Feat ID'),
-    featureProgressions: z.array(FeatureProgressionResponseSchema).optional(),
+    features: z.array(FeatureResponseSchema).optional(),
 });
 
 // Extended schema for creating feats with feature progressions
 export const CreateFeatWithProgressionsSchema = BaseFeatSchema.extend({
-    featureProgressions: z.array(CreateFeatureProgressionRequestSchema).optional(),
+    features: z.array(CreateFeatureRequestSchema).optional(),
 });
 
-export const FeatInQueryResponseSchema = FeatSchema.omit({ featureProgressions: true });
+export const FeatInQueryResponseSchema = FeatSchema.omit({ features: true });
 
 export const FeatSummarySchema = z.object({
     id: commonValidations.positiveInt(),
@@ -55,8 +55,8 @@ export const FeatSummarySchema = z.object({
  * IMPORTANT: The backend populates this schema by:
  * - id: from Feat.id
  * - name: from Feat.name
- * - description: from the associated Feature.description (via FeatureProgression)
- * - summary: from the associated Feature.summary (via FeatureProgression)
+ * - description: from the associated Feature.description
+ * - summary: from the associated Feature.summary
  * 
  * If a feat has no associated feature, description and summary will be null.
  * If a feat has multiple feature progressions, the first one's feature is used.
@@ -73,7 +73,7 @@ export const GetAllFeatsWithFeatureInfoResponseSchema = QueryResponseSchema.exte
 });
 
 export const FeatCacheSchema = FeatSchema.omit({
-    featureProgressions: true,
+    features: true,
     repeatable: true,
     sourceBookInfo: true,
 });

@@ -408,7 +408,7 @@ export function CharacterDetail(): React.JSX.Element {
             ),
             raceId: characterData.raceId ?? undefined,
             sizeId: (() => {
-                // Extract sizeId from resolved progressions
+                // Extract sizeId from resolved features
                 if (characterData.raceId && resolution.resolvedCharacter?.resolvedProgressions) {
                     const raceMechanics = extractRaceMechanics(resolution.resolvedCharacter.resolvedProgressions, characterData.raceId);
                     return raceMechanics.sizeId ?? undefined;

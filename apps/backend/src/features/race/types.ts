@@ -12,7 +12,7 @@ import {
 // Service interface
 export interface RaceService {
     getAllRaces: () => Promise<GetAllRacesResponse>;
-    getRaceById: (id: RaceIdParamRequest, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => Promise<Race | null>;
+    getRaceById: (id: RaceIdParamRequest, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => Promise<Race | null>;
     createRace: (data: CreateRaceRequest) => Promise<CreateResponse>;
     updateRace: (id: RaceIdParamRequest, data: UpdateRaceRequest) => Promise<UpdateResponse>;
     deleteRace: (id: RaceIdParamRequest) => Promise<UpdateResponse>;

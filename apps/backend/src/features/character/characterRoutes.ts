@@ -152,7 +152,7 @@ post('/spell-selection/remove', requireAuth, { body: RemoveSpellKnownRequestSche
 
 // NEW: Character Detail Routes (uses tracking, money, items, wounds, spell cast)
 get('/:id/uses', requireAuth, { params: CharacterIdParamSchema }, GetCharacterUses);
-post('/:id/uses/:progressionId/:entityId', requireAuth, { params: FeatureUsesParamSchema, body: UpdateFeatureUsesRequestSchema }, UpdateFeatureUses);
+post('/:id/uses/:featureId/:entityId', requireAuth, { params: FeatureUsesParamSchema, body: UpdateFeatureUsesRequestSchema }, UpdateFeatureUses);
 post('/:id/uses/reset-daily', requireAuth, { params: CharacterIdParamSchema }, ResetDailyUses);
 post('/:id/uses/reset-all', requireAuth, { params: CharacterIdParamSchema }, ResetAllUses);
 post('/:id/money', requireAuth, { params: CharacterIdParamSchema, body: UpdateMoneyRequestSchema }, UpdateMoney);

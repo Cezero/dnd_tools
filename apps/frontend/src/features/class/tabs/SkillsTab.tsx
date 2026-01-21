@@ -1,7 +1,7 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect } from 'react';
 
-import { getAppliesToSubIdSelectOptions } from '@/components/feature-system/FeatureProgressionDetailEdit/utils';
+import { getAppliesToSubIdSelectOptions } from '@/components/feature-system/FeatureDetailEdit/utils';
 import { CustomNestedContextSelect, type NestedSelectOption } from '@/components/forms';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
@@ -9,23 +9,22 @@ import { NumericIdMapping } from '@/lib/numeric-id-mapping';
 import { useCacheFunctions } from '@/services/cache';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
-import type { GetSkillResponse, FeatureProgression } from '@shared/schema';
+import type { GetSkillResponse, FeatureWithRelations } from '@shared/schema';
 import {
     ABILITY_MAP,
-    SpecialFeatureId,
     EntityAppliesToType,
+    EntityType,
+    FeatureSourceType,
     type SkillDetail,
 } from '@shared/static-data';
 
 import type { ClassTabProps } from './types';
 
 export function SkillsTab({
-    formData: _formData,
-    setFormData: _setFormData,
     validation: _validation,
     isLoading: _isLoading = false,
-    featureProgressions = [],
-    setFeatureProgressions,
+    features = [],
+    setFeatures,
     onAddSkill: _onAddSkill,
     onRemoveSkill: _onRemoveSkill,
     classId = 1
@@ -35,7 +34,7 @@ export function SkillsTab({
     const [loadingSkills, setLoadingSkills] = useState<Set<number>>(new Set());
 
     // Get class skills to determine which skills need to be loaded
-    const classSkills = ClassSkillService.getClassSkills(featureProgressions as FeatureProgression[]);
+    const classSkills = ClassSkillService.getClassSkills(features as FeatureWithRelations[]);
 
     // Get all skills and filter for the ones we need
     const { data: allSkills, isLoading: isLoadingAllSkills } = SkillQueryHooks.useGetSkills({});
@@ -65,11 +64,15 @@ export function SkillsTab({
 
     // Helper function to get existing subtypes for a skill
     const getExistingSubtypes = (skillId: number): number[] => {
-        return featureProgressions
-            .filter(prog => prog.featureId === SpecialFeatureId.ClassSkill)
+        return features
+            .filter(prog =>
+                prog.sourceType === FeatureSourceType.Class &&
+                prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)
+            )
             .flatMap(prog =>
                 prog.entities
                     ?.filter(entity =>
+                        entity.type === EntityType.Base &&
                         entity.appliesTo === EntityAppliesToType.Skill &&
                         entity.appliesToId === skillId &&
                         entity.appliesToSubId !== null
@@ -80,10 +83,14 @@ export function SkillsTab({
 
     // Helper function to check if a skill/subtype combination is already added
     const isSkillSubtypeAdded = (skillId: number, subtypeId: number | null): boolean => {
-        return featureProgressions
-            .filter(prog => prog.featureId === SpecialFeatureId.ClassSkill)
+        return features
+            .filter(prog =>
+                prog.sourceType === FeatureSourceType.Class &&
+                prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)
+            )
             .some(prog =>
                 prog.entities?.some(entity =>
+                    entity.type === EntityType.Base &&
                     entity.appliesTo === EntityAppliesToType.Skill &&
                     entity.appliesToId === skillId &&
                     entity.appliesToSubId === subtypeId
@@ -145,14 +152,14 @@ export function SkillsTab({
 
     // Handle skill selection with numeric values
     const handleSkillSelect = (value: number | null) => {
-        if (!value || !setFeatureProgressions) return;
+        if (!value || !setFeatures) return;
 
         // Parse the numeric ID
         const parsed = NumericIdMapping.parseId(value);
         if (parsed && !parsed.isGroup) {
             ClassSkillService.addSkill(
-                featureProgressions,
-                setFeatureProgressions,
+                features,
+                setFeatures,
                 parsed.skillId,
                 classId,
                 parsed.subtypeId
@@ -180,11 +187,18 @@ export function SkillsTab({
                 {/* Skills Grid */}
                 {(() => {
                     // Get all class skill entries (including subtypes) and sort them
-                    const classSkillEntries = featureProgressions
-                        .filter(prog => prog.featureId === SpecialFeatureId.ClassSkill)
+                    const classSkillEntries = features
+                        .filter(prog =>
+                            prog.sourceType === FeatureSourceType.Class &&
+                            prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)
+                        )
                         .flatMap(prog =>
                             prog.entities
-                                ?.filter(entity => entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId)
+                                ?.filter(entity =>
+                                    entity.type === EntityType.Base &&
+                                    entity.appliesTo === EntityAppliesToType.Skill &&
+                                    entity.appliesToId
+                                )
                                 .map(entity => ({
                                     skillId: entity.appliesToId!,
                                     subtypeId: entity.appliesToSubId,
@@ -257,13 +271,15 @@ export function SkillsTab({
                                                     type="button"
                                                     onClick={() => {
                                                         // Remove the specific skill entry with subtype
-                                                        if (setFeatureProgressions) {
-                                                            const updatedProgressions = featureProgressions.map(prog => {
-                                                                if (prog.featureId === SpecialFeatureId.ClassSkill) {
+                                                        if (setFeatures) {
+                                                            const updatedProgressions = features.map(prog => {
+                                                                if (prog.sourceType === FeatureSourceType.Class &&
+                                                                    prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)) {
                                                                     return {
                                                                         ...prog,
                                                                         entities: prog.entities?.filter(entity =>
-                                                                            !(entity.appliesTo === EntityAppliesToType.Skill &&
+                                                                            !(entity.type === EntityType.Base &&
+                                                                                entity.appliesTo === EntityAppliesToType.Skill &&
                                                                                 entity.appliesToId === entry.skillId &&
                                                                                 entity.appliesToSubId === entry.subtypeId)
                                                                         ) || []
@@ -271,7 +287,7 @@ export function SkillsTab({
                                                                 }
                                                                 return prog;
                                                             });
-                                                            setFeatureProgressions(updatedProgressions);
+                                                            setFeatures(updatedProgressions);
                                                         }
                                                     }}
                                                     className="text-red-500 hover:text-red-700 p-1 ml-2 flex-shrink-0"

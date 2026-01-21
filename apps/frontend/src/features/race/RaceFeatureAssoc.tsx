@@ -38,7 +38,7 @@ export function RaceFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatu
     };
 
     const dataFetcher = useCallback(async () => {
-        return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [FeatureSourceType.Race] } });
+        return await FeatureQueryHooks.getFeatures({ sourceTypes: [FeatureSourceType.Race] });
     }, []);
 
     return (

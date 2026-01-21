@@ -37,20 +37,20 @@ export interface UpdateApplierConfig<TState, TUpdate> {
     extractFieldUpdate: (update: TUpdate) => { field: string; value: unknown } | null;
 
     /**
-     * Checks if an update type is a progression update.
+     * Checks if an update type is a feature update.
      * 
      * @param update - The update to check
-     * @returns True if this is a progression update
+     * @returns True if this is a feature update
      */
     isProgressionUpdate: (update: TUpdate) => boolean;
 
     /**
-     * Applies a progression update to the state.
+     * Applies a feature update to the state.
      * 
      * Handles ADD_PROGRESSION, UPDATE_PROGRESSION, REMOVE_PROGRESSION.
      * 
      * @param state - Current state
-     * @param update - The progression update
+     * @param update - The feature update
      * @returns Updated state
      */
     applyProgressionUpdate: (state: TState, update: TUpdate) => TState;
@@ -103,7 +103,7 @@ export interface UpdateApplierConfig<TState, TUpdate> {
  * 
  * **Update Types**:
  * - Field updates: UPDATE_CLASS_FIELD, UPDATE_RACE_FIELD
- * - Progression updates: ADD_PROGRESSION, UPDATE_PROGRESSION, REMOVE_PROGRESSION
+ * - Feature updates: ADD_PROGRESSION, UPDATE_PROGRESSION, REMOVE_PROGRESSION
  * - Entity updates: ADD_ENTITY, UPDATE_ENTITY, REMOVE_ENTITY
  * - Special updates: Entity-specific updates (e.g., SET_SPELLCASTING_PROGRESSION)
  * 
@@ -145,7 +145,7 @@ export function applyUpdateToState<TState, TUpdate>(
         }
     }
 
-    // Handle progression updates
+    // Handle feature updates
     if (config.isProgressionUpdate(update)) {
         return config.applyProgressionUpdate(state, update);
     }

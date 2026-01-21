@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { useZodValidation } from '@/hooks/useZodValidation';
-import type { CreateClassRequest, UpdateClassRequest, FeatureProgression, SpellcastingProgressionWithSlots } from '@shared/schema';
+import type { CreateClassRequest, UpdateClassRequest, FeatureWithRelations, SpellcastingProgressionWithSlots } from '@shared/schema';
 
 import type { ClassEditState, ClassEditStateUpdate } from '../types';
 
@@ -38,27 +38,24 @@ export interface ClassTabProps {
     // State-based props (preferred)
     state: ClassEditState;
     updateState: (update: ClassEditStateUpdate) => void;
-    // Legacy form validation props (kept for backward compatibility)
-    formData?: ClassFormData;
-    setFormData?: (data: ClassFormData) => void;
     validation: ReturnType<typeof useZodValidation>;
     isLoading?: boolean;
     // Additional props that may be needed by specific tabs
-    featureProgressions?: FeatureProgression[];
-    setFeatureProgressions?: (progressions: FeatureProgression[]) => void;
+    features?: FeatureWithRelations[];
+    setFeatures?: (features: FeatureWithRelations[]) => void;
     spellcastingProgression?: SpellcastingProgressionWithSlots[];
-    setSpellcastingProgression?: (progression: SpellcastingProgressionWithSlots[]) => void;
+    setSpellcastingProgression?: (feature: SpellcastingProgressionWithSlots[]) => void;
     spellsKnownProgression?: SpellcastingProgressionWithSlots[];
-    setSpellsKnownProgression?: (progression: SpellcastingProgressionWithSlots[]) => void;
+    setSpellsKnownProgression?: (feature: SpellcastingProgressionWithSlots[]) => void;
     // Dialog state and handlers
     isFeatureAssocOpen?: boolean;
     setIsFeatureAssocOpen?: (open: boolean) => void;
     isProgressionDialogOpen?: boolean;
     setIsProgressionDialogOpen?: (open: boolean) => void;
-    editingProgression?: FeatureProgression | null;
-    setEditingProgression?: (progression: FeatureProgression | null) => void;
-    preSelectedFeature?: FeatureProgression['feature'] | null;
-    setPreSelectedFeature?: (feature: FeatureProgression['feature'] | null) => void;
+    editingProgression?: FeatureWithRelations | null;
+    setEditingProgression?: (feature: FeatureWithRelations | null) => void;
+    preSelectedFeature?: FeatureWithRelations | null;
+    setPreSelectedFeature?: (feature: FeatureWithRelations | null) => void;
     // Skill management callbacks
     onAddSkill: (skillId: number) => void;
     onRemoveSkill: (skillId: number) => void;
@@ -66,7 +63,7 @@ export interface ClassTabProps {
     onAddProficiency: (featId: number, itemId: number, featName: string, itemName: string) => void;
     onRemoveProficiency: (featId: number, itemId: number) => void;
     // Feature management callbacks
-    onEditProgression?: (progression: FeatureProgression) => void;
+    onEditProgression?: (feature: FeatureWithRelations) => void;
     onRemoveProgression?: (progressionId: number) => void;
     onAddFeature?: (feature: { id: number; name: string; description: string; slug: string }) => void;
     classId?: number;

@@ -1,4 +1,4 @@
-import { FeatureEntity, FeatureProgression } from '@shared/schema';
+import { FeatureEntity, FeatureWithRelations } from '@shared/schema';
 import { EntityType } from '@shared/static-data';
 
 import type { EntityProcessingResult } from './types';
@@ -12,7 +12,7 @@ export class FeatureEntityHandlers {
      */
     static processFeatureEntity(
         entity: FeatureEntity,
-        progression: FeatureProgression
+        feature: FeatureWithRelations
     ): EntityProcessingResult {
         const result: EntityProcessingResult = {
             grants: []
@@ -21,15 +21,15 @@ export class FeatureEntityHandlers {
         // Handle different entity types
         switch (entity.type) {
             case EntityType.Base:
-                return this.processBaseEntity(entity, progression);
+                return this.processBaseEntity(entity, feature);
             case EntityType.Other:
-                return this.processOtherEntity(entity, progression);
+                return this.processOtherEntity(entity, feature);
             case EntityType.Bonus:
-                return this.processBonusEntity(entity, progression);
+                return this.processBonusEntity(entity, feature);
             case EntityType.Choice:
-                return this.processChoiceEntity(entity, progression);
+                return this.processChoiceEntity(entity, feature);
             case EntityType.Allocation:
-                return this.processAllocationEntity(entity, progression);
+                return this.processAllocationEntity(entity, feature);
             default:
                 result.warnings = [`Unknown entity type: ${entity.type}`];
                 return result;
@@ -41,7 +41,7 @@ export class FeatureEntityHandlers {
      */
     private static processBaseEntity(
         entity: FeatureEntity,
-        _progression: FeatureProgression
+        _progression: FeatureWithRelations
     ): EntityProcessingResult {
         const result: EntityProcessingResult = {
             grants: []
@@ -59,7 +59,7 @@ export class FeatureEntityHandlers {
      */
     private static processOtherEntity(
         entity: FeatureEntity,
-        _progression: FeatureProgression
+        _progression: FeatureWithRelations
     ): EntityProcessingResult {
         const result: EntityProcessingResult = {
             grants: []
@@ -77,7 +77,7 @@ export class FeatureEntityHandlers {
      */
     private static processBonusEntity(
         entity: FeatureEntity,
-        _progression: FeatureProgression
+        _progression: FeatureWithRelations
     ): EntityProcessingResult {
         const result: EntityProcessingResult = {
             grants: []
@@ -95,7 +95,7 @@ export class FeatureEntityHandlers {
      */
     private static processChoiceEntity(
         _entity: FeatureEntity,
-        _progression: FeatureProgression
+        _progression: FeatureWithRelations
     ): EntityProcessingResult {
         const result: EntityProcessingResult = {
             grants: []
@@ -113,7 +113,7 @@ export class FeatureEntityHandlers {
      */
     private static processAllocationEntity(
         _entity: FeatureEntity,
-        _progression: FeatureProgression
+        _progression: FeatureWithRelations
     ): EntityProcessingResult {
         const result: EntityProcessingResult = {
             grants: []

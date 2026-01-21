@@ -187,20 +187,20 @@ export function useFieldsSync<TState, TUpdate>(
 /**
  * Hook for syncing array changes to backend session.
  * 
- * Detects changes in arrays (like featureProgressions) and syncs them.
+ * Detects changes in arrays (like features) and syncs them.
  * Uses JSON serialization for comparison to detect additions, removals, and updates.
  * 
  * **Usage Pattern**:
  * ```typescript
  * useArraySync(
- *   state.featureProgressions,
+ *   state.features,
  *   resolution.sessionId,
  *   resolution.applyUpdate,
  *   {
  *     getEntityId: () => state.classId,
  *     buildUpdate: (field, value) => {
- *       // Custom logic to build progression updates
- *       return { type: 'ADD_PROGRESSION', payload: { progression: value } };
+ *       // Custom logic to build feature updates
+ *       return { type: 'ADD_PROGRESSION', payload: { feature: value } };
  *     },
  *     shouldSync: (prev, curr) => JSON.stringify(prev) !== JSON.stringify(curr)
  *   }

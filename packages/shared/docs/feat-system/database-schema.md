@@ -6,7 +6,7 @@
 
 The feat system database schema provides a comprehensive framework for defining feats, their characteristics, and relationships. The schema supports complex feat interactions while maintaining data integrity through proper relationships and constraints.
 
-The schema is designed to handle the complexity of D&D feats. All feat benefits, prerequisites, descriptions, and summaries are handled through the unified Feature system (FeatureProgression, FeatureEntity, FeaturePrerequisite). The Feat model contains only metadata fields (name, type, flags).
+The schema is designed to handle the complexity of D&D feats. All feat benefits, prerequisites, descriptions, and summaries are handled through the unified Feature system (Feature, FeatureEntity, FeaturePrerequisite). The Feat model contains only metadata fields (name, type, flags). Note: FeatureProgression is a type alias for FeatureWithRelationsSchema.
 
 **Source File**: `prisma/schema.prisma` (Feat-related models)
 
@@ -29,9 +29,9 @@ The core feat definition containing basic information about feats, their charact
 - **`editionId`**: Reference to the edition
 
 **Relationships**:
-- **`featureProgressions`**: Links to FeatureProgression entries that define the feat's benefits and prerequisites through the Feature system
+- **`features`**: Links to Feature entries that define the feat's benefits and prerequisites through the Feature system (via `featId` foreign key)
 
-**Usage**: Core feat definitions that are referenced by characters and other systems. Benefits and prerequisites are managed through FeatureProgression entries.
+**Usage**: Core feat definitions that are referenced by characters and other systems. Benefits and prerequisites are managed through Feature entries (with featId reference).
 
 **Source File**: `prisma/schema.prisma` (Feat model)
 
@@ -56,19 +56,19 @@ The feat system integrates with the character system through feat selection and 
 
 The feat system is fully integrated with the Feature system for managing benefits and prerequisites:
 
-**Feat Benefits**: All feat benefits are defined through FeatureProgression entries with FeatureEntity entries. Each FeatureEntity specifies:
+**Feat Benefits**: All feat benefits are defined through Feature entries (with featId reference) with FeatureEntity entries. Each FeatureEntity specifies:
 - **`appliesTo`**: The type of benefit (Attack, SavingThrow, Skill, etc.)
 - **`appliesToId`**: The specific entity ID (skill ID, ability ID, etc.)
 - **`appliesToSubId`**: Optional sub-identifier for special contexts (e.g., AttackBonusAppliesTo for two-weapon fighting)
 - **`value`**: The numeric bonus value
 - **`type`**: The entity type (Bonus, Other, etc.)
 
-**Feat Prerequisites**: All feat prerequisites are defined through FeatureProgression entries with FeaturePrerequisite entries. Each FeaturePrerequisite specifies:
+**Feat Prerequisites**: All feat prerequisites are defined through Feature entries (with featId reference) with FeaturePrerequisite entries. Each FeaturePrerequisite specifies:
 - **`type`**: The prerequisite type (AbilityScore, SkillRanks, Feat, etc.)
 - **`appliesToId`**: The specific entity ID (ability ID, skill ID, feat ID, etc.)
 - **`minValue`**: The minimum required value
 
-**Integration Pattern**: Each feat has one or more FeatureProgression entries (sourceType: Feat) that define its benefits and prerequisites. This unified approach allows feats to use the same powerful Feature system as races, classes, and other sources.
+**Integration Pattern**: Each feat has one or more Feature entries (sourceType: Feat, featId references the Feat) that define its benefits and prerequisites. This unified approach allows feats to use the same powerful Feature system as races, classes, and other sources.
 
 **Example: Two-Weapon Fighting**
 The Two-Weapon Fighting feat provides different attack bonuses to main hand and off-hand attacks. This is handled using `appliesToSubId` with the `AttackBonusAppliesTo` enum:
@@ -90,7 +90,7 @@ The calculation system uses context flags (`isDualWield`, `isOffHand`) to determ
 
 **Feat Relationships**: All foreign key relationships are properly defined with cascade options
 **Type Integration**: Feat type relationships maintain referential integrity
-**Feature System Integration**: FeatureProgression relationships maintain proper data consistency for benefits and prerequisites
+**Feature System Integration**: Feature relationships (via featId) maintain proper data consistency for benefits and prerequisites
 **Source Attribution**: Source book relationships maintain proper attribution
 
 ### **Validation Constraints**
@@ -131,7 +131,7 @@ The `useSubId` property enables player choice mechanics for feats that allow fle
 ```sql
 -- Fixed benefits, no player choice required
 INSERT INTO Feat (name, useSubId, ...) VALUES ('Alertness', false, ...);
--- Benefits defined via FeatureProgression with FeatureEntity entries:
+-- Benefits defined via Feature (with featId reference) with FeatureEntity entries:
 -- Entity 1: appliesTo: Skill, appliesToId: 15 (Listen), value: 2
 -- Entity 2: appliesTo: Skill, appliesToId: 16 (Spot), value: 2
 ```

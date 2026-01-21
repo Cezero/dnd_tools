@@ -249,10 +249,10 @@ The central service for all domain management operations.
    - Creates source book mappings if sourceBookInfo provided
 3. Creates domain spells if provided:
    - Creates DomainSpell records linking domain to spells with spell levels
-4. Creates feature progressions if provided:
-   - Uses feature system service `createMultipleFeatureProgressions()`
+4. Creates features if provided:
+   - Uses feature system service `createMultipleFeatureProgressions()` (creates Feature entries with sourceType: Domain)
    - Provides context: `{ domainId: domainResult.id, sourceType: FeatureSourceType.Domain }`
-   - Feature progressions are created with domainId reference
+   - Features are created with domainId reference
 5. Returns created domain ID
 
 **Transaction Pattern**: Uses Prisma transaction to ensure atomic creation of domain, spells, and feature progressions.
@@ -260,7 +260,7 @@ The central service for all domain management operations.
 **Feature System Integration**: 
 - Uses `featureSystemService.createMultipleFeatureProgressions()` for bulk feature creation
 - Context object identifies domain as feature source
-- Feature progressions are linked to domain via domainId field
+- Features are linked to domain via domainId field
 
 **Source File**: `apps/backend/src/features/domain/domainService.ts`
 
@@ -285,20 +285,20 @@ The central service for all domain management operations.
 3. Updates domain spells if domainSpells array provided (not undefined):
    - Deletes all existing domain spells
    - Creates new domain spells if array is non-empty
-4. Updates feature progressions if features array provided (not undefined):
-   - Deletes existing feature progressions using `deleteFeatureProgressionsForContext()`
+4. Updates features if features array provided (not undefined):
+   - Deletes existing features using `deleteFeatureProgressionsForContext()` (method name maintained for backward compatibility, operates on unified Feature model)
    - Provides delete context: `{ domainId: query.id, sourceType: FeatureSourceType.Domain }`
-   - Creates new feature progressions if array is non-empty using `createMultipleFeatureProgressions()`
+   - Creates new features if array is non-empty using `createMultipleFeatureProgressions()` (creates Feature entries with sourceType: Domain)
    - Provides create context: `{ domainId: query.id, sourceType: FeatureSourceType.Domain }`
 5. Returns success response
 
 **Transaction Pattern**: Uses Prisma transaction with delete/recreate pattern for feature progressions and domain spells.
 
 **Delete/Recreate Pattern for Features**:
-- Uses `featureSystemService.deleteFeatureProgressionsForContext()` to delete all domain features
-- Uses `featureSystemService.createMultipleFeatureProgressions()` to create new features
+- Uses `featureSystemService.deleteFeatureProgressionsForContext()` to delete all domain features (method name maintained for backward compatibility, operates on unified Feature model)
+- Uses `featureSystemService.createMultipleFeatureProgressions()` to create new features (creates Feature entries with sourceType: Domain)
 - Context-based deletion ensures only domain features are removed
-- Ensures clean state without orphaned feature progressions
+- Ensures clean state without orphaned features
 
 **Conditional Updates**: 
 - domainSpells: Only updates if array is explicitly provided (undefined means no change)

@@ -1,5 +1,5 @@
 import type {
-    FeatureProgression,
+    FeatureWithRelations,
     FeatureEntity,
     FormulaParamsData
 } from '@shared/schema';
@@ -25,29 +25,29 @@ import type {
 
 /**
  * Phase 1: Value Generation & Calculation
- * Handles generating calculated values for each level of each progression
+ * Handles generating calculated values for each level of each feature
  */
 export class ValueGenerationPhase {
     private readonly MAX_CHARACTER_LEVEL = 20; // D&D standard maximum character level
 
     /**
-     * Generate calculated values for each level of each progression
+     * Generate calculated values for each level of each feature
      */
     generateValues(
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         context?: DisplayContext,
     ): CalculatedValueWithLevel[] {
         const results: CalculatedValueWithLevel[] = [];
 
-        // For progressions with formula-based entities: use ProgressionGenerator
-        if (this.shouldGenerateProgression(progression, context)) {
-            // Process ALL formula entities using progression generation
-            const formulaEntities = progression.entities?.filter(e => e.formulaParams) || [];
+        // For features with formula-based entities: use ProgressionGenerator
+        if (this.shouldGenerateProgression(feature, context)) {
+            // Process ALL formula entities using feature generation
+            const formulaEntities = feature.entities?.filter(e => e.formulaParams) || [];
 
             for (const formulaEntity of formulaEntities) {
-                const progressionValues = this.generateProgressionValuesForSingleEntity(formulaEntity, progression, context);
+                const progressionValues = this.generateProgressionValuesForSingleEntity(formulaEntity, feature, context);
 
-                // Process all progression values for this entity
+                // Process all feature values for this entity
                 for (const progressionValue of progressionValues) {
                     results.push({
                         breakdown: progressionValue.breakdown,
@@ -57,32 +57,32 @@ export class ValueGenerationPhase {
                 }
             }
 
-            // Also process static entities at the progression level
-            this.processStaticEntitiesAtLevel(progression, progression.level, results);
+            // Also process static entities at the feature level
+            this.processStaticEntitiesAtLevel(feature, feature.level, results);
         } else {
-            // For progressions with only static entities: process directly
-            this.processEntitiesAtLevel(progression, progression.level, results);
+            // For features with only static entities: process directly
+            this.processEntitiesAtLevel(feature, feature.level, results);
         }
 
         return results;
     }
 
     /**
-     * Determine if progression generation is needed based on formula properties
+     * Determine if feature generation is needed based on formula properties
      */
-    private shouldGenerateProgression(progression: FeatureProgression, _context?: DisplayContext): boolean {
-        return progression.entities?.some(m =>
+    private shouldGenerateProgression(feature: FeatureWithRelations, _context?: DisplayContext): boolean {
+        return feature.entities?.some(m =>
             m.formulaParams
         );
     }
 
     /**
-     * Phase 1: Progression Generation for a specific entity
-     * Generate progression values for a single formula-based entity
+     * Phase 1: Feature Generation for a specific entity
+     * Generate feature values for a single formula-based entity
      */
     private generateProgressionValuesForSingleEntity(
         formulaEntity: FeatureEntity,
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         context?: DisplayContext
     ): ProgressionValue[] {
         if (!formulaEntity.formulaParams) {
@@ -90,13 +90,13 @@ export class ValueGenerationPhase {
         }
 
         const calculationContext: CalculationContext = {
-            level: progression.level,
-            progressionLevel: progression.level,
+            level: feature.level,
+            progressionLevel: feature.level,
             characterLevel: context?.currentLevel,
             character: context?.character
         };
 
-        // Use registry to get progression generator and formula calculator
+        // Use registry to get feature generator and formula calculator
         // TODO: this code makes no sense, what is it doing?
         const progressionGenerator = calculatorRegistry.getDefaultProgressionGenerator();
         if (!progressionGenerator) {
@@ -104,7 +104,7 @@ export class ValueGenerationPhase {
         }
 
         // For ALL entities with formulas, only generate values at formula-determined intervals
-        return this.generateFormulaIntervalValues(formulaEntity, progression, calculationContext);
+        return this.generateFormulaIntervalValues(formulaEntity, feature, calculationContext);
     }
 
     /**
@@ -113,7 +113,7 @@ export class ValueGenerationPhase {
      */
     private generateFormulaIntervalValues(
         formulaEntity: FeatureEntity,
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         calculationContext: CalculationContext
     ): ProgressionValue[] {
         const values: ProgressionValue[] = [];
@@ -121,7 +121,7 @@ export class ValueGenerationPhase {
         const formulaDef = FORMULA_MAP[formula.formulaId];
 
         // Pass FeatureEntity.value and calculationContext to getFormulaIntervalLevels for proper formula calculation
-        const intervalData = this.getFormulaIntervalLevels(formula, progression.level, formulaEntity.value, calculationContext);
+        const intervalData = this.getFormulaIntervalLevels(formula, feature.level, formulaEntity.value, calculationContext);
 
         for (const [level, calculatedValue] of intervalData) {
             let singleValue: number | string;
@@ -148,7 +148,7 @@ export class ValueGenerationPhase {
                     breakdown = result.breakdown;
                 } else {
                     // No character context - use display string
-                    const params = buildFormulaParams(formula, level, progression.level, displayContext, formulaEntity.value);
+                    const params = buildFormulaParams(formula, level, feature.level, displayContext, formulaEntity.value);
                     singleValue = formulaDef.getDisplayString(params);
 
                     breakdown = {
@@ -307,7 +307,7 @@ export class ValueGenerationPhase {
 
         // Special handling for STATIC_EVERY_N_LEVELS formulas
         // Always include all levels where value is non-zero, even if it doesn't change
-        // This ensures progression displays show all levels (e.g., "1 skill point every level")
+        // This ensures feature displays show all levels (e.g., "1 skill point every level")
         if (formula.formulaId === FormulaId.STATIC_EVERY_N_LEVELS) {
             const allLevels: Array<[number, number]> = [];
             for (let level = progressionLevel; level <= this.MAX_CHARACTER_LEVEL; level++) {
@@ -345,28 +345,28 @@ export class ValueGenerationPhase {
 
     /**
      * Helper method to process static entities (entities without formulas) at a specific level
-     * All formula-based entities are handled by the progression generator path
+     * All formula-based entities are handled by the feature generator path
      */
     private processEntitiesAtLevel(
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         level: number,
         results: CalculatedValueWithLevel[]
     ): void {
         // Process entities
-        this.processStaticEntitiesAtLevel(progression, level, results);
+        this.processStaticEntitiesAtLevel(feature, level, results);
     }
 
     /**
      * Helper method to process only static entities (without formulas) at a specific level
      */
     private processStaticEntitiesAtLevel(
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         level: number,
         results: CalculatedValueWithLevel[]
     ): void {
         // Process only static entities (those without formulas)
-        if (progression.entities) {
-            for (const entity of progression.entities) {
+        if (feature.entities) {
+            for (const entity of feature.entities) {
                 if (!entity.formulaParams) {
                     // Create CalculatedEntity for static entities
                     const calculatedEntity: CalculatedEntity = {

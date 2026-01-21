@@ -126,7 +126,7 @@ export function savingThrowModifierLabeler(value: string, modifier: CalculatedEn
     return value;
 }
 
-// Labeler for Saving Throw progression (EntityType.Other + EntityAppliesToType.SavingThrow)
+// Labeler for Saving Throw feature (EntityType.Other + EntityAppliesToType.SavingThrow)
 export function savingThrowProgressionLabeler(value: string, _modifier: CalculatedEntity): string {
     return `Save: ${value}`;
 }

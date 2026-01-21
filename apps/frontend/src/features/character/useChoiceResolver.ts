@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 import { getClassNameFromCache, getDomainSelectByEdition } from '@/services/cache';
-import type { FeatureProgression, FeatureEntity, PendingChoice } from '@shared/schema';
+import type { FeatureWithRelations, FeatureEntity, PendingChoice } from '@shared/schema';
 import { EntityType, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES } from '@shared/static-data';
 
 /**
@@ -9,16 +9,16 @@ import { EntityType, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES } from '@share
  */
 export function useChoiceResolver() {
     /**
-     * Identify pending choices from feature progressions
+     * Identify pending choices from feature features
      */
-    const identifyPendingChoices = useCallback((progressions: FeatureProgression[], editionId?: number): PendingChoice[] => {
+    const identifyPendingChoices = useCallback((features: FeatureWithRelations[], editionId?: number): PendingChoice[] => {
         const choices: PendingChoice[] = [];
 
-        for (const progression of progressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        for (const feature of features) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (entity.type === EntityType.Choice) {
-                        const choice = createPendingChoice(entity, progression, editionId);
+                        const choice = createPendingChoice(entity, feature, editionId);
                         if (choice) {
                             choices.push(choice);
                         }
@@ -38,7 +38,7 @@ export function useChoiceResolver() {
  */
 function createPendingChoice(
     entity: FeatureEntity,
-    progression: FeatureProgression,
+    feature: FeatureWithRelations,
     editionId?: number
 ): PendingChoice | null {
     if (!entity.appliesTo) {
@@ -50,12 +50,12 @@ function createPendingChoice(
     // For now, allow all choice types to have null appliesToId
 
     const choice: PendingChoice = {
-        id: `${progression.id}-${entity.id}`,
+        id: `${feature.id}-${entity.id}`,
         type: entity.appliesTo,
         name: `Choice for ${ENTITY_APPLIES_TO_TYPES[entity.appliesTo].name}`,
         description: '',
-        source: getSourceName(progression),
-        level: progression.level,
+        source: getSourceName(feature),
+        level: feature.level,
         required: true,
         minSelections: 1,
         maxSelections: 1,
@@ -150,18 +150,18 @@ function generateGenericOptions(_entity: FeatureEntity): number[] {
 }
 
 /**
- * Get source name for a progression
+ * Get source name for a feature
  */
-function getSourceName(progression: FeatureProgression): string {
-    if (progression.classes && progression.classes.length > 0) {
-        const firstClassId = progression.classes[0].classId;
+function getSourceName(feature: FeatureWithRelations): string {
+    if (feature.classes && feature.classes.length > 0) {
+        const firstClassId = feature.classes[0].classId;
         const className = getClassNameFromCache(firstClassId);
         if (className) {
             return className;
         }
     }
-    if (progression.feature?.name) {
-        return progression.feature.name;
+    if (feature.name) {
+        return feature.name;
     }
     return 'Unknown Source';
 }

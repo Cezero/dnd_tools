@@ -3,17 +3,11 @@
  * Used in discriminated unions for type-safe update operations.
  */
 export const ClassUpdateType = {
-    LinkProgression: 0,
-    UnlinkProgression: 1,
-    AddProgression: 2,
-    UpdateProgression: 3,
-    RemoveProgression: 4,
-    AddEntity: 5,
-    UpdateEntity: 6,
-    RemoveEntity: 7,
-    UpdateClassField: 8,
-    SetSpellcastingProgression: 9,
-    SetSpellsKnownProgression: 10,
+    LinkFeature: 0,
+    UnlinkFeature: 1,
+    UpdateClassField: 2,
+    SetSpellcastingProgression: 3,
+    SetSpellsKnownProgression: 4,
 } as const;
 
 export type ClassUpdateType = typeof ClassUpdateType[keyof typeof ClassUpdateType];
@@ -23,15 +17,25 @@ export type ClassUpdateType = typeof ClassUpdateType[keyof typeof ClassUpdateTyp
  * Used in discriminated unions for type-safe update operations.
  */
 export const RaceUpdateType = {
-    LinkProgression: 0,
-    UnlinkProgression: 1,
-    AddProgression: 2,
-    UpdateProgression: 3,
-    RemoveProgression: 4,
-    AddEntity: 5,
-    UpdateEntity: 6,
-    RemoveEntity: 7,
-    UpdateRaceField: 8,
+    LinkFeature: 0,
+    UnlinkFeature: 1,
+    UpdateRaceField: 2,
 } as const;
 
 export type RaceUpdateType = typeof RaceUpdateType[keyof typeof RaceUpdateType];
+
+/**
+ * Numeric enum for feature update operation types.
+ * Used in discriminated unions for type-safe update operations.
+ */
+export const FeatureUpdateType = {
+    UpdateFeatureField: 0,
+    AddEntity: 1,
+    UpdateEntity: 2,
+    RemoveEntity: 3,
+    AddPrerequisite: 4,
+    UpdatePrerequisite: 5,
+    RemovePrerequisite: 6,
+} as const;
+
+export type FeatureUpdateType = typeof FeatureUpdateType[keyof typeof FeatureUpdateType];

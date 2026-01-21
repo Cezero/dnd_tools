@@ -25,7 +25,7 @@ The feat system manages all aspects of feats in D&D Tools, including feat defini
 ```
 Feat (Feat Definition)
 ├── Feat Properties (Type, Repeatable, Fighter Bonus, Use Sub-ID)
-├── FeatureProgression (Links feat to Feature system)
+├── Feature (Links feat to Feature system, via featId)
 │   ├── Feature (Description, Summary from associated Feature)
 │   ├── FeatureEntity (Benefits: Skill Bonuses, Save Bonuses, Attack Bonuses, etc.)
 │   └── FeaturePrerequisite (Prerequisites: Ability Scores, Skills, Feats, BAB)
@@ -33,7 +33,7 @@ Feat (Feat Definition)
 ```
 
 ### **Key Principles**
-- **Unified Feature System**: All benefits and prerequisites are managed through the unified Feature system (FeatureProgression, FeatureEntity, FeaturePrerequisite)
+- **Unified Feature System**: All benefits and prerequisites are managed through the unified Feature system (Feature, FeatureEntity, FeaturePrerequisite) - Note: FeatureProgression is a type alias for FeatureWithRelationsSchema
 - **Feature-Based Descriptions**: Feat descriptions and summaries come from associated Features, not the Feat model itself
 - **Prerequisite Validation**: Automatic checking of feat prerequisites for characters via FeaturePrerequisite
 - **Benefit System**: Structured benefits applied through FeatureEntity entries with support for special contexts (e.g., two-weapon fighting via AttackBonusAppliesTo)
@@ -92,12 +92,12 @@ The feat system follows a layered architecture that separates concerns and enabl
 ### **✅ Feat System Features**
 - **Complete Feat Structure**: Feats with types, repeatable flags, and fighter bonus flags
 - **Feat Types**: General, Item Creation, Metamagic feats
-- **Feature System Integration**: All benefits and prerequisites managed through FeatureProgression
+- **Feature System Integration**: All benefits and prerequisites managed through Feature (sourceType: Feat)
 - **Feature-Based Content**: Descriptions and summaries come from associated Features
 - **Benefit System**: Skill bonuses, save bonuses, attack bonuses, proficiencies via FeatureEntity with support for special contexts
 - **Prerequisite System**: Ability scores, skills, feats, BAB, spellcasting, class levels via FeaturePrerequisite
 - **Character Integration**: Character feat selection with backend filtering for available feats (prerequisites, owned feats, proficiency conflicts)
-- **Advanced Editing**: FeatureProgression management through FeaturesManager component with support for new feats
+- **Advanced Editing**: Feature management through FeaturesManager component with support for new feats (FeatureProgression is a type alias for FeatureWithRelationsSchema)
 
 ### **Implementation Quality**
 - **Code Quality**: High - Well-structured, type-safe, comprehensive
@@ -151,7 +151,7 @@ The feat system integrates with the class system through bonus feats:
 ### **Adding New Feats**
 1. **Database**: Add feat record with all required fields (name, typeId, editionId, etc.)
 2. **Feature**: Create or select a Feature with description and summary
-3. **FeatureProgression**: Create FeatureProgression linking feat to feature
+3. **Feature**: Create Feature with featId reference linking feat to feature
 4. **Benefits**: Add FeatureEntity entries for benefits (skill bonuses, attack bonuses, etc.)
 5. **Prerequisites**: Add FeaturePrerequisite entries if required
 6. **Validation**: Ensure all data passes Zod validation
@@ -191,7 +191,7 @@ The feat system integrates with the class system through bonus feats:
 - **GET /feats/with-feature-info**: Retrieve all feats with feature description and summary (composite schema for list views)
 - **GET /feats/:id**: Retrieve specific feat by ID with feature progressions
 - **GET /feats/query**: Query feats with specific criteria
-- **POST /feats**: Create new feat (accepts featureProgressions in request)
+- **POST /feats**: Create new feat (accepts featureProgressions in request - FeatureProgression is a type alias for FeatureWithRelationsSchema)
 - **PUT /feats/:id**: Update existing feat
 - **DELETE /feats/:id**: Delete feat (admin only)
 - **GET /characters/:characterId/resolution/available-feats**: Get filtered available feats for a character (prerequisites, owned feats, proficiency conflicts)

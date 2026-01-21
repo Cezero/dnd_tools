@@ -4,17 +4,18 @@ import {
     FeatureQuerySchema,
     CreateFeatureSchema,
     UpdateFeatureSchema,
-    CreateFeatureProgressionSchema,
+    CreateFeatureRequestSchema,
     GetFeatureResponseSchema,
     GetAllFeaturesResponseSchema,
     GetFeatureListResponseSchema,
     CreateResponseSchema,
     UpdateResponseSchema,
-    UpdateFeatureProgressionsRequestSchema,
-    GetFeatureProgressionsResponseSchema,
+    UpdateFeaturesRequestSchema,
+    GetFeaturesResponseSchema,
     CloneClassFeaturesRequestSchema,
-    ForkProgressionRequestSchema,
-    ForkProgressionResponseSchema,
+    ForkFeatureRequestSchema,
+    ForkFeatureResponseSchema,
+    EntityLockStatusSchema,
 } from '@shared/schema';
 
 /**
@@ -28,7 +29,7 @@ import {
  */
 export const FeatureSystemApi = {
     // Core feature CRUD (admin only)
-    getFeatures: typedApi<typeof FeatureQuerySchema, typeof GetAllFeaturesResponseSchema>({
+    getAllFeatures: typedApi<typeof FeatureQuerySchema, typeof GetAllFeaturesResponseSchema>({
         path: '/features/query',
         method: 'POST',
         requestSchema: FeatureQuerySchema,
@@ -64,28 +65,35 @@ export const FeatureSystemApi = {
         responseSchema: UpdateResponseSchema,
     }),
 
-    // Bulk progression management (admin only)
-    createFeatureProgressionWithRelations: typedApi<typeof CreateFeatureProgressionSchema, typeof CreateResponseSchema>({
-        path: '/features/progressions/bulk',
+    // Bulk feature management (admin only)
+    createFeatureWithRelations: typedApi<typeof CreateFeatureRequestSchema, typeof CreateResponseSchema>({
+        path: '/features/features/bulk',
         method: 'POST',
-        requestSchema: CreateFeatureProgressionSchema,
+        requestSchema: CreateFeatureRequestSchema,
         responseSchema: CreateResponseSchema,
     }),
 
-    // Feature Progression management for individual features
-    updateFeatureProgressions: typedApi<typeof UpdateFeatureProgressionsRequestSchema, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/:id/progressions',
+    // Feature management for individual features
+    updateFeatures: typedApi<typeof UpdateFeaturesRequestSchema, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
+        path: '/features/:id/features',
         method: 'PUT',
-        requestSchema: UpdateFeatureProgressionsRequestSchema,
+        requestSchema: UpdateFeaturesRequestSchema,
         paramsSchema: FeatureIdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
-    getFeatureProgressions: typedApi<undefined, typeof GetFeatureProgressionsResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/:id/progressions',
+    getFeatures: typedApi<undefined, typeof GetFeaturesResponseSchema, typeof FeatureIdParamSchema>({
+        path: '/features/:id/features',
         method: 'GET',
         paramsSchema: FeatureIdParamSchema,
-        responseSchema: GetFeatureProgressionsResponseSchema,
+        responseSchema: GetFeaturesResponseSchema,
+    }),
+
+    getFeatureLockStatus: typedApi<undefined, typeof EntityLockStatusSchema, typeof FeatureIdParamSchema>({
+        path: '/features/:id/lock-status',
+        method: 'GET',
+        paramsSchema: FeatureIdParamSchema,
+        responseSchema: EntityLockStatusSchema,
     }),
 
     // Lightweight feature list for dropdown selections
@@ -104,10 +112,10 @@ export const FeatureSystemApi = {
         responseSchema: UpdateResponseSchema,
     }),
 
-    forkProgression: typedApi<typeof ForkProgressionRequestSchema, typeof ForkProgressionResponseSchema>({
-        path: '/features/fork-progression',
+    forkFeature: typedApi<typeof ForkFeatureRequestSchema, typeof ForkFeatureResponseSchema>({
+        path: '/features/fork-feature',
         method: 'POST',
-        requestSchema: ForkProgressionRequestSchema,
-        responseSchema: ForkProgressionResponseSchema,
+        requestSchema: ForkFeatureRequestSchema,
+        responseSchema: ForkFeatureResponseSchema,
     }),
 }; 

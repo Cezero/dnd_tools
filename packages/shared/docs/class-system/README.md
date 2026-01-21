@@ -64,14 +64,16 @@ The Class System supports variant classes through reusable feature progressions.
 - **No Resolution Logic**: Variants resolve exactly like regular classes through feature system
 
 **Integration Points**:
-- **FeatureProgressionClassMap**: Many-to-many relationship for shared progressions
+- **FeatureClassMap**: Many-to-many relationship for shared features
 - **Clone Feature**: Backend API endpoint for cloning class features
-- **Fork Feature**: Backend API endpoint for forking shared progressions
+- **Fork Feature**: Backend API endpoint for forking shared features
 - **Unified Resolution**: Variants resolve through standard feature resolution
 
 **Migration Status**:
-- ⏳ **In Progress**: Phase 1 (FeatureProgression many-to-many support) implemented
-- ⏸️ **Pending**: Phase 2 (Variant-to-class migration) - See [Migration Guide](migration-guide.md)
+- ✅ **Complete**: All migrations to feature-based system are complete
+- ✅ All application code uses feature-based resolution
+- ✅ Backward compatibility code has been removed
+- See [Migration History](migration-guide.md) for details of the migration process
 
 **Legacy Approach (Deprecated):**
 The old variant class system using `ClassVariant` model is being phased out. See [Variant Class System](../variant-class-system/README.md) for legacy documentation.
@@ -126,8 +128,8 @@ The system follows a five-layer architecture:
    - **Example**: Wizard uses `CastingType.Prepared`, Sorcerer uses `CastingType.Spontaneous`
 
 3. **Class Features**: Review **[Feature Integration](feature-integration.md)** for class features
-   - **Source Files**: `apps/backend/prisma/schema.prisma` (ClassFeature model)
-   - **Integration**: Classes link to features through `FeatureProgression` model
+   - **Source Files**: `apps/backend/prisma/schema.prisma` (Feature, FeatureClassMap models)
+   - **Integration**: Classes link to features through `FeatureClassMap` many-to-many relationship
    - **Example**: Fighter's "Weapon Specialization" is a class feature with level-based progression
 
 ### **For System Administrators**

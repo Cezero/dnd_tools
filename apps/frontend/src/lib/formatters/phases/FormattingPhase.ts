@@ -58,8 +58,8 @@ export class FormattingPhase {
      * Get the feature ID from an entity
      */
     private getFeatureId(entity: CalculatedEntity): number {
-        if ('progressionId' in entity) {
-            return entity.progressionId;
+        if ('featureId' in entity) {
+            return entity.featureId;
         }
         return 0; // Fallback
     }

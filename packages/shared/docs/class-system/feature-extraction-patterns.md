@@ -4,7 +4,9 @@
 
 ## Overview
 
-Class and race mechanics (hit die, BAB, saving throws, size, speed, etc.) are now stored as `FeatureEntity` entries within `FeatureProgression` objects rather than as direct fields on the `Class` and `Race` models. This document explains how to extract these mechanics from resolved progressions.
+Class and race mechanics (hit die, BAB, saving throws, size, speed, etc.) are now stored as `FeatureEntity` entries within `Feature` objects rather than as direct fields on the `Class` and `Race` models. This document explains how to extract these mechanics from resolved features.
+
+**Note**: `FeatureProgression` is maintained as a type alias for `FeatureWithRelationsSchema` for backward compatibility, but the database model is now unified as `Feature`.
 
 ## Core Concepts
 
@@ -23,11 +25,11 @@ Mechanics are stored in feature progressions with the slug `"class-mechanics"` (
 
 ### Many-to-Many Relationships
 
-Progressions can be shared across multiple classes or races via:
-- `FeatureProgressionClassMap` (for classes)
-- `FeatureProgressionRaceMap` (for races)
+Features can be shared across multiple classes or races via:
+- `FeatureClassMap` (for classes)
+- `FeatureRaceMap` (for races)
 
-This allows classes/races with identical mechanics to share the same progression.
+This allows classes/races with identical mechanics to share the same feature.
 
 ## Extraction Functions
 
@@ -60,7 +62,7 @@ const mechanics = extractClassMechanics(progressions, classId);
 - `extractBABProgression(progressions, classId?)` - Returns BAB progression type (good/average/poor) by reverse-lookup from formula
 - `extractSaveProgression(progressions, saveType, classId?)` - Returns saving throw progression type (good/poor) by reverse-lookup from formula
 
-**Note**: These functions now check for formula-based entities first and use `formulaToProgressionType` helpers to reverse-lookup the `ProgressionType` from formula parameters. They fall back to old `appliesToId`/`appliesToSubId` patterns for backward compatibility during migration.
+**Note**: These functions check for formula-based entities first and use `formulaToProgressionType` helpers to reverse-lookup the `ProgressionType` from formula parameters.
 
 ### Race Mechanics Extraction
 
@@ -233,7 +235,7 @@ Used for saving throw progressions with formula-based calculations:
 const mechanics = useMemo(() => {
   if (cls.features && cls.features.length > 0) {
     const extracted = extractClassMechanics(cls.features, cls.id);
-    // Prefer extracted values, fallback to cls fields for backward compatibility
+    // Prefer extracted values, fallback to cls fields if extraction fails
     return {
       hitDie: extracted.hitDie ?? cls.hitDie,
       skillPoints: extracted.skillPoints ?? cls.skillPoints,
@@ -259,7 +261,7 @@ import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceM
 // Extract race mechanics from resolved progressions
 const raceMechanics = extractRaceMechanicsFromResolved(resolvedProgressions);
 
-// Use extracted value with fallback for backward compatibility
+// Use extracted value with fallback if extraction fails
 const sizeId = raceMechanics.sizeId ?? fullRace?.sizeId;
 const speed = raceMechanics.speed ?? fullRace?.speed;
 ```
@@ -288,7 +290,7 @@ The backend provides equivalent extraction functions for use in backend services
 
 ### 1. Always Provide Fallback Values
 
-When extracting mechanics, always provide fallback to direct fields for backward compatibility during the migration period:
+When extracting mechanics, provide fallback to direct fields if extraction fails:
 
 ```typescript
 const hitDie = extracted.hitDie ?? class.hitDie;

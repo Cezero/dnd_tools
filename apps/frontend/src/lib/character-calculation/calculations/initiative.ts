@@ -1,4 +1,4 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, EntityAppliesToType } from '@shared/static-data';
 
 import { getAbilityScore } from './abilityScore';
@@ -28,7 +28,7 @@ export interface InitiativeBreakdownMap extends BreakdownMap {
  */
 export function getInitiative(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureWithRelations[]
 ): CalculationResult<InitiativeBreakdownMap> {
     // Get Dex modifier using total ability score (base + racial modifiers + feat bonuses, etc.)
     const dexScoreResult = getAbilityScore(character, AbilityId.Dexterity, resolvedProgressions);

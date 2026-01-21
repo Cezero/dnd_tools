@@ -1,5 +1,5 @@
 import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
-import type { CharacterWithAllDetailsResponse, FeatureProgression, Feature } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations, Feature } from '@shared/schema';
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import type { DisplayContext, FormattedItemWithLevel, CharacterSheetDisplayResult } from './types';
@@ -25,9 +25,9 @@ export class FeatureTemplateResolver {
         template: string,
         context: DisplayContext,
         character: CharacterWithAllDetailsResponse,
-        feature?: Feature,
-        progression?: FeatureProgression,
-        resolvedProgressions?: FeatureProgression[],
+        baseFeature?: Feature,
+        featureWithRelations?: FeatureWithRelations,
+        resolvedProgressions?: FeatureWithRelations[],
         formattedItems?: FormattedItemWithLevel[],
         formattedCharacterResult?: CharacterSheetDisplayResult
     ): string {
@@ -42,8 +42,8 @@ export class FeatureTemplateResolver {
             const value = this.resolvePath(placeholderPath.trim(), {
                 context,
                 character,
-                feature,
-                progression,
+                baseFeature,
+                featureWithRelations,
                 resolvedProgressions: resolvedProgressions || [],
                 formattedItems: formattedItems || [],
                 formattedCharacterResult,
@@ -60,9 +60,9 @@ export class FeatureTemplateResolver {
         data: {
             context: DisplayContext;
             character: CharacterWithAllDetailsResponse;
-            feature?: Feature;
-            progression?: FeatureProgression;
-            resolvedProgressions: FeatureProgression[];
+            baseFeature?: Feature;
+            featureWithRelations?: FeatureWithRelations;
+            resolvedProgressions: FeatureWithRelations[];
             formattedItems: FormattedItemWithLevel[];
             formattedCharacterResult?: CharacterSheetDisplayResult;
         }
@@ -116,9 +116,9 @@ export class FeatureTemplateResolver {
     private static resolveFeaturePath(
         path: string,
         data: {
-            feature?: Feature;
-            progression?: FeatureProgression;
-            resolvedProgressions: FeatureProgression[];
+            baseFeature?: Feature;
+            featureWithRelations?: FeatureWithRelations;
+            resolvedProgressions: FeatureWithRelations[];
             character: CharacterWithAllDetailsResponse;
             context: DisplayContext;
             formattedItems: FormattedItemWithLevel[];
@@ -131,14 +131,14 @@ export class FeatureTemplateResolver {
         }
 
         // Find feature by slug or use provided feature
-        let targetFeature: Feature | undefined = data.feature;
-        let targetProgression: FeatureProgression | undefined = data.progression;
+        let targetFeature: Feature | undefined = data.baseFeature;
+        let targetProgression: FeatureWithRelations | undefined = data.featureWithRelations;
 
         if (parts[0] && (!targetFeature || targetFeature.slug !== parts[0])) {
-            // Try to find feature by slug in resolved progressions
+            // Try to find feature by slug in resolved features
             for (const prog of data.resolvedProgressions) {
-                if (prog.feature?.slug === parts[0]) {
-                    targetFeature = prog.feature;
+                if (prog.slug === parts[0]) {
+                    targetFeature = prog;
                     targetProgression = prog;
                     break;
                 }
@@ -175,16 +175,16 @@ export class FeatureTemplateResolver {
      */
     private static resolveFeatureEntityPath(
         pathParts: string[],
-        progression: FeatureProgression,
+        feature: FeatureWithRelations,
         character: CharacterWithAllDetailsResponse,
         context: DisplayContext,
         formattedItems: FormattedItemWithLevel[]
     ): string | number | null | undefined {
-        if (!progression.entities || progression.entities.length === 0) {
+        if (!feature.entities || feature.entities.length === 0) {
             return null;
         }
 
-        let matchingEntities = progression.entities;
+        let matchingEntities = feature.entities;
         let propertyPath = pathParts;
 
         // Filter by entity type if first part matches
@@ -232,7 +232,7 @@ export class FeatureTemplateResolver {
                 const calculatedValue = applyFeatureFormula(
                     entity,
                     character,
-                    progression.level || context.currentLevel || 1
+                    feature.level || context.currentLevel || 1
                 );
                 return calculatedValue ?? entity.value ?? null;
             }
@@ -245,7 +245,7 @@ export class FeatureTemplateResolver {
             // Match by entity ID and feature ID (since FormattedItemWithLevel has featureId)
             const formattedItem = formattedItems.find(item =>
                 item.entity.id === entity.id &&
-                item.featureId === progression.featureId
+                item.featureId === feature.id
             );
             if (formattedItem) {
                 return formattedItem.formattedValue;
@@ -255,7 +255,7 @@ export class FeatureTemplateResolver {
                 const calculatedValue = applyFeatureFormula(
                     entity,
                     character,
-                    progression.level || context.currentLevel || 1
+                    feature.level || context.currentLevel || 1
                 );
                 return calculatedValue?.toString() ?? entity.value?.toString() ?? null;
             }

@@ -1,72 +1,73 @@
 import { Api } from '@/services/Api';
 import type {
     RaceUpdate,
-    RaceEditState,
-    InitializeRaceSessionResponse,
-    GetRaceSessionStateResponse,
+    StartRaceEditingResponse,
+    GetRaceStateResponse,
     ApplyRaceUpdateResponse,
+    SaveRaceStateResponse,
+    CancelRaceEditingResponse,
 } from '@shared/schema';
 import {
-    InitializeRaceSessionResponseSchema,
-    GetRaceSessionStateResponseSchema,
+    StartRaceEditingResponseSchema,
+    GetRaceStateResponseSchema,
     ApplyRaceUpdateBodySchema,
     ApplyRaceUpdateResponseSchema,
+    SaveRaceStateResponseSchema,
+    CancelRaceEditingResponseSchema,
 } from '@shared/schema';
 
 /**
  * Race resolution API client.
  * 
- * Provides typed methods for interacting with the race editing session backend API.
- * All methods handle session lifecycle management and race updates.
+ * Provides typed methods for interacting with the race editing backend API.
+ * All methods handle race state management and updates using user sessions.
  * 
- * @see RaceResolutionApi.initializeSession - Create or resume a race editing session
- * @see RaceResolutionApi.getSessionState - Get current session state
- * @see RaceResolutionApi.applyUpdate - Apply updates to a session
- * @see RaceResolutionApi.saveSession - Save session to database
- * @see RaceResolutionApi.cancelSession - Cancel session without saving
+ * @see RaceResolutionApi.startEditing - Start editing a race (acquires lock, adds to user session)
+ * @see RaceResolutionApi.getState - Get current race state
+ * @see RaceResolutionApi.applyUpdate - Apply updates to race state
+ * @see RaceResolutionApi.save - Save race state to database
+ * @see RaceResolutionApi.cancel - Cancel editing without saving
  */
 export const RaceResolutionApi = {
     /**
-     * Initialize or resume a race editing session
+     * Start editing a race.
+     * 
+     * Acquires a lock on the race and adds it to the user's editing list.
      */
-    initializeSession: async (raceId: number): Promise<InitializeRaceSessionResponse> => {
-        return Api<InitializeRaceSessionResponse>(
-            `/races/${raceId}/session`,
+    startEditing: async (raceId: number): Promise<StartRaceEditingResponse> => {
+        return Api<StartRaceEditingResponse>(
+            `/races/${raceId}/start-editing`,
             {
                 method: 'POST',
-                responseSchema: InitializeRaceSessionResponseSchema,
+                responseSchema: StartRaceEditingResponseSchema,
             }
         );
     },
 
     /**
-     * Get current session state
+     * Get current race state.
      */
-    getSessionState: async (
-        raceId: number,
-        sessionId: string
-    ): Promise<GetRaceSessionStateResponse> => {
-        return Api<GetRaceSessionStateResponse>(
-            `/races/${raceId}/session/${sessionId}`,
+    getState: async (raceId: number): Promise<GetRaceStateResponse> => {
+        return Api<GetRaceStateResponse>(
+            `/races/${raceId}/state`,
             {
                 method: 'GET',
-                responseSchema: GetRaceSessionStateResponseSchema,
+                responseSchema: GetRaceStateResponseSchema,
             }
         );
     },
 
     /**
-     * Apply an update to the session
+     * Apply an update to the race state.
      */
     applyUpdate: async (
         raceId: number,
-        sessionId: string,
         update: RaceUpdate
     ): Promise<ApplyRaceUpdateResponse> => {
         return Api<ApplyRaceUpdateResponse>(
-            `/races/${raceId}/session/${sessionId}`,
+            `/races/${raceId}/update`,
             {
-                method: 'PATCH',
+                method: 'PUT',
                 body: { update },
                 requestSchema: ApplyRaceUpdateBodySchema,
                 responseSchema: ApplyRaceUpdateResponseSchema,
@@ -75,26 +76,27 @@ export const RaceResolutionApi = {
     },
 
     /**
-     * Save session to database
+     * Save race state to database.
      */
-    saveSession: async (raceId: number, sessionId: string): Promise<{ race: any }> => {
-        // TODO: Add proper schema for save response
-        return Api<{ race: any }>(
-            `/races/${raceId}/session/${sessionId}/save`,
+    save: async (raceId: number): Promise<SaveRaceStateResponse> => {
+        return Api<SaveRaceStateResponse>(
+            `/races/${raceId}/save`,
             {
                 method: 'POST',
+                responseSchema: SaveRaceStateResponseSchema,
             }
         );
     },
 
     /**
-     * Cancel session without saving
+     * Cancel editing without saving.
      */
-    cancelSession: async (raceId: number, sessionId: string): Promise<void> => {
-        return Api<void>(
-            `/races/${raceId}/session/${sessionId}`,
+    cancel: async (raceId: number): Promise<CancelRaceEditingResponse> => {
+        return Api<CancelRaceEditingResponse>(
+            `/races/${raceId}/cancel`,
             {
-                method: 'DELETE',
+                method: 'POST',
+                responseSchema: CancelRaceEditingResponseSchema,
             }
         );
     },

@@ -4,7 +4,7 @@
 
 ## Overview
 
-Class skills in the D&D Tools system are implemented using the **Feature System** with a special container pattern. Each class has a single `FeatureProgression` that contains multiple `FeatureEntity` records, each representing a different class skill.
+Class skills in the D&D Tools system are implemented using the **Feature System** with normal features and `EntityType.Base` entities. Each class has a `Feature` (e.g., "Fighter Class Skills") that contains multiple `FeatureEntity` records with `EntityType.Base`, each representing a different class skill. The Feature is linked to the class via `FeatureClassMap`.
 
 ## Database Schema Structure
 
@@ -12,42 +12,43 @@ Class skills in the D&D Tools system are implemented using the **Feature System*
 
 1. **`Feature`** - The base feature definition
    ```sql
-   -- Special feature for class skills (doesn't exist in features table)
-   -- Uses SpecialFeatureId.ClassSkill = 1
+   -- Normal feature for class skills (e.g., "Fighter Class Skills")
+   id: Auto-generated feature ID
+   slug: "class-{classId}-skills"
+   name: "{ClassName} Class Skills"
+   description: "Class skills for {ClassName}"
+   displayInCharacterSheet: true
    ```
 
 2. **`FeatureProgression`** - Links the feature to a specific class
    ```sql
-   -- Container progression for all class skills
-   featureId: SpecialFeatureId.ClassSkill (1)
-   classId: The class that gets these skills
+   -- Progression for class skills
+   featureId: Normal feature ID (not a special ID)
    level: 1 (class skills are level 1 features)
-   sourceType: 1 (Class)
-   appliesToType: FeatureAppliesToType.Skill (0)
-   appliesTo: null (container progression)
+   sourceType: FeatureSourceType.Class (1)
+   -- Linked via FeatureClassMap many-to-many relationship
    ```
 
 3. **`FeatureEntity`** - Individual skills within the class skills feature
    ```sql
-   -- Each class skill is an entity
-   featureProgressionId: Links to the FeatureProgression
-   type: EntityType.Other (not a bonus, just marking as class skill)
+   -- Each class skill is an entity with EntityType.Base
+   featureId: Links to the Feature
+   type: EntityType.Base (4) -- Base type for class mechanics
    appliesTo: EntityAppliesToType.Skill (1)
    appliesToId: The specific skill ID (e.g., Climb = 1, Jump = 2)
+   appliesToSubId: null or subtype ID (for skills with subtypes)
    value: 0 (no bonus value - just marking as class skill)
-   bonusType: null
+   bonusType: null (Base entities don't use bonus types)
    ```
 
-## Special Feature ID System
+## EntityType.Base Pattern
 
-```typescript
-export const SpecialFeatureId = {
-    ClassSkill: 1,
-    ClassProficiency: 2,
-} as const;
-```
+Class skills use `EntityType.Base` entities to represent base mechanics. This is consistent with other class mechanics like BAB, saving throws, and skill points.
 
-Class skills use `SpecialFeatureId.ClassSkill` (value: 1) as a reserved feature ID that doesn't correspond to an actual feature in the database.
+**Key Pattern**:
+- `EntityType.Base` (4) - Identifies base mechanics entities
+- `EntityAppliesToType.Skill` (1) - Identifies skill-related entities
+- `sourceType: FeatureSourceType.Class` (1) - Identifies class-granted features
 
 ## Frontend Implementation
 
@@ -57,14 +58,17 @@ The `ClassSkillService` provides three main functions for managing class skills:
 
 #### **1. getClassSkills() - Extract skill IDs**
 ```typescript
-getClassSkills(progressions: FeatureProgressionWithRelations[]): number[] {
+getClassSkills(progressions: FeatureProgression[]): number[] {
     return progressions
-        .filter(prog => prog.featureId === SpecialFeatureId.ClassSkill && 
-                       prog.appliesToType === FeatureAppliesToType.Skill)
+        .filter(prog => prog.sourceType === FeatureSourceType.Class)
         .flatMap(prog =>
-            prog.modifiers
-                ?.filter(mod => mod.appliesTo === ModifierAppliesToType.Skill && mod.appliesToId)
-                .map(mod => mod.appliesToId) || []
+            prog.entities
+                ?.filter(entity => 
+                    entity.type === EntityType.Base &&
+                    entity.appliesTo === EntityAppliesToType.Skill && 
+                    entity.appliesToId
+                )
+                .map(entity => entity.appliesToId) || []
         )
         .filter(id => id > 0);
 }
@@ -73,76 +77,75 @@ getClassSkills(progressions: FeatureProgressionWithRelations[]): number[] {
 #### **2. addSkill() - Add a skill to class skills**
 ```typescript
 addSkill(
-    featureProgressions: FeatureProgressionWithRelations[],
-    setFeatureProgressions: (progressions: FeatureProgressionWithRelations[]) => void,
+    featureProgressions: FeatureProgression[],
+    setFeatureProgressions: (progressions: FeatureProgression[]) => void,
     skillId: number,
-    classId: number
+    classId: number,
+    subtypeId?: number | null
 ) {
-    // Check if class skills progression already exists
+    // Find existing class skills progression (class progression with Base skill entities)
     let classSkillsProgression = featureProgressions.find(fp =>
-        fp.featureId === SpecialFeatureId.ClassSkill && 
-        fp.appliesToType === FeatureAppliesToType.Skill
+        fp.sourceType === FeatureSourceType.Class &&
+        fp.classes?.some(c => c.classId === classId) &&
+        fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)
     );
 
     if (!classSkillsProgression) {
-        // Create the main class skills progression if it doesn't exist
+        // Create new progression - backend will create the feature
+        const tempFeatureId = Math.floor(Date.now() + Math.random() * 1000);
         classSkillsProgression = {
-            id: Date.now() + Math.random(), // Temporary ID for frontend state
-            featureId: SpecialFeatureId.ClassSkill,
-            sourceType: 1, // 1 for Class
-            classId: classId,
-            raceId: null,
-            level: 1, // Class skills are level 1 features
-            appliesToType: FeatureAppliesToType.Skill,
-            appliesTo: null, // No specific skill, this is the container progression
+            id: Math.floor(Date.now() + Math.random() * 1000),
+            featureId: tempFeatureId,
+            sourceType: FeatureSourceType.Class,
+            level: 1,
             feature: {
-                id: SpecialFeatureId.ClassSkill,
-                slug: 'class-skill',
-                name: 'Class Skill',
+                id: tempFeatureId,
+                slug: `class-${classId}-skills`,
+                name: 'Class Skills',
                 description: 'Class skill feature',
+                displayInCharacterSheet: true,
             },
-            modifiers: [],
-            choices: [],
-            effects: [],
+            classes: [{ classId }],
+            entities: [],
         };
-        setFeatureProgressions([...featureProgressions, classSkillsProgression]);
-        return;
     }
 
-    // Check if this specific skill is already added
-    const existingSkillModifier = classSkillsProgression.modifiers?.find(m =>
-        m.appliesTo === ModifierAppliesToType.Skill && m.appliesToId === skillId
+    // Check if this specific skill/subtype is already added
+    const existingEntity = classSkillsProgression.entities?.find(e =>
+        e.type === EntityType.Base &&
+        e.appliesTo === EntityAppliesToType.Skill &&
+        e.appliesToId === skillId &&
+        e.appliesToSubId === subtypeId
     );
 
-    if (existingSkillModifier) {
-        // Skill already exists, don't add duplicate
-        return;
+    if (existingEntity) {
+        return; // Already exists
     }
 
-    // Add the skill as a modifier to the existing progression
-    const newModifier = {
-        id: Date.now() + Math.random(), // Temporary ID
-        featureProgressionId: classSkillsProgression.id,
-        type: EntityType.Other, // Not a bonus, just marking as class skill
+    // Add the skill as a Base entity
+    const newEntity = {
+        id: Math.floor(Date.now() + Math.random() * 1000),
+        progressionId: classSkillsProgression.id,
+        type: EntityType.Base,
         appliesTo: EntityAppliesToType.Skill,
         appliesToId: skillId,
-        formulaParamsId: null,
-        value: 0, // No bonus value - just marking as class skill
-        bonusType: null, // No bonus type needed
-        appliesIfChoiceKey: null,
-        appliesIfChoiceValue: null,
+        appliesToSubId: subtypeId || null,
+        value: 0,
+        bonusType: null,
+        displayInDetail: true,
+        filterType: null,
+        groupingId: 1,
     };
 
-    // Create a new array with the updated progression
-    const updatedProgressions = featureProgressions.map(p => {
-        if (p.id === classSkillsProgression.id) {
-            return {
-                ...p,
-                modifiers: [...(p.modifiers || []), newModifier]
-            };
-        }
-        return p;
-    });
+    const updatedProgressions = featureProgressions.map(p => 
+        p.id === classSkillsProgression.id
+            ? { ...p, entities: [...(p.entities || []), newEntity] }
+            : p
+    );
+
+    if (!featureProgressions.some(p => p.id === classSkillsProgression.id)) {
+        updatedProgressions.push({ ...classSkillsProgression, entities: [newEntity] });
+    }
 
     setFeatureProgressions(updatedProgressions);
 }
@@ -151,31 +154,30 @@ addSkill(
 #### **3. removeSkill() - Remove a skill from class skills**
 ```typescript
 removeSkill(
-    featureProgressions: FeatureProgressionWithRelations[],
-    setFeatureProgressions: (progressions: FeatureProgressionWithRelations[]) => void,
+    featureProgressions: FeatureProgression[],
+    setFeatureProgressions: (progressions: FeatureProgression[]) => void,
     skillId: number
 ) {
     const updatedProgressions = featureProgressions.map(prog => {
-        if (prog.featureId === SpecialFeatureId.ClassSkill && 
-            prog.appliesToType === FeatureAppliesToType.Skill) {
-            // Remove the specific skill modifier
-            const updatedModifiers = prog.modifiers?.filter(mod =>
-                !(mod.appliesTo === ModifierAppliesToType.Skill && mod.appliesToId === skillId)
+        if (prog.sourceType === FeatureSourceType.Class &&
+            prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)) {
+            // Remove the specific skill entity
+            const updatedEntities = prog.entities?.filter(entity =>
+                !(entity.type === EntityType.Base &&
+                  entity.appliesTo === EntityAppliesToType.Skill &&
+                  entity.appliesToId === skillId)
             ) || [];
 
-            return {
-                ...prog,
-                modifiers: updatedModifiers
-            };
+            return { ...prog, entities: updatedEntities };
         }
         return prog;
     });
 
-    // Remove the progression entirely if it has no modifiers left
+    // Remove the progression entirely if it has no entities left
     const finalProgressions = updatedProgressions.filter(prog =>
-        !(prog.featureId === SpecialFeatureId.ClassSkill && 
-          prog.appliesToType === FeatureAppliesToType.Skill) ||
-        (prog.modifiers && prog.modifiers.length > 0)
+        !(prog.sourceType === FeatureSourceType.Class &&
+          prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)) ||
+        (prog.entities && prog.entities.length > 0)
     );
 
     setFeatureProgressions(finalProgressions);
@@ -189,34 +191,44 @@ removeSkill(
 The `classService` handles class skills as part of the bulk feature operations:
 
 1. **Creating/Updating Classes**: Class skills are included in the `features` array
-2. **Database Storage**: Creates appropriate `FeatureProgression` and `FeatureEntity` records
+2. **Database Storage**: Creates appropriate `Feature` and `FeatureEntity` records
 3. **No Individual CRUD**: Class skills cannot be modified individually
 
 ### **Example Backend Data Structure**
 
 ```typescript
+// Feature for class skills
+{
+    id: 1001,
+    slug: "class-5-skills",
+    name: "Fighter Class Skills",
+    description: "Class skills for Fighter",
+    displayInCharacterSheet: true
+}
+
 // FeatureProgression for class skills
 {
     id: 123,
-    featureId: SpecialFeatureId.ClassSkill, // 1
-    classId: 5, // Fighter class
+    featureId: 1001, // Normal feature ID
+    sourceType: FeatureSourceType.Class, // 1
     level: 1,
-    appliesToType: FeatureAppliesToType.Skill, // 0
-    appliesTo: null,
-    modifiers: [
+    // Linked via FeatureClassMap to classId: 5
+    entities: [
         {
             id: 456,
-            type: EntityType.Other, // 3
+            type: EntityType.Base, // 4
             appliesTo: EntityAppliesToType.Skill, // 1
             appliesToId: 1, // Climb skill
+            appliesToSubId: null,
             value: 0,
             bonusType: null
         },
         {
             id: 457,
-            type: EntityType.Other,
+            type: EntityType.Base,
             appliesTo: EntityAppliesToType.Skill,
             appliesToId: 2, // Jump skill
+            appliesToSubId: null,
             value: 0,
             bonusType: null
         }
@@ -263,18 +275,19 @@ const classSkills = ClassSkillService.getClassSkills(
 The `ClassDisplay` component extracts and displays class skills:
 
 ```typescript
-const classSkills = cls.features
-    ?.filter(progression =>
-        progression.featureId === SpecialFeatureId.ClassSkill &&
-        progression.appliesToType === FeatureAppliesToType.Skill
+// Class skills are identified by checking for EntityType.Base + EntityAppliesToType.Skill entities
+const hasClassSkills = progression.sourceType === FeatureSourceType.Class &&
+    progression.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill);
+
+// Extract skill IDs from entities
+const classSkills = progression.entities
+    ?.filter(entity =>
+        entity.type === EntityType.Base &&
+        entity.appliesTo === EntityAppliesToType.Skill &&
+        entity.appliesToId
     )
-    .flatMap(progression =>
-        progression.modifiers
-            ?.filter(modifier =>
-                modifier.appliesTo === ModifierAppliesToType.Skill && modifier.appliesToId
-            )
-            .map(modifier => ({
-                skillId: modifier.appliesToId,
+    .map(entity => ({
+        skillId: entity.appliesToId,
                 modifier: modifier
             })) || []
     ) || [];
@@ -287,13 +300,14 @@ const classSkills = cls.features
 - Each entity represents a different class skill
 - The progression acts as a container for all class skills
 
-### **2. Special Feature ID**
-- Uses a reserved ID (`SpecialFeatureId.ClassSkill`) that doesn't exist in the features table
-- Provides a consistent way to identify class skill progressions
-- Allows filtering and processing of class skills specifically
+### **2. Normal Feature Pattern**
+- Uses normal `Feature` records with descriptive names (e.g., "Fighter Class Skills")
+- Each class has its own feature for class skills
+- Features are linked via `FeatureClassMap` many-to-many relationship
 
-### **3. Modifier-Based Approach**
-- Each class skill is represented as an entity with `EntityType.Other`
+### **3. Base Entity Approach**
+- Each class skill is represented as an entity with `EntityType.Base`
+- `EntityType.Base` is used for all class mechanics (BAB, saves, skills, proficiencies)
 - `value: 0` indicates no bonus value - just marking as class skill
 - `appliesToId` contains the specific skill ID
 
@@ -313,29 +327,33 @@ const fighterClass = {
     skillPoints: 4,
     features: [
         {
-            sourceType: 1, // Class
+            sourceType: FeatureSourceType.Class, // 1
             level: 1,
-            featureId: SpecialFeatureId.ClassSkill,
-            appliesToType: FeatureAppliesToType.Skill,
-            appliesTo: null,
-            modifiers: [
+            featureId: null, // Backend will create feature
+            feature: {
+                name: "Fighter Class Skills",
+                slug: "class-5-skills",
+                description: "Class skills for Fighter",
+                displayInCharacterSheet: true
+            },
+            entities: [
                 {
-                    type: EntityType.Other,
-                    appliesTo: EntityAppliesToType.Skill,
+                    type: EntityType.Base, // 4
+                    appliesTo: EntityAppliesToType.Skill, // 1
                     appliesToId: 1, // Climb
+                    appliesToSubId: null,
                     value: 0,
                     bonusType: null
                 },
                 {
-                    type: EntityType.Other,
+                    type: EntityType.Base,
                     appliesTo: EntityAppliesToType.Skill,
                     appliesToId: 2, // Jump
+                    appliesToSubId: null,
                     value: 0,
                     bonusType: null
                 }
-            ],
-            choices: [],
-            effects: []
+            ]
         }
     ]
 };
@@ -382,25 +400,32 @@ const handleAddSkill = (skillId: number) => {
 ```typescript
 // Get all class skill progressions
 const classSkillProgressions = progressions.filter(prog =>
-    prog.featureId === SpecialFeatureId.ClassSkill &&
-    prog.appliesToType === FeatureAppliesToType.Skill
+    prog.sourceType === FeatureSourceType.Class &&
+    prog.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)
 );
 
-// Get skill IDs from modifiers
+// Get skill IDs from entities
 const skillIds = classSkillProgressions.flatMap(prog =>
-    prog.modifiers
-        ?.filter(mod => mod.appliesTo === ModifierAppliesToType.Skill && mod.appliesToId)
-        .map(mod => mod.appliesToId) || []
+    prog.entities
+        ?.filter(entity => 
+            entity.type === EntityType.Base &&
+            entity.appliesTo === EntityAppliesToType.Skill && 
+            entity.appliesToId
+        )
+        .map(entity => entity.appliesToId) || []
 );
 ```
 
 ### **Checking if Skill is Class Skill**
 ```typescript
-const isClassSkill = (skillId: number): boolean => {
-    return classSkillProgressions.some(prog =>
-        prog.modifiers?.some(mod =>
-            mod.appliesTo === ModifierAppliesToType.Skill &&
-            mod.appliesToId === skillId
+const isClassSkill = (skillId: number, skillSubId: number | null): boolean => {
+    return progressions.some(prog =>
+        prog.sourceType === FeatureSourceType.Class &&
+        prog.entities?.some(entity =>
+            entity.type === EntityType.Base &&
+            entity.appliesTo === EntityAppliesToType.Skill &&
+            entity.appliesToId === skillId &&
+            (entity.appliesToSubId === skillSubId || entity.appliesToSubId === -1)
         )
     );
 };

@@ -1,3 +1,4 @@
+import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
 import { extractBABProgression } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import type {
@@ -7,10 +8,9 @@ import type {
     Feat,
     GetAllFeatsResponse,
     FeaturePrerequisite,
-    FeatureProgression
+    FeatureWithRelations
 } from '@shared/schema';
-import { FeaturePrerequisiteType } from '@shared/static-data';
-import { getBABProgression } from '@shared/utils';
+import { FeaturePrerequisiteType, EntityType, EntityAppliesToType, FeatureSourceType } from '@shared/static-data';
 
 export function meetsPrerequisites(
     feat: Feat,
@@ -19,7 +19,7 @@ export function meetsPrerequisites(
     selectedRaceDetails: Race | null,
     _allFeats: GetAllFeatsResponse,
     featurePrerequisites: FeaturePrerequisite[],
-    resolvedProgressions?: FeatureProgression[]
+    resolvedProgressions?: FeatureWithRelations[]
 ): boolean {
     // Use FeaturePrerequisite - required parameter
     const prerequisites = featurePrerequisites || [];
@@ -86,7 +86,7 @@ export function meetsPrerequisites(
 
             case FeaturePrerequisiteType.Size: {
                 if (!prereq.appliesToId) return true;
-                // Extract sizeId from resolved progressions
+                // Extract sizeId from resolved features
                 const raceMechanics = resolvedProgressions && character.raceId
                     ? extractRaceMechanics(resolvedProgressions, character.raceId)
                     : null;
@@ -116,30 +116,44 @@ export function meetsPrerequisites(
 export function getCharacterBAB(
     character: CharacterWithAllDetailsResponse,
     selectedClassDetails: DnDClass | null,
-    resolvedProgressions?: FeatureProgression[]
+    resolvedProgressions?: FeatureWithRelations[]
 ): number {
     if (!selectedClassDetails) return 0;
 
     try {
         const level = character.advancements.length;
 
-        // Extract BAB progression from resolved progressions
+        // Calculate BAB directly from formula entities
         const classId = (selectedClassDetails as { id?: number }).id;
-        let babProgression: number | null = null;
-        if (resolvedProgressions && classId) {
-            babProgression = extractBABProgression(resolvedProgressions, classId);
-        }
-
-        if (babProgression === null || babProgression === undefined) {
+        if (!resolvedProgressions || !classId) {
             return 0;
         }
 
-        // Use the existing BAB calculation utility
-        const babString = getBABProgression(level, babProgression as 0 | 1 | 2);
+        const classProgressions = resolvedProgressions.filter(p =>
+            p.sourceType === FeatureSourceType.Class &&
+            p.classes?.some(c => c.classId === classId) &&
+            p.entities?.some(e =>
+                e.type === EntityType.Base &&
+                e.appliesTo === EntityAppliesToType.BaseAttackBonus
+            )
+        );
 
-        // Extract the first BAB value from the string (e.g., "+1" -> 1, "+0" -> 0)
-        const match = babString.match(/\+(\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
+        for (const feature of classProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
+                    if (entity.type === EntityType.Base &&
+                        entity.appliesTo === EntityAppliesToType.BaseAttackBonus &&
+                        entity.formulaParams) {
+                        const babValue = applyFeatureFormula(entity, character, level);
+                        if (babValue !== null && babValue !== undefined) {
+                            return babValue;
+                        }
+                    }
+                }
+            }
+        }
+
+        return 0;
     } catch (error) {
         console.warn('Error calculating BAB for class:', selectedClassDetails.name, error);
         return 0;

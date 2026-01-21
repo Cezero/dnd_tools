@@ -1,6 +1,6 @@
 import type {
     CharacterWithAllDetailsResponse,
-    FeatureProgression,
+    FeatureWithRelations,
 } from '@shared/schema';
 import { EntityAppliesToType } from '@shared/static-data';
 
@@ -11,7 +11,7 @@ export interface CharacterFeat {
     featId: number;
     source: 'advancement' | 'choice';
     sourceFeature?: {
-        progressionId: number;
+        featureId: number;
         featureEntityId: number;
         featureName: string;
         level: number;
@@ -24,12 +24,12 @@ export interface CharacterFeat {
  * Combines feats from advancement.feats (regular feats) and resolved feat choices
  * 
  * @param character - Character with all details including advancements
- * @param resolvedProgressions - Resolved feature progressions containing feat choices
+ * @param resolvedProgressions - Resolved feature features containing feat choices
  * @returns Unified list of all character feats with source attribution
  */
 export function getAllCharacterFeats(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureWithRelations[]
 ): CharacterFeat[] {
     const feats: CharacterFeat[] = [];
 
@@ -51,19 +51,19 @@ export function getAllCharacterFeats(
         if (!advancement.featureChoices) continue;
 
         for (const choice of advancement.featureChoices) {
-            // Find the progression and entity in resolved progressions
-            // The progression should exist because it's the one that contains the choice entity
+            // Find the feature and entity in resolved features
+            // The feature should exist because it's the one that contains the choice entity
             let entityAppliesTo: number | null = null;
-            let progression: FeatureProgression | null = null;
+            let feature: FeatureWithRelations | null = null;
             let entityName: string | null = null;
 
-            // Find the progression that contains this choice entity
+            // Find the feature that contains this choice entity
             for (const prog of resolvedProgressions) {
-                if (prog.id === choice.progressionId) {
-                    progression = prog;
-                    entityName = prog.feature?.name || null;
+                if (prog.id === choice.featureId) {
+                    feature = prog;
+                    entityName = prog.name || null;
 
-                    // Find the entity within this progression
+                    // Find the entity within this feature
                     if (prog.entities) {
                         const entity = prog.entities.find(e => e.id === choice.featureEntityId);
                         if (entity) {
@@ -75,18 +75,18 @@ export function getAllCharacterFeats(
             }
 
             // Only include if this is a feat choice (entity.appliesTo === EntityAppliesToType.Feat)
-            // The choice itself (the selected feat) doesn't create a progression - feats don't have features
-            // But the choice entity in the progression tells us what type of choice this is
+            // The choice itself (the selected feat) doesn't create a feature - feats don't have features
+            // But the choice entity in the feature tells us what type of choice this is
             if (entityAppliesTo === EntityAppliesToType.Feat) {
                 feats.push({
                     featId: choice.appliesToId,
                     source: 'choice',
-                    sourceFeature: progression
+                    sourceFeature: feature
                         ? {
-                            progressionId: choice.progressionId,
+                            featureId: choice.featureId,
                             featureEntityId: choice.featureEntityId,
                             featureName: entityName || 'Unknown Feature',
-                            level: progression.level,
+                            level: feature.level,
                         }
                         : undefined,
                     featSubId: choice.appliesToSubId ?? null,

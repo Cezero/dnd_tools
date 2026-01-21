@@ -1,0 +1,84 @@
+{
+  "exportTimestamp": "2026-01-19T23:51:56.384Z",
+  "databaseUrl": "mysql://root:****@cybersql.local.cyberdeck.org:3306/cyberdnd",
+  "tables": [
+    {
+      "tableName": "Feature",
+      "csvFile": "feature_export.csv",
+      "rowCount": 355,
+      "checksum": "fa97be243b07fc6ed1ddfe250e6e65eb23e9071576838a1e31b7deee1c42d0b6"
+    },
+    {
+      "tableName": "FeatureProgression",
+      "csvFile": "feature_progression_export.csv",
+      "rowCount": 899,
+      "checksum": "82c96087e56924c5f8e3fd6315c7bb7403b0b6928df8a58af70eeeff9669c734"
+    },
+    {
+      "tableName": "FeatureFormulaParams",
+      "csvFile": "feature_formula_params_export.csv",
+      "rowCount": 100,
+      "checksum": "d65ba807b8b71752f447cb8bfffd6354570df9b529ea5db8da71569d5e473b6b"
+    },
+    {
+      "tableName": "FeaturePrerequisite",
+      "csvFile": "feature_prerequisite_export.csv",
+      "rowCount": 136,
+      "checksum": "835674f09bbba26bb2663e773f60082e207250189ed7ad264c7fe5dfc2554de0"
+    },
+    {
+      "tableName": "FeatureProgressionCondition",
+      "csvFile": "feature_progression_condition_export.csv",
+      "rowCount": 0,
+      "checksum": "7f2c91c70fc00116293189422b461344362daa5172496e6dfaca7fca38b41333"
+    },
+    {
+      "tableName": "FeatureProgressionClassMap",
+      "csvFile": "feature_progression_class_map_export.csv",
+      "rowCount": 747,
+      "checksum": "ba070ed6631c9bd382b28304a984aed360b06d9bdc21c31b02ce763b259fc0eb"
+    },
+    {
+      "tableName": "FeatureProgressionRaceMap",
+      "csvFile": "feature_progression_race_map_export.csv",
+      "rowCount": 104,
+      "checksum": "c5f25d39703ab8870156242d0e51c80cde743f50b770bc9030a31f4abaeecede"
+    },
+    {
+      "tableName": "FeatureEntity",
+      "csvFile": "feature_entity_export.csv",
+      "rowCount": 1461,
+      "checksum": "1f3f851642a261f57ee2d301cee0573346fd3da7554cdc41ef97bb293343f0c0"
+    },
+    {
+      "tableName": "FeatureEntityCondition",
+      "csvFile": "feature_entity_condition_export.csv",
+      "rowCount": 34,
+      "checksum": "f8dbd175611450ec0a72707a7bfe1b1f4c28658733b3c8879957694a3a92ab1a"
+    },
+    {
+      "tableName": "SpellcastingLink",
+      "csvFile": "spellcasting_link_export.csv",
+      "rowCount": 0,
+      "checksum": "ea8135888d8a7889f14224fd0b02ef7e3db37848e083a678ea119f36fec3e6d4"
+    },
+    {
+      "tableName": "CharacterFeatureChoice",
+      "csvFile": "character_feature_choice_export.csv",
+      "rowCount": 5,
+      "checksum": "5b23f7d634dc978b4ede84f3d371045cc4ffd38f7098e0b936ac9274d03df9dd"
+    },
+    {
+      "tableName": "CharacterFeatureUses",
+      "csvFile": "character_feature_uses_export.csv",
+      "rowCount": 0,
+      "checksum": "7db23c792aec4db654a9c42f5a92cd353427d8746c2a42ee6d38f3dacb23694d"
+    },
+    {
+      "tableName": "TransformationFormEligibility",
+      "csvFile": "transformation_form_eligibility_export.csv",
+      "rowCount": 0,
+      "checksum": "1c0a3b6568a0ad7c1f075cfbe468e9ad3162e3fd7fb457fb52f12149b0c9a11c"
+    }
+  ]
+}

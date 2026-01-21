@@ -1,4 +1,4 @@
-import type { FeatureProgression, FeatureEntity } from '@shared/schema';
+import type { FeatureWithRelations, FeatureEntity } from '@shared/schema';
 import {
     EntityType,
     EntityAppliesToType,
@@ -8,26 +8,26 @@ import {
 } from '@shared/static-data';
 
 /**
- * Get monk unarmed strike damage from resolved progressions
+ * Get monk unarmed strike damage from resolved features
  * Extracts Replacement entities with appliesTo: UnarmedDamage
  * Calculates value based on character level and size using formula system
  * 
- * @param resolvedProgressions - Resolved feature progressions
+ * @param resolvedProgressions - Resolved feature features
  * @param characterLevel - Current character level
  * @param characterSizeId - Character size ID (from race)
  * @returns Damage dice string (e.g., "1d6") or null if not a monk
  */
 export function getMonkUnarmedDamage(
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     characterLevel: number,
     characterSizeId: number
 ): string | null {
     // Find Replacement entities with appliesTo: UnarmedDamage
     const unarmedDamageEntities: FeatureEntity[] = [];
     
-    for (const progression of resolvedProgressions) {
-        if (progression.entities) {
-            for (const entity of progression.entities) {
+    for (const feature of resolvedProgressions) {
+        if (feature.entities) {
+            for (const entity of feature.entities) {
                 if (entity.type === EntityType.Replacement &&
                     entity.appliesTo === EntityAppliesToType.UnarmedDamage) {
                     // Check if entity has size condition matching character size

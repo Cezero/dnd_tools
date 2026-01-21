@@ -1,5 +1,5 @@
-import type { UpdateApplierConfig } from '../shared/session/GenericUpdateApplier';
 import type { CharacterEditState, CharacterUpdate } from './types';
+import type { UpdateApplierConfig } from '../shared/session/GenericUpdateApplier';
 
 /**
  * Configuration for applying Character updates to state.
@@ -8,7 +8,7 @@ import type { CharacterEditState, CharacterUpdate } from './types';
  * update applier to handle Character-specific update logic.
  * 
  * **Note**: Character updates are simpler than Class/Race updates - they don't have
- * progression/entity updates in the same way. Character updates are primarily field
+ * feature/entity updates in the same way. Character updates are primarily field
  * updates and choice updates.
  */
 export const characterUpdateApplierConfig: UpdateApplierConfig<CharacterEditState, CharacterUpdate> = {
@@ -49,15 +49,15 @@ export const characterUpdateApplierConfig: UpdateApplierConfig<CharacterEditStat
     },
 
     /**
-     * Checks if an update is a progression update.
+     * Checks if an update is a feature update.
      */
     isProgressionUpdate: (update) => {
-        // Character doesn't have progression updates in the same way
+        // Character doesn't have feature updates in the same way
         return false;
     },
 
     /**
-     * Applies a progression update to the character state.
+     * Applies a feature update to the character state.
      */
     applyProgressionUpdate: (state) => {
         // Not used for Character
@@ -185,7 +185,7 @@ export const characterUpdateApplierConfig: UpdateApplierConfig<CharacterEditStat
             case 'MAKE_CHOICE': {
                 // Add or update feature choice
                 const choiceIndex = state.featureChoices.findIndex(fc =>
-                    fc.progressionId === update.payload.progressionId &&
+                    fc.featureId === update.payload.featureId &&
                     fc.featureEntityId === update.payload.featureEntityId
                 );
                 if (choiceIndex >= 0) {
@@ -209,7 +209,7 @@ export const characterUpdateApplierConfig: UpdateApplierConfig<CharacterEditStat
                             {
                                 id: 0, // Will be assigned by database
                                 characterId: state.characterId,
-                                progressionId: update.payload.progressionId,
+                                featureId: update.payload.featureId,
                                 advancementId: 0, // Will be assigned by database
                                 featureEntityId: update.payload.featureEntityId,
                                 appliesToId: update.payload.appliesToId,

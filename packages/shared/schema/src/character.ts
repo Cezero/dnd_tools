@@ -132,7 +132,7 @@ export const AdvancementSpellSchema = z.object({
 export const CharacterFeatureChoiceSchema = z.object({
     id: commonValidations.positiveInt('Character feature choice ID'),
     characterId: commonValidations.positiveInt('Character ID'),
-    progressionId: commonValidations.positiveInt('Progression ID'),
+    featureId: commonValidations.positiveInt('Feature ID'),
     advancementId: commonValidations.positiveInt('Advancement ID'),
     featureEntityId: commonValidations.positiveInt('Feature entity ID'),
     appliesToId: commonValidations.positiveInt('Applies to ID'),
@@ -337,7 +337,7 @@ export const UpdateCharacterDisallowedSourceSchema = CreateCharacterDisallowedSo
 export const CharacterFeatureUsesSchema = z.object({
     id: commonValidations.positiveInt('Feature uses ID'),
     characterId: commonValidations.positiveInt('Character ID'),
-    progressionId: commonValidations.positiveInt('Progression ID'),
+    featureId: commonValidations.positiveInt('Feature ID'),
     featureEntityId: commonValidations.positiveInt('Feature entity ID'),
     currentUses: commonValidations.nonNegativeInt('Current uses'),
     maxUses: commonValidations.nonNegativeInt('Max uses'),
@@ -404,7 +404,7 @@ export const SpellCastParamSchema = CharacterIdParamSchema.extend({
 });
 
 export const FeatureUsesParamSchema = CharacterIdParamSchema.extend({
-    progressionId: numericParam(),
+    featureId: numericParam(),
     entityId: numericParam(),
 });
 

@@ -1,25 +1,29 @@
 import type {
     Feat,
     FeatInQueryResponse,
-    FeatureProgression,
+    FeatureWithRelations,
+    FeatureEntity,
     CharacterWithAllDetailsResponse,
     FeaturePrerequisite,
     DnDClass,
-    Race
+    Race,
+    FormulaCalculationParams
 } from '@shared/schema';
 import {
     EntityType,
     EntityAppliesToType,
-    FeaturePrerequisiteType
+    FeaturePrerequisiteType,
+    FeatureSourceType,
+    FORMULA_MAP,
+    FormulaId
 } from '@shared/static-data';
-import { getBABProgression } from '@shared/utils';
 
 import { extractBABProgression } from '../../utils/classMechanicsExtractor';
 import { extractSizeId } from '../../utils/raceMechanicsExtractor';
 import { featService } from '../feat/featService';
 
 type FeatWithProgressions = Feat & {
-    featureProgressions: FeatureProgression[];
+    features: FeatureWithRelations[];
 };
 
 /**
@@ -36,45 +40,45 @@ export class AvailableFeatService {
      */
     static async getQualifiedFeats(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[],
+        resolvedProgressions: FeatureWithRelations[],
         classDetails: DnDClass | null,
         raceDetails: Race | null,
         allFeats: FeatInQueryResponse[]
     ): Promise<FeatInQueryResponse[]> {
         // Get all feats with full data for prerequisite checking
-        // We need to fetch featureProgressions for each feat to check prerequisites
+        // We need to fetch features for each feat to check prerequisites
         const allFeatsResponse = await featService.getAllFeatsFull();
         const allFeatIds = allFeatsResponse.results.map(f => f.id);
 
-        // Fetch featureProgressions for all feats
+        // Fetch features for all feats
         const { featureSystemService } = await import('../featureSystem/featureSystemService');
-        const allProgressions = await featureSystemService.getFeatureProgressionsByFeatIds(allFeatIds);
+        const allProgressions = await featureSystemService.getFeaturesByFeatIds(allFeatIds);
 
-        // Create a map of feat ID to progressions
+        // Create a map of feat ID to features
         const progressionsByFeatId = new Map<number, typeof allProgressions>();
-        for (const progression of allProgressions) {
-            if (progression.featId) {
-                if (!progressionsByFeatId.has(progression.featId)) {
-                    progressionsByFeatId.set(progression.featId, []);
+        for (const feature of allProgressions) {
+            if (feature.featId) {
+                if (!progressionsByFeatId.has(feature.featId)) {
+                    progressionsByFeatId.set(feature.featId, []);
                 }
-                progressionsByFeatId.get(progression.featId)!.push(progression);
+                progressionsByFeatId.get(feature.featId)!.push(feature);
             }
         }
 
-        // Create full feat map with featureProgressions
+        // Create full feat map with features
         const fullFeatMap = new Map<number, FeatWithProgressions>();
         for (const feat of allFeatsResponse.results) {
             fullFeatMap.set(feat.id, {
                 ...feat,
-                featureProgressions: progressionsByFeatId.get(feat.id) || []
+                features: progressionsByFeatId.get(feat.id) || []
             });
         }
 
         // Extract character's "all" proficiencies (category-based proficiencies where appliesToSubId === -1 or null)
         const characterAllProficiencies = new Set<number>();
-        for (const progression of resolvedProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        for (const feature of resolvedProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     // Check if this is a proficiency entity with "all" category proficiency
                     if (
                         entity.type === EntityType.Other &&
@@ -89,11 +93,11 @@ export class AvailableFeatService {
             }
         }
 
-        // Get granted feats from resolved progressions
+        // Get granted feats from resolved features
         const grantedFeats = new Set<number>();
-        for (const progression of resolvedProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
+        for (const feature of resolvedProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
                     if (
                         entity.type === EntityType.Other &&
                         entity.appliesTo === EntityAppliesToType.Feat &&
@@ -130,9 +134,9 @@ export class AvailableFeatService {
                 if (feat.repeatable === true) {
                     // Check if this feat was granted with appliesToSubId: -1 (all iterations)
                     let hasAllIterations = false;
-                    for (const progression of resolvedProgressions) {
-                        if (progression.entities) {
-                            for (const entity of progression.entities) {
+                    for (const feature of resolvedProgressions) {
+                        if (feature.entities) {
+                            for (const entity of feature.entities) {
                                 if (
                                     entity.type === EntityType.Other &&
                                     entity.appliesTo === EntityAppliesToType.Feat &&
@@ -166,11 +170,11 @@ export class AvailableFeatService {
 
             // Check if this feat provides a proficiency that the character already has as "all"
             // If so, filter it out (e.g., Cleric already has "all heavy armor", so filter out Heavy Armor Proficiency feat)
-            if (fullFeat.featureProgressions) {
+            if (fullFeat.features) {
                 let shouldFilterFeat = false;
-                for (const progression of fullFeat.featureProgressions) {
-                    if (progression.entities) {
-                        for (const entity of progression.entities) {
+                for (const feature of fullFeat.features) {
+                    if (feature.entities) {
+                        for (const entity of feature.entities) {
                             // Check if this entity provides a proficiency
                             if (
                                 entity.type === EntityType.Other &&
@@ -192,12 +196,12 @@ export class AvailableFeatService {
                 }
             }
 
-            // Get prerequisites from featureProgressions
+            // Get prerequisites from features
             const featurePrerequisites: FeaturePrerequisite[] = [];
-            if (fullFeat.featureProgressions) {
-                for (const progression of fullFeat.featureProgressions) {
-                    if (progression.feature?.prerequisites) {
-                        featurePrerequisites.push(...progression.feature.prerequisites);
+            if (fullFeat.features) {
+                for (const feature of fullFeat.features) {
+                    if (feature.prerequisites) {
+                        featurePrerequisites.push(...feature.prerequisites);
                     }
                 }
             }
@@ -233,7 +237,7 @@ export class AvailableFeatService {
         classDetails: DnDClass | null,
         raceDetails: Race | null,
         prerequisites: FeaturePrerequisite[],
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureWithRelations[]
     ): Promise<boolean> {
         if (!prerequisites || prerequisites.length === 0) {
             return true;
@@ -289,11 +293,11 @@ export class AvailableFeatService {
                             if (meetsPrereq) break;
                         }
                     }
-                    // Also check granted feats from resolved progressions
+                    // Also check granted feats from resolved features
                     if (!meetsPrereq) {
-                        for (const progression of resolvedProgressions) {
-                            if (progression.entities) {
-                                for (const entity of progression.entities) {
+                        for (const feature of resolvedProgressions) {
+                            if (feature.entities) {
+                                for (const entity of feature.entities) {
                                     if (
                                         entity.type === EntityType.Other &&
                                         entity.appliesTo === EntityAppliesToType.Feat &&
@@ -372,7 +376,7 @@ export class AvailableFeatService {
                         meetsPrereq = true;
                         break;
                     }
-                    // Extract sizeId from resolved progressions
+                    // Extract sizeId from resolved features
                     const raceId = character.raceId ?? undefined;
                     const characterSizeId = extractSizeId(resolvedProgressions, raceId);
                     if (!characterSizeId) {
@@ -415,7 +419,7 @@ export class AvailableFeatService {
      */
     private static async getCharacterBAB(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureWithRelations[]
     ): Promise<number> {
         if (!character.advancements || character.advancements.length === 0) {
             return 0;
@@ -431,19 +435,109 @@ export class AvailableFeatService {
         // Calculate BAB for each class and find the highest
         let maxBAB = 0;
         for (const [classId, level] of classLevels) {
-            // Extract BAB progression from resolved progressions
-            const babProgression = extractBABProgression(resolvedProgressions, classId);
-            if (!babProgression) {
-                continue;
-            }
+            // Calculate BAB directly from formula entities
+            const classProgressions = resolvedProgressions.filter(p =>
+                p.sourceType === FeatureSourceType.Class &&
+                p.classes?.some(c => c.classId === classId) &&
+                p.entities?.some(e =>
+                    e.type === EntityType.Base &&
+                    e.appliesTo === EntityAppliesToType.BaseAttackBonus
+                )
+            );
 
-            const babString = getBABProgression(level, babProgression);
-            // Extract the first BAB value from the string (e.g., "+1" -> 1, "+0" -> 0)
-            const match = babString.match(/\+(\d+)/);
-            const bab = match ? parseInt(match[1], 10) : 0;
-            maxBAB = Math.max(maxBAB, bab);
+            for (const feature of classProgressions) {
+                if (feature.entities) {
+                    for (const entity of feature.entities) {
+                        if (entity.type === EntityType.Base &&
+                            entity.appliesTo === EntityAppliesToType.BaseAttackBonus &&
+                            entity.formulaParams) {
+                            const babValue = this.calculateFormulaValueForEntity(entity, feature, level, character);
+                            if (babValue !== null && babValue !== undefined) {
+                                maxBAB = Math.max(maxBAB, babValue);
+                                break; // Only use first matching entity per feature
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         return maxBAB;
+    }
+
+    /**
+     * Calculate formula value for an entity at a specific class level.
+     */
+    private static calculateFormulaValueForEntity(
+        entity: FeatureEntity,
+        feature: FeatureWithRelations,
+        classLevel: number,
+        character: CharacterWithAllDetailsResponse
+    ): number | null {
+        if (!entity.formulaParams) return null;
+
+        const formulaDef = FORMULA_MAP[entity.formulaParams.formulaId];
+        if (!formulaDef) return null;
+
+        const formulaStartLevel = entity.formulaParams.formulaStartLevel ?? feature.level;
+
+        // Only calculate if level is at or after the formula start level, unless featureLevelZero is enabled
+        // (featureLevelZero allows formula to return 0 for levels below formulaStartLevel)
+        if (classLevel < formulaStartLevel && entity.formulaParams.featureLevelZero !== true) {
+            return null;
+        }
+
+        // Build formula params
+        const abilityScores: Record<number, number> = {};
+        if (character.abilityScores) {
+            for (const score of character.abilityScores) {
+                abilityScores[score.abilityId] = score.value;
+            }
+        }
+
+        // Use entity.value for scalingValue if available (for formulas like LEVEL_TIMES_VALUE)
+        // Otherwise default to 1
+        const scalingValue = entity.value !== null && entity.value !== undefined
+            ? entity.value
+            : 1;
+
+        const params: FormulaCalculationParams = {
+            ...entity.formulaParams,
+            level: classLevel,
+            startLevel: feature.level,
+            scalingValue,
+            context: {
+                character: {
+                    abilityScores,
+                },
+            },
+            // Convert null to undefined for baseValue, divisor, and startingValue
+            baseValue: entity.formulaParams.baseValue != null ? entity.formulaParams.baseValue : undefined,
+            divisor: entity.formulaParams.divisor != null ? entity.formulaParams.divisor : undefined,
+            startingValue: entity.formulaParams.startingValue != null ? entity.formulaParams.startingValue : undefined,
+        };
+
+        // Add ability-specific params for ABILITY_BASED formula
+        if (entity.formulaParams.formulaId === FormulaId.ABILITY_BASED && entity.formulaParams.abilityId) {
+            params.baseValue = entity.value ?? 0;
+        }
+
+        // Calculate formula value
+        try {
+            const value = formulaDef.calculate(params);
+            if (value !== null && value !== undefined && typeof value === 'number') {
+                // Allow 0 values when featureLevelZero is enabled
+                if (value === 0 && entity.formulaParams.featureLevelZero === true) {
+                    return 0;
+                }
+                if (value > 0) {
+                    return value;
+                }
+            }
+        } catch (error) {
+            console.error('Error calculating formula value:', error);
+        }
+
+        return null;
     }
 }

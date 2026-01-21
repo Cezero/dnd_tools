@@ -68,7 +68,7 @@ export class CalculatorRegistry implements ICalculatorRegistry {
 
 
     registerProgressionGenerator(progressionType: number, generator: ProgressionGenerator): void {
-        this.registerCalculator(CalculatorType.Progression, progressionType, generator);
+        this.registerCalculator(CalculatorType.Feature, progressionType, generator);
     }
 
     registerConditionalValueDetector(conditionType: number, detector: ConditionalValueDetector): void {
@@ -82,7 +82,7 @@ export class CalculatorRegistry implements ICalculatorRegistry {
 
 
     getProgressionGenerator(progressionType: number): ProgressionGenerator | undefined {
-        return this.getCalculator(CalculatorType.Progression, progressionType) as ProgressionGenerator | undefined;
+        return this.getCalculator(CalculatorType.Feature, progressionType) as ProgressionGenerator | undefined;
     }
 
     getDefaultProgressionGenerator(): ProgressionGenerator | undefined {
@@ -117,8 +117,8 @@ export class CalculatorRegistry implements ICalculatorRegistry {
         this.registerFormulaCalculator(FormulaId.LEVEL_PLUS_ABILITY, formulaCalculator);
         this.registerFormulaCalculator(FormulaId.STATIC_EVERY_N_LEVELS, formulaCalculator);
 
-        // Register progression generators
-        this.registerProgressionGenerator(ProgressionGeneratorType.default, progressionGenerator); // Default progression generator
+        // Register feature generators
+        this.registerProgressionGenerator(ProgressionGeneratorType.default, progressionGenerator); // Default feature generator
     }
 }
 

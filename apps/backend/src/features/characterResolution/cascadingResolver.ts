@@ -1,4 +1,4 @@
-import type { FeatureProgression } from '@shared/schema';
+import type { FeatureWithRelations } from '@shared/schema';
 
 import { ChoiceResolver } from './choiceResolver';
 import { FeatureEntityHandlers } from './featureEntityHandlers';
@@ -8,7 +8,7 @@ import type { EntityProcessingResult } from './featureEntityHandlers';
  * Result of cascading resolution
  */
 export interface CascadingResolutionResult {
-    resolvedProgressions: FeatureProgression[];
+    resolvedProgressions: FeatureWithRelations[];
     warnings: string[];
     errors: string[];
 }
@@ -25,7 +25,7 @@ export class CascadingResolver {
     private maxDepth = 10;
 
     /**
-     * Resolves cascading features from initial progressions.
+     * Resolves cascading features from initial features.
      * 
      * Iteratively processes features that grant other features until no new
      * features are discovered or maximum depth is reached. Handles user choices
@@ -34,7 +34,7 @@ export class CascadingResolver {
      * @returns Complete resolution result with all cascading features resolved
      */
     async resolveCascadingFeatures(
-        initialProgressions: FeatureProgression[],
+        initialProgressions: FeatureWithRelations[],
         userChoices?: Record<number, number[]>
     ): Promise<CascadingResolutionResult> {
         let currentProgressions = [...initialProgressions];
@@ -67,20 +67,20 @@ export class CascadingResolver {
      * Resolve the next level of features
      */
     private async resolveNextLevel(
-        currentProgressions: FeatureProgression[],
+        currentProgressions: FeatureWithRelations[],
         userChoices?: Record<number, number[]>
-    ): Promise<FeatureProgression[]> {
-        const newProgressions: FeatureProgression[] = [...currentProgressions];
+    ): Promise<FeatureWithRelations[]> {
+        const newProgressions: FeatureWithRelations[] = [...currentProgressions];
 
-        // Process each progression for cascading effects
-        for (const progression of currentProgressions) {
-            if (progression.entities) {
-                for (const entity of progression.entities) {
-                    const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
+        // Process each feature for cascading effects
+        for (const feature of currentProgressions) {
+            if (feature.entities) {
+                for (const entity of feature.entities) {
+                    const result = FeatureEntityHandlers.processFeatureEntity(entity, feature);
 
                     // Check if this entity grants new features that need resolution
                     if (result.grants && result.grants.length > 0) {
-                        await this.processGrantedFeatures(result, progression, newProgressions);
+                        await this.processGrantedFeatures(result, feature, newProgressions);
                     }
                 }
             }
@@ -98,7 +98,7 @@ export class CascadingResolver {
      * Process features granted by other features.
      * 
      * When a feature entity grants another feature (e.g., a feat granting domain features),
-     * this method resolves the granted feature and adds it to the progressions array.
+     * this method resolves the granted feature and adds it to the features array.
      * This enables cascading resolution to continue detecting new features.
      * 
      * Examples:
@@ -107,21 +107,21 @@ export class CascadingResolver {
      * - Features that grant feats which in turn grant more features (multi-level cascading)
      * 
      * @param result - Entity processing result containing granted entities
-     * @param sourceProgression - The progression that granted these features
-     * @param progressions - Array of progressions to add granted features to (modified in place)
+     * @param sourceProgression - The feature that granted these features
+     * @param features - Array of features to add granted features to (modified in place)
      * 
      * @example
      * ```typescript
      * // Entity grants a feat (appliesTo: Feat, appliesToId: 123)
-     * const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
-     * await this.processGrantedFeatures(result, progression, progressions);
-     * // progressions now includes the feat's feature progressions
+     * const result = FeatureEntityHandlers.processFeatureEntity(entity, feature);
+     * await this.processGrantedFeatures(result, feature, features);
+     * // features now includes the feat's feature features
      * ```
      */
     private async processGrantedFeatures(
         result: EntityProcessingResult,
-        sourceProgression: FeatureProgression,
-        progressions: FeatureProgression[]
+        sourceProgression: FeatureWithRelations,
+        features: FeatureWithRelations[]
     ): Promise<void> {
         if (!result.grants || result.grants.length === 0) {
             return;
@@ -137,12 +137,12 @@ export class CascadingResolver {
             const grantedProgressions = await ChoiceResolver.resolveChoiceByType(
                 entity.appliesTo,
                 entity.appliesToId,
-                progressions
+                features
             );
 
-            // Add progressions using utility function (no entity processing needed here,
+            // Add features using utility function (no entity processing needed here,
             // as entities will be processed in the next iteration of the cascading loop)
-            ChoiceResolver.addResolvedProgressions(progressions, grantedProgressions);
+            ChoiceResolver.addResolvedProgressions(features, grantedProgressions);
         }
     }
 
@@ -150,15 +150,15 @@ export class CascadingResolver {
      * Resolve user choices and their cascading effects.
      * 
      * Processes user-selected choices (e.g., domain selections, feat choices) and adds
-     * the granted feature progressions to the progressions array. Uses the centralized
+     * the granted feature features to the features array. Uses the centralized
      * utility function to avoid duplicate code.
      * 
      * @param userChoices - Record mapping appliesTo types to arrays of selected IDs
-     * @param progressions - Array of progressions to add granted features to (modified in place)
+     * @param features - Array of features to add granted features to (modified in place)
      */
     private async resolveUserChoices(
         userChoices: Record<number, number[]>,
-        progressions: FeatureProgression[]
+        features: FeatureWithRelations[]
     ): Promise<void> {
         // Generic choice resolution - handle any appliesTo type
         for (const [appliesToType, selectedIds] of Object.entries(userChoices)) {
@@ -166,28 +166,28 @@ export class CascadingResolver {
                 const grantedProgressions = await ChoiceResolver.resolveChoiceByType(
                     parseInt(appliesToType),
                     selectedId,
-                    progressions
+                    features
                 );
 
-                // Add progressions using utility function (no entity processing needed here,
+                // Add features using utility function (no entity processing needed here,
                 // as entities will be processed in the next iteration of the cascading loop)
-                ChoiceResolver.addResolvedProgressions(progressions, grantedProgressions);
+                ChoiceResolver.addResolvedProgressions(features, grantedProgressions);
             }
         }
     }
 
     /**
-     * Check if there are changes between two sets of progressions
+     * Check if there are changes between two sets of features
      */
     private hasFeatureChanges(
-        oldProgressions: FeatureProgression[],
-        newProgressions: FeatureProgression[]
+        oldProgressions: FeatureWithRelations[],
+        newProgressions: FeatureWithRelations[]
     ): boolean {
         if (oldProgressions.length !== newProgressions.length) {
             return true;
         }
 
-        // Check if any progressions have changed
+        // Check if any features have changed
         for (let i = 0; i < oldProgressions.length; i++) {
             if (oldProgressions[i].id !== newProgressions[i].id) {
                 return true;

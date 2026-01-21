@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
-import { CreateFeatureProgressionRequestSchema, FeatureProgressionResponseSchema, UpdateFeatureProgressionSchema } from './feature.js';
+import { CreateFeatureRequestSchema, FeatureResponseSchema, UpdateFeatureSchema } from './feature.js';
 import { CharacterFeatureChoiceForEnrichmentSchema } from './class.js';
 
 export const RaceIdParamSchema = z.object({
@@ -28,7 +28,7 @@ export const BaseRaceSchema = z.object({
     editionId: commonValidations.positiveInt('Edition ID'),
     isVisible: z.boolean().default(true),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureProgressionResponseSchema).nullable(),
+    features: z.array(FeatureResponseSchema).nullable(),
 });
 
 export const RaceSummarySchema = BaseRaceSchema.omit({
@@ -47,13 +47,13 @@ export const GetAllRacesResponseSchema = QueryResponseSchema.extend({
 export const UpdateRaceSchema = BaseRaceSchema.omit({
     features: true,
 }).extend({
-    features: z.array(UpdateFeatureProgressionSchema).nullable(),
+    features: z.array(UpdateFeatureSchema).nullable(),
 }).partial();
 
 export const CreateRaceSchema = BaseRaceSchema.omit({
     features: true,
 }).extend({
-    features: z.array(UpdateFeatureProgressionSchema).nullable(),
+    features: z.array(UpdateFeatureSchema).nullable(),
 });
 
 export const RaceCacheSchema = RaceSummarySchema.omit({

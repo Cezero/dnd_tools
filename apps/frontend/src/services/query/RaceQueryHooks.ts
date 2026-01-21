@@ -58,16 +58,9 @@ const deleteRaceConfig = createQueryHooks({
 });
 
 export const RaceQueryHooks = {
-    // Keep existing hooks for backward compatibility during transition
-    useGetRaces: racesConfig.useQuery,
-    useGetRaceById: raceByIdConfig.useQuery,
-    useCreateRace: createRaceConfig.useMutation,
-    useUpdateRace: updateRaceConfig.useMutation,
-    useDeleteRace: deleteRaceConfig.useMutation,
-
-    // Add imperative methods
+    // Imperative methods
     getRaces: (params?: unknown) => racesConfig.fetch(params),
-    getRaceById: (raceId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => {
+    getRaceById: (raceId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => {
         const queryParams: { characterFeatureChoices?: string } = {};
         if (characterFeatureChoices && characterFeatureChoices.length > 0) {
             queryParams.characterFeatureChoices = JSON.stringify(characterFeatureChoices);
@@ -88,7 +81,7 @@ export const RaceQueryHooks = {
 
     // Expose query functions for advanced usage
     getRacesQueryFn: racesConfig.queryFn,
-    getRaceByIdQueryFn: (params: { pathParams: { id: number }; queryParams?: { characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> } }) => {
+    getRaceByIdQueryFn: (params: { pathParams: { id: number }; queryParams?: { characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> } }) => {
         const queryData: { characterFeatureChoices?: string } = {};
         if (params.queryParams?.characterFeatureChoices && params.queryParams.characterFeatureChoices.length > 0) {
             queryData.characterFeatureChoices = JSON.stringify(params.queryParams.characterFeatureChoices);

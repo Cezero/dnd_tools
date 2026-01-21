@@ -1,5 +1,5 @@
 import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
-import type { CharacterWithAllDetailsResponse, FeatureProgression, Race } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureWithRelations, Race } from '@shared/schema';
 import { EntityAppliesToType, FeatureSourceType } from '@shared/static-data';
 
 import type { CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
@@ -22,10 +22,10 @@ export interface SpeedBreakdownMap extends BreakdownMap {
  */
 export function getSpeed(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     race: Race | null
 ): CalculationResult<SpeedBreakdownMap> {
-    // Extract base speed from resolved progressions (race-mechanics feature)
+    // Extract base speed from resolved features (race-mechanics feature)
     const raceMechanics = extractRaceMechanicsFromResolved(resolvedProgressions);
     const baseSpeed = raceMechanics.speed ?? 30;
 

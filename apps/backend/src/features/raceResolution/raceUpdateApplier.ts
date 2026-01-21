@@ -1,7 +1,7 @@
-import { applyUpdateToState as genericApplyUpdateToState } from '../shared/session/GenericUpdateApplier';
 
 import { raceUpdateApplierConfig } from './raceUpdateApplierConfig';
 import type { RaceEditState, RaceUpdate } from './types';
+import { applyUpdateToState as genericApplyUpdateToState } from '../shared/session/GenericUpdateApplier';
 
 /**
  * Applies an update to the race edit state.

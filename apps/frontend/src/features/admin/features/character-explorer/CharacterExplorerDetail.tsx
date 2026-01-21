@@ -9,14 +9,14 @@ import { useCharacterExplorerData } from './useCharacterExplorerData';
 export function CharacterExplorerDetail(): React.JSX.Element {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<string>('resolved-progressions');
+    const [activeTab, setActiveTab] = useState<string>('resolved-features');
     const [selectedDisplayType, setSelectedDisplayType] = useState<DisplayType>(DisplayType.CharacterSheet);
 
     const characterId = id ? parseInt(id, 10) : null;
     const explorerData = useCharacterExplorerData(characterId, selectedDisplayType);
 
     const tabs = [
-        { id: 'resolved-progressions', label: 'Resolved Progressions' },
+        { id: 'resolved-features', label: 'Resolved Features' },
         { id: 'formatted-character', label: 'Formatted Character' },
         { id: 'raw-character', label: 'Raw Character Data' },
         { id: 'resolution-context', label: 'Resolution Context' },

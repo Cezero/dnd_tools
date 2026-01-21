@@ -1,5 +1,4 @@
 import { Response, NextFunction } from 'express';
-import { z } from 'zod';
 
 import {
     ValidatedNoInput,
@@ -7,12 +6,11 @@ import {
     ValidatedParamsQueryT,
     ValidatedBodyT,
     ValidatedParamsBodyT,
-    ValidatedQueryT,
 } from '@/util/validated-types';
 import {
     Race,
     RaceIdParamRequest,
-    RaceIdQuerySchema,
+    RaceIdQueryRequest,
     CreateRaceRequest,
     UpdateRaceRequest,
     GetAllRacesResponse,
@@ -21,7 +19,19 @@ import {
     RaceCacheResponse,
 } from '@shared/schema';
 
+import { EntityLockService } from '../shared/entityState/EntityLockService';
+
 import { raceService } from './raceService';
+
+let entityLockServiceInstance: EntityLockService | null = null;
+
+function getEntityLockService(): EntityLockService {
+    if (!entityLockServiceInstance) {
+        entityLockServiceInstance = new EntityLockService();
+    }
+    return entityLockServiceInstance;
+}
+
 /**
  * Fetches all races from the database with pagination and filtering.
  */
@@ -32,15 +42,14 @@ export async function GetAllRaces(req: ValidatedNoInput<GetAllRacesResponse>, re
 
 /**
  * Fetches a single race by its ID.
- * Optionally accepts character feature choices to enrich progressions with choice data.
+ * Optionally accepts character feature choices to enrich features with choice data.
  */
 export async function GetRaceById(
-    req: ValidatedParamsQueryT<RaceIdParamRequest, z.infer<typeof RaceIdQuerySchema>, Race>,
+    req: ValidatedParamsQueryT<RaceIdParamRequest, RaceIdQueryRequest, Race>,
     res: Response,
     _next: NextFunction
 ) {
-    const choices = req.query.characterFeatureChoices;
-    const race = await raceService.getRaceById(req.params, choices);
+    const race = await raceService.getRaceById(req.params, req.query.characterFeatureChoices);
 
     if (!race) {
         res.status(404).json({ error: 'Race not found' });
@@ -88,6 +97,27 @@ export async function DeleteRace(req: ValidatedParamsT<RaceIdParamRequest, Updat
 export async function GetRaceCache(req: ValidatedNoInput<RaceCacheResponse>, res: Response, _next: NextFunction) {
     const races = await raceService.getRaceCache();
     res.json(races);
+}
+
+/**
+ * Gets the lock status for a race.
+ * 
+ * Returns whether the race is currently locked and, if so, which user holds the lock.
+ * This is a read-only operation that doesn't require authentication.
+ */
+export async function GetRaceLockStatus(
+    req: ValidatedParamsT<RaceIdParamRequest>,
+    res: Response,
+    _next: NextFunction
+) {
+    const lockService = getEntityLockService();
+    const lockedBy = await lockService.checkLock('race', req.params.id);
+
+    if (lockedBy === null) {
+        res.json({ locked: false });
+    } else {
+        res.json({ locked: true, lockedBy });
+    }
 }
 
 

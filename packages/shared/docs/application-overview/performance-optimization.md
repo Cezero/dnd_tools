@@ -136,10 +136,22 @@ The application uses a two-level entity precaching strategy to ensure entity nam
   - Handles multiple cache formats (individual, bulk, legacy)
 
 **Cache Key Priorities**:
-The precaching system checks multiple cache formats in priority order to maximize cache hits:
-1. **Individual Cache**: `['{entity}', 'item', id]` - Fastest, most specific
-2. **Bulk Cache**: `['{entity}-cache']` - Loaded at startup
-3. **Legacy Cache**: `['{entity}-cache', params]` - Backward compatibility
+The precaching system checks multiple cache formats in priority order to maximize cache hits. The exact priority order varies by entity type:
+
+**Feats** (checks 3 cache formats):
+1. **Individual Cache**: `['feats', 'item', id]` - Fastest, most specific
+2. **Full List Cache**: `['feats', 'full']` - Complete list of feats
+3. **Bulk Cache**: `['feats-cache']` - Loaded at startup
+
+**Classes** (checks 2 cache formats):
+1. **Individual Cache**: `['classes', 'item', id]` - Fastest, most specific
+2. **Bulk Cache**: `['classes-cache']` - Loaded at startup
+
+**Features** (checks 1 cache format):
+1. **Individual Cache**: `['features', 'item', id]` - Individual feature records
+
+**Other Entities** (spells, domains, skills, races - checks 1 cache format):
+1. **Bulk Cache**: `['{entity}-cache']` - Loaded at startup (e.g., `['spells-cache']`, `['domains-cache']`)
 
 **Integration with Formatting System**:
 - Formatters use synchronous cache access (`cache-helpers.ts`) to read entity names

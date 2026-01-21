@@ -15,8 +15,8 @@ import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
-import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, CharacterItem, Spell } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType } from '@shared/static-data';
+import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureWithRelations, CharacterItem, Spell } from '@shared/schema';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 /**
@@ -25,15 +25,15 @@ import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 export async function generateCharacterPdf(
     character: CharacterWithAllDetailsResponse,
     classDetailsMap: Map<number, DnDClass>,
-    resolvedProgressions: FeatureProgression[],
+    resolvedProgressions: FeatureWithRelations[],
     queryClient?: QueryClient,
     raceData?: Race | null,
     classSkills?: Array<{ skillId: number; skillSubId: number | null }>,
     skillBonuses?: Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }>
 ): Promise<void> {
-    // Require resolved progressions from backend API
+    // Require resolved features from backend API
     if (!resolvedProgressions || resolvedProgressions.length === 0) {
-        throw new Error('Resolved progressions are required. Use CharacterResolutionApi to resolve features before generating PDF.');
+        throw new Error('Resolved features are required. Use CharacterResolutionApi to resolve features before generating PDF.');
     }
     // Use provided race data or fetch from cache if available
     let fullRace: Race | null = raceData || null;
@@ -94,7 +94,7 @@ export async function generateCharacterPdf(
     const characterSheetStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
     let formattedCharacter: FormattedCharacterResult | null = null;
 
-    // Extract race mechanics from resolved progressions
+    // Extract race mechanics from resolved features
     const raceMechanics = extractRaceMechanicsFromResolved(resolvedProgressions);
 
     // Build character context (used for both page 1 and page 2)
@@ -494,7 +494,7 @@ export async function generateCharacterPdf(
     drawField(xPos, line2Y, fieldWidths.line2.race, raceName, 'RACE');
     xPos += fieldWidths.line2.race + fieldSpacing;
 
-    // Size (from extracted race mechanics, fallback to full race object for backward compatibility)
+    // Size (from extracted race mechanics)
     const sizeId = raceMechanics.sizeId;
     const sizeName = sizeId ? SIZE_MAP[sizeId as keyof typeof SIZE_MAP]?.name || '' : '';
     drawField(xPos, line2Y, fieldWidths.line2.size, sizeName, 'SIZE');
@@ -1194,12 +1194,12 @@ export async function generateCharacterPdf(
     // Populate conditional modifiers box with features that have conditional bonuses
     if (characterSheetStrategy) {
         // Find all entities with conditions that apply to saves, AC, attacks, etc.
-        const conditionalModifiers: Array<{ formattedValue: string; progression: FeatureProgression }> = [];
+        const conditionalModifiers: Array<{ formattedValue: string; feature: FeatureWithRelations }> = [];
 
-        for (const progression of resolvedProgressions) {
-            if (!progression.entities) continue;
+        for (const feature of resolvedProgressions) {
+            if (!feature.entities) continue;
 
-            for (const entity of progression.entities) {
+            for (const entity of feature.entities) {
                 // Only include entities with conditions
                 if (!entity.conditions || entity.conditions.length === 0) continue;
 
@@ -1217,7 +1217,7 @@ export async function generateCharacterPdf(
                 if (!appliesToTypes.includes(entity.appliesTo)) continue;
 
                 // Format this entity using the display strategy
-                const displayResult = characterSheetStrategy.format([progression], {
+                const displayResult = characterSheetStrategy.format([feature], {
                     character: characterContext,
                 });
 
@@ -1231,7 +1231,7 @@ export async function generateCharacterPdf(
                 if (formattedEntity && formattedEntity.formattedValue) {
                     conditionalModifiers.push({
                         formattedValue: formattedEntity.formattedValue,
-                        progression
+                        feature
                     });
                 }
             }
@@ -1696,10 +1696,10 @@ export async function generateCharacterPdf(
     };
     const conditionalSkillModifiersMap = new Map<string, ConditionalModifier>();
     if (characterSheetStrategy) {
-        for (const progression of resolvedProgressions) {
-            if (!progression.entities) continue;
+        for (const feature of resolvedProgressions) {
+            if (!feature.entities) continue;
 
-            for (const entity of progression.entities) {
+            for (const entity of feature.entities) {
                 // Only include entities with conditions
                 if (!entity.conditions || entity.conditions.length === 0) continue;
 
@@ -1713,7 +1713,7 @@ export async function generateCharacterPdf(
                 const modifierValue = typeof entity.value === 'number' ? entity.value : (typeof entity.value === 'string' ? parseFloat(entity.value) || 0 : 0);
 
                 // Format this entity using the display strategy
-                const displayResult = characterSheetStrategy.format([progression], {
+                const displayResult = characterSheetStrategy.format([feature], {
                     character: characterContext,
                 });
 
@@ -1981,22 +1981,22 @@ export async function generateCharacterPdf(
     };
 
     // Helper to get level of classes with turn undead feature
-    const getTurnUndeadLevel = (character: CharacterWithAllDetailsResponse, resolvedProgressions?: FeatureProgression[]): number => {
+    const getTurnUndeadLevel = (character: CharacterWithAllDetailsResponse, resolvedProgressions?: FeatureWithRelations[]): number => {
         let turnUndeadLevel = 0;
         const classesWithTurnUndead = new Set<number>();
 
         // Find all classes that have turn undead feature
-        for (const progression of resolvedProgressions) {
+        for (const feature of resolvedProgressions) {
             // Only check class features (sourceType === 1)
-            if (progression.sourceType === 1 && progression.classes && progression.classes.length > 0 && progression.feature) {
-                const featureName = progression.feature.name.toLowerCase();
-                const featureSlug = progression.feature.slug.toLowerCase();
+            if (feature.sourceType === 1 && feature.classes && feature.classes.length > 0) {
+                const featureName = feature.name.toLowerCase();
+                const featureSlug = feature.slug.toLowerCase();
 
                 // Check if feature name or slug contains "turn" and "undead"
                 if ((featureName.includes('turn') && featureName.includes('undead')) ||
                     (featureSlug.includes('turn') && featureSlug.includes('undead'))) {
-                    // Add all classes linked to this progression
-                    for (const classLink of progression.classes) {
+                    // Add all classes linked to this feature
+                    for (const classLink of feature.classes) {
                         classesWithTurnUndead.add(classLink.classId);
                     }
                 }
@@ -2530,22 +2530,17 @@ export async function generateCharacterPdf(
 
         // Racial Abilities - iterate through resolvedProgressions directly to get all race features
         // Also check formattedCharacter.features to ensure we include features that produce formatted values
-        // Deduplicate by featureId and get summaries from progressions
-        const raceFeatureMap = new Map<number, FeatureProgression>();
+        // Deduplicate by featureId and get summaries from features
+        const raceFeatureMap = new Map<number, FeatureWithRelations>();
 
         // First, add features from resolvedProgressions
-        for (const progression of resolvedProgressions) {
+        for (const feature of resolvedProgressions) {
             if (
-                progression.sourceType === FeatureSourceType.Race &&
-                progression.featureId !== SpecialFeatureId.ClassProficiency &&
-                progression.featureId !== SpecialFeatureId.ClassSkill &&
-                progression.featureId !== SpecialFeatureId.AutomaticLanguage &&
-                progression.featureId !== SpecialFeatureId.BonusLanguage &&
-                progression.featureId !== SpecialFeatureId.AbilityAdjustment &&
-                progression.level <= character.advancements.length && // Only show features active at current level
-                !raceFeatureMap.has(progression.featureId) // Deduplicate by featureId
+                feature.sourceType === FeatureSourceType.Race &&
+                feature.level <= character.advancements.length && // Only show features active at current level
+                !raceFeatureMap.has(feature.id) // Deduplicate by feature ID
             ) {
-                raceFeatureMap.set(progression.featureId, progression);
+                raceFeatureMap.set(feature.id, feature);
             }
         }
 
@@ -2558,15 +2553,10 @@ export async function generateCharacterPdf(
                 continue;
             }
 
-            // Find the progression from resolvedProgressions
+            // Find the feature from resolvedProgressions
             const prog = resolvedProgressions.find(p =>
-                p.featureId === formattedFeature.featureId &&
+                p.id === formattedFeature.featureId &&
                 p.sourceType === FeatureSourceType.Race &&
-                p.featureId !== SpecialFeatureId.ClassProficiency &&
-                p.featureId !== SpecialFeatureId.ClassSkill &&
-                p.featureId !== SpecialFeatureId.AutomaticLanguage &&
-                p.featureId !== SpecialFeatureId.BonusLanguage &&
-                p.featureId !== SpecialFeatureId.AbilityAdjustment &&
                 p.level <= character.advancements.length
             );
             if (prog) {
@@ -2578,15 +2568,15 @@ export async function generateCharacterPdf(
             doc.text(`-- ${raceName.toUpperCase()} --`, page2RightColX + 2, abilitiesY);
             abilitiesY += 8;
             doc.setFontSize(6);
-            for (const progression of Array.from(raceFeatureMap.values())) {
-                // Get feature name and summary from progression.feature (which should be loaded)
+            for (const feature of Array.from(raceFeatureMap.values())) {
+                // Get feature name and summary from feature (FeatureWithRelations is now the unified Feature model)
                 // If not available, try to get from formattedCharacter.features as fallback
-                let featureName = progression.feature?.name || '';
-                let summary = progression.feature?.summary || '';
+                let featureName = feature.name || '';
+                let summary = feature.summary || '';
 
                 // Fallback: if feature object isn't loaded, try to get from formattedCharacter
                 if (!featureName && !summary) {
-                    const formattedFeature = formattedCharacter.features.find(f => f.featureId === progression.featureId);
+                    const formattedFeature = formattedCharacter.features.find(f => f.featureId === feature.id);
                     if (formattedFeature) {
                         featureName = formattedFeature.featureName;
                         // Note: formattedFeature doesn't have summary, so we can't get it from there
@@ -2651,30 +2641,25 @@ export async function generateCharacterPdf(
         }
 
         // Group features by class
-        const classFeaturesByClass = new Map<number, Map<number, FeatureProgression>>();
-        for (const progression of resolvedProgressions) {
+        const classFeaturesByClass = new Map<number, Map<number, FeatureWithRelations>>();
+        for (const feature of resolvedProgressions) {
             if (
-                progression.sourceType === FeatureSourceType.Class &&
-                progression.featureId !== SpecialFeatureId.ClassProficiency &&
-                progression.featureId !== SpecialFeatureId.ClassSkill &&
-                progression.featureId !== SpecialFeatureId.AutomaticLanguage &&
-                progression.featureId !== SpecialFeatureId.BonusLanguage &&
-                progression.featureId !== SpecialFeatureId.AbilityAdjustment &&
-                progression.feature && // Ensure feature data exists
-                progression.classes && progression.classes.length > 0 // Must have classes linked
+                feature.sourceType === FeatureSourceType.Class &&
+                // FeatureWithRelations is now the unified Feature model, so feature data is always present
+                feature.classes && feature.classes.length > 0 // Must have classes linked
             ) {
-                // Process each class linked to this progression
-                for (const classLink of progression.classes) {
+                // Process each class linked to this feature
+                for (const classLink of feature.classes) {
                     const linkedClassId = classLink.classId;
                     // Check if feature is active at the specific class level (not total character level)
-                    if (progression.level <= (classLevelCounts.get(linkedClassId) ?? 0)) {
+                    if (feature.level <= (classLevelCounts.get(linkedClassId) ?? 0)) {
                         if (!classFeaturesByClass.has(linkedClassId)) {
                             classFeaturesByClass.set(linkedClassId, new Map());
                         }
                         const classFeatures = classFeaturesByClass.get(linkedClassId)!;
                         // Deduplicate by featureId
-                        if (!classFeatures.has(progression.featureId)) {
-                            classFeatures.set(progression.featureId, progression);
+                        if (!classFeatures.has(feature.id)) {
+                            classFeatures.set(feature.id, feature);
                         }
                     }
                 }
@@ -2685,17 +2670,16 @@ export async function generateCharacterPdf(
         for (const [classId, classFeatures] of classFeaturesByClass.entries()) {
             if (classFeatures.size > 0) {
                 const classDetails = classDetailsMap.get(classId);
-                // Get class name from first progression if classDetails not available
-                const firstProgression = Array.from(classFeatures.values())[0];
-                const className = classDetails?.name || firstProgression?.class?.name || 'Class';
+                // Get class name from classDetails (we already have classId from the map key)
+                const className = classDetails?.name || 'Class';
                 doc.setFontSize(7);
                 doc.setFont('ArchivoNarrow', 'bold');
                 doc.text(`-- ${className.toUpperCase()} --`, page2RightColX + 2, abilitiesY);
                 abilitiesY += 8;
                 doc.setFontSize(6);
-                for (const progression of Array.from(classFeatures.values())) {
-                    const featureName = progression.feature?.name || '';
-                    const summary = progression.feature?.summary || '';
+                for (const feature of Array.from(classFeatures.values())) {
+                    const featureName = feature.name || '';
+                    const summary = feature.summary || '';
                     if (featureName || summary) {
                         // Format as "feature.name: feature.summary"
                         const colonText = summary ? ': ' : '';
@@ -2777,12 +2761,12 @@ export async function generateCharacterPdf(
             }
         }
 
-        // Also get auto-granted feats from progressions (feats granted directly, not from choices)
+        // Also get auto-granted feats from features (feats granted directly, not from choices)
         // These are feats that appear in formattedCharacter.feats but are NOT in allCharacterFeats
-        const autoGrantedFeats = new Map<number, { featId: number; level: number; sourceFeature: string; progressionId: number }>();
-        for (const progression of resolvedProgressions) {
-            if (!progression.entities) continue;
-            for (const entity of progression.entities) {
+        const autoGrantedFeats = new Map<number, { featId: number; level: number; sourceFeature: string; featureId: number }>();
+        for (const feature of resolvedProgressions) {
+            if (!feature.entities) continue;
+            for (const entity of feature.entities) {
                 if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
                     // Check if this is NOT a choice
                     // If it's not in featSourceMap, it's auto-granted (not selected by player)
@@ -2794,9 +2778,9 @@ export async function generateCharacterPdf(
                         if (isInFormattedFeats) {
                             autoGrantedFeats.set(entity.appliesToId, {
                                 featId: entity.appliesToId,
-                                level: progression.level,
-                                sourceFeature: progression.feature?.name || 'Feature',
-                                progressionId: progression.id
+                                level: feature.level,
+                                sourceFeature: feature.name || 'Feature',
+                                featureId: feature.id
                             });
                         }
                     }
@@ -2807,9 +2791,9 @@ export async function generateCharacterPdf(
         // Filter out proficiencies and categorize feats
         const nonProficiencyFeats = formattedCharacter.feats?.filter(feat => {
             // Check if this feat is actually a proficiency
-            for (const progression of resolvedProgressions) {
-                if (!progression.entities) continue;
-                for (const entity of progression.entities) {
+            for (const feature of resolvedProgressions) {
+                if (!feature.entities) continue;
+                for (const entity of feature.entities) {
                     if (entity.type === EntityType.Other &&
                         entity.appliesTo === EntityAppliesToType.Proficiency &&
                         entity.appliesToId === feat.featId) {
@@ -2836,18 +2820,18 @@ export async function generateCharacterPdf(
 
             if (autoGranted) {
                 // Auto-granted feat (e.g., Ranger Track)
-                // Get the progression to determine source (race or class) and prefix header
-                const progression = resolvedProgressions.find(p => p.id === autoGranted.progressionId);
+                // Get the feature to determine source (race or class) and prefix header
+                const feature = resolvedProgressions.find(p => p.id === autoGranted.featureId);
 
                 // Prefix feature name with race or class name
                 let featureName = autoGranted.sourceFeature;
-                if (progression?.sourceType === FeatureSourceType.Race) {
+                if (feature?.sourceType === FeatureSourceType.Race) {
                     // Prefix with race name
                     const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || 'Race' : 'Race';
                     featureName = `${raceName} ${featureName}`;
-                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classes && progression.classes.length > 0) {
+                } else if (feature?.sourceType === FeatureSourceType.Class && feature.classes && feature.classes.length > 0) {
                     // Prefix with class name (use first class)
-                    const firstClassId = progression.classes[0].classId;
+                    const firstClassId = feature.classes[0].classId;
                     const className = getClassNameFromCache(firstClassId) || 'Class';
                     featureName = `${className} Granted`;
                 }
@@ -2858,18 +2842,18 @@ export async function generateCharacterPdf(
                 }
                 featCategoriesMap.get(header)!.feats.push({ feat, sourceFeature: autoGranted.sourceFeature });
             } else if (characterFeat?.source === 'choice' && characterFeat.sourceFeature) {
-                // Get the progression to determine source (race or class)
-                const progression = resolvedProgressions.find(p => p.id === characterFeat.sourceFeature?.progressionId);
+                // Get the feature to determine source (race or class)
+                const feature = resolvedProgressions.find(p => p.id === characterFeat.sourceFeature?.featureId);
 
                 // If feature name is "Bonus Feat", prefix with race or class name
                 let featureName = characterFeat.sourceFeature.featureName;
-                if (progression?.sourceType === FeatureSourceType.Race) {
+                if (feature?.sourceType === FeatureSourceType.Race) {
                     // Prefix with race name
                     const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || 'Race' : 'Race';
                     featureName = `${raceName} ${featureName}`;
-                } else if (progression?.sourceType === FeatureSourceType.Class && progression.classes && progression.classes.length > 0) {
+                } else if (feature?.sourceType === FeatureSourceType.Class && feature.classes && feature.classes.length > 0) {
                     // Prefix with class name (use first class)
-                    const firstClassId = progression.classes[0].classId;
+                    const firstClassId = feature.classes[0].classId;
                     const className = getClassNameFromCache(firstClassId) || 'Class';
                     featureName = `${className} ${featureName}`;
                 }
@@ -2880,7 +2864,7 @@ export async function generateCharacterPdf(
                 }
                 // Check if this is a bonus feat that should show level indicators
                 // (e.g., Fighter Bonus Feat, but not Human Bonus Feat)
-                const isRaceBonus = progression?.sourceType === FeatureSourceType.Race;
+                const isRaceBonus = feature?.sourceType === FeatureSourceType.Race;
                 const showLevelIndicator = !isRaceBonus && characterFeat.sourceFeature.featureName.toLowerCase().includes('bonus');
                 featCategoriesMap.get(header)!.feats.push({
                     feat,
@@ -2949,11 +2933,11 @@ export async function generateCharacterPdf(
                         featDisplayName = `${levelOrdinal}: ${featNameWithSubId}`;
                     }
 
-                    // Get feature summary from progression if available
+                    // Get feature summary from feature if available
                     let benefitText = '';
-                    if (characterFeat?.sourceFeature?.progressionId) {
-                        const progression = resolvedProgressions.find(p => p.id === characterFeat.sourceFeature.progressionId);
-                        benefitText = progression?.feature?.summary || '';
+                    if (characterFeat?.sourceFeature?.featureId) {
+                        const feature = resolvedProgressions.find(p => p.id === characterFeat.sourceFeature.featureId);
+                        benefitText = feature?.summary || '';
                     }
 
                     // Draw feat name in bold
@@ -3286,7 +3270,7 @@ async function generateSpellSheet(
     classId: number,
     classDetailsMap: Map<number, DnDClass>,
     queryClient?: QueryClient,
-    resolvedProgressions?: FeatureProgression[]
+    resolvedProgressions?: FeatureWithRelations[]
 ): Promise<void> {
     // Get character's class level for this spellcasting class
     const classLevel = character.advancements.filter(a =>
@@ -3392,8 +3376,8 @@ async function generateSpellSheet(
     // Calculate caster level (typically equals class level, but may have adjustments)
     const casterLevel = classLevel; // TODO: Add adjustments from features if needed
 
-    // Get casting ability modifier from feature progressions
-    // Casting ability is stored in level 1 feature progression for the class
+    // Get casting ability modifier from feature features
+    // Casting ability is stored in level 1 feature feature for the class
     let castingAbilityId: number | null = null;
     if (resolvedProgressions) {
         const classLevel1Progression = resolvedProgressions.find(
@@ -3422,12 +3406,12 @@ async function generateSpellSheet(
     // Calculate base spell save DC
     const baseSpellSaveDC = 10 + abilityModifier;
 
-    // Get spells per day from spellcasting progression
+    // Get spells per day from spellcasting feature
     const spellsPerDay = new Map<number, number>();
     if (spellClass.spellcastingProgression) {
-        for (const progression of spellClass.spellcastingProgression) {
-            if (progression.classLevel <= classLevel) {
-                for (const slot of progression.slots || []) {
+        for (const feature of spellClass.spellcastingProgression) {
+            if (feature.classLevel <= classLevel) {
+                for (const slot of feature.slots || []) {
                     if (slot.spellLevel >= 0 && slot.spellLevel <= 9) {
                         spellsPerDay.set(slot.spellLevel, slot.slotsPerDay);
                     }

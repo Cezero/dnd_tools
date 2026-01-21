@@ -5,9 +5,3 @@ node_modules
 
 backup/
 
-# SQLite session database
-data/sessions.db
-sessions.db
-*.db-journal
-*.db-wal
-*.db-shm

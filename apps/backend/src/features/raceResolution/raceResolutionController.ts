@@ -1,214 +1,381 @@
 import { Response, NextFunction } from 'express';
 
 import type { ValidatedParamsT, ValidatedParamsBodyT } from '@/util/validated-types';
-import type { Race, RaceSummary } from '@shared/schema';
+import type {
+    Race,
+    RaceSummary,
+    ApplyRaceUpdateBodyRequest,
+    StartRaceEditingResponse,
+    GetRaceStateResponse,
+    SaveRaceStateResponse,
+    CancelRaceEditingResponse,
+} from '@shared/schema';
 
-import {
-    initializeSession,
-    getSessionState,
-    applyUpdate,
-    saveSession,
-    cancelSession,
-    type SessionControllerConfig
-} from '../shared/session/GenericSessionController';
 import { RaceSaveService } from './raceSaveService';
-import { RaceSessionService } from './raceSessionService';
 import { raceUpdateApplierConfig } from './raceUpdateApplierConfig';
-import type { RaceEditState, RaceUpdate } from './types';
+import type { RaceEditState } from './types';
 import { raceService } from '../race/raceService';
+import { EntityLockService } from '../shared/entityState/EntityLockService';
+import { EntityStateService } from '../shared/entityState/EntityStateService';
+import { UserSessionService } from '../shared/session/UserSessionService';
+import { applyUpdateToState } from '../shared/session/GenericUpdateApplier';
 
 /**
- * Configuration for race session controller.
- * 
- * Provides all dependencies and strategies needed for the generic controller
- * to handle race session operations.
+ * Helper function to build initial race state from database entity.
  */
-const raceSessionService = new RaceSessionService();
-const raceSessionControllerConfig: SessionControllerConfig<number, RaceEditState, RaceUpdate, Race> = {
-    entityService: {
-        getById: async (id: number) => {
-            return raceService.getRaceById({ id });
+function buildInitialState(race: Race, raceId: number): RaceEditState {
+    return {
+        raceId,
+        name: race.name,
+        editionId: race.editionId,
+        isVisible: race.isVisible,
+        description: race.description ?? null,
+        sourceBookInfo: race.sourceBookInfo || null,
+        featureIds: race.features?.map(f => f.id).filter((id): id is number => id !== null && id !== undefined) || []
+    };
+}
+
+// Initialize services (singleton pattern)
+let entityLockServiceInstance: EntityLockService | null = null;
+let entityStateServiceInstance: EntityStateService | null = null;
+let userSessionServiceInstance: UserSessionService | null = null;
+
+function getEntityLockService(): EntityLockService {
+    if (!entityLockServiceInstance) {
+        entityLockServiceInstance = new EntityLockService();
+    }
+    return entityLockServiceInstance;
+}
+
+function getEntityStateService(): EntityStateService {
+    if (!entityStateServiceInstance) {
+        entityStateServiceInstance = new EntityStateService();
+    }
+    return entityStateServiceInstance;
+}
+
+function getUserSessionService(): UserSessionService {
+    if (!userSessionServiceInstance) {
+        userSessionServiceInstance = new UserSessionService();
+    }
+    return userSessionServiceInstance;
+}
+
+/**
+ * Start editing a race.
+ * 
+ * Acquires a lock on the race, adds it to the user's editing list, and
+ * initializes/loads the race state.
+ * 
+ * @param req - Express request with validated raceId parameter
+ * @param res - Express response
+ * @param _next - Express next function
+ */
+export async function StartRaceEditing(
+    req: ValidatedParamsT<{ raceId: string }, StartRaceEditingResponse>,
+    res: Response,
+    _next: NextFunction
+): Promise<void> {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ error: 'User not authenticated' });
+            return;
         }
-    },
-    sessionService: raceSessionService.getGenericService(),
-    buildInitialState: (race: Race, raceId: number): RaceEditState => {
-        return {
-            raceId,
+
+        const raceId = parseInt(req.params.raceId, 10);
+        if (isNaN(raceId)) {
+            res.status(400).json({ error: 'Invalid race ID' });
+            return;
+        }
+
+        const lockService = getEntityLockService();
+        const stateService = getEntityStateService();
+        const userSessionService = getUserSessionService();
+
+        // Acquire lock
+        const lockAcquired = await lockService.acquireLock('race', raceId, userId);
+        if (!lockAcquired) {
+            const lockedBy = await lockService.checkLock('race', raceId);
+            res.status(409).json({
+                error: 'Race is locked by another user',
+                lockedBy: lockedBy || undefined
+            });
+            return;
+        }
+
+        try {
+            // Add to user's editing list
+            await userSessionService.setEditingEntity(userId, 'race', raceId);
+
+            // Get or initialize race state
+            let raceState = await stateService.getState<RaceEditState>('race', raceId);
+            if (!raceState) {
+                // Initialize from database
+                const race = await raceService.getRaceById({ id: raceId });
+                if (!race) {
+                    await lockService.releaseLock('race', raceId, userId);
+                    await userSessionService.clearEditingEntity(userId, 'race', raceId);
+                    res.status(404).json({ error: 'Race not found' });
+                    return;
+                }
+                raceState = buildInitialState(race, raceId);
+                await stateService.setState('race', raceId, raceState);
+            }
+
+            res.json({ raceState });
+        } catch (error) {
+            // If anything fails after acquiring lock, release it
+            await lockService.releaseLock('race', raceId, userId);
+            await userSessionService.clearEditingEntity(userId, 'race', raceId);
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error starting race editing:', error);
+        res.status(500).json({
+            error: 'Failed to start race editing',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+}
+
+/**
+ * Get current race state.
+ * 
+ * @param req - Express request with validated raceId parameter
+ * @param res - Express response
+ * @param _next - Express next function
+ */
+export async function GetRaceState(
+    req: ValidatedParamsT<{ raceId: string }, GetRaceStateResponse>,
+    res: Response,
+    _next: NextFunction
+): Promise<void> {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ error: 'User not authenticated' });
+            return;
+        }
+
+        const raceId = parseInt(req.params.raceId, 10);
+        if (isNaN(raceId)) {
+            res.status(400).json({ error: 'Invalid race ID' });
+            return;
+        }
+
+        const stateService = getEntityStateService();
+
+        // Get race state from Redis
+        const raceState = await stateService.getState<RaceEditState>('race', raceId);
+        if (!raceState) {
+            res.status(404).json({ error: 'Race state not found' });
+            return;
+        }
+
+        res.json({ raceState });
+    } catch (error) {
+        console.error('Error getting race state:', error);
+        res.status(500).json({
+            error: 'Failed to get race state',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+}
+
+/**
+ * Apply an update to the race state.
+ * 
+ * @param req - Express request with validated raceId and update body
+ * @param res - Express response
+ * @param _next - Express next function
+ */
+export async function ApplyRaceUpdate(
+    req: ValidatedParamsBodyT<{ raceId: string }, ApplyRaceUpdateBodyRequest>,
+    res: Response,
+    _next: NextFunction
+): Promise<void> {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ error: 'User not authenticated' });
+            return;
+        }
+
+        const raceId = parseInt(req.params.raceId, 10);
+        if (isNaN(raceId)) {
+            res.status(400).json({ error: 'Invalid race ID' });
+            return;
+        }
+
+        const body = req.body as ApplyRaceUpdateBodyRequest;
+        const update = body.update;
+        const lockService = getEntityLockService();
+        const stateService = getEntityStateService();
+
+        // Verify lock is held by this user
+        const lockedBy = await lockService.checkLock('race', raceId);
+        if (lockedBy !== userId) {
+            res.status(409).json({
+                error: 'Race is locked by another user',
+                lockedBy: lockedBy || undefined
+            });
+            return;
+        }
+
+        // Get current state
+        const currentState = await stateService.getState<RaceEditState>('race', raceId);
+        if (!currentState) {
+            res.status(404).json({ error: 'Race state not found' });
+            return;
+        }
+
+        // Apply update
+        const updatedState = applyUpdateToState(currentState, update, raceUpdateApplierConfig);
+
+        // Update state in Redis (automatically publishes update)
+        // Update state in Redis (skip pub/sub for race updates - not needed for editing)
+        await stateService.setState('race', raceId, updatedState, { publish: false });
+
+        res.json({
+            raceState: updatedState
+        });
+    } catch (error) {
+        console.error('Error applying race update:', error);
+        res.status(500).json({
+            error: 'Failed to apply race update',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+}
+
+/**
+ * Save race state to database.
+ * 
+ * @param req - Express request with validated raceId parameter
+ * @param res - Express response
+ * @param _next - Express next function
+ */
+export async function SaveRaceState(
+    req: ValidatedParamsT<{ raceId: string }, SaveRaceStateResponse>,
+    res: Response,
+    _next: NextFunction
+): Promise<void> {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ error: 'User not authenticated' });
+            return;
+        }
+
+        const raceId = parseInt(req.params.raceId, 10);
+        if (isNaN(raceId)) {
+            res.status(400).json({ error: 'Invalid race ID' });
+            return;
+        }
+
+        const lockService = getEntityLockService();
+        const stateService = getEntityStateService();
+        const userSessionService = getUserSessionService();
+
+        // Verify lock is held by this user
+        const lockedBy = await lockService.checkLock('race', raceId);
+        if (lockedBy !== userId) {
+            res.status(409).json({
+                error: 'Race is locked by another user',
+                lockedBy: lockedBy || undefined
+            });
+            return;
+        }
+
+        // Get current state from Redis
+        const raceState = await stateService.getState<RaceEditState>('race', raceId);
+        if (!raceState) {
+            res.status(404).json({ error: 'Race state not found' });
+            return;
+        }
+
+        // Save state to database
+        const saveService = new RaceSaveService();
+        await saveService.saveSessionToMySQL(raceId, raceState);
+
+        // Release lock after successful save
+        await lockService.releaseLock('race', raceId, userId);
+
+        // Remove from user's editing list
+        await userSessionService.clearEditingEntity(userId, 'race', raceId);
+
+        // Return race summary
+        const race = await raceService.getRaceById({ id: raceId });
+        if (!race) {
+            res.status(404).json({ error: 'Race not found after save' });
+            return;
+        }
+
+        const raceSummary: RaceSummary = {
+            id: raceId,
             name: race.name,
             editionId: race.editionId,
             isVisible: race.isVisible,
-            description: race.description ?? null,
-            sourceBookInfo: race.sourceBookInfo || null,
-            featureProgressions: race.features || []
+            description: race.description,
+            sourceBookInfo: race.sourceBookInfo
         };
-    },
-    updateApplierConfig: raceUpdateApplierConfig,
-    saveService: {
-        saveSessionToMySQL: async (raceId: number, state: RaceEditState) => {
-            const saveService = new RaceSaveService();
-            await saveService.saveSessionToMySQL(raceId, state);
-        }
-    },
-    getEntityIdFromParams: (params: { [key: string]: string | number }) => {
-        const raceId = typeof params.raceId === 'string' ? parseInt(params.raceId, 10) : params.raceId;
-        return isNaN(raceId as number) ? null : (raceId as number);
-    },
-    getSessionIdFromParams: (params: { [key: string]: string | number }) => {
-        return typeof params.sessionId === 'string' ? params.sessionId : null;
+
+        res.json({ race: raceSummary });
+    } catch (error) {
+        console.error('Error saving race state:', error);
+        res.status(500).json({
+            error: 'Failed to save race state',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
-};
-
-/**
- * Initialize a new race editing session.
- * 
- * **Implementation Note**: This function delegates to the generic `initializeSession`
- * function with Race-specific configuration. All session initialization logic
- * is handled by the generic controller.
- * 
- * @see GenericSessionController.initializeSession - Generic implementation
- */
-export async function InitializeRaceSession(
-    req: ValidatedParamsT<{ raceId: string }, { sessionId: string; raceState: RaceEditState }>,
-    res: Response,
-    next: NextFunction
-): Promise<void> {
-    // Wrap the generic controller to transform response format
-    const wrappedReq = req as unknown as ValidatedParamsT<{ [key: string]: string }, { sessionId: string; state: RaceEditState }>;
-    const originalJson = res.json.bind(res);
-
-    res.json = function (body: unknown) {
-        if (body && typeof body === 'object' && 'sessionId' in body && 'state' in body) {
-            const genericResponse = body as { sessionId: string; state: RaceEditState };
-            return originalJson({
-                sessionId: genericResponse.sessionId,
-                raceState: genericResponse.state
-            });
-        }
-        return originalJson(body);
-    };
-
-    await initializeSession(wrappedReq, res, next, raceSessionControllerConfig as unknown as SessionControllerConfig<number, RaceEditState, unknown, Race>);
 }
 
 /**
- * Get current session state.
+ * Cancel race editing.
  * 
- * **Implementation Note**: This function delegates to the generic `getSessionState`
- * function with Race-specific configuration.
+ * Releases the lock and removes from user's editing list, but does not save changes.
  * 
- * @see GenericSessionController.getSessionState - Generic implementation
+ * @param req - Express request with validated raceId parameter
+ * @param res - Express response
+ * @param _next - Express next function
  */
-export async function GetRaceSessionState(
-    req: ValidatedParamsT<{ raceId: string; sessionId: string }, { raceState: RaceEditState }>,
+export async function CancelRaceEditing(
+    req: ValidatedParamsT<{ raceId: string }, CancelRaceEditingResponse>,
     res: Response,
-    next: NextFunction
+    _next: NextFunction
 ): Promise<void> {
-    // Wrap the generic controller to transform response format
-    const wrappedReq = req as unknown as ValidatedParamsT<{ [key: string]: string }, { state: RaceEditState }>;
-    const originalJson = res.json.bind(res);
-
-    res.json = function (body: unknown) {
-        if (body && typeof body === 'object' && 'state' in body) {
-            const genericResponse = body as { state: RaceEditState };
-            return originalJson({
-                raceState: genericResponse.state
-            });
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ error: 'User not authenticated' });
+            return;
         }
-        return originalJson(body);
-    };
 
-    await getSessionState(wrappedReq, res, next, raceSessionControllerConfig as unknown as SessionControllerConfig<number, RaceEditState, unknown, unknown>);
-}
-
-/**
- * Apply an update to the race session.
- * 
- * **Implementation Note**: This function delegates to the generic `applyUpdate`
- * function with Race-specific configuration.
- * 
- * @see GenericSessionController.applyUpdate - Generic implementation
- */
-export async function ApplyRaceUpdate(
-    req: ValidatedParamsBodyT<{ raceId: string; sessionId: string }, { update: RaceUpdate }>,
-    res: Response,
-    next: NextFunction
-): Promise<void> {
-    // Wrap the generic controller to transform response format
-    const wrappedReq = req as unknown as ValidatedParamsBodyT<{ [key: string]: string }, { update: RaceUpdate }>;
-    const originalJson = res.json.bind(res);
-
-    res.json = function (body: unknown) {
-        if (body && typeof body === 'object' && 'state' in body) {
-            const genericResponse = body as { state: RaceEditState };
-            return originalJson({
-                raceState: genericResponse.state
-            });
+        const raceId = parseInt(req.params.raceId, 10);
+        if (isNaN(raceId)) {
+            res.status(400).json({ error: 'Invalid race ID' });
+            return;
         }
-        return originalJson(body);
-    };
 
-    await applyUpdate(wrappedReq, res, next, raceSessionControllerConfig as unknown as SessionControllerConfig<number, RaceEditState, RaceUpdate, unknown>);
-}
+        const lockService = getEntityLockService();
+        const userSessionService = getUserSessionService();
 
-/**
- * Save session to MySQL.
- * 
- * **Implementation Note**: This function delegates to the generic `saveSession`
- * function with Race-specific configuration.
- * 
- * @see GenericSessionController.saveSession - Generic implementation
- */
-export async function SaveRaceSession(
-    req: ValidatedParamsT<{ raceId: string; sessionId: string }, { race: RaceSummary }>,
-    res: Response,
-    next: NextFunction
-): Promise<void> {
-    // Capture entityId before wrapping request
-    const entityId = raceSessionControllerConfig.getEntityIdFromParams(req.params);
-    if (!entityId) {
-        res.status(400).json({ error: 'Invalid entity ID' });
-        return;
+        // Release lock
+        await lockService.releaseLock('race', raceId, userId);
+
+        // Remove from user's editing list
+        await userSessionService.clearEditingEntity(userId, 'race', raceId);
+
+        // Note: We don't delete the state from Redis - it may be viewed by other users
+        // State will expire naturally or be overwritten on next edit
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error canceling race editing:', error);
+        res.status(500).json({
+            error: 'Failed to cancel race editing',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
-
-    // Wrap the generic controller to transform response format
-    const wrappedReq = req as unknown as ValidatedParamsT<{ [key: string]: string }, { entity: Race }>;
-    const originalJson = res.json.bind(res);
-
-    res.json = function (body: unknown) {
-        if (body && typeof body === 'object' && 'entity' in body) {
-            const genericResponse = body as { entity: Race };
-            // Transform to RaceSummary format (includes id field)
-            const raceSummary: RaceSummary = {
-                id: entityId,
-                name: genericResponse.entity.name,
-                editionId: genericResponse.entity.editionId,
-                isVisible: genericResponse.entity.isVisible,
-                description: genericResponse.entity.description,
-                sourceBookInfo: genericResponse.entity.sourceBookInfo
-            };
-            return originalJson({
-                race: raceSummary
-            });
-        }
-        return originalJson(body);
-    };
-
-    await saveSession(wrappedReq, res, next, raceSessionControllerConfig as unknown as SessionControllerConfig<number, RaceEditState, unknown, Race>);
-}
-
-/**
- * Cancel session (delete without saving).
- * 
- * **Implementation Note**: This function delegates to the generic `cancelSession`
- * function with Race-specific configuration.
- * 
- * @see GenericSessionController.cancelSession - Generic implementation
- */
-export async function CancelRaceSession(
-    req: ValidatedParamsT<{ raceId: string; sessionId: string }, { message: string }>,
-    res: Response,
-    next: NextFunction
-): Promise<void> {
-    const wrappedReq = req as unknown as ValidatedParamsT<{ [key: string]: string }, { message: string }>;
-    await cancelSession(wrappedReq, res, next, raceSessionControllerConfig as unknown as SessionControllerConfig<number, RaceEditState, unknown, unknown>);
 }
