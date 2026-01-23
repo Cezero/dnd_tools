@@ -28,6 +28,35 @@ export const DraftType = {
 export type DraftType = typeof DraftType[keyof typeof DraftType];
 
 /**
+ * DraftAction controls how updateValue applies a scalar value at a path.
+ *
+ * - Update: set/overwrite a value at the path (default)
+ * - Remove: remove a value (delete key / remove element)
+ * - Add: add a value (append to array, or create missing path)
+ *
+ * This is a numeric enum to match existing DraftType patterns.
+ */
+export const DraftAction = {
+    Update: 0,
+    Remove: 1,
+    Add: 2,
+} as const;
+
+export type DraftAction = typeof DraftAction[keyof typeof DraftAction];
+
+/**
+ * Map of array field names (or field paths) to the key field used by `byId.<value>` selectors.
+ *
+ * Default key field is `id`. Use this map only when the stable unique key is named differently.
+ *
+ * Examples:
+ * - `sourceBookInfo[]` elements are `SourceMap` objects keyed by `sourceBookId` (unique per parent object).
+ */
+export const DRAFT_ARRAY_SELECTOR_KEY_FIELD_MAP: Record<string, string> = {
+    sourceBookInfo: 'sourceBookId',
+};
+
+/**
  * Map from draft type ID to CoreComponent (for admin tools and display).
  * 
  * Follows the standard BaseMap<CoreComponent> pattern used throughout static-data.

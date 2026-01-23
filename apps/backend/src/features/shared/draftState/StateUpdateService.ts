@@ -1,8 +1,8 @@
-import { DraftType } from '@shared/static-data';
+import { DraftAction, DraftType } from '@shared/static-data';
 
 import { DraftLockService } from './DraftLockService';
 import { DraftStateService } from './DraftStateService';
-import { updateValueAtPath, type JsonObject } from '../utils';
+import { applyDraftActionAtPath, type JsonObject } from '../utils';
 
 /**
  * Generic service for updating entity states by path.
@@ -86,8 +86,9 @@ export class StateUpdateService {
         entityId: number | 'new',
         path: string,
         value: unknown,
-        userId: number
-    ): Promise<Record<string, unknown>> {
+        userId: number,
+        action?: DraftAction
+    ): Promise<{ updatedState: Record<string, unknown>; id?: number }> {
         // Resolve actual entity ID for lock checking
         // For 'new' entities, use negative userId as the key
         const lockEntityId = entityId === 'new' ? -userId : entityId;
@@ -108,12 +109,22 @@ export class StateUpdateService {
             throw new Error(`State not found for ${draftType}:${lockEntityId}`);
         }
 
-        // Update value at path
-        const updatedState = updateValueAtPath(currentState, path, value as string | number);
+        // Update value at path (DraftAction default is Update)
+        const applyResult = applyDraftActionAtPath(
+            currentState,
+            path,
+            value as string | number | boolean | null,
+            action ?? DraftAction.Update,
+            { draftType, draftId: lockEntityId }
+        );
+        const updatedState = applyResult.updated;
 
         // Persist updated state
         await this.draftStateService.setState(draftType, lockEntityId, updatedState);
 
-        return updatedState;
+        return {
+            updatedState,
+            ...(applyResult.id !== undefined && { id: applyResult.id }),
+        };
     }
 }

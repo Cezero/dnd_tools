@@ -15,6 +15,8 @@ export function FeaturesTab(props: ClassTabProps): React.JSX.Element {
             parentType="class"
             title="Class Features"
             emptyMessage="No class features found"
+            onLinkFeatureId={props.onLinkFeatureId}
+            onUnlinkFeatureId={props.onUnlinkFeatureId}
         />
     );
 }

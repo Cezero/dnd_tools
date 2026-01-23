@@ -422,8 +422,62 @@ export type ForkFeatureResponse = z.infer<typeof ForkFeatureResponseSchema>;
  */
 export const FeatureStateSchema = FeatureWithRelationsSchema;
 
+/**
+ * Draft-state schema for Feature editing.
+ *
+ * This schema is used for draft state stored in Redis. It intentionally allows:
+ * - negative IDs for draft-only objects (Feature + nested children)
+ * - positive IDs for persisted objects being edited
+ *
+ * Persistence-time validation is performed separately using Create/Update schemas based on id sign.
+ */
+const DraftIdSchema = z.number().int();
+
+export const FeaturePrerequisiteDraftSchema = FeaturePrerequisiteSchema.extend({
+    id: DraftIdSchema,
+    featureId: DraftIdSchema,
+});
+
+export const FeatureEntityConditionDraftSchema = FeatureEntityConditionSchema.extend({
+    id: DraftIdSchema,
+    featureEntityId: DraftIdSchema,
+});
+
+export const FeatureConditionDraftSchema = FeatureConditionSchema.extend({
+    id: DraftIdSchema,
+    featureId: DraftIdSchema,
+});
+
+export const FeatureFormulaParamsDraftSchema = FeatureFormulaParamsSchema.extend({
+    id: DraftIdSchema,
+});
+
+export const FeatureEntityDraftSchema = FeatureEntitySchema.extend({
+    id: DraftIdSchema,
+    featureId: DraftIdSchema,
+    formulaParamsId: DraftIdSchema.optional().nullable(),
+    conditions: z.array(FeatureEntityConditionDraftSchema).optional(),
+    formulaParams: FeatureFormulaParamsDraftSchema.optional().nullable(),
+});
+
+export const FeatureDraftStateSchema = FeatureWithRelationsSchema.extend({
+    id: DraftIdSchema,
+    prerequisites: z.array(FeaturePrerequisiteDraftSchema).optional(),
+    entities: z.array(FeatureEntityDraftSchema).optional(),
+    displayConditions: z.array(FeatureConditionDraftSchema).optional(),
+    classes: z.array(z.object({
+        featureId: DraftIdSchema,
+        classId: z.number().int(),
+    })).optional(),
+    races: z.array(z.object({
+        featureId: DraftIdSchema,
+        raceId: z.number().int(),
+    })).optional(),
+});
+
 // Feature Resolution TypeScript type exports
 export type FeatureState = z.infer<typeof FeatureStateSchema>;
+export type FeatureDraftState = z.infer<typeof FeatureDraftStateSchema>;
 
 // Re-export state management types for convenience
 export type { UpdateStateValueRequest, UpdateStateValueResponse } from './state.js';

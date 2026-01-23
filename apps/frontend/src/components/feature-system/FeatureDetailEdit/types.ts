@@ -100,14 +100,7 @@ export interface AppliesToSelectorProps {
 }
 
 /**
- * Props for FeatureDetailEdit component
+ * Legacy editor props (FeatureDetailEdit component removed).
+ *
+ * This interface is intentionally removed to prevent new usage.
  */
-export interface FeatureDetailEditProps {
-    isOpen: boolean;
-    onClose: () => void;
-    feature: FeatureWithRelations | null;
-    onSave: (feature: FeatureWithRelations) => void;
-    preSelectedFeature?: Feature;
-    showSourceTypeSelector?: boolean;
-    editionId?: number | null; // Edition ID for context (e.g., for FavoredClass options)
-}

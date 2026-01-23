@@ -1,25 +1,46 @@
-
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { createResolutionHook } from '@/lib/hooks';
 import type { FeatureState } from '@shared/schema';
-import { DraftType } from '@shared/static-data';
+import { DraftType, FeatureSourceType } from '@shared/static-data';
 
+import { FeatureQueryHooks } from './FeatureQueryHooks';
 import { FeatureResolutionApi } from './FeatureResolutionApi';
+
+function createDefaultFeatureState(draftId: number): FeatureState {
+    return {
+        id: draftId,
+        slug: '',
+        name: '',
+        description: '',
+        summary: null,
+        displayInCharacterSheet: true,
+        sourceType: FeatureSourceType.None,
+        level: 1,
+        domainId: null,
+        featId: null,
+        companionId: null,
+        editionId: null,
+        prerequisites: [],
+        entities: [],
+        displayConditions: [],
+        classes: [],
+        races: [],
+    };
+}
 
 const useFeatureResolutionBase = createResolutionHook<number, FeatureState, never>({
     draftType: DraftType.Feature,
     api: {
         startEditing: FeatureResolutionApi.startEditing,
         fetchEntity: async (id: number) => {
-            // For new features (id === 0), return null (no database record exists)
-            if (id === 0) {
+            // For new drafts (id <= 0), return defaults (matches Class/Race semantics).
+            if (id <= 0) {
                 return {
-                    state: null as FeatureState | null,
+                    state: createDefaultFeatureState(id),
                 };
             }
 
             // Fetch feature data using normal entity service (NOT state management endpoint)
-            const feature = await FeatureSystemApi.getFeatureById({ id });
+            const feature = await FeatureQueryHooks.getFeatureById(id);
 
             // Convert GetFeatureResponse to FeatureState (FeatureWithRelations)
             return {

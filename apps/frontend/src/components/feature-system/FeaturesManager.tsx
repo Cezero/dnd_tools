@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ListSelectionDialog } from '@/components/generic-list';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { Feature, FeatureWithRelations } from '@shared/schema';
@@ -26,7 +25,9 @@ export function FeaturesManager({
     parentType,
     title,
     emptyMessage,
-    excludeSpecialFeatures = []
+    excludeSpecialFeatures = [],
+    onLinkFeatureId,
+    onUnlinkFeatureId,
 }: FeaturesManagerProps): React.JSX.Element {
     const [isFeatureSelectionOpen, setIsFeatureSelectionOpen] = useState(false);
     const [isFeatureEditOpen, setIsFeatureEditOpen] = useState(false);
@@ -73,7 +74,7 @@ export function FeaturesManager({
                 const loadedFeatures = await Promise.all(
                     featureIds.map(async (featureId) => {
                         try {
-                            return await FeatureQueryHooks.getFeatureById(featureId);
+                            return await FeatureQueryHooks.getFeatureById(featureId, queryClient);
                         } catch (error) {
                             // Handle missing features gracefully - log warning but don't fail entire load
                             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -143,6 +144,7 @@ export function FeaturesManager({
     };
 
     const handleRemoveProgression = (featureId: number) => {
+        onUnlinkFeatureId?.(featureId);
         if (isMinimalState(state)) {
             updateState({ type: 'REMOVE_FEATURE_PROGRESSION', payload: { featureId } });
         } else if ('classId' in state) {
@@ -184,10 +186,11 @@ export function FeaturesManager({
         // If this was a new feature created, link it to the parent entity
         if (wasNewFeature && featureId) {
             try {
+                onLinkFeatureId?.(featureId);
                 // Link feature to parent entity
                 if (isMinimalState(state)) {
                     // For minimal state, we need the full feature for ADD_FEATURE_PROGRESSION
-                    const feature = await FeatureQueryHooks.getFeatureById(featureId);
+                    const feature = await FeatureQueryHooks.getFeatureById(featureId, queryClient);
                     if (feature) {
                         updateState({
                             type: 'ADD_FEATURE_PROGRESSION',
@@ -234,12 +237,14 @@ export function FeaturesManager({
         for (const feature of selectedFeatures.filter(f => featuresToAdd.includes(f.id))) {
             try {
                 // Load feature data (no session needed for linking)
-                await FeatureQueryHooks.getFeatureById(feature.id);
+                await FeatureQueryHooks.getFeatureById(feature.id, queryClient);
+
+                onLinkFeatureId?.(feature.id);
 
                 // Link feature to parent entity
                 if (isMinimalState(state)) {
                     // For minimal state, we still need the full feature object
-                    const featuresResponse = await FeatureSystemApi.getFeatures({ id: feature.id });
+                    const featuresResponse = await FeatureQueryHooks.getFeatureProgressions(feature.id);
                     const fullFeature = featuresResponse[0];
                     if (fullFeature) {
                         updateState({

@@ -140,12 +140,11 @@ export const raceService: RaceService = {
                 }
             });
 
-            // Sync FeatureRaceMap links using featureIds from request
-            if (featureIds && featureIds.length > 0) {
+            // Sync FeatureRaceMap links using featureIds from request.
+            // IMPORTANT: `featureIds` is optional in UpdateRaceRequest. When omitted, treat it as "no change".
+            // Only sync when the caller explicitly provides an array (including empty array to remove all).
+            if (Array.isArray(featureIds)) {
                 await featureSystemService.syncRaceFeatures(id.id, featureIds, tx);
-            } else {
-                // No featureIds provided - sync to empty list (removes all links for this race)
-                await featureSystemService.syncRaceFeatures(id.id, [], tx);
             }
         });
 

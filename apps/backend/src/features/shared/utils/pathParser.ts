@@ -1,4 +1,16 @@
+import { DraftAction, DraftType, DRAFT_ARRAY_SELECTOR_KEY_FIELD_MAP, EntityAppliesToType, EntityType } from '@shared/static-data';
+
 import type { JsonObject } from './types';
+
+interface ApplyDraftActionResult {
+    updated: JsonObject;
+    id?: number;
+}
+
+interface ApplyDraftActionOptions {
+    draftType: DraftType;
+    draftId: number;
+}
 
 /**
  * Utility for parsing and updating values at paths in nested JSON objects.
@@ -75,6 +87,61 @@ function parsePath(path: string): Array<string | number> {
     return segments;
 }
 
+function parsePathWithNegativeNumbers(path: string): Array<string | number> {
+    if (!path || typeof path !== 'string') {
+        throw new Error('Path must be a non-empty string');
+    }
+
+    const segments: Array<string | number> = [];
+    const parts = path.split('.');
+
+    for (const part of parts) {
+        if (!part) {
+            throw new Error(`Invalid path: empty segment in "${path}"`);
+        }
+
+        // Allow negative integers for byId selectors (draft temp IDs are negative)
+        const numericValue = parseInt(part, 10);
+        if (!isNaN(numericValue) && numericValue.toString() === part) {
+            segments.push(numericValue);
+            continue;
+        }
+
+        if (!isValidPathSegment(part)) {
+            throw new Error(`Invalid path segment: "${part}" contains invalid characters`);
+        }
+        segments.push(part);
+    }
+
+    return segments;
+}
+
+function deepCloneJsonObject(obj: JsonObject): JsonObject {
+    return JSON.parse(JSON.stringify(obj)) as JsonObject;
+}
+
+function resolveSelectorKeyField(arrayFieldName: string | null): string {
+    if (!arrayFieldName) {
+        return 'id';
+    }
+    return DRAFT_ARRAY_SELECTOR_KEY_FIELD_MAP[arrayFieldName] ?? 'id';
+}
+
+function createNextTempId(existing: unknown[], keyField: string): number {
+    let minId = 0;
+    for (const el of existing) {
+        if (el && typeof el === 'object' && !Array.isArray(el)) {
+            const idVal = (el as Record<string, unknown>)[keyField];
+            if (typeof idVal === 'number' && Number.isInteger(idVal)) {
+                if (idVal <= minId) {
+                    minId = idVal;
+                }
+            }
+        }
+    }
+    return minId <= 0 ? minId - 1 : -1;
+}
+
 /**
  * Updates a value at a specific path in a JSON object.
  * Creates intermediate objects/arrays as needed.
@@ -117,7 +184,7 @@ export function updateValueAtPath(
     }
 
     // Create a deep copy to avoid mutating the original
-    const result = JSON.parse(JSON.stringify(obj)) as JsonObject;
+    const result = deepCloneJsonObject(obj);
 
     // Navigate to the parent of the target, creating intermediate objects/arrays as needed
     let current: unknown = result;
@@ -191,4 +258,247 @@ export function updateValueAtPath(
     }
 
     return result;
+}
+
+/**
+ * Applies a DraftAction at a path, supporting both index-based and selector-based paths.
+ *
+ * Selector syntax (preferred when stable keys exist):
+ * - `someArray.byId.<value>` selects the array element where keyField === value
+ * - keyField defaults to `id`, but can be overridden per array field name via
+ *   `DRAFT_ARRAY_SELECTOR_KEY_FIELD_MAP` (e.g. sourceBookInfo -> sourceBookId)
+ *
+ * Notes:
+ * - Index segments remain supported for Zod error paths (e.g. entities.0.appliesTo)
+ * - Draft temp IDs are negative integers; byId selectors accept negative IDs.
+ *
+ * @param obj - Draft JSON object
+ * @param path - Dot path including optional selectors
+ * @param value - Scalar value used by the action
+ * @param action - DraftAction
+ */
+export function applyDraftActionAtPath(
+    obj: JsonObject,
+    path: string,
+    value: string | number | boolean | null,
+    action: DraftAction,
+    options: ApplyDraftActionOptions
+): ApplyDraftActionResult {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+        throw new Error('Object must be a plain object (not array or null)');
+    }
+    if (!path || typeof path !== 'string') {
+        throw new Error('Path must be a non-empty string');
+    }
+
+    const segments = parsePathWithNegativeNumbers(path);
+    if (segments.length === 0) {
+        throw new Error('Path cannot be empty');
+    }
+
+    const result = deepCloneJsonObject(obj);
+
+    let current: unknown = result;
+    let currentArrayFieldName: string | null = null;
+
+    // Traverse all segments, handling selectors in-line.
+    // We stop when we need to apply an action at a specific parent/segment.
+    for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        const nextSegment = i + 1 < segments.length ? segments[i + 1] : undefined;
+        const isLast = i === segments.length - 1;
+
+        // Selector: <array>.byId.<id>
+        if (segment === 'byId') {
+            if (!Array.isArray(current)) {
+                throw new Error(`Cannot use selector "byId" on non-array at path "${segments.slice(0, i).join('.')}"`);
+            }
+            if (typeof nextSegment !== 'number') {
+                throw new Error(`Selector "byId" must be followed by a numeric id at path "${segments.slice(0, i + 2).join('.')}"`);
+            }
+
+            const keyField = resolveSelectorKeyField(currentArrayFieldName);
+            const idToFind = nextSegment;
+            const arr = current as unknown[];
+            const foundIndex = arr.findIndex((el) => {
+                if (!el || typeof el !== 'object' || Array.isArray(el)) return false;
+                return (el as Record<string, unknown>)[keyField] === idToFind;
+            });
+
+            // If selector is the terminal expression, apply Remove to the array element.
+            if (i + 2 === segments.length) {
+                if (action !== DraftAction.Remove) {
+                    throw new Error(`Path "${path}" ends in selector; only DraftAction.Remove is valid for removing a selected element`);
+                }
+                if (foundIndex === -1) {
+                    return { updated: result };
+                }
+                (current as unknown[]).splice(foundIndex, 1);
+                return { updated: result };
+            }
+
+            // If not found and action is not Remove, create element (keyed arrays like sourceBookInfo).
+            if (foundIndex === -1) {
+                if (action === DraftAction.Remove) {
+                    throw new Error(`No element found for selector "byId.${idToFind}" at path "${segments.slice(0, i + 2).join('.')}"`);
+                }
+                const newObj: Record<string, unknown> = { [keyField]: idToFind };
+                arr.push(newObj);
+                current = newObj;
+            } else {
+                current = arr[foundIndex];
+            }
+
+            // Consume the id segment as well
+            i += 1;
+            continue;
+        }
+
+        if (typeof segment === 'number') {
+            // Array index traversal
+            if (!Array.isArray(current)) {
+                throw new Error(`Cannot use array index "${segment}" on non-array at path "${segments.slice(0, i + 1).join('.')}"`);
+            }
+            if (segment < 0) {
+                throw new Error(`Array index must be non-negative at path "${segments.slice(0, i + 1).join('.')}"`);
+            }
+
+            const arr = current as unknown[];
+
+            if (isLast) {
+                // Action applies to this index on its parent array
+                if (action === DraftAction.Remove) {
+                    if (segment < arr.length) {
+                        arr.splice(segment, 1);
+                    }
+                    return { updated: result };
+                }
+                if (action === DraftAction.Update) {
+                    while (arr.length <= segment) {
+                        arr.push(null);
+                    }
+                    arr[segment] = value;
+                    return { updated: result };
+                }
+                throw new Error(`DraftAction.Add is not supported for direct numeric index target at path "${path}"`);
+            }
+
+            // Ensure array element exists for continued traversal
+            while (arr.length <= segment) {
+                arr.push(null);
+            }
+            if (arr[segment] === null || arr[segment] === undefined) {
+                arr[segment] = typeof nextSegment === 'number' ? [] : {};
+            }
+            current = arr[segment];
+            currentArrayFieldName = null;
+            continue;
+        }
+
+        // Object property traversal
+        if (current === null || current === undefined || typeof current !== 'object' || Array.isArray(current)) {
+            throw new Error(`Cannot access property "${segment}" on non-object at path "${segments.slice(0, i + 1).join('.')}"`);
+        }
+
+        const objCurrent = current as Record<string, unknown>;
+
+        if (isLast) {
+            const target = objCurrent[segment];
+
+            if (action === DraftAction.Update) {
+                objCurrent[segment] = value;
+                return { updated: result };
+            }
+
+            if (action === DraftAction.Remove) {
+                // If target is array, try to remove value from it (primitive arrays like featureIds, or object arrays keyed by id)
+                if (Array.isArray(target)) {
+                    const arr = target as unknown[];
+                    const keyField = resolveSelectorKeyField(segment);
+                    const filtered = arr.filter((el) => {
+                        if (el === value) return false;
+                        if (el && typeof el === 'object' && !Array.isArray(el)) {
+                            return (el as Record<string, unknown>)[keyField] !== value;
+                        }
+                        return true;
+                    });
+                    objCurrent[segment] = filtered;
+                    return { updated: result };
+                }
+
+                delete objCurrent[segment];
+                return { updated: result };
+            }
+
+            // DraftAction.Add at a property:
+            // - if property is an array: append scalar (featureIds) or create a new object stub when value=0
+            // - if property missing: create scalar or [scalar] for known array fields
+            if (action === DraftAction.Add) {
+                if (Array.isArray(target)) {
+                    // If this is an array-of-objects and value is the sentinel 0, create a new child with temp id.
+                    if (typeof value === 'number' && value === 0) {
+                        const keyField = resolveSelectorKeyField(segment);
+                        const tempId = createNextTempId(target as unknown[], keyField);
+
+                        // Feature drafts: create a fully shaped FeatureEntity instead of a stub.
+                        if (options.draftType === DraftType.Feature && segment === 'entities' && keyField === 'id') {
+                            (target as unknown[]).push({
+                                id: tempId,
+                                featureId: options.draftId,
+                                type: EntityType.Bonus,
+                                appliesTo: EntityAppliesToType.Ability,
+                                appliesToId: null,
+                                appliesToSubId: null,
+                                value: 0,
+                                bonusType: null,
+                                formulaParamsId: null,
+                                groupingId: 0,
+                                displayInDetail: true,
+                                filterType: null,
+                                conditions: [],
+                                formulaParams: null,
+                            });
+                            return { updated: result, id: tempId };
+                        }
+
+                        (target as unknown[]).push({ [keyField]: tempId });
+                        return { updated: result, id: tempId };
+                    }
+
+                    // Primitive array append (featureIds)
+                    if (!(target as unknown[]).includes(value)) {
+                        (target as unknown[]).push(value);
+                    }
+                    return { updated: result };
+                }
+
+                if (target === undefined || target === null) {
+                    // Known array path creation: featureIds should be [value]
+                    if (segment === 'featureIds') {
+                        objCurrent[segment] = [value];
+                    } else {
+                        objCurrent[segment] = value;
+                    }
+                    return { updated: result };
+                }
+
+                // Exists and is scalar: treat like Update
+                objCurrent[segment] = value;
+                return { updated: result };
+            }
+
+            throw new Error(`Unknown DraftAction at path "${path}"`);
+        }
+
+        // Intermediate: create if missing
+        if (!(segment in objCurrent) || objCurrent[segment] === null || objCurrent[segment] === undefined) {
+            objCurrent[segment] = typeof nextSegment === 'number' ? [] : {};
+        }
+
+        current = objCurrent[segment];
+        currentArrayFieldName = segment;
+    }
+
+    // Should never reach here
+    return { updated: result };
 }

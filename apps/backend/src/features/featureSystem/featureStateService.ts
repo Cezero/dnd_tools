@@ -2,6 +2,7 @@ import { ZodError } from 'zod';
 
 import {
     CreateFeatureRequest,
+    CreateFeatureRequestSchema,
     CreateFeatureEntitySchema,
     CreateFeatureConditionRequest,
     CreateFeatureEntityConditionRequest,
@@ -14,6 +15,7 @@ import {
     FeatureWithRelations,
     FeatureWithRelationsSchema,
     UpdateFeature,
+    UpdateFeatureSchema,
 } from '@shared/schema';
 import { DraftType, FeatureSourceType } from '@shared/static-data';
 
@@ -79,7 +81,7 @@ export class FeatureStateService {
     /**
      * Gets feature state from Redis or initializes from database if not found.
      * 
-     * @param featureId - The feature ID (number) or 'new' for new features
+     * @param featureId - The feature ID (number). New drafts use a minted negative ID.
      * @returns The feature state (FeatureWithRelations), or null if feature doesn't exist
      * @throws Error if Redis or database operation fails
      * 
@@ -91,41 +93,8 @@ export class FeatureStateService {
      * }
      * ```
      */
-    async getFeatureState(featureId: number | 'new', userId?: number): Promise<FeatureWithRelations | null> {
+    async getFeatureState(featureId: number): Promise<FeatureWithRelations | null> {
         try {
-            // For new features, check Redis first (using negative userId as key)
-            if (featureId === 'new' || featureId === 0) {
-                if (!userId) {
-                    // If no userId provided, return empty state
-                    return this.createEmptyFeatureState();
-                }
-                const stateKey = -userId;
-                const cachedState = await this.draftStateService.getState<FeatureState>(
-                    this.ENTITY_TYPE,
-                    stateKey
-                );
-                
-                // Validate cached state - if invalid (old format with id: 0, etc.), recreate it
-                if (cachedState && !this.isValidNewFeatureState(cachedState as FeatureWithRelations)) {
-                    console.warn(`Invalid cached state found for new feature (user ${userId}), recreating with empty state`);
-                    // Delete invalid state and create fresh one
-                    await this.draftStateService.deleteState(this.ENTITY_TYPE, stateKey);
-                    const freshState = this.createEmptyFeatureState();
-                    // Store the fresh state
-                    await this.draftStateService.setState(this.ENTITY_TYPE, stateKey, freshState);
-                    return freshState;
-                }
-                
-                // If no cached state exists, create and store a new empty state
-                if (!cachedState) {
-                    const newState = this.createEmptyFeatureState();
-                    await this.draftStateService.setState(this.ENTITY_TYPE, stateKey, newState);
-                    return newState;
-                }
-                
-                return cachedState as FeatureWithRelations;
-            }
-            
             // Try to get state from Redis first
             const cachedState = await this.draftStateService.getState<FeatureState>(
                 this.ENTITY_TYPE,
@@ -157,7 +126,7 @@ export class FeatureStateService {
     /**
      * Updates feature state in Redis and publishes update.
      * 
-     * @param featureId - The feature ID (number) or 'new' for new features
+     * @param featureId - The feature ID (number). New drafts use a minted negative ID.
      * @param state - The updated feature state (FeatureWithRelations)
      * @param userId - The user ID making the update (for audit/logging)
      * @throws Error if Redis operation fails
@@ -168,18 +137,14 @@ export class FeatureStateService {
      * ```
      */
     async updateFeatureState(
-        featureId: number | 'new',
+        featureId: number,
         state: FeatureWithRelations,
         userId: number
     ): Promise<void> {
         try {
-            // For new features, use a temporary negative ID based on userId
-            // This allows us to use DraftStateService which expects numeric IDs
-            const stateKey = (featureId === 'new' || featureId === 0) ? -userId : featureId;
-            
             // Store as FeatureState
             // Update state in Redis (automatically publishes update via DraftStateService)
-            await this.draftStateService.setState(this.ENTITY_TYPE, stateKey, state as FeatureState);
+            await this.draftStateService.setState(this.ENTITY_TYPE, featureId, state as FeatureState);
             
             // Log the update for audit purposes
             console.log(`Feature state updated for feature ${featureId} by user ${userId}`);
@@ -196,11 +161,11 @@ export class FeatureStateService {
      * using the FeatureSystemService. The state is transformed into the appropriate
      * database format before saving.
      * 
-     * For new features (featureId === 'new' or 0), creates a new feature and returns its ID.
-     * For existing features, updates the feature and returns the existing ID.
+     * For new drafts (featureId < 0), creates a new feature and returns its DB ID.
+     * For existing features (featureId > 0), updates the feature and returns the existing ID.
      * 
-     * @param featureId - The feature ID (number) or 'new' or 0 for new features
-     * @param userId - The user ID (used for temporary key lookup for new features)
+     * @param featureId - The draft ID (negative for create, positive for update)
+     * @param userId - The user ID saving the draft (used for audit/logging)
      * @returns The feature ID (newly created or existing)
      * @throws Error if Redis or database operation fails
      * 
@@ -209,14 +174,12 @@ export class FeatureStateService {
      * const featureId = await featureStateService.saveFeatureStateToDatabase(123, userId);
      * ```
      */
-    async saveFeatureStateToDatabase(featureId: number | 'new', userId: number): Promise<number> {
+    async saveFeatureStateToDatabase(featureId: number, userId: number): Promise<number> {
         try {
             // Get current state from Redis (as flexible JSON)
-            // For new features (0 or 'new'), use temporary negative ID based on userId
-            const stateKey = (featureId === 'new' || featureId === 0) ? -userId : featureId;
             const flexibleState = await this.draftStateService.getState<FeatureState>(
                 this.ENTITY_TYPE,
-                stateKey
+                featureId
             );
             
             if (!flexibleState) {
@@ -248,7 +211,7 @@ export class FeatureStateService {
             const entities = entitiesArray.map((entity: FeatureEntity) => {
                 // Check if this is a new entity (id is 0, null, undefined, or missing)
                 const entityId = entity.id;
-                const isNewEntity = !entityId || entityId === 0 || entityId === null;
+                const isNewEntity = entityId === undefined || entityId === null || entityId <= 0;
                 
                 // Strip IDs and transform to CreateFeatureEntityRequest format
                 const { id: _entityId, featureId: _entityFeatureId, formulaParamsId, formulaParams, conditions, ...entityData } = entity;
@@ -307,7 +270,7 @@ export class FeatureStateService {
                 console.warn(`[FeatureStateService] WARNING: State had ${entitiesArray.length} entities but transformed entities array is empty!`);
             }
             
-            if (featureId === 'new' || featureId === 0) {
+            if (featureId < 0) {
                 // Create new feature
                 const createRequest: CreateFeatureRequest = {
                     ...featureData,
@@ -317,14 +280,10 @@ export class FeatureStateService {
                 };
                 
                 console.log(`[FeatureStateService] Creating new feature with ${entities?.length || 0} entities`);
-                const result = await this.featureSystemService.createFeatureWithRelations(createRequest);
-                const newFeatureId = parseInt(result.id);
+                const validatedCreateRequest = CreateFeatureRequestSchema.parse(createRequest);
+                const result = await this.featureSystemService.createFeatureWithRelations(validatedCreateRequest);
+                const newFeatureId = parseInt(result.id, 10);
                 console.log(`[FeatureStateService] Feature created with ID: ${newFeatureId}`);
-                
-                // Clear the temporary state from Redis
-                console.log(`[FeatureStateService] Deleting temporary state for new feature (user ${userId}, key: -${userId})`);
-                await this.draftStateService.deleteState(this.ENTITY_TYPE, -userId);
-                console.log(`[FeatureStateService] Successfully deleted temporary state for new feature`);
                 
                 return newFeatureId;
             } else {
@@ -337,9 +296,10 @@ export class FeatureStateService {
                 };
                 
                 console.log(`[FeatureStateService] Updating feature ${featureId} with ${entities?.length || 0} entities`);
+                const validatedUpdateRequest = UpdateFeatureSchema.parse(updateRequest);
                 await this.featureSystemService.updateFeature(
                     { id: featureId },
-                    updateRequest
+                    validatedUpdateRequest
                 );
                 console.log(`[FeatureStateService] Feature ${featureId} updated successfully`);
                 

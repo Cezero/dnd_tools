@@ -19,9 +19,8 @@ The frontend implementation follows the shared [Frontend Component Architecture]
 - Core Components: `frontend/src/components/feature-system/FeatureEdit.tsx`, `frontend/src/components/feature-system/FeatureEditForm/FeatureEditForm.tsx`, `frontend/src/components/feature-system/FeatureDetail.tsx`
 - Display Components: `frontend/src/components/feature-system/FeatureDisplay/FeatureDisplay.tsx`
 - Management Components: `frontend/src/components/feature-system/FeaturesManager.tsx`
-- Progression Components: `frontend/src/components/feature-system/FeatureProgressionDetailEdit/FeatureProgressionDetailEdit.tsx`
 - Utility Components: `frontend/src/components/feature-system/ArrayPairEditor.tsx`
-- API Layer: `frontend/src/components/feature-system/FeatureSystemApi.ts`, `frontend/src/components/feature-system/FeatureSystemService.ts`
+- API Layer: `frontend/src/components/feature-system/FeatureQueryHooks.ts`
 - Types: `frontend/src/components/feature-system/types.ts`, `frontend/src/components/feature-system/FeatureEditForm/types.ts`, `frontend/src/components/feature-system/FeatureConfig.ts`
 - Index: `frontend/src/components/feature-system/index.ts`
 
@@ -42,11 +41,9 @@ The feature system frontend follows the shared [Component Architecture](../appli
 **FeatureDetail**: Feature display and detail view (uses TanStack Query for database data, shows lock status)
 **FeatureDisplay**: Component for displaying features with prerequisites and progressions
 **FeaturesManager**: Embeddable feature management component for class/race/domain/feat editing contexts
-**FeatureProgressionDetailEdit**: Complex progression editing with unified feature entities
+**Feature Entity Editor Components**: `FeatureDetailEdit/*` components used by FeatureEditForm for editing entities, formulas, and conditions
 **ArrayPairEditor**: Utility component for editing array-based data
-**FeatureSystemApi**: API client for backend communication (includes lock status checks)
-**FeatureSystemService**: Service layer for feature operations
-**FeatureQueryHooks**: React Query hooks for fetching and caching feature data from database
+**FeatureQueryHooks**: Canonical API interface for features (createQueryHooks-based, cached via TanStack Query, uses typedApi under the hood)
 
 ## 🔧 **Core Components**
 
@@ -61,7 +58,7 @@ The reusable core component for creating and editing features, supporting both m
 - **Context Preservation**: Automatically sets sourceType and parent IDs based on provided context
 - **Feature CRUD**: Create, read, update, and delete features
 - **Prerequisite Management**: Add and edit feature prerequisites
-- **Progression Management**: Manage feature progressions through embedded FeatureProgressionDetailEdit
+- **Entity Management**: Add/edit feature entities (including formulas and conditions) via the `FeatureDetailEdit/*` editor components
 - **Form Validation**: Comprehensive form validation using Zod schemas
 - **Callback-Based**: Uses callbacks instead of navigation for save/cancel operations
 
@@ -71,7 +68,7 @@ The reusable core component for creating and editing features, supporting both m
 - **Form Sections**: Feature details, prerequisites, progressions
 - **Validation**: Real-time validation with error display
 - **State Management**: Proper state management for form data and UI state with initialization tracking
-- **API Integration**: Full integration with FeatureSystemApi
+- **API Integration**: Feature CRUD and related operations via `FeatureQueryHooks` + `useFeatureResolution`
 
 **Key Props**:
 - **featureId**: Feature ID to edit or 'new' for creation
@@ -129,33 +126,10 @@ Component for displaying feature details and information.
 
 **Source File**: `frontend/src/components/feature-system/FeatureDetail.tsx`
 
-### **FeatureProgressionDetailEdit**
+### **Feature Entity Editor Components (`FeatureDetailEdit/*`)**
 
-Complex component for editing feature progressions with full relationship support.
-
-**Purpose**: Provides a comprehensive interface for editing feature progressions, including unified feature entities with type-based differentiation and formula parameters.
-
-**Key Features**:
-- **Progression Editing**: Edit progression details and parameters
-- **Entity Management**: Add, edit, and remove feature entities with type-based differentiation
-- **Entity Type Support**: Support for Bonus, Quantity, Replacement, Other, Proficiency, Choice, and Allocation entity types
-- **Formula Integration**: Full integration with the formula system
-- **Condition Management**: Configure conditional requirements for feature entities
-- **Real-time Preview**: Dynamic preview of formula calculations and effects
-
-**Component Structure**:
-- **Form Sections**: Progression details, feature entities with conditions
-- **Dynamic Forms**: Dynamic form generation based on entity types
-- **Formula Calculator**: Integrated formula calculator and preview
-- **Validation**: Comprehensive validation for all form sections
-- **State Management**: Complex state management for nested data
-
-**Key Sub-components**:
-- **EntityEdit**: Individual feature entity editing interface with type-based forms
-- **ConditionEdit**: Individual condition editing interface
-- **FormulaInput**: Formula parameter input and preview
-
-**Source File**: `apps/frontend/src/components/feature-system/FeatureProgressionDetailEdit.tsx`
+FeatureEditForm uses a set of co-located components under `frontend/src/components/feature-system/FeatureDetailEdit/` to edit feature entities.\n\nThese components cover:\n- entity rows (`EntityDetailForm.tsx`)\n- grouping controls (`EntitySectionRenderer.tsx`, `GroupingControls.tsx`, grouping helpers)\n- formula editing (`FormulaManager.tsx`, `FormulaPreview.tsx`, `ArrayPairEditor.tsx`)\n- conditional requirements (`ConditionEditor.tsx`)\n+
+The legacy `FeatureDetailEdit` component entrypoint was removed; these editor components remain as implementation details used by FeatureEditForm.
 
 ### **FeatureDisplay**
 
@@ -198,7 +172,7 @@ Embeddable feature management component for class/race/domain/feat editing conte
 - **Add Feature Button**: Opens ListSelectionDialog for feature selection
 - **Feature Display**: Uses FeatureDisplay for each feature with prerequisites and progressions
 - **Edit Modal**: FeatureEditForm modal for editing features
-- **Progression Dialog**: FeatureProgressionDetailEdit for progression editing
+- **Entity Editing**: FeatureEditForm uses `FeatureDetailEdit/*` editor components for entities/formulas/conditions
 
 **Key Props**:
 - **featureProgressions**: Array of feature progressions to display
@@ -244,33 +218,6 @@ Utility component for editing array-based data with key-value pairs.
 
 **Source File**: `apps/frontend/src/components/feature-system/ArrayPairEditor.tsx`
 
-## 🔗 **API Layer**
-
-### **FeatureSystemApi**
-
-Type-safe API client for backend communication.
-
-**Purpose**: Provides type-safe API methods for all feature system operations.
-
-**Key Features**:
-- **Type Safety**: Full TypeScript type safety for API operations
-- **Error Handling**: Comprehensive error handling and user feedback
-- **Request/Response Validation**: Zod schema validation for all requests and responses
-- **Authentication**: Proper authentication handling for admin operations
-- **Lock Status**: Methods to check if features are locked by other users
-
-**Core Methods**:
-- **getAllFeatures**: Retrieve all features with optional filtering
-- **getFeatureById**: Retrieve specific feature by ID (from database)
-- **getFeatureLockStatus**: Check if feature is locked and by which user
-- **createFeature**: Create new feature
-- **updateFeature**: Update existing feature
-- **deleteFeature**: Delete feature
-- **getFeatureProgressions**: Retrieve feature progressions
-- **updateFeatureProgressions**: Update feature progressions
-
-**Source File**: `apps/frontend/src/components/feature-system/FeatureSystemApi.ts`
-
 ### **FeatureQueryHooks**
 
 React Query hooks for fetching and caching feature data from the database.
@@ -284,22 +231,13 @@ React Query hooks for fetching and caching feature data from the database.
 - **Automatic Cache Management**: React Query handles cache invalidation on mutations
 - **Viewing Only**: Use `getFeatureById` for viewing features (fetches from database)
 - **Editing**: Use `useFeatureResolution` hook for editing (uses isolated entity state)
+  - For **new features**, pass `0` as the feature id; the backend will mint a **negative draft id** during `startEditing`, and the resolution hook will adopt it for all draft operations.
+  - See [Entity State Management](../application-overview/entity-state-management.md#new-drafts-minted-negative-ids) for the draft id lifecycle.
+
+**Canonical Rule (No Duplication)**:
+- Do **not** add a separate `typedApi` wrapper for feature endpoints if the same endpoint exists in `FeatureQueryHooks`.\n+- `createQueryHooks` already uses `typedApi` internally, and centralizing on QueryHooks prevents duplicated query key/invalidation logic.
 
 **Source File**: `apps/frontend/src/components/feature-system/FeatureQueryHooks.ts`
-
-### **FeatureSystemService**
-
-Service layer for feature operations and business logic.
-
-**Purpose**: Provides business logic and data processing for feature operations.
-
-**Key Features**:
-- **Data Processing**: Process and transform feature data
-- **Business Logic**: Implement feature-specific business rules
-- **Validation**: Additional client-side validation
-- **State Management**: Manage complex feature state
-
-**Source File**: `apps/frontend/src/components/feature-system/FeatureSystemService.ts`
 
 ## 🎯 **Form Handling**
 

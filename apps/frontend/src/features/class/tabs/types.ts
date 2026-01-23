@@ -66,5 +66,13 @@ export interface ClassTabProps {
     onEditProgression?: (feature: FeatureWithRelations) => void;
     onRemoveProgression?: (progressionId: number) => void;
     onAddFeature?: (feature: { id: number; name: string; description: string; slug: string }) => void;
+    /**
+     * Parent-managed link/unlink callbacks for draft syncing.
+     *
+     * For class editing, these call `resolution.updateValue('featureIds', id, DraftAction.Add/Remove)`
+     * so the Redis draft stays in sync when features are linked/unlinked in the UI.
+     */
+    onLinkFeatureId?: (featureId: number) => Promise<void> | void;
+    onUnlinkFeatureId?: (featureId: number) => Promise<void> | void;
     classId?: number;
 }

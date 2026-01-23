@@ -5,7 +5,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -124,10 +123,7 @@ export function CompanionEdit() {
                     })),
                 }));
 
-            await FeatureSystemApi.updateFeatures(
-                { features: remainingProgressions },
-                { id: feature.id }
-            );
+            await FeatureQueryHooks.updateFeatures(feature.id, { features: remainingProgressions });
 
             // Refetch companion to get updated features
             if (id && id !== 'new') {
@@ -184,10 +180,7 @@ export function CompanionEdit() {
                 })),
             }));
 
-            await FeatureSystemApi.updateFeatures(
-                { features: updatedProgressions },
-                { id: feature.id }
-            );
+            await FeatureQueryHooks.updateFeatures(feature.id, { features: updatedProgressions });
 
             // Refetch companion to get updated features
             const refetchedCompanion = await CompanionQueryHooks.getCompanionById(companionId);
@@ -232,10 +225,7 @@ export function CompanionEdit() {
                 })),
             };
 
-            await FeatureSystemApi.updateFeatures(
-                { features: [progressionData] },
-                { id: feature.id }
-            );
+            await FeatureQueryHooks.updateFeatures(feature.id, { features: [progressionData] });
 
             // Close the dialog
             setIsProgressionDialogOpen(false);

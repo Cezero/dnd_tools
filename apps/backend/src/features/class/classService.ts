@@ -391,12 +391,11 @@ export const classService: ClassService = {
                 },
             });
 
-            // Sync FeatureClassMap links using featureIds from request
-            if (featureIds && featureIds.length > 0) {
+            // Sync FeatureClassMap links using featureIds from request.
+            // IMPORTANT: `featureIds` is optional in UpdateClassRequest. When omitted, treat it as "no change".
+            // Only sync when the caller explicitly provides an array (including empty array to remove all).
+            if (Array.isArray(featureIds)) {
                 await featureSystemService.syncClassFeatures(query.id, featureIds, tx);
-            } else {
-                // No featureIds provided - sync to empty list (removes all links for this class)
-                await featureSystemService.syncClassFeatures(query.id, [], tx);
             }
 
             // Create new spellcasting feature (spell slots)
@@ -600,10 +599,7 @@ export const classService: ClassService = {
 
         return {
             total: classes.length,
-            results: classes.map(cls => ({
-                ...cls,
-                featureIds: [] // Cache response doesn't include featureIds
-            })),
+            results: classes,
         };
     },
 

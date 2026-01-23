@@ -103,9 +103,9 @@ export function createQueryHooks<
                     return apiFunction(params as never, undefined);
                 }
 
-                // Otherwise, use the requestData wrapper pattern
+                // Otherwise, pathParams are the first (and only) argument when no requestSchema
                 const typedParams = params as { requestData?: unknown; pathParams?: unknown } | undefined;
-                return apiFunction(typedParams?.requestData as never, typedParams?.pathParams as never);
+                return apiFunction(typedParams?.pathParams as never);
             },
             ...(options as Record<string, unknown>), // Spread all react-query options
         });
@@ -163,7 +163,7 @@ export function createQueryHooks<
             return apiFunction(params as never, undefined);
         }
         const typedParams = params as { requestData?: unknown; pathParams?: unknown } | undefined;
-        return apiFunction(typedParams?.requestData as never, typedParams?.pathParams as never);
+        return apiFunction(typedParams?.pathParams as never);
     };
 
     /**

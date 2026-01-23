@@ -1,7 +1,6 @@
-// Main component - FeatureDetailEdit removed, use FeatureEditForm instead
+// FeatureDetailEdit legacy entrypoint removed, FeatureEditForm is canonical.
 
 // Hooks
-export { useFeatureForm } from './useFeatureForm';
 export { useGroupingState } from './useGroupingState';
 export { useEntityManagement } from './useEntityManagement';
 export { useFormulaPreview } from './useFormulaPreview';
@@ -10,7 +9,6 @@ export { useFormulaPreview } from './useFormulaPreview';
 export { FormulaPreview } from './FormulaPreview';
 export { EntitySectionRenderer } from './EntitySectionRenderer';
 export { GroupingControls } from './GroupingControls';
-export { SectionSelector } from './SectionSelector';
 
 // Form components
 export { EntityDetailForm } from './EntityDetailForm';
@@ -28,7 +26,6 @@ export type {
     BaseFormProps,
     FormulaPreviewProps,
     EntitySectionRendererProps,
-    SectionSelectorProps,
     GroupingControlsProps,
     ConditionEditorProps,
     AppliesToSelectorProps
@@ -45,13 +42,3 @@ export {
     initializeFormData,
     createDefaultEntity,
 } from './formDataTransformers';
-
-export {
-    hasValidFormulaParams,
-    hasValidEntityConfig,
-    getEntityValidationError,
-    validateFeatureEntities,
-    hasFeatureComponents,
-    validateFeatureLevel,
-    validateFeatureId
-} from './validationHelpers';

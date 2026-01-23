@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 
 import { DraftApi } from '@/services/api/EntityApi';
 import type { DraftSaveResponse, ValidationError, ValidationErrorResponse } from '@shared/schema';
+import type { DraftAction } from '@shared/static-data';
 import { DraftType } from '@shared/static-data';
 
 import type { ResolutionApi, ResolutionHookResult } from './types';
@@ -25,7 +26,7 @@ interface ResolutionHookConfig<TEntityId, TState, TUpdate> {
     /** API methods for resolution operations */
     api: {
         /** Start editing an entity - returns { success: boolean } */
-        startEditing: (id: TEntityId) => Promise<{ success: boolean }>;
+        startEditing: (id: TEntityId) => Promise<{ success: boolean; id?: number }>;
         /** Fetch entity data using normal entity services */
         fetchEntity: (id: TEntityId) => Promise<{ state: TState | null }>;
         /** Cancel editing without saving */
@@ -76,9 +77,15 @@ export function createResolutionHook<TEntityId extends number, TState, TUpdate>(
     return function useResolution(
         entityId: TEntityId | null
     ): Omit<ResolutionHookResult<TState, TUpdate>, 'save'> & {
-        updateValue: (path: string, value: unknown) => Promise<void>;
+        updateValue: (path: string, value: unknown, action?: DraftAction) => Promise<{ success: boolean; id?: number }>;
         save: () => Promise<number>;
     } {
+        const [activeEntityId, setActiveEntityId] = useState<TEntityId | null>(entityId);
+
+        useEffect(() => {
+            setActiveEntityId(entityId);
+        }, [entityId]);
+
         // Memoize API object to prevent unnecessary re-renders and effect re-runs
         // CRITICAL: This prevents infinite loops in useGenericResolution
         const api: ResolutionApi<TEntityId, TState, TUpdate, unknown> = useMemo(
@@ -90,17 +97,23 @@ export function createResolutionHook<TEntityId extends number, TState, TUpdate>(
             []
         );
 
-        const resolution = useGenericResolution<TEntityId, TState, TUpdate>(entityId, api);
+        const resolution = useGenericResolution<TEntityId, TState, TUpdate>(
+            activeEntityId,
+            api,
+            setActiveEntityId
+        );
+
+        const saveApi = config.api.save;
 
         // Override save to call API directly, then use genericResolution.save() for cleanup
         // This avoids needing to provide save in the api object
         const save = useCallback(async (): Promise<number> => {
-            if (!entityId) {
+            if (activeEntityId === null) {
                 throw new Error(`Cannot save: draft ID is null`);
             }
 
             // Call API directly (syncs state from Redis to MySQL)
-            const result = await config.api.save(entityId);
+            const result = await saveApi(activeEntityId);
 
             // Check if save returned validation errors
             if (!result.success) {
@@ -116,22 +129,31 @@ export function createResolutionHook<TEntityId extends number, TState, TUpdate>(
 
             // DraftSaveResponse may have optional id; fall back to entityId when absent
             const id = (result as { id?: number }).id;
-            return typeof id === 'number' ? id : entityId;
-        }, [entityId, resolution]);
+            return typeof id === 'number' ? id : activeEntityId;
+        }, [activeEntityId, resolution, saveApi]);
+
+        const draftUpdateValue = DraftApi.updateValue as (
+            draftType: DraftType,
+            id: number,
+            path: string,
+            value: string | number | boolean | null,
+            action?: DraftAction
+        ) => Promise<{ success: boolean; id?: number }>;
 
         // Implement updateValue using DraftApi
         const updateValue = useCallback(
-            async (path: string, value: unknown): Promise<void> => {
-                if (!entityId) {
+            async (path: string, value: unknown, action?: DraftAction): Promise<{ success: boolean; id?: number }> => {
+                if (activeEntityId === null) {
                     throw new Error(`Cannot update value: draft ID is null`);
                 }
 
-                // Ensure value is string or number (DraftApi requirement)
-                const typedValue = typeof value === 'string' || typeof value === 'number'
-                    ? value
-                    : String(value);
-
-                const response = await DraftApi.updateValue(config.draftType, entityId, path, typedValue);
+                const response = await draftUpdateValue(
+                    config.draftType,
+                    activeEntityId,
+                    path,
+                    value as string | number | boolean | null,
+                    action
+                );
 
                 if (!response.success) {
                     console.error('Failed to update state:', response);
@@ -140,8 +162,9 @@ export function createResolutionHook<TEntityId extends number, TState, TUpdate>(
 
                 // State management is the backend's responsibility
                 // Components handle their own local state updates if needed
+                return response;
             },
-            [entityId, config.draftType]
+            [activeEntityId, config.draftType, draftUpdateValue]
         );
 
         return {

@@ -4,7 +4,6 @@ import { useAuthAuto } from '@/components/auth';
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { Feature, FeatureWithRelations } from '@shared/schema';
 import { EditionId, FeatureSourceType, EDITION_LIST } from '@shared/static-data';
@@ -112,10 +111,7 @@ export default function EditionFeaturesList() {
                     entities: p.entities || [],
                 }));
 
-            await FeatureSystemApi.updateFeatures(
-                { features: remainingProgressions },
-                { id: feature.id }
-            );
+            await FeatureQueryHooks.updateFeatures(feature.id, { features: remainingProgressions });
 
             // Reload features for the current edition
             const updatedProgressions = await EditionFeaturesApi.getEditionFeatures(selectedEditionId);
@@ -213,10 +209,7 @@ export default function EditionFeaturesList() {
                 }), newProgression];
             }
 
-            await FeatureSystemApi.updateFeatures(
-                { features: progressionsToSave },
-                { id: progressionToSave.id }
-            );
+            await FeatureQueryHooks.updateFeatures(progressionToSave.id, { features: progressionsToSave });
 
             // Reload features for the current edition
             const updatedProgressions = await EditionFeaturesApi.getEditionFeatures(selectedEditionId);

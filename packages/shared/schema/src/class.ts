@@ -47,13 +47,24 @@ export const ClassIdQuerySchema = z.object({
     }),
 });
 
+/**
+ * Summary schema for class list and cache. Omits `featureIds` (and progressions); used for
+ * getAllClasses and classes-cache. For `featureIds`, use getClassById (DnDClass/BaseClassSchema).
+ */
 export const ClassSummarySchema = BaseClassSchema.omit({
     spellcastingProgression: true,
     spellsKnownProgression: true,
+    featureIds: true,  // not needed for list/cache; getClassById returns BaseClassSchema with featureIds
 }).extend({
     id: commonValidations.positiveInt('Class ID'),
 });
 
+/**
+ * Lightweight class schema for classes-cache. Omits `spellsKnown`, `description`, `sourceBookInfo`
+ * for size; does not include `featureIds`. Used for dropdowns and lookups (e.g. getClassSummaryById).
+ * ClassList uses getClasses (ClassSummary) instead: the cache omits `description` and `sourceBookInfo`,
+ * which ClassList's Description and Source columns need; we do not expand the cache by design.
+ */
 export const ClassCacheSchema = ClassSummarySchema.omit({
     spellsKnown: true,
     description: true,
@@ -123,6 +134,17 @@ export const ClassEditStateSchema = z.object({
     spellsKnownProgression: z.array(SpellcastingProgressionWithSlotsSchema),
 });
 
+/**
+ * Draft-state schema for Class editing.
+ *
+ * Supports both persisted and draft-only ids:
+ * - `classId > 0`: persisted class being edited
+ * - `classId < 0`: draft-only class being created
+ */
+export const ClassDraftStateSchema = ClassEditStateSchema.extend({
+    classId: z.number().int(),
+});
+
 // Schema for class entity with ID (used in resolution system)
 // Extends BaseClassSchema with id field for cases where ID is needed
 export const ClassWithIdSchema = BaseClassSchema.extend({
@@ -131,4 +153,5 @@ export const ClassWithIdSchema = BaseClassSchema.extend({
 
 // Class Resolution TypeScript type exports
 export type ClassEditState = z.infer<typeof ClassEditStateSchema>;
+export type ClassDraftState = z.infer<typeof ClassDraftStateSchema>;
 export type ClassWithId = z.infer<typeof ClassWithIdSchema>;

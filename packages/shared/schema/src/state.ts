@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { DraftType } from '@shared/static-data';
+import { DraftAction, DraftType } from '@shared/static-data';
 
 import { numericParam } from './common.js';
 import { ValidationErrorResponseSchema } from './validation.js';
@@ -32,9 +32,12 @@ export const DraftRefRequestSchema = z.object({
     
     /**
      * The draft ID.
-     * Use 0 for new drafts that haven't been saved yet.
+     * Use:
+     * - 0 to request a new draft instance from the backend (minted negative draft id)
+     * - a negative integer for a draft-only instance (not yet persisted)
+     * - a positive integer for an existing persisted entity draft
      */
-    id: z.number().int().nonnegative('Draft ID must be a non-negative integer'),
+    id: z.number().int(),
 });
 
 export type DraftRefRequest = z.infer<typeof DraftRefRequestSchema>;
@@ -66,7 +69,7 @@ export const DraftRefQuerySchema = z.object({
     /**
      * The draft ID (as string for query params, will be parsed to number).
      */
-    id: z.string().regex(/^\d+$/, 'Draft ID must be a number').transform((val) => parseInt(val, 10)),
+    id: z.string().regex(/^-?\d+$/, 'Draft ID must be a number').transform((val) => parseInt(val, 10)),
 });
 
 export type DraftRefQuery = z.infer<typeof DraftRefQuerySchema>;
@@ -100,7 +103,7 @@ export const DraftRefQueryOptionalSchema = z.object({
      */
     id: z.preprocess(
         (val) => (typeof val === 'string' && val !== '' ? parseInt(val, 10) : undefined),
-        z.number().int().positive().optional()
+        z.number().int().optional()
     ),
 });
 
@@ -325,9 +328,20 @@ export const UpdateStateValueSchema = DraftRefRequestSchema.extend({
     
     /**
      * The new value to set at the specified path.
-     * Must be either a string or a number.
+     * Must be a scalar value.
      */
-    value: z.union([z.string(), z.number()]),
+    value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
+
+    /**
+     * Optional action controlling how the value is applied at the path.
+     *
+     * Default is DraftAction.Update to preserve existing behavior.
+     */
+    action: z.union([
+        z.literal(DraftAction.Update),
+        z.literal(DraftAction.Remove),
+        z.literal(DraftAction.Add),
+    ]).optional().default(DraftAction.Update),
 });
 
 export type UpdateStateValueRequest = z.infer<typeof UpdateStateValueSchema>;
@@ -344,6 +358,14 @@ export const UpdateStateValueResponseSchema = z.object({
      * Indicates whether the update was successful.
      */
     success: z.boolean(),
+
+    /**
+     * Optional ID returned when DraftAction.Add creates a new nested object in a draft.
+     *
+     * This is a draft-stable temporary ID (typically a negative integer) that the frontend
+     * can use for subsequent `byId` updates/removals before the parent draft is saved.
+     */
+    id: z.number().int().optional(),
 });
 
 export type UpdateStateValueResponse = z.infer<typeof UpdateStateValueResponseSchema>;

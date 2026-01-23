@@ -15,6 +15,7 @@ import {
     DraftSaveResponseSchema,
     CancelEditingResponseSchema,
 } from '@shared/schema';
+import type { DraftAction } from '@shared/static-data';
 import { DraftType } from '@shared/static-data';
 
 /**
@@ -99,9 +100,16 @@ export const DraftApi = {
         draftType: DraftType,
         id: number,
         path: string,
-        value: string | number
+        value: string | number | boolean | null,
+        action?: DraftAction
     ): Promise<UpdateStateValueResponse> => {
-        return updateValueApi({ draftType, id, path, value });
+        return updateValueApi({
+            draftType,
+            id,
+            path,
+            value,
+            ...(action !== undefined && { action }),
+        });
     },
 
     /**

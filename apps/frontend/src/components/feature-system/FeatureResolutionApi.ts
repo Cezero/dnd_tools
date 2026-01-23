@@ -28,7 +28,8 @@ export const FeatureResolutionApi = {
      * Start editing a feature.
      * 
      * Acquires a lock on the feature and adds it to the user's editing list.
-     * For new features (featureId === 0), creates a new empty state without acquiring a lock.
+     * For new features (featureId === 0), the backend mints a unique negative draft id, acquires a lock,
+     * and initializes an empty draft state in Redis.
      * 
      * Note: The backend also updates the user session, but we call UserSessionApi
      * here as well to ensure the user session is always in sync (Option A pattern).
@@ -49,13 +50,10 @@ export const FeatureResolutionApi = {
         const result = await DraftApi.startEditing(DraftType.Feature, featureId);
 
         // Update user session (backend already does this, but ensures frontend state is synced)
-        // Skip for new features since they don't have a real entityId
-        if (featureId !== 0) {
-            await UserSessionApi.setEditingEntity(DraftType.Feature, featureId).catch((err) => {
-                // Log but don't fail - backend already updated the session
-                console.warn('Failed to update user session via UserSessionApi (backend already handled it):', err);
-            });
-        }
+        await UserSessionApi.setEditingEntity(DraftType.Feature, result.id).catch((err) => {
+            // Log but don't fail - backend already updated the session
+            console.warn('Failed to update user session via UserSessionApi (backend already handled it):', err);
+        });
 
         return result;
     },
@@ -88,13 +86,10 @@ export const FeatureResolutionApi = {
         const result = await DraftApi.save(DraftType.Feature, featureId);
 
         // Clear from user session (backend already does this, but ensures frontend state is synced)
-        // Skip for new features since they don't have a real entityId
-        if (featureId !== 0) {
-            await UserSessionApi.clearEditingEntity(DraftType.Feature, featureId).catch((err) => {
-                // Log but don't fail - backend already updated the session
-                console.warn('Failed to clear user session via UserSessionApi (backend already handled it):', err);
-            });
-        }
+        await UserSessionApi.clearEditingEntity(DraftType.Feature, featureId).catch((err) => {
+            // Log but don't fail - backend already updated the session
+            console.warn('Failed to clear user session via UserSessionApi (backend already handled it):', err);
+        });
 
         return result;
     },
@@ -117,13 +112,10 @@ export const FeatureResolutionApi = {
         const result = await DraftApi.cancel(DraftType.Feature, featureId);
 
         // Clear from user session (backend already does this, but ensures frontend state is synced)
-        // Skip for new features since they don't have a real entityId
-        if (featureId !== 0) {
-            await UserSessionApi.clearEditingEntity(DraftType.Feature, featureId).catch((err) => {
-                // Log but don't fail - backend already updated the session
-                console.warn('Failed to clear user session via UserSessionApi (backend already handled it):', err);
-            });
-        }
+        await UserSessionApi.clearEditingEntity(DraftType.Feature, featureId).catch((err) => {
+            // Log but don't fail - backend already updated the session
+            console.warn('Failed to clear user session via UserSessionApi (backend already handled it):', err);
+        });
 
         return result;
     },

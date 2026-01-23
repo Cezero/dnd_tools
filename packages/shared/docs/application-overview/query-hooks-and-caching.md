@@ -6,6 +6,9 @@
 
 The D&D Tools application uses a factory-based pattern for generating TanStack Query hooks that provide consistent, type-safe access to backend APIs. The system includes specialized cache endpoints for lightweight data access and implements client-side filtering strategies to optimize performance and reduce API complexity.
 
+**Canonical Client Rule (Avoid Duplication)**:
+- Use `createQueryHooks`-based `*QueryHooks` modules as the canonical interface for endpoints that should be cached and invalidated consistently.\n- Do not create parallel `typedApi` wrappers for the same endpoints “just for typing” — `createQueryHooks` already uses `typedApi` internally, and duplicate wrappers tend to create duplicate query key/invalidation logic.
+
 **Source Files**:
 - [QueryHooksFactory.ts](../../../apps/frontend/src/services/query/QueryHooksFactory.ts) - Factory pattern implementation
 - [CacheQueryHooks.ts](../../../apps/frontend/src/services/query/CacheQueryHooks.ts) - Cache endpoint hooks
@@ -43,6 +46,10 @@ const config = {
     }
 };
 ```
+
+### **Path Parameters When No requestSchema**
+
+For `createQueryHooks` with `paramsSchema` and **no** `requestSchema`, the generated `typedApi` function has signature `(params?) =>`. Callers pass `{ pathParams }` (e.g. `{ pathParams: { id: 14 } }`), and the factory forwards **`pathParams` as the first and only argument** to `typedApi`. If the factory passed `(requestData, pathParams)`, `pathParams` would be ignored and path placeholders like `:id` would stay literal in the URL. When `requestSchema` exists, `typedApi` expects `(requestData, params?)` and the factory correctly passes `(requestData, pathParams)`.
 
 ### **Query Key Patterns**
 
@@ -83,6 +90,15 @@ queryKeyBuilder: () => ['items', 'list']
 - `mutate()`: Perform mutations imperatively
 - `queryFn()`: Raw query function for advanced usage
 - `queryKeyBuilder()`: Generate query keys programmatically
+
+### **Imperative `fetch()` and TanStack cache**
+
+The factory-generated `fetch()` method can **either** use TanStack Query caching **or** bypass it:
+
+- If you call `fetch(params)` **without** a `QueryClient`, it performs a direct API call (no cache entry is created).
+- If you call `fetch(params, options, queryClient)`, it uses `queryClient.fetchQuery(...)`, which will populate and reuse cache entries under the configured `queryKeyBuilder`.
+
+This distinction is important for “load N items by id” loops (e.g. loading `featureIds`), where uncached imperative fetches can cause many unnecessary network calls and also leave the cache empty.
 
 ## 🔄 **Cache vs List Queries**
 

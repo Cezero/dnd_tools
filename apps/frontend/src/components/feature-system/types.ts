@@ -1,122 +1,8 @@
-import type { ComponentType } from 'react';
-
 import type { FeatureWithRelations } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
 import type { ClassEditState, ClassEditStateUpdate } from '../../features/class/types';
 import type { RaceEditState, RaceEditStateUpdate } from '../../features/race/types';
-
-// Feature system specific types
-// These types are used for feature data management and UI state
-
-export interface ProficiencyFeat {
-    id: number;
-    name: string;
-    proficiencyTypeId: number;
-}
-
-export interface ProficiencyItem {
-    id: number;
-    name: string;
-    typeId: number;
-    weapon?: {
-        category: number;
-        type: number;
-    };
-    armor?: {
-        category: number;
-    };
-}
-
-// Feature form state
-export interface FeatureFormState {
-    isEditing: boolean;
-    isSaving: boolean;
-    hasChanges: boolean;
-    errors: Record<string, string>;
-}
-
-// Feature selection state
-export interface FeatureSelectionState {
-    selectedFeatureId?: number;
-    selectedProgressionId?: number;
-    selectedChoiceId?: number;
-}
-
-// Feature validation state
-export interface FeatureValidationState {
-    isValid: boolean;
-    errors: string[];
-    warnings: string[];
-}
-
-// Feature filter state
-export interface FeatureFilterState {
-    searchTerm: string;
-    selectedTypes: number[];
-    selectedSources: number[];
-    selectedLevels: number[];
-}
-
-// Feature sort state
-export interface FeatureSortState {
-    sortBy: 'name' | 'level' | 'type' | 'source';
-    sortDirection: 'asc' | 'desc';
-}
-
-// Feature pagination state
-export interface FeaturePaginationState {
-    currentPage: number;
-    pageSize: number;
-    totalItems: number;
-    totalPages: number;
-}
-
-// Feature list state
-export interface FeatureListState {
-    features: FeatureWithRelations[];
-    loading: boolean;
-    error?: string;
-    filter: FeatureFilterState;
-    sort: FeatureSortState;
-    pagination: FeaturePaginationState;
-}
-
-// Feature detail state
-export interface FeatureDetailState {
-    feature?: FeatureWithRelations;
-    features: FeatureWithRelations[];
-    loading: boolean;
-    error?: string;
-}
-
-// Feature edit state
-export interface FeatureEditState {
-    originalFeature?: FeatureWithRelations;
-    editedFeature?: FeatureWithRelations;
-    isDirty: boolean;
-    saving: boolean;
-    error?: string;
-}
-
-// Component prop types for different entity forms
-export interface BaseFormProps {
-    index: number;
-    preSelectedFeature?: { id: number; name: string; description: string; slug: string };
-    feature?: FeatureWithRelations | null;
-}
-
-// Entity type configuration for reusable rendering in FeatureEditForm
-export interface EntityTypeConfig<TFormData = Record<string, unknown>, TGroupingState = Record<string, unknown>> {
-    key: 'entities';
-    label: string;
-    formComponent: ComponentType<BaseFormProps>;
-    addFunction: () => void;
-    removeFunction: (index: number) => void;
-    formDataKey: keyof TFormData;
-    groupingStateKey: keyof TGroupingState;
-    hasFeature: boolean;
-}
 
 // Minimal state interface for components that don't use ClassEditState/RaceEditState
 export interface MinimalFeatureState {
@@ -153,6 +39,15 @@ export interface FeaturesManagerProps {
     // UI text props
     title: string;
     emptyMessage: string;
+
+    /**
+     * Optional link/unlink handlers for parent-managed draft syncing.
+     *
+     * When provided, FeaturesManager will call these in addition to updating local UI state.
+     * This is used by Class/Race edit flows to apply `DraftAction.Add/Remove` updates to the Redis draft.
+     */
+    onLinkFeatureId?: (featureId: number) => Promise<void> | void;
+    onUnlinkFeatureId?: (featureId: number) => Promise<void> | void;
 
     // Special feature filtering
     excludeSpecialFeatures?: number[];

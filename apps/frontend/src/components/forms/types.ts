@@ -24,6 +24,7 @@ export interface ValidatedInputProps {
     type?: 'text' | 'email' | 'password' | 'number' | 'textarea';
     required?: boolean;
     placeholder?: string;
+    onBlur?: React.FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
     componentExtraClassName?: string;
     labelExtraClassName?: string;
     inputExtraClassName?: string;

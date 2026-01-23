@@ -75,7 +75,7 @@ export async function precacheFeature(
         await queryClient.fetchQuery({
             queryKey: ['features', 'item', featureId],
             queryFn: async () => {
-                const result = await FeatureQueryHooks.getFeatureById(featureId);
+                const result = await FeatureQueryHooks.getFeatureById(featureId, queryClient);
                 return result;
             },
             staleTime: 5 * 60 * 1000,

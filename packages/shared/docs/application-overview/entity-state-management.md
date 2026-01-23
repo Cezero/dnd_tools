@@ -77,6 +77,94 @@ await entityStateService.setState('feature', 123, updatedState);
 // Channel: channel:state:feature:123
 ```
 
+## ✍️ **Draft editing: path-based updates (`updateValue`)**
+
+Admin editing for **Class**, **Race**, and **Feature** uses the draft system (Redis-backed) with a path-based update endpoint:
+
+- **Route**: `PUT /drafts/update-value`
+- **Source**:
+  - Backend routes: `apps/backend/src/features/shared/draftState/draftRoutes.ts`
+  - Controller: `apps/backend/src/features/shared/draftState/draftController.ts`
+  - Update service: `apps/backend/src/features/shared/draftState/StateUpdateService.ts`
+  - Path logic: `apps/backend/src/features/shared/utils/pathParser.ts`
+  - Request/response schemas: `packages/shared/schema/src/state.ts`
+  - Draft action enum: `packages/shared/static-data/src/DraftData.ts`
+
+### **Request shape**
+
+The request body is validated by `UpdateStateValueSchema` (`packages/shared/schema/src/state.ts`):
+
+- **draftType**: numeric enum (`DraftType`)
+- **id**: **draft id (non-zero)**. For new drafts, call `POST /drafts/start-editing` with `id = 0` first, and use the **minted negative id** returned in `StartEditingResponse.id`.
+- **path**: dot-notation path
+- **value**: scalar (`string | number | boolean | null`)
+- **action**: optional `DraftAction` (defaults to Update)
+
+### **New drafts: minted negative ids**
+
+New drafts are created with a **minted negative id** to avoid collisions and to keep the draft id consistent with the draft state's internal id fields:
+
+- **Start**: `POST /drafts/start-editing` with `{ draftType, id: 0 }`
+- **Response**: `{ success: true, draftType, id: <negativeDraftId> }`
+- **State keys**: the draft is stored under `state:{draftType}:{negativeDraftId}` and locked under `lock:{draftType}:{negativeDraftId}`
+- **Internal ids**:
+  - Feature drafts: `state.id === negativeDraftId`
+  - Class drafts: `state.classId === negativeDraftId`
+  - Race drafts: `state.raceId === negativeDraftId`
+
+After minting, **all subsequent draft operations** (`update-value`, `save`, `cancel`) must use the **minted negative id**.
+
+### **Save behavior: create vs update**
+
+`POST /drafts/save` persists the Redis draft to the database:
+
+- **Create**: \(id < 0\) → validate/transform using the **Create** schema (no id field) and create a new database row. The response returns the new **positive** database id.
+- **Update**: \(id > 0\) → validate/transform using the **Update** schema and update the existing database row.
+
+### **DraftAction**
+
+`DraftAction` lives in `@shared/static-data` (`packages/shared/static-data/src/DraftData.ts`) and controls how `value` is applied:
+
+- **Update (0)**: set/overwrite a value at `path`
+- **Remove (1)**: delete/remove at `path` (delete key, splice index, or remove element from an array)
+- **Add (2)**:
+  - append to an array (e.g. `featureIds`)
+  - or create a new object in an array-of-objects (see response `id` below)
+
+### **Path syntax: index segments and `byId` selectors**
+
+We support **both** path styles:
+
+- **Index-based segments**: `entities.0.appliesTo` (kept for Zod error paths and paired-index arrays)
+- **Selector segments (preferred where possible)**: `entities.byId.<id>.appliesTo`
+
+Selector key fields:
+
+- Default key field is `id`.
+- Some arrays use a different unique key field; the backend resolves this via
+  `DRAFT_ARRAY_SELECTOR_KEY_FIELD_MAP` (`packages/shared/static-data/src/DraftData.ts`).
+  Example: `sourceBookInfo` uses `sourceBookId`, so `sourceBookInfo.byId.<sourceBookId>.pageNumber` works.
+
+### **Response shape: optional `id` for Add-new-object**
+
+`UpdateStateValueResponseSchema` now supports:
+
+- **success**: boolean
+- **id?**: number (only when `DraftAction.Add` creates a new nested object)
+
+This `id` is a **draft-stable temporary id** (typically negative) used for nested children of Feature drafts (e.g. Feature `entities` / `prerequisites`):
+
+- Frontend calls `updateValue('entities', 0, DraftAction.Add)`
+- Backend appends a new object to the draft array and returns `{ success: true, id: <tempId> }`
+- Frontend uses that id in subsequent nested updates via `entities.byId.<tempId>.<field>`
+
+**Important**: for Feature drafts, `DraftAction.Add` for `entities` creates a **fully shaped** `FeatureEntity` (not just an `{ id }` stub), including:
+
+- `id`: minted temporary negative id (returned in the response)
+- `featureId`: set to the draft id (the minted negative feature draft id)
+- required enum fields (`type`, `appliesTo`) set to safe defaults
+- required scalars (`value`, `displayInDetail`, etc.) set to safe defaults
+
 ### **2. Pub/Sub Propagation**
 
 Redis Pub/Sub broadcasts the update:

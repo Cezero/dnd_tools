@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { ClassEditStateSchema, RaceEditStateSchema, FeatureStateSchema } from '@shared/schema';
-import type { ClassEditState, RaceEditState, FeatureState, ResolvedCharacterResult, DnDClass, Race } from '@shared/schema';
-import { DraftType } from '@shared/static-data';
+import { ClassDraftStateSchema, FeatureDraftStateSchema, RaceDraftStateSchema } from '@shared/schema';
+import type { ClassDraftState, FeatureDraftState, RaceDraftState, ResolvedCharacterResult, DnDClass, Race } from '@shared/schema';
+import { DraftType, FeatureSourceType } from '@shared/static-data';
 
 import { DraftStatePubSub } from './DraftStatePubSub';
 import { characterService } from '../../character/characterService';
@@ -47,6 +47,12 @@ export interface DraftConfig<TState = unknown> {
     getInitialState: (id: number) => Promise<TState>;
 
     /**
+     * Function that builds initial draft state for new draft instances.
+     * Called when the client requests `startEditing` with `id = 0` and the backend mints a new negative draft id.
+     */
+    getInitialCreateState: (draftId: number, userId: number) => Promise<TState>;
+
+    /**
      * Optional callback that is called after state updates.
      * For character, this triggers resolution and WebSocket publish.
      */
@@ -59,7 +65,7 @@ export interface DraftConfig<TState = unknown> {
 const draftRegistry = new Map<DraftType, DraftConfig>();
 
 // Helper function to build initial class state
-async function buildClassInitialState(classId: number): Promise<ClassEditState> {
+async function buildClassInitialState(classId: number): Promise<ClassDraftState> {
     const cls = await classService.getClassById({ id: classId });
     if (!cls) {
         throw new Error(`Class ${classId} not found`);
@@ -83,7 +89,7 @@ async function buildClassInitialState(classId: number): Promise<ClassEditState> 
 }
 
 // Helper function to build initial race state
-async function buildRaceInitialState(raceId: number): Promise<RaceEditState> {
+async function buildRaceInitialState(raceId: number): Promise<RaceDraftState> {
     const race = await raceService.getRaceById({ id: raceId });
     if (!race) {
         throw new Error(`Race ${raceId} not found`);
@@ -100,12 +106,12 @@ async function buildRaceInitialState(raceId: number): Promise<RaceEditState> {
 }
 
 // Helper function to build initial feature state
-async function buildFeatureInitialState(featureId: number): Promise<FeatureState> {
+async function buildFeatureInitialState(featureId: number): Promise<FeatureDraftState> {
     const feature = await _featureSystemService.getFeatureById({ id: featureId });
     if (!feature) {
         throw new Error(`Feature ${featureId} not found`);
     }
-    return feature;
+    return feature as FeatureDraftState;
 }
 
 // Wrapper for FeatureStateService to match the DraftConfig interface
@@ -116,10 +122,8 @@ class FeatureSaveServiceAdapter {
         this.featureStateService = new FeatureStateService(featureSystemService);
     }
 
-    async saveSessionToMySQL(featureId: number, state: FeatureState | Record<string, unknown>, userId: number): Promise<number> {
-        // For new features (id = 0), use 'new' string, otherwise use the featureId
-        const featureIdParam = featureId === 0 ? 'new' : featureId;
-        return await this.featureStateService.saveFeatureStateToDatabase(featureIdParam, userId);
+    async saveSessionToMySQL(featureId: number, _state: FeatureDraftState | Record<string, unknown>, userId: number): Promise<number> {
+        return await this.featureStateService.saveFeatureStateToDatabase(featureId, userId);
     }
 }
 
@@ -131,9 +135,8 @@ class ClassSaveServiceAdapter {
         this.classSaveService = new ClassSaveService();
     }
 
-    async saveSessionToMySQL(classId: number, state: ClassEditState | Record<string, unknown>, _userId: number): Promise<number> {
-        await this.classSaveService.saveSessionToMySQL(classId, state);
-        return classId;
+    async saveSessionToMySQL(classId: number, state: ClassDraftState | Record<string, unknown>, userId: number): Promise<number> {
+        return await this.classSaveService.saveSessionToMySQL(classId, state, userId);
     }
 }
 
@@ -145,29 +148,78 @@ class RaceSaveServiceAdapter {
         this.raceSaveService = new RaceSaveService();
     }
 
-    async saveSessionToMySQL(raceId: number, state: RaceEditState | Record<string, unknown>, _userId: number): Promise<number> {
-        await this.raceSaveService.saveSessionToMySQL(raceId, state as RaceEditState);
-        return raceId;
+    async saveSessionToMySQL(raceId: number, state: RaceDraftState | Record<string, unknown>, userId: number): Promise<number> {
+        return await this.raceSaveService.saveSessionToMySQL(raceId, state, userId);
     }
 }
 
 // Register draft configurations
 draftRegistry.set(DraftType.Class, {
-    editStateSchema: ClassEditStateSchema,
+    editStateSchema: ClassDraftStateSchema,
     saveService: new ClassSaveServiceAdapter(),
     getInitialState: buildClassInitialState,
+    getInitialCreateState: async (draftId: number) => {
+        return {
+            classId: draftId,
+            name: '',
+            abbreviation: '',
+            editionId: 1,
+            isPrestige: false,
+            isVisible: true,
+            canCastSpells: false,
+            spellsKnown: false,
+            isDivine: false,
+            description: null,
+            sourceBookInfo: null,
+            featureIds: [],
+            spellcastingProgression: [],
+            spellsKnownProgression: [],
+        };
+    },
 });
 
 draftRegistry.set(DraftType.Race, {
-    editStateSchema: RaceEditStateSchema,
+    editStateSchema: RaceDraftStateSchema,
     saveService: new RaceSaveServiceAdapter(),
     getInitialState: buildRaceInitialState,
+    getInitialCreateState: async (draftId: number) => {
+        return {
+            raceId: draftId,
+            name: '',
+            editionId: 1,
+            isVisible: true,
+            description: null,
+            sourceBookInfo: null,
+            featureIds: [],
+        };
+    },
 });
 
 draftRegistry.set(DraftType.Feature, {
-    editStateSchema: FeatureStateSchema,
+    editStateSchema: FeatureDraftStateSchema,
     saveService: new FeatureSaveServiceAdapter(),
     getInitialState: buildFeatureInitialState,
+    getInitialCreateState: async (draftId: number) => {
+        return {
+            id: draftId,
+            slug: '',
+            name: '',
+            description: '',
+            summary: null,
+            displayInCharacterSheet: true,
+            sourceType: FeatureSourceType.None,
+            level: 1,
+            domainId: null,
+            featId: null,
+            companionId: null,
+            editionId: null,
+            prerequisites: [],
+            entities: [],
+            displayConditions: [],
+            classes: [],
+            races: [],
+        };
+    },
 });
 
 // Helper function to build initial character state
@@ -326,6 +378,9 @@ draftRegistry.set(DraftType.Character, {
     editStateSchema: z.any() as z.ZodSchema<CharacterEditState>, // TODO: Create CharacterEditStateSchema
     saveService: new CharacterSaveServiceAdapter(),
     getInitialState: buildCharacterInitialState,
+    getInitialCreateState: async () => {
+        throw new Error('DraftType.Character does not support startEditing(id=0) at this time.');
+    },
     onStateUpdate: triggerCharacterResolution,
 });
 

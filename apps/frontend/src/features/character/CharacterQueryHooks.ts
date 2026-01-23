@@ -2,20 +2,21 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { createQueryHooks } from '@/services/query/QueryHooksFactory';
 import {
-    CharacterIdParamSchema,
-    CreateCharacterSchema,
-    UpdateResponseSchema,
-    CreateResponseSchema,
-    CharacterSchema,
-    GetAllCharactersResponseSchema,
-    GetAllCharactersAdminResponseSchema,
-    CharacterWithAllDetailsSchema,
-    CharacterSpellSelectionResponseSchema,
-    CharacterSpellSelectionParamSchema,
     AddSpellKnownRequestSchema,
     AddSpellKnownResponseSchema,
+    CharacterIdParamSchema,
+    CharacterSchema,
+    CharacterSpellSelectionParamSchema,
+    CharacterSpellSelectionResponseSchema,
+    CharacterWithAllDetailsSchema,
+    CreateCharacterSchema,
+    CreateResponseSchema,
+    GetAllCharactersAdminResponseSchema,
+    GetAllCharactersResponseSchema,
+    GetCharacterResolveResponseSchema,
     RemoveSpellKnownRequestSchema,
     RemoveSpellKnownResponseSchema,
+    UpdateResponseSchema,
 } from '@shared/schema';
 
 
@@ -68,6 +69,18 @@ const characterWithAllDetailsConfig = createQueryHooks({
     },
 });
 
+const characterResolvedConfig = createQueryHooks({
+    path: '/characters/:id/resolve',
+    method: 'GET',
+    paramsSchema: CharacterIdParamSchema,
+    responseSchema: GetCharacterResolveResponseSchema,
+    queryKey: 'characters',
+    queryKeyBuilder: (params) => {
+        const typedParams = params as { pathParams?: { id?: number } } | undefined;
+        return ['characters', 'resolved', typedParams?.pathParams?.id];
+    },
+});
+
 const getAllCharactersAdminConfig = createQueryHooks({
     path: '/characters/admin',
     method: 'GET',
@@ -109,6 +122,7 @@ export const CharacterQueryHooks = {
     useGetAllCharactersAdmin: getAllCharactersAdminConfig.useQuery,
     useGetCharacterById: characterByIdConfig.useQuery,
     useGetCharacterWithAllDetails: characterWithAllDetailsConfig.useQuery,
+    useGetCharacterResolved: characterResolvedConfig.useQuery,
     useCreateCharacter: createCharacterConfig.useMutation,
     useDeleteCharacter: deleteCharacterConfig.useMutation,
 
@@ -117,6 +131,7 @@ export const CharacterQueryHooks = {
     getAllCharactersAdmin: () => getAllCharactersAdminConfig.fetch(),
     getCharacterById: (characterId: number) => characterByIdConfig.fetch({ pathParams: { id: characterId } }),
     getCharacterWithAllDetails: (characterId: number) => characterWithAllDetailsConfig.fetch({ pathParams: { id: characterId } }),
+    getCharacterResolved: (characterId: number) => characterResolvedConfig.fetch({ pathParams: { id: characterId } }),
     createCharacter: (data: unknown) => createCharacterConfig.mutate({ requestData: data }),
     deleteCharacter: (characterId: number) => deleteCharacterConfig.mutate({
         pathParams: { id: characterId }
@@ -127,10 +142,12 @@ export const CharacterQueryHooks = {
     getAllCharactersAdminQueryFn: getAllCharactersAdminConfig.queryFn,
     getCharacterByIdQueryFn: characterByIdConfig.queryFn,
     getCharacterWithAllDetailsQueryFn: characterWithAllDetailsConfig.queryFn,
+    getCharacterResolvedQueryFn: characterResolvedConfig.queryFn,
     getCharactersQueryKey: (params?: unknown) => charactersConfig.queryKeyBuilder(params),
     getAllCharactersAdminQueryKey: () => getAllCharactersAdminConfig.queryKeyBuilder(),
     getCharacterByIdQueryKey: (characterId: number) => characterByIdConfig.queryKeyBuilder({ pathParams: { id: characterId } }),
     getCharacterWithAllDetailsQueryKey: (characterId: number) => characterWithAllDetailsConfig.queryKeyBuilder({ pathParams: { id: characterId } }),
+    getCharacterResolvedQueryKey: (characterId: number) => characterResolvedConfig.queryKeyBuilder({ pathParams: { id: characterId } }),
 
     // Spell selection hooks
     /**

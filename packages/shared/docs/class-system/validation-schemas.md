@@ -86,18 +86,23 @@ Schema for class ID parameter validation in URL paths.
 
 ### **ClassSummarySchema**
 
-Schema for class summary data, excluding complex nested relationships.
+Schema for class summary data, excluding `featureIds` and progressions. Used for getAllClasses and class list views.
 
-**Purpose**: Validates class data for list views and summary displays.
+**Purpose**: Validates class data for list views and summary displays. For `featureIds`, use getClassById (DnDClass/BaseClassSchema).
 
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
-- **All Base Fields**: Includes all base class fields except features and spellcasting
-- **Excluded Fields**: Omits features and spellcasting progression for performance
+- **Excluded Fields**: Omits `featureIds`, `spellcastingProgression`, `spellsKnownProgression` (list/cache do not need them)
 
-**Usage**: Validates class data for list responses and summary displays.
+**Usage**: Validates "get all classes" list responses. Does not include `featureIds`; class detail/edit get `featureIds` from the get-class-by-id API.
 
 **Source File**: `packages/shared/schema/src/class.ts` (ClassSummarySchema definition)
+
+### **ClassCacheSchema**
+
+Lightweight schema for the classes-cache. Omits `spellsKnown`, `description`, `sourceBookInfo` for size; does not include `featureIds`. Used for dropdowns and lookups (e.g. getClassSummaryById). ClassList uses getClasses (ClassSummary) instead: the cache omits `description` and `sourceBookInfo`, which ClassList's Description and Source columns need; we do not expand the cache by design.
+
+**Source File**: `packages/shared/schema/src/class.ts` (ClassCacheSchema definition)
 
 ## 🔧 **Request and Response Schemas**
 

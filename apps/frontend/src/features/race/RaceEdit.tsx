@@ -11,13 +11,12 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     useValidatedForm
 } from '@/components/forms';
 import { UpdateRaceSchema, BaseRaceSchema, Feature, FeatureWithRelations, CreateRaceRequest, type RaceEditState, SourceMap } from '@shared/schema';
-import { EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
+import { DraftAction, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
 import { RaceApi } from './RaceApi';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
@@ -108,7 +107,7 @@ export function RaceEdit() {
                 const features = await Promise.all(
                     state.featureIds.map(async (featureId) => {
                         try {
-                            return await FeatureQueryHooks.getFeatureById(featureId);
+                            return await FeatureQueryHooks.getFeatureById(featureId, queryClient);
                         } catch (error) {
                             // Handle missing features gracefully
                             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -147,7 +146,7 @@ export function RaceEdit() {
 
         loadFeatures();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [state.featureIds]);
+    }, [queryClient, state.featureIds]);
 
     // Derive formData from state (single source of truth)
     // This is used for form validation only - tabs should use state directly
@@ -457,46 +456,6 @@ export function RaceEdit() {
         };
     }, [raceId, resolution.raceState, resolution.updateValue, state.name, state.editionId, state.isVisible, state.description, state.sourceBookInfo]);
 
-    // Track previous features to detect changes
-    const prevFeaturesRef = useRef<number[]>([]);
-
-    /**
-     * Sync feature features to backend session.
-     * 
-     * Uses updateValue to sync the entire featureIds array. Backend handles diffing.
-     */
-    useEffect(() => {
-        if (!raceId || !resolution.raceState) {
-            return;
-        }
-
-        const prevFeatureIds = prevFeaturesRef.current;
-        const currentFeatureIds = state.featureIds;
-
-        // Initialize ref on first sync (don't send updates on initial load)
-        if (prevFeatureIds.length === 0 && currentFeatureIds.length > 0) {
-            prevFeaturesRef.current = [...currentFeatureIds];
-            return;
-        }
-
-        // Only sync if featureIds actually changed
-        if (prevFeatureIds.length === currentFeatureIds.length &&
-            prevFeatureIds.every((id, index) => id === currentFeatureIds[index])) {
-            return;
-        }
-
-        // Update entire featureIds array - backend handles diffing
-        resolution.updateValue('featureIds', currentFeatureIds).catch(error => {
-            console.error('Failed to sync featureIds:', error);
-        });
-
-        // Note: Feature updates are handled by the feature state system, not here
-        // Features are managed independently, so we only sync linking/unlinking
-
-        // Update ref
-        prevFeaturesRef.current = [...currentFeatureIds];
-    }, [raceId, resolution.raceState, resolution.updateValue, state.featureIds]);
-
     useEffect(() => {
         if (location.state?.newFeature) {
             updateState({ type: RaceEditStateUpdateType.SET_IS_FEATURE_ASSOC_OPEN, payload: { isFeatureAssocOpen: true } });
@@ -510,9 +469,12 @@ export function RaceEdit() {
         if (window.confirm('Are you sure you want to remove this feature from the race?')) {
             // For race, we just unlink the feature
             updateState({ type: RaceEditStateUpdateType.UNLINK_FEATURE, payload: { featureId } });
+            if (raceId && resolution.raceState) {
+                await resolution.updateValue('featureIds', featureId, DraftAction.Remove);
+            }
             setMessage('Feature removed successfully from race!');
         }
-    }, [state.featureIds, updateState]);
+    }, [raceId, resolution.raceState, resolution.updateValue, updateState]);
 
     /**
      * Handles adding a language to the race via the feature system using FeatureEntity approach.
@@ -618,7 +580,7 @@ export function RaceEdit() {
     const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
         try {
             // Fetch the feature's existing features to copy entities
-            const existingProgressions = await FeatureSystemApi.getFeatures({ id: feature.id });
+            const existingProgressions = await FeatureQueryHooks.getFeatureProgressions(feature.id);
 
             // Find the first feature with entities to copy, or use empty entities
             const sourceProgression = existingProgressions.find(p => p.entities && p.entities.length > 0);
@@ -642,6 +604,9 @@ export function RaceEdit() {
             };
 
             updateState({ type: RaceEditStateUpdateType.LINK_FEATURE, payload: { featureId: newProgression.id } });
+            if (raceId && resolution.raceState) {
+                await resolution.updateValue('featureIds', newProgression.id, DraftAction.Add);
+            }
         } catch (error) {
             console.error('Failed to fetch feature features:', error);
             // Fallback to creating feature without entities
@@ -657,8 +622,11 @@ export function RaceEdit() {
                 entities: []
             };
             updateState({ type: RaceEditStateUpdateType.LINK_FEATURE, payload: { featureId: newProgression.id } });
+            if (raceId && resolution.raceState) {
+                await resolution.updateValue('featureIds', newProgression.id, DraftAction.Add);
+            }
         }
-    }, [updateState]);
+    }, [raceId, resolution.raceState, resolution.updateValue, updateState]);
 
     // Handlers are already defined above - these duplicates should be removed
 
@@ -1019,6 +987,16 @@ export function RaceEdit() {
                                 onAddFeature={handleAddFeature}
                                 onRemoveProgression={(featureId: number) => {
                                     updateState({ type: RaceEditStateUpdateType.UNLINK_FEATURE, payload: { featureId } });
+                                }}
+                                onLinkFeatureId={async (featureId) => {
+                                    if (raceId && resolution.raceState) {
+                                        await resolution.updateValue('featureIds', featureId, DraftAction.Add);
+                                    }
+                                }}
+                                onUnlinkFeatureId={async (featureId) => {
+                                    if (raceId && resolution.raceState) {
+                                        await resolution.updateValue('featureIds', featureId, DraftAction.Remove);
+                                    }
                                 }}
                                 onEditProgression={handleEditProgression}
                             />

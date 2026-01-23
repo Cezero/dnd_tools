@@ -15,6 +15,8 @@ export function FeaturesTab(props: RaceTabProps): React.JSX.Element {
             parentType="race"
             title="Race Features"
             emptyMessage="No race features found"
+            onLinkFeatureId={props.onLinkFeatureId}
+            onUnlinkFeatureId={props.onUnlinkFeatureId}
         />
     );
 }

@@ -72,19 +72,20 @@ import type { ResolutionApi, ResolutionHookResult } from './types';
  *   }
  * }, [state.name]);
  */
-export function useGenericResolution<TEntityId, TState, TUpdate>(
+export function useGenericResolution<TEntityId extends number, TState, TUpdate>(
     entityId: TEntityId | null,
-    api: ResolutionApi<TEntityId, TState, TUpdate, unknown>
+    api: ResolutionApi<TEntityId, TState, TUpdate, unknown>,
+    onResolvedEntityId?: (resolvedEntityId: TEntityId) => void
 ): ResolutionHookResult<TState, TUpdate> {
     const [state, setState] = useState<TState | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const isInitializingRef = useRef(false);
-    const [reinitializeTrigger, setReinitializeTrigger] = useState(0);
     const isEditingRef = useRef(false);
+    const currentEntityIdRef = useRef<TEntityId | null>(null);
 
     /**
-     * Start editing on mount or when reinitializeTrigger changes.
+     * Start editing on mount.
      * 
      * The `startEditing` API call acquires a lock and adds the entity to the user's editing list.
      * State management is transparent - `startEditing` returns only success/failure.
@@ -96,17 +97,16 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      * infinite re-renders and continuous API queries.
      */
     useEffect(() => {
-        if (!entityId) {
+        if (entityId === null) {
             return;
         }
 
-        // Reset initialization flag when trigger changes
-        if (reinitializeTrigger > 0) {
-            isInitializingRef.current = false;
-            isEditingRef.current = false;
+        if (isInitializingRef.current) {
+            return;
         }
 
-        if (isInitializingRef.current) {
+        // If we've already started editing this entityId, don't re-run startEditing/fetch.
+        if (isEditingRef.current && currentEntityIdRef.current === entityId) {
             return;
         }
 
@@ -123,6 +123,18 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
                 if (!result.success) {
                     throw new Error('Failed to start editing');
                 }
+
+                // For new drafts, the backend may mint a new negative ID and return it.
+                // If that happens, adopt the new ID and let the hook re-run with the resolved ID.
+                if (typeof result.id === 'number' && result.id !== entityId) {
+                    const resolvedId = result.id as TEntityId;
+                    currentEntityIdRef.current = resolvedId;
+                    onResolvedEntityId?.(resolvedId);
+                    isEditingRef.current = true;
+                    return;
+                }
+
+                currentEntityIdRef.current = entityId;
                 
                 // After successful startEditing, fetch entity data using normal entity services
                 // (e.g., getFeatureById, getClassById) - NOT state management endpoints
@@ -141,7 +153,7 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
 
         startEditing();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [entityId, reinitializeTrigger]);
+    }, [entityId]);
 
 
     /**
@@ -152,7 +164,7 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      * infinite re-renders.
      */
     const save = useCallback(async (): Promise<void> => {
-        if (!entityId || !isEditingRef.current) {
+        if (entityId === null || !isEditingRef.current) {
             throw new Error('Not currently editing');
         }
 
@@ -166,8 +178,6 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
             // Clear state after successful save
             setState(null);
             isEditingRef.current = false;
-            // Trigger re-initialization to get fresh data
-            setReinitializeTrigger(prev => prev + 1);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to save';
             setError(errorMessage);
@@ -187,7 +197,7 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      * infinite re-renders.
      */
     const cancel = useCallback(async (): Promise<void> => {
-        if (!entityId || !isEditingRef.current) {
+        if (entityId === null || !isEditingRef.current) {
             return;
         }
 
@@ -243,7 +253,7 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      * @see updateValue - For state-based updates (provided by createResolutionHook, called automatically by Edit components)
      */
     const refreshState = useCallback(async (): Promise<void> => {
-        if (!entityId) {
+        if (entityId === null) {
             return;
         }
 

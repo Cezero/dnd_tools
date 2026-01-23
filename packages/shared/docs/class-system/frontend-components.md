@@ -119,6 +119,8 @@ const [filters, setFilters] = useState<ClassFilters>({});
 4. **Navigate**: Use pagination to browse through all available classes
 5. **Bulk Operations**: Select multiple classes for comparison or bulk actions
 
+**Why ClassList uses getClasses, not classes-cache**: ClassList uses `getClasses` (`/classes/query`), which returns ClassSummary (including `description`, `sourceBookInfo`). The classes-cache (ClassCacheSchema) intentionally omits `description` and `sourceBookInfo` to keep the cache small; ClassList's Description and Source columns require those fields. Using classes-cache would require either dropping those columns or expanding the cache; we do not expand the cache by design.
+
 **Source File**: [ClassList.tsx](../../../apps/frontend/src/features/class/ClassList.tsx) - Uses GenericList for both class and feature list management
 
 ### **ClassDisplay Component**

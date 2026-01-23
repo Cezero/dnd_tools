@@ -28,47 +28,40 @@ import { FeaturesTab } from './detail-tabs/FeaturesTab';
 import { OverviewTab } from './detail-tabs/OverviewTab';
 import { SkillsTab } from './detail-tabs/SkillsTab';
 import { SpellsTab } from './detail-tabs/SpellsTab';
-import type { TabConfig } from './types';
+import type { CharacterResolutionReturn, TabConfig } from './types';
 import { CharacterDetailStateUpdateType } from './types';
 import { useCharacterDetailState } from './useCharacterDetailState';
-import { useCharacterResolution } from './useCharacterResolution';
 
 /**
  * Main character detail component with tab-based interface for viewing and editing character details.
- * 
+ *
+ * **View mode (no locks or drafts)**: This component does NOT use useCharacterResolution or startEditing.
+ * Resolved data for display (formatting, export) comes from GET /characters/:id/resolve (getResolved).
+ * View-mode edits (wounds, spell preparation) use discrete endpoints and do not require resolved character
+ * in (draft) state. Target architecture: frontend subscribes to WebSocket, calls updateValue(path, value);
+ * backend persists to DB on every updateValue when viewing and publishes via WebSocket. Future game
+ * session: changes in Redis; persist to DB only when DM saves. See shared/docs.
+ *
  * **State Synchronization Pattern**:
- * 
- * This component implements the standardized state → useEffect → API + refreshState pattern for
- * synchronizing character detail state changes with the backend:
- * 
+ *
  * 1. **Tabs update state**: Tab components call `updateState()` to modify character detail state
- * 2. **CharacterDetail syncs automatically**: useEffect hooks watch state changes and automatically
- *    call backend APIs and `resolution.refreshState()` to sync changes
+ * 2. **CharacterDetail syncs automatically**: useEffect hooks watch state changes, call discrete APIs
+ *    (updateWounds, updateMoney, syncItems, syncSpellPreparations), then invalidate getCharacterWithAllDetails
+ *    and getCharacterResolved queries
  * 3. **Backend handles diffing**: For array fields (items, spellPreparations), backend receives
  *    full arrays and determines what operations to perform (create/update/delete)
- * 4. **Resolution state updates**: Backend resolution session is updated, and resolved data
- *    flows back to tabs via `resolvedCharacter` prop
- * 
- * **Benefits of this pattern**:
- * - Centralized sync logic: All sync happens in CharacterDetail, easier to maintain
- * - Tabs are simpler: Tabs don't need to know about APIs or resolution
- * - Automatic sync: No risk of forgetting to sync - it's automatic
- * - React-idiomatic: Uses effects to react to state changes
- * - Consistent: All tabs work the same way
- * - Backend is source of truth: Backend handles diffing and determines operations
- * 
+ *
  * **useEffect Hooks**:
  * - Wounds: Watches `state.wounds` and calls `updateWounds()` API
  * - Money: Watches `state.money` and calls `updateMoney()` API
  * - Notes: Watches `state.notes` and calls `updateNotes()` API
  * - Items: Watches `state.items` array and calls `syncItems()` API (backend handles diffing)
  * - Spell preparations: Watches `state.spellPreparations` array and calls `syncSpellPreparations()` API (backend handles diffing)
- * 
+ *
  * **Why refs are used**: Refs track previous values to avoid syncing on initial mount and
  * to detect actual changes vs. initial state loading.
- * 
+ *
  * @see useCharacterDetailState - For state management hook
- * @see useCharacterResolution - For resolution session management
  */
 export function CharacterDetail(): React.JSX.Element {
     const { user, isLoading: isAuthLoading } = useAuthAuto();
@@ -86,8 +79,11 @@ export function CharacterDetail(): React.JSX.Element {
         { enabled: !!characterId }
     );
 
-    // Use character resolution
-    const resolution = useCharacterResolution(characterId);
+    // Resolved character for display only (formatting, export); no locks or drafts
+    const { data: resolvedData, isLoading: isLoadingResolved } = CharacterQueryHooks.useGetCharacterResolved(
+        characterId ? { pathParams: { id: characterId } } : undefined,
+        { enabled: !!characterId }
+    );
 
     // Use centralized state management
     const { state, updateState } = useCharacterDetailState();
@@ -181,7 +177,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.resolvedCharacter) {
+        if (!characterId || !resolvedData?.resolvedCharacter) {
             return;
         }
 
@@ -196,16 +192,16 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.resolvedCharacter) {
-                        return resolution.refreshState();
-                    }
+                    queryClient.invalidateQueries({
+                        queryKey: CharacterQueryHooks.getCharacterResolvedQueryKey(characterId),
+                    });
                 })
                 .catch(error => {
                     console.error('Failed to sync wounds to backend:', error);
                 });
             prevWoundsRef.current = state.wounds;
         }
-    }, [characterId, state.wounds, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
+    }, [characterId, state.wounds, resolvedData?.resolvedCharacter, queryClient]);
 
     /**
      * Sync money changes to backend.
@@ -216,7 +212,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.resolvedCharacter) {
+        if (!characterId || !resolvedData?.resolvedCharacter) {
             return;
         }
 
@@ -231,16 +227,16 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.resolvedCharacter) {
-                        return resolution.refreshState();
-                    }
+                    queryClient.invalidateQueries({
+                        queryKey: CharacterQueryHooks.getCharacterResolvedQueryKey(characterId),
+                    });
                 })
                 .catch(error => {
                     console.error('Failed to sync money to backend:', error);
                 });
             prevMoneyRef.current = state.money;
         }
-    }, [characterId, state.money, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
+    }, [characterId, state.money, resolvedData?.resolvedCharacter, queryClient]);
 
     /**
      * Sync notes changes to backend.
@@ -251,7 +247,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.resolvedCharacter) {
+        if (!characterId || !resolvedData?.resolvedCharacter) {
             return;
         }
 
@@ -266,16 +262,16 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.resolvedCharacter) {
-                        return resolution.refreshState();
-                    }
+                    queryClient.invalidateQueries({
+                        queryKey: CharacterQueryHooks.getCharacterResolvedQueryKey(characterId),
+                    });
                 })
                 .catch(error => {
                     console.error('Failed to sync notes to backend:', error);
                 });
             prevNotesRef.current = state.notes;
         }
-    }, [characterId, state.notes, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
+    }, [characterId, state.notes, resolvedData?.resolvedCharacter, queryClient]);
 
     /**
      * Sync items changes to backend.
@@ -286,7 +282,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.resolvedCharacter) {
+        if (!characterId || !resolvedData?.resolvedCharacter) {
             return;
         }
 
@@ -301,16 +297,16 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.resolvedCharacter) {
-                        return resolution.refreshState();
-                    }
+                    queryClient.invalidateQueries({
+                        queryKey: CharacterQueryHooks.getCharacterResolvedQueryKey(characterId),
+                    });
                 })
                 .catch(error => {
                     console.error('Failed to sync items to backend:', error);
                 });
             prevItemsRef.current = state.items;
         }
-    }, [characterId, state.items, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
+    }, [characterId, state.items, resolvedData?.resolvedCharacter, queryClient]);
 
     /**
      * Sync spell preparations changes to backend.
@@ -321,7 +317,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.resolvedCharacter) {
+        if (!characterId || !resolvedData?.resolvedCharacter) {
             return;
         }
 
@@ -336,16 +332,16 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.resolvedCharacter) {
-                        return resolution.refreshState();
-                    }
+                    queryClient.invalidateQueries({
+                        queryKey: CharacterQueryHooks.getCharacterResolvedQueryKey(characterId),
+                    });
                 })
                 .catch(error => {
                     console.error('Failed to sync spell preparations to backend:', error);
                 });
             prevSpellPreparationsRef.current = state.spellPreparations;
         }
-    }, [characterId, state.spellPreparations, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
+    }, [characterId, state.spellPreparations, resolvedData?.resolvedCharacter, queryClient]);
 
     // Get race data from cache (for sizeId)
     const cacheFunctions = useCacheFunctions();
@@ -392,7 +388,7 @@ export function CharacterDetail(): React.JSX.Element {
 
     // Build DisplayContext
     const displayContext: DisplayContext | undefined = useMemo(() => {
-        if (!characterData || !resolution.resolvedCharacter) return undefined;
+        if (!characterData || !resolvedData?.resolvedCharacter) return undefined;
 
         const characterContext = {
             abilityScores: Object.fromEntries(
@@ -409,8 +405,8 @@ export function CharacterDetail(): React.JSX.Element {
             raceId: characterData.raceId ?? undefined,
             sizeId: (() => {
                 // Extract sizeId from resolved features
-                if (characterData.raceId && resolution.resolvedCharacter?.resolvedProgressions) {
-                    const raceMechanics = extractRaceMechanics(resolution.resolvedCharacter.resolvedProgressions, characterData.raceId);
+                if (characterData.raceId && resolvedData?.resolvedCharacter?.resolvedProgressions) {
+                    const raceMechanics = extractRaceMechanics(resolvedData.resolvedCharacter.resolvedProgressions, characterData.raceId);
                     return raceMechanics.sizeId ?? undefined;
                 }
                 return undefined;
@@ -419,36 +415,36 @@ export function CharacterDetail(): React.JSX.Element {
 
         return {
             character: characterContext,
-            classSkills: resolution.resolvedCharacter.classSkills.map(skill => ({
+            classSkills: resolvedData.resolvedCharacter.classSkills.map(skill => ({
                 skillId: skill.skillId,
                 skillSubId: skill.skillSubId ?? null
             })),
-            skillBonuses: resolution.resolvedCharacter.skillBonuses.map(bonus => ({
+            skillBonuses: resolvedData.resolvedCharacter.skillBonuses.map(bonus => ({
                 skillId: bonus.skillId,
                 skillSubId: bonus.skillSubId ?? null,
                 bonus: bonus.bonus,
                 source: bonus.source
             })),
         };
-    }, [characterData, resolution.resolvedCharacter, classDetailsMap, raceCacheEntry]);
+    }, [characterData, resolvedData?.resolvedCharacter, classDetailsMap, raceCacheEntry]);
 
     // Format character using display strategy
     const formattedCharacter = useMemo(() => {
-        if (!characterData || !resolution.resolvedCharacter || items.length === 0 || classDetailsMap.size === 0) {
+        if (!characterData || !resolvedData?.resolvedCharacter || items.length === 0 || classDetailsMap.size === 0) {
             return null;
         }
 
         const strategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
         return strategy.formatCharacter(
             characterData,
-            resolution.resolvedCharacter.resolvedProgressions,
+            resolvedData.resolvedCharacter.resolvedProgressions,
             items,
             characterData.characterItems || [],
             classDetailsMap,
             displayContext,
             null // Race is optional - sizeId is already in characterContext
         );
-    }, [characterData, resolution.resolvedCharacter, items, classDetailsMap, displayContext]);
+    }, [characterData, resolvedData?.resolvedCharacter, items, classDetailsMap, displayContext]);
 
     // Check if character has spellcasting classes
     const hasSpellcastingClasses = useMemo(() => {
@@ -497,6 +493,9 @@ export function CharacterDetail(): React.JSX.Element {
             queryClient.invalidateQueries({
                 queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
             });
+            queryClient.invalidateQueries({
+                queryKey: CharacterQueryHooks.getCharacterResolvedQueryKey(characterId),
+            });
         } catch (error) {
             toastManager?.add({
                 title: error instanceof Error ? error.message : 'Failed to reset daily uses',
@@ -517,6 +516,9 @@ export function CharacterDetail(): React.JSX.Element {
             // Invalidate queries to refresh data
             queryClient.invalidateQueries({
                 queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
+            });
+            queryClient.invalidateQueries({
+                queryKey: CharacterQueryHooks.getCharacterResolvedQueryKey(characterId),
             });
         } catch (error) {
             toastManager?.add({
@@ -560,11 +562,11 @@ export function CharacterDetail(): React.JSX.Element {
             await generateCharacterPdf(
                 characterData,
                 classDetailsMap,
-                resolution.resolvedCharacter?.resolvedProgressions || [],
+                resolvedData?.resolvedCharacter?.resolvedProgressions || [],
                 queryClient,
                 raceData,
-                resolution.resolvedCharacter?.classSkills.map(skill => ({ skillId: skill.skillId, skillSubId: skill.skillSubId ?? null })) || [],
-                resolution.resolvedCharacter?.skillBonuses.map(bonus => ({ skillId: bonus.skillId, skillSubId: bonus.skillSubId ?? null, bonus: bonus.bonus, source: bonus.source })) || []
+                resolvedData?.resolvedCharacter?.classSkills.map(skill => ({ skillId: skill.skillId, skillSubId: skill.skillSubId ?? null })) || [],
+                resolvedData?.resolvedCharacter?.skillBonuses.map(bonus => ({ skillId: bonus.skillId, skillSubId: bonus.skillSubId ?? null, bonus: bonus.bonus, source: bonus.source })) || []
             );
 
             toastManager?.add({
@@ -611,7 +613,7 @@ export function CharacterDetail(): React.JSX.Element {
     const currentTab = tabs.find(tab => tab.id === activeTab);
     const CurrentTabComponent = currentTab?.component;
 
-    if (!user || isAuthLoading || isLoadingCharacter || !characterData || !formattedCharacter || classDetailsMap.size === 0) {
+    if (!user || isAuthLoading || isLoadingCharacter || isLoadingResolved || !characterData || !formattedCharacter || classDetailsMap.size === 0) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
@@ -623,17 +625,37 @@ export function CharacterDetail(): React.JSX.Element {
         );
     }
 
-    // Create tab props
+    // Create tab props. `resolution`: SpellsTab expects CharacterEdit-style resolution shape, but CharacterDetail is view-mode
+    // (no drafts/locks). Provide a safe stub that throws if mutation methods are called.
+    const viewModeResolution = {
+        isLoading: isLoadingResolved,
+        resolvedCharacter: resolvedData?.resolvedCharacter ?? null,
+        error: null,
+        updateValue: async (_path: string, _value: unknown) => {
+            throw new Error('CharacterDetail view mode does not support updateValue');
+        },
+        save: async () => {
+            throw new Error('CharacterDetail view mode does not support save');
+        },
+        cancel: async () => {
+            throw new Error('CharacterDetail view mode does not support cancel');
+        },
+        refreshState: async () => {
+            // no-op: resolved state is fetched via query hooks in view mode
+        },
+    } satisfies CharacterResolutionReturn;
+
+    // Create tab props. resolution: SpellsTab needs isLoading and resolvedCharacter; view mode supplies these from getResolved (no useCharacterResolution).
     const tabProps = {
         character: characterData,
         formattedCharacter,
-        resolvedProgressions: resolution.resolvedCharacter?.resolvedProgressions || [],
+        resolvedProgressions: resolvedData?.resolvedCharacter?.resolvedProgressions || [],
         characterId: characterId!,
         classDetailsMap,
         items,
         state,
         updateState,
-        resolution,
+        resolution: viewModeResolution,
     };
 
     return (

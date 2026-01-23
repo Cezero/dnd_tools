@@ -71,7 +71,7 @@ export interface ResolutionApi<TEntityId, TState, TUpdate, TResolved> {
      * @param entityId - The entity ID
      * @returns Promise resolving to success response
      */
-    startEditing: (entityId: TEntityId) => Promise<{ success: boolean }>;
+    startEditing: (entityId: TEntityId) => Promise<{ success: boolean; id?: number }>;
 
     /**
      * Fetch entity data using normal entity services.
@@ -82,7 +82,7 @@ export interface ResolutionApi<TEntityId, TState, TUpdate, TResolved> {
      * @param entityId - The entity ID
      * @returns Promise resolving to entity data
      */
-    fetchEntity: (entityId: TEntityId) => Promise<{ state: TState }>;
+    fetchEntity: (entityId: TEntityId) => Promise<{ state: TState | null }>;
 
     /**
      * Cancel editing without saving.

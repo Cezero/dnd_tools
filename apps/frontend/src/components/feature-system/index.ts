@@ -1,7 +1,6 @@
 export { FeatureDetail } from './FeatureDetail';
 export { FeatureEdit } from './FeatureEdit';
 export { FeatureEditForm } from './FeatureEditForm';
-export { FeatureSystemApi } from './FeatureSystemApi';
 export { FeatureResolutionApi } from './FeatureResolutionApi';
 export { FeatureQueryHooks } from './FeatureQueryHooks';
 export { FeaturesManager } from './FeaturesManager';

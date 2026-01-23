@@ -4,7 +4,6 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { DetailPage } from '@/components/common/DetailPage';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { GetFeatureResponse, FeatureWithRelations } from '@shared/schema';
@@ -38,8 +37,8 @@ export function FeatureDetail() {
 
     // Fetch lock status (only for admin users)
     const { data: lockStatus } = useQuery({
-        queryKey: ['feature', 'lock-status', featureId],
-        queryFn: () => FeatureSystemApi.getFeatureLockStatus({ id: featureId! }),
+        queryKey: FeatureQueryHooks.getFeatureLockStatusQueryKey(featureId!),
+        queryFn: () => FeatureQueryHooks.getFeatureLockStatus(featureId!),
         enabled: !!featureId && isAdmin,
     });
 

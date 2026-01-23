@@ -1,8 +1,8 @@
 import { ZodError } from 'zod';
 
 import { PrismaClient } from '@shared/prisma-client';
-import type { ClassEditState, UpdateClassRequest } from '@shared/schema';
-import { ClassEditStateSchema } from '@shared/schema';
+import type { ClassDraftState, CreateClassRequest, UpdateClassRequest } from '@shared/schema';
+import { ClassDraftStateSchema, CreateClassSchema, UpdateClassSchema } from '@shared/schema';
 
 import { classService } from '../class/classService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
@@ -29,7 +29,7 @@ export class ClassSaveService {
      * @param classState - The class edit state from session
      * @returns UpdateClassRequest ready for classService.updateClass
      */
-    transformSessionToUpdateRequest(classState: ClassEditState): UpdateClassRequest {
+    transformSessionToUpdateRequest(classState: ClassDraftState): UpdateClassRequest {
         // Transform class fields
         const updateRequest: UpdateClassRequest = {
             name: classState.name,
@@ -80,18 +80,61 @@ export class ClassSaveService {
     }
 
     /**
+     * Transforms session state to CreateClassRequest format.
+     *
+     * @param classState - The class edit state from session
+     * @returns CreateClassRequest ready for classService.createClass
+     */
+    transformSessionToCreateRequest(classState: ClassDraftState): CreateClassRequest {
+        return {
+            name: classState.name,
+            abbreviation: classState.abbreviation,
+            editionId: classState.editionId,
+            isPrestige: classState.isPrestige,
+            isVisible: classState.isVisible,
+            canCastSpells: classState.canCastSpells,
+            spellsKnown: classState.spellsKnown,
+            isDivine: classState.isDivine,
+            description: classState.description,
+            sourceBookInfo: classState.sourceBookInfo,
+            featureIds: classState.featureIds ?? [],
+            spellcastingProgression: classState.spellcastingProgression?.map(prog => {
+                const { id: _id, classId: _classId, ...progressionData } = prog;
+                return {
+                    ...progressionData,
+                    slots: prog.slots?.map(slot => {
+                        const { id: _slotId, progressionId: _slotProgressionId, ...slotData } = slot;
+                        return slotData;
+                    }) ?? [],
+                };
+            }) ?? null,
+            spellsKnownProgression: classState.spellsKnownProgression?.map(prog => {
+                const { id: _id, classId: _classId, ...progressionData } = prog;
+                return {
+                    ...progressionData,
+                    slots: prog.slots?.map(slot => {
+                        const { id: _slotId, progressionId: _slotProgressionId, ...slotData } = slot;
+                        return slotData;
+                    }) ?? [],
+                };
+            }) ?? null,
+        };
+    }
+
+    /**
      * Saves a class session to MySQL.
      * 
      * @param classId - The class ID
      * @param classState - The class edit state from session (may be flexible JSON)
-     * @returns The updated class
+     * @param userId - The user saving the draft
+     * @returns The created/updated class ID
      * @throws ValidationErrorWithPaths if state validation fails
      */
-    async saveSessionToMySQL(classId: number, classState: ClassEditState | Record<string, unknown>): Promise<void> {
-        // Validate and coerce flexible state to ClassEditState
-        let validatedState: ClassEditState;
+    async saveSessionToMySQL(classId: number, classState: ClassDraftState | Record<string, unknown>, _userId: number): Promise<number> {
+        // Validate and coerce flexible state to ClassDraftState
+        let validatedState: ClassDraftState;
         try {
-            validatedState = ClassEditStateSchema.parse(classState);
+            validatedState = ClassDraftStateSchema.parse(classState);
         } catch (error) {
             if (error instanceof ZodError) {
                 // Map Zod errors to field paths for frontend error display
@@ -101,13 +144,22 @@ export class ClassSaveService {
             throw error;
         }
 
+        // New drafts use negative IDs.
+        if (classId < 0) {
+            const createRequest = this.transformSessionToCreateRequest(validatedState);
+            const validatedCreateRequest = CreateClassSchema.parse(createRequest);
+            const created = await classService.createClass(validatedCreateRequest);
+            return parseInt(created.id, 10);
+        }
+
         // Transform session state to update request
         const updateRequest = this.transformSessionToUpdateRequest(validatedState);
+        const validatedUpdateRequest = UpdateClassSchema.parse(updateRequest);
 
         // Use transaction to ensure atomicity
         await prisma.$transaction(async (tx) => {
             // Update class fields
-            await classService.updateClass({ id: classId }, updateRequest);
+            await classService.updateClass({ id: classId }, validatedUpdateRequest);
 
             // Sync feature IDs (link/unlink features)
             const featureIds = validatedState.featureIds || [];
@@ -130,5 +182,7 @@ export class ClassSaveService {
 
             await featureSystemService.syncClassFeatures(classId, featureIds, tx);
         });
+
+        return classId;
     }
 }

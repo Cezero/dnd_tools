@@ -94,29 +94,55 @@ export async function StartDraftEditing(
         const userSessionService = getUserSessionService();
         const draftConfig = getDraftConfig(draftType);
 
-        // For new drafts (id = 0), skip lock acquisition
+        // For new drafts (id = 0), mint a unique negative draft ID and initialize state.
         if (entityId === 0) {
-            // Get or initialize draft state
-            let entityState = await stateService.getState(draftType, -userId); // Use negative userId for new drafts
-            if (!entityState) {
-                // Initialize from draft config's getInitialState
-                // For new drafts, we can't fetch from database, so create empty state
-                // This will be handled by the draft-specific logic
-                // For now, just return success - the state will be created when first updated
-                res.json({
-                    success: true,
-                    draftType: draftType,
-                    id: 0,
+            if (draftType === DraftType.Character) {
+                res.status(400).json({ error: 'DraftType.Character does not support startEditing(id=0).' });
+                return;
+            }
+
+            const mintDraftId = (): number => {
+                // `Date.now() * 1000` keeps us within Number.MAX_SAFE_INTEGER; add a small random component for same-ms collisions.
+                const seed = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+                return -Math.floor(seed);
+            };
+
+            let draftId = mintDraftId();
+            for (let attempt = 0; attempt < 5; attempt += 1) {
+                const existingState = await stateService.getState(draftType, draftId);
+                const lockedBy = await lockService.checkLock(draftType, draftId);
+                if (!existingState && lockedBy === null) {
+                    break;
+                }
+                draftId = mintDraftId();
+            }
+
+            const lockAcquired = await lockService.acquireLock(draftType, draftId, userId);
+            if (!lockAcquired) {
+                const lockedBy = await lockService.checkLock(draftType, draftId);
+                res.status(409).json({
+                    error: `Draft type ${draftType} is locked by another user`,
+                    lockedBy: lockedBy || undefined
                 });
                 return;
             }
 
-            res.json({
-                success: true,
-                draftType: draftType,
-                id: 0,
-            });
-            return;
+            try {
+                await userSessionService.setEditingEntity(userId, draftType, draftId);
+                const initialState = await draftConfig.getInitialCreateState(draftId, userId);
+                await stateService.setState(draftType, draftId, initialState);
+
+                res.json({
+                    success: true,
+                    draftType: draftType,
+                    id: draftId,
+                });
+                return;
+            } catch (error) {
+                await lockService.releaseLock(draftType, draftId, userId);
+                await userSessionService.clearEditingEntity(userId, draftType, draftId);
+                throw error;
+            }
         }
 
         // Acquire lock for existing drafts
@@ -198,7 +224,7 @@ export async function UpdateDraftValue(
             return;
         }
 
-        const { draftType, id: entityId, path, value } = req.body;
+        const { action, draftType, id: entityId, path, value } = req.body;
 
         // Validate draft type
         if (!isValidDraftType(draftType)) {
@@ -209,22 +235,25 @@ export async function UpdateDraftValue(
         const updateService = getStateUpdateService();
         const draftConfig = getDraftConfig(draftType);
 
-        // For new drafts (id = 0), use negative userId as the key
-        const stateKey = entityId === 0 ? -userId : entityId;
+        if (entityId === 0) {
+            res.status(400).json({ error: 'Draft id must not be 0. Call startEditing with id=0 to obtain a minted draft id first.' });
+            return;
+        }
 
         // Update value at path
-        await updateService.updateStateValue(
+        const updateResult = await updateService.updateStateValue(
             draftType,
-            stateKey === -userId ? 'new' : stateKey,
+            entityId,
             path,
             value,
-            userId
+            userId,
+            action
         );
 
         // For character, trigger resolution and publish via WebSocket after state update
         if (draftType === DraftType.Character && draftConfig.onStateUpdate) {
             const stateService = getDraftStateService();
-            const currentState = await stateService.getState(draftType, stateKey);
+            const currentState = await stateService.getState(draftType, entityId);
             if (currentState) {
                 await draftConfig.onStateUpdate(entityId, currentState as unknown, userId);
             }
@@ -232,6 +261,7 @@ export async function UpdateDraftValue(
 
         res.json({
             success: true,
+            ...(updateResult.id !== undefined && { id: updateResult.id }),
         } satisfies UpdateStateValueResponse);
     } catch (error) {
         console.error('Error updating entity value:', error);
@@ -291,22 +321,23 @@ export async function SaveDraftState(
         const userSessionService = getUserSessionService();
         const draftConfig = getDraftConfig(draftType);
 
-        // For new drafts (id = 0), skip lock check
-        if (entityId !== 0) {
-            // Check lock - user must own the lock
-            const lockedBy = await lockService.checkLock(draftType, entityId);
-            if (lockedBy !== userId) {
-                res.status(409).json({
-                    error: `Draft type ${draftType} is locked by another user`,
-                    lockedBy: lockedBy || undefined
-                });
-                return;
-            }
+        if (entityId === 0) {
+            res.status(400).json({ error: 'Draft id must not be 0. Call startEditing with id=0 to obtain a minted draft id first.' });
+            return;
+        }
+
+        // Check lock - user must own the lock
+        const lockedBy = await lockService.checkLock(draftType, entityId);
+        if (lockedBy !== userId) {
+            res.status(409).json({
+                error: `Draft type ${draftType} is locked by another user`,
+                lockedBy: lockedBy || undefined
+            });
+            return;
         }
 
         // Get draft state from DraftStateService
-        const stateKey = entityId === 0 ? -userId : entityId;
-        const entityStateRaw = await stateService.getState(draftType, stateKey);
+        const entityStateRaw = await stateService.getState(draftType, entityId);
 
         if (!entityStateRaw) {
             res.status(404).json({ error: `Draft type ${draftType} state not found` });
@@ -336,19 +367,17 @@ export async function SaveDraftState(
 
         // Save to database using draft config's saveService
         const savedEntityId = await draftConfig.saveService.saveSessionToMySQL(
-            entityId === 0 ? 0 : entityId,
+            entityId,
             validatedState,
             userId
         );
 
-        // Release lock and clear from user session (only for existing drafts)
-        if (entityId !== 0) {
-            await lockService.releaseLock(draftType, entityId, userId);
-            await userSessionService.clearEditingEntity(userId, draftType, entityId);
-        }
+        // Release lock and clear from user session
+        await lockService.releaseLock(draftType, entityId, userId);
+        await userSessionService.clearEditingEntity(userId, draftType, entityId);
 
         // Delete state from Redis
-        await stateService.deleteState(draftType, stateKey);
+        await stateService.deleteState(draftType, entityId);
 
         res.json({
             success: true as const,
@@ -409,14 +438,8 @@ export async function CancelDraftEditing(
         const stateService = getDraftStateService();
         const userSessionService = getUserSessionService();
 
-        // For new drafts (id = 0), just clear state
         if (entityId === 0) {
-            await stateService.deleteState(draftType, -userId);
-            res.json({
-                success: true,
-                draftType: draftType,
-                id: 0,
-            });
+            res.status(400).json({ error: 'Draft id must not be 0. Call startEditing with id=0 to obtain a minted draft id first.' });
             return;
         }
 

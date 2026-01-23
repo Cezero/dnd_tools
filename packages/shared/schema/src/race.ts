@@ -73,5 +73,17 @@ export const RaceEditStateSchema = z.object({
     featureIds: z.array(z.number().int()),
 });
 
+/**
+ * Draft-state schema for Race editing.
+ *
+ * Supports both persisted and draft-only ids:
+ * - `raceId > 0`: persisted race being edited
+ * - `raceId < 0`: draft-only race being created
+ */
+export const RaceDraftStateSchema = RaceEditStateSchema.extend({
+    raceId: z.number().int(),
+});
+
 // Race Resolution TypeScript type exports
 export type RaceEditState = z.infer<typeof RaceEditStateSchema>;
+export type RaceDraftState = z.infer<typeof RaceDraftStateSchema>;

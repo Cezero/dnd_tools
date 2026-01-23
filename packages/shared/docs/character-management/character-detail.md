@@ -45,10 +45,20 @@ CharacterDetail
 The `CharacterDetail` component (`apps/frontend/src/features/character/CharacterDetail.tsx`) serves as the container for all tabs:
 
 - **Character Data Loading**: Uses `CharacterQueryHooks.useGetCharacterWithAllDetails` to load character data
-- **Character Resolution**: Uses `useCharacterResolution` to resolve feature progressions
+- **Resolved Data (display only)**: Uses `CharacterQueryHooks.useGetCharacterResolved` (GET /characters/:id/resolve) for display (formatting, export). Does **not** use `useCharacterResolution` or `startEditing`; no edit locks or drafts are created when viewing.
 - **Class Details**: Loads class details for spellcasting and other class-specific features
 - **Tab Navigation**: Manages active tab state and renders appropriate tab component
 - **Reset Functionality**: Provides "Reset Daily Uses" menu option that resets both feature uses and spell cast status
+
+### **View vs Edit**
+- **CharacterDetail** (view at `/characters/:id`): Uses read-only `GET /characters/:id/resolve` for display. Does **not** acquire edit locks or create drafts. View-mode edits (wounds, spell preparation) use discrete endpoints (`CharacterDetailApi.updateWounds`, `syncSpellPreparations`, etc.) that persist to the database on each call.
+- **CharacterEdit** (edit at `/characters/:id/edit`): Uses `useCharacterResolution` and `startEditing`; acquires locks and creates drafts for structured editing.
+
+### **View-Mode Edits (target architecture; future work)**
+View has limited edit capability (wounds, spell preparation) with **no locks** and **no resolved character in (draft) state**. Target: frontend subscribes to WebSocket pub/sub for the character; calls `updateValue(path, value)` (e.g. `'wounds'`, `'spellPreparations.0.timesCast'`). Backend: in a viewing context (no draft), persist to DB on **every** `updateValue` and publish via WebSocket to subscribers (solo viewer today; in a game session, all players and DM). **Future game session:** changes go to **shared state in Redis**; persisted to DB only when the **DM saves the game session**. Current implementation uses discrete endpoints; migration to `updateValue`+WebSocket is planned.
+
+### **Query Hooks and Path Parameters**
+For `createQueryHooks` with `paramsSchema` and no `requestSchema`, callers pass `{ pathParams }` and the factory forwards `pathParams` as the single argument to `typedApi`. See [Query Hooks and Caching](../../application-overview/query-hooks-and-caching.md#path-parameters-when-no-requestschema).
 
 ### **Tab Components**
 Each tab is a separate component in `apps/frontend/src/features/character/detail-tabs/`:

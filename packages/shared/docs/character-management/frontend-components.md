@@ -75,13 +75,19 @@ Comprehensive editing interface for creating and modifying characters. This comp
 
 ### **CharacterDetail Component**
 
-Main component for displaying and editing character details in a read-only view. This component follows the same centralized state synchronization pattern as CharacterEdit.
+Main component for displaying and editing character details in view mode. Does **not** use `useCharacterResolution` or `startEditing`; resolved data for display comes from `GET /characters/:id/resolve` (getResolved). No edit locks or drafts when viewing.
 
 **Character-Specific Features**:
 - **Character Display**: Comprehensive display of character information
 - **Tab Navigation**: Tab-based interface for different character aspects (overview, skills, spells, features, equipment, description)
-- **Editable Fields**: Some fields are editable (wounds, money, notes, items, spell preparations)
-- **Resolution Integration**: Integrates with character resolution system for display of resolved features
+- **Editable Fields**: Some fields are editable (wounds, money, notes, items, spell preparations) via discrete endpoints; these persist to DB on each call and do not require resolved character in (draft) state.
+- **Resolved Data**: Fetches resolved character from `GET /characters/:id/resolve` for display (formatting, export).
+
+**View vs Edit**:
+- **CharacterDetail** (view at `/characters/:id`): getResolved for display; no locks/drafts. View-mode edits use discrete endpoints.
+- **CharacterEdit** (edit at `/characters/:id/edit`): Uses `useCharacterResolution` and `startEditing`; acquires locks and creates drafts.
+
+**View-Mode Edits (target; future work)**: Target is `updateValue`+WebSocket with DB persist on each call when viewing; future game session uses Redis and persists only when DM saves. Current implementation uses discrete endpoints.
 
 **User Workflow**:
 1. **View Character**: Navigate to character detail page

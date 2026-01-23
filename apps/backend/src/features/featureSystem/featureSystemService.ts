@@ -967,32 +967,6 @@ export const featureSystemService: FeatureSystemService = {
                     featureId: { in: featureIdsToRemove }
                 }
             });
-
-            // Batch check for orphaned features (no class or race links remaining)
-            // Get all remaining class links for features we're removing
-            const remainingClassLinks = await tx.featureClassMap.findMany({
-                where: { featureId: { in: featureIdsToRemove } },
-                select: { featureId: true }
-            });
-            const remainingClassLinkFeatureIds = new Set(remainingClassLinks.map(l => l.featureId));
-
-            // Get all remaining race links for features we're removing
-            const remainingRaceLinks = await tx.featureRaceMap.findMany({
-                where: { featureId: { in: featureIdsToRemove } },
-                select: { featureId: true }
-            });
-            const remainingRaceLinkFeatureIds = new Set(remainingRaceLinks.map(l => l.featureId));
-
-            // Find truly orphaned features (no class or race links remaining)
-            const orphanedFeatureIds = featureIdsToRemove.filter(
-                id => !remainingClassLinkFeatureIds.has(id) && !remainingRaceLinkFeatureIds.has(id)
-            );
-
-            if (orphanedFeatureIds.length > 0) {
-                console.log(`[FeatureSystemService] Found ${orphanedFeatureIds.length} orphaned features to clean up: ${orphanedFeatureIds.join(', ')}`);
-                // Return orphaned IDs to be cleaned up in a separate transaction
-                return orphanedFeatureIds;
-            }
         }
 
         // Add links for new features
@@ -1129,32 +1103,6 @@ export const featureSystemService: FeatureSystemService = {
                     featureId: { in: featureIdsToRemove }
                 }
             });
-
-            // Batch check for orphaned features (no class or race links remaining)
-            // Get all remaining class links for features we're removing
-            const remainingClassLinks = await tx.featureClassMap.findMany({
-                where: { featureId: { in: featureIdsToRemove } },
-                select: { featureId: true }
-            });
-            const remainingClassLinkFeatureIds = new Set(remainingClassLinks.map(l => l.featureId));
-
-            // Get all remaining race links for features we're removing
-            const remainingRaceLinks = await tx.featureRaceMap.findMany({
-                where: { featureId: { in: featureIdsToRemove } },
-                select: { featureId: true }
-            });
-            const remainingRaceLinkFeatureIds = new Set(remainingRaceLinks.map(l => l.featureId));
-
-            // Find truly orphaned features (no class or race links remaining)
-            const orphanedFeatureIds = featureIdsToRemove.filter(
-                id => !remainingClassLinkFeatureIds.has(id) && !remainingRaceLinkFeatureIds.has(id)
-            );
-
-            if (orphanedFeatureIds.length > 0) {
-                console.log(`[FeatureSystemService] Found ${orphanedFeatureIds.length} orphaned features to clean up: ${orphanedFeatureIds.join(', ')}`);
-                // Return orphaned IDs to be cleaned up in a separate transaction
-                return orphanedFeatureIds;
-            }
         }
 
         // Add links for new features

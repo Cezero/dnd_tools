@@ -12,7 +12,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     useValidatedForm,
@@ -28,6 +27,7 @@ import {
     SourceMap,
 } from '@shared/schema';
 import {
+    DraftAction,
     EntityType,
     EntityAppliesToType,
     FeatureSourceType,
@@ -113,8 +113,6 @@ export default function ClassEdit() {
 
     // Track previous values to avoid unnecessary updates and infinite loops
     const prevStateRef = useRef<typeof resolution.classState>(null);
-    // Track previous featureIds to detect changes (declared early for use in initialization)
-    const prevFeaturesRef = useRef<number[]>([]);
     const prevSpellcastingRef = useRef<SpellcastingProgressionWithSlots[] | null>(null);
     const prevSpellsKnownRef = useRef<SpellcastingProgressionWithSlots[] | null>(null);
 
@@ -235,7 +233,6 @@ export default function ClassEdit() {
             description: sessionState.description,
             sourceBookInfo: sessionState.sourceBookInfo,
         };
-        prevFeaturesRef.current = [...sessionState.featureIds];
         prevSpellcastingRef.current = sessionState.spellcastingProgression;
         prevSpellsKnownRef.current = sessionState.spellsKnownProgression;
     }, [memoizedClassState, updateState, classId]);
@@ -421,7 +418,7 @@ export default function ClassEdit() {
                 const features = await Promise.all(
                     state.featureIds.map(async (featureId) => {
                         try {
-                            return await FeatureQueryHooks.getFeatureById(featureId);
+                            return await FeatureQueryHooks.getFeatureById(featureId, queryClient);
                         } catch (error) {
                             // Handle missing features gracefully
                             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -460,7 +457,7 @@ export default function ClassEdit() {
 
         loadFeatures();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [state.featureIds]);
+    }, [queryClient, state.featureIds]);
 
     /**
      * Handles linking a feature to the class.
@@ -469,19 +466,16 @@ export default function ClassEdit() {
     const handleAddProgression = useCallback(async (feature: FeatureWithRelations) => {
         // Load feature data (no session needed for linking)
         // Note: We don't check if loaded because we're just linking, not editing
-        await FeatureQueryHooks.getFeatureById(feature.id);
+        await FeatureQueryHooks.getFeatureById(feature.id, queryClient);
 
         // Link feature to class (updates FeatureClassMap)
         updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: feature.id } });
 
-        // Sync updated featureIds array to backend
+        // Sync feature link to backend draft
         if (resolution.classState && classId) {
-            const updatedFeatureIds = state.featureIds.includes(feature.id)
-                ? state.featureIds
-                : [...state.featureIds, feature.id];
-            await resolution.updateValue('featureIds', updatedFeatureIds);
+            await resolution.updateValue('featureIds', feature.id, DraftAction.Add);
         }
-    }, [updateState, resolution, classId, state.featureIds]);
+    }, [updateState, resolution, classId, queryClient, state.featureIds]);
 
     /**
      * Handles adding a feature to the class by creating a default level 1 feature.
@@ -489,7 +483,7 @@ export default function ClassEdit() {
     const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
         try {
             // Fetch the feature's existing features to copy entities
-            const existingProgressions = await FeatureSystemApi.getFeatures({ id: feature.id });
+            const existingProgressions = await FeatureQueryHooks.getFeatureProgressions(feature.id);
 
             // Find the first feature with entities to copy, or use empty entities
             const sourceProgression = existingProgressions.find(p => p.entities && p.entities.length > 0);
@@ -512,12 +506,9 @@ export default function ClassEdit() {
             // Link feature to class
             updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: feature.id } });
 
-            // Sync updated featureIds array to backend
+            // Sync feature link to backend draft
             if (resolution.classState && classId) {
-                const updatedFeatureIds = state.featureIds.includes(feature.id)
-                    ? state.featureIds
-                    : [...state.featureIds, feature.id];
-                await resolution.updateValue('featureIds', updatedFeatureIds);
+                await resolution.updateValue('featureIds', feature.id, DraftAction.Add);
             }
         } catch (error) {
             console.error('Failed to link feature:', error);
@@ -532,10 +523,9 @@ export default function ClassEdit() {
         // Unlink feature from class (updates FeatureClassMap)
         updateState({ type: ClassEditStateUpdateType.UNLINK_FEATURE, payload: { featureId } });
 
-        // Sync updated featureIds array to backend
+        // Sync feature unlink to backend draft
         if (resolution.classState && classId) {
-            const updatedFeatureIds = state.featureIds.filter(id => id !== featureId);
-            await resolution.updateValue('featureIds', updatedFeatureIds);
+            await resolution.updateValue('featureIds', featureId, DraftAction.Remove);
         }
     }, [updateState, resolution, classId, state.featureIds]);
 
@@ -553,8 +543,7 @@ export default function ClassEdit() {
             updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: updatedProgression.id } });
 
             if (resolution.classState && classId) {
-                const updatedFeatureIds = [...state.featureIds, updatedProgression.id];
-                await resolution.updateValue('featureIds', updatedFeatureIds);
+                await resolution.updateValue('featureIds', updatedProgression.id, DraftAction.Add);
             }
         }
     }, [updateState, state.featureIds, resolution, classId]);
@@ -747,56 +736,6 @@ export default function ClassEdit() {
             sourceBookInfo: state.sourceBookInfo,
         };
     }, [classId, state.name, state.abbreviation, state.editionId, state.isPrestige, state.isVisible, state.canCastSpells, state.spellsKnown, state.isDivine, state.description, state.sourceBookInfo]);
-
-    /**
-     * Sync feature features to backend session.
-     * 
-     * Uses updateValue to sync the entire featureIds array. Backend handles diffing.
-     */
-    useEffect(() => {
-        if (!classId || !resolutionRef.current.classState) {
-            return;
-        }
-
-        // Don't sync during initialization to prevent loops
-        if (isInitializingRef.current) {
-            return;
-        }
-
-        // Don't sync if current state matches session state (prevents loop during initialization)
-        if (resolutionRef.current.classState && isEqual(state.featureIds, resolutionRef.current.classState.featureIds)) {
-            prevFeaturesRef.current = [...state.featureIds];
-            return;
-        }
-
-        const prevFeatureIds = prevFeaturesRef.current;
-        const currentFeatureIds = state.featureIds;
-
-        // Initialize ref on first sync (don't send updates on initial load)
-        if (prevFeatureIds.length === 0 && currentFeatureIds.length > 0) {
-            prevFeaturesRef.current = [...currentFeatureIds];
-            return;
-        }
-
-        // Update featureIds array using updateValue
-        // This is simpler than tracking individual adds/removes
-        resolutionRef.current.updateValue('featureIds', currentFeatureIds).catch(error => {
-            // Handle lock errors gracefully - if class is locked by another user or lock expired,
-            // the link will be synced when the class is saved
-            if (error && typeof error === 'object' && 'status' in error && error.status === 409) {
-                console.warn(`[ClassEdit] Class is locked, deferring featureIds sync until class save:`, error);
-            } else {
-                console.error('[ClassEdit] Failed to sync featureIds:', error);
-            }
-        });
-
-        // Features are now managed independently, so we don't need to detect updates here
-        // Feature updates are handled by the feature state system
-        // We only need to sync featureIds (link/unlink)
-
-        // Update ref for next comparison
-        prevFeaturesRef.current = [...currentFeatureIds];
-    }, [classId, state.featureIds]);
 
     /**
      * Sync spellcasting feature to backend session.
@@ -1137,6 +1076,16 @@ export default function ClassEdit() {
                                 onRemoveProgression={handleRemoveProgression}
                                 onAddFeature={handleAddFeature}
                                 onEditProgression={handleEditProgression}
+                                onLinkFeatureId={async (featureId) => {
+                                    if (resolution.classState && classId) {
+                                        await resolution.updateValue('featureIds', featureId, DraftAction.Add);
+                                    }
+                                }}
+                                onUnlinkFeatureId={async (featureId) => {
+                                    if (resolution.classState && classId) {
+                                        await resolution.updateValue('featureIds', featureId, DraftAction.Remove);
+                                    }
+                                }}
                                 onAddSkill={handleAddSkill}
                                 onRemoveSkill={handleRemoveSkill}
                                 onAddProficiency={handleAddProficiency}

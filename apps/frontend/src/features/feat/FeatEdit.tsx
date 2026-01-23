@@ -5,7 +5,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -206,10 +205,7 @@ export function FeatEdit() {
                 }))
             };
 
-            await FeatureSystemApi.updateFeatures(
-                { features: [progressionData] },
-                { id: feature.id }
-            );
+            await FeatureQueryHooks.updateFeatures(feature.id, { features: [progressionData] });
 
             // Close the dialog FIRST, before any other state changes
             // This ensures the guard in HandleSubmit can catch it if needed
@@ -282,10 +278,7 @@ export function FeatEdit() {
                             }))
                         }))
                     }));
-                await FeatureSystemApi.updateFeatures(
-                    { features: remainingProgressions },
-                    { id: feature.id }
-                );
+                await FeatureQueryHooks.updateFeatures(feature.id, { features: remainingProgressions });
             }
             // Refetch feat to update features
             const refetchedFeat = await FeatQueryHooks.getFeatById(parseInt(id || '0'));
@@ -344,7 +337,7 @@ export function FeatEdit() {
             };
 
             // Get existing features for this feature and add the new one
-            const existingProgressions = await FeatureSystemApi.getFeatures({ id: feature.id });
+            const existingProgressions = await FeatureQueryHooks.getFeatureProgressions(feature.id);
             const updatedProgressions = [...existingProgressions, newProgression].map(p => ({
                 ...p,
                 // FeatureWithRelations is now the unified Feature model, no need to add feature property
@@ -355,10 +348,7 @@ export function FeatEdit() {
                     }))
                 }))
             }));
-            await FeatureSystemApi.updateFeatures(
-                { features: updatedProgressions },
-                { id: feature.id }
-            );
+            await FeatureQueryHooks.updateFeatures(feature.id, { features: updatedProgressions });
 
             // Refetch feat to update features
             const refetchedFeat = await FeatQueryHooks.getFeatById(featIdNum);
