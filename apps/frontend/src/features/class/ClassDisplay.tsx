@@ -10,20 +10,22 @@ import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsEx
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { useCacheFunctions, getSourceDisplay } from '@/services/cache';
-import { DnDClass } from '@shared/schema';
+import type { DnDClass, FeatureWithRelations } from '@shared/schema';
 import {
     DisplayType,
-    RPG_DICE,
-    EDITION_MAP,
     ABILITY_MAP,
     CASTING_TYPE_MAP,
+    EDITION_MAP,
     EntityAppliesToType,
     EntityType,
     FeatureSourceType,
+    RPG_DICE,
 } from '@shared/static-data';
 
 interface ClassDisplayProps {
     cls: DnDClass;
+    /** Feature progressions for this class (from featureIds). Omit to show no features. */
+    features?: FeatureWithRelations[];
     showHeader?: boolean;
     showActions?: boolean;
     onBack?: () => void;
@@ -36,6 +38,7 @@ interface ClassDisplayProps {
 
 export function ClassDisplay({
     cls,
+    features: featuresProp,
     showHeader = true,
     showActions = false,
     onBack,
@@ -47,15 +50,16 @@ export function ClassDisplay({
 }: ClassDisplayProps): React.JSX.Element {
     const queryClient = useQueryClient();
     const { getSpellNameFromCache } = useCacheFunctions();
+    const features = featuresProp ?? [];
 
-    // Precache all entities referenced in feature features
-    usePrecacheFeatureEntities(cls?.features);
+    // Precache all entities referenced in feature progressions
+    usePrecacheFeatureEntities(features.length > 0 ? features : undefined);
 
-    // Extract mechanics from feature features
+    // Extract mechanics from feature progressions
     const mechanics = useMemo(() => {
-        if (cls.features && cls.features.length > 0) {
+        if (features.length > 0) {
             const classId = (cls as { id?: number }).id;
-            return extractClassMechanics(cls.features, classId);
+            return extractClassMechanics(features, classId);
         }
         // Return null values if no features
         return {
@@ -66,16 +70,16 @@ export function ClassDisplay({
             refProgression: null,
             willProgression: null,
         };
-    }, [cls]);
+    }, [cls, features]);
 
-    // Extract casting ability and type from feature features
+    // Extract casting ability and type from feature progressions
     const castingInfo = useMemo(() => {
-        if (!cls.features) {
+        if (features.length === 0) {
             return { castingAbilityId: null, castingType: null };
         }
         const classId = (cls as { id?: number }).id;
         // Find level 1 class feature
-        const classLevel1Progression = cls.features.find(
+        const classLevel1Progression = features.find(
             p => p.sourceType === FeatureSourceType.Class &&
                 (classId ? (p as { classes?: Array<{ classId: number }> }).classes?.some(c => c.classId === classId) : true) &&
                 p.level === 1
@@ -136,7 +140,7 @@ export function ClassDisplay({
                         {(() => {
                             const classId = (cls as { id?: number }).id;
                             const progressionConfig = {
-                                features: cls.features || [],
+                                features,
                                 classId,
                                 spellcastingProgression: cls.spellcastingProgression !== null ? cls.spellcastingProgression : undefined,
                                 spellsKnownProgression: cls.spellsKnownProgression !== null ? cls.spellsKnownProgression : undefined,
@@ -153,7 +157,7 @@ export function ClassDisplay({
 
                     {/* Class Skills Section */}
                     {(() => {
-                        const classSkillProgressions = cls.features?.filter(feature =>
+                        const classSkillProgressions = features.filter(feature =>
                             feature.sourceType === FeatureSourceType.Class &&
                             feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill)
                         ) || [];
@@ -179,7 +183,7 @@ export function ClassDisplay({
                     {/* Class Proficiencies Section */}
                     {(() => {
                         // Find all proficiency features (should be only one, but be defensive)
-                        const proficiencyProgressions = cls.features?.filter(feature =>
+                        const proficiencyProgressions = features.filter(feature =>
                             feature.sourceType === FeatureSourceType.Class &&
                             feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency)
                         ) || [];
@@ -206,7 +210,7 @@ export function ClassDisplay({
                     {/* Class Features Section */}
                     {(() => {
                         // Filter out features that contain skills and proficiencies
-                        const actualFeatures = cls.features?.filter(feature => {
+                        const actualFeatures = features.filter(feature => {
                             // Check if this feature contains class skills
                             const hasClassSkills = feature.sourceType === FeatureSourceType.Class &&
                                 feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Skill);
@@ -217,7 +221,7 @@ export function ClassDisplay({
 
                             // Exclude features with skills or proficiencies
                             return !hasClassSkills && !hasProficiencies;
-                        }) || [];
+                        });
 
                         if (actualFeatures.length > 0) {
                             // Use display strategy to format features

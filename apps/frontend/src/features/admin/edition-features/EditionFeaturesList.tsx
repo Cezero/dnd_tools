@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuthAuto } from '@/components/auth';
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { Feature, FeatureWithRelations } from '@shared/schema';
 import { EditionId, FeatureSourceType, EDITION_LIST } from '@shared/static-data';
 
@@ -296,24 +296,22 @@ export default function EditionFeaturesList() {
                         setPreSelectedFeature(null);
                     }}
                     featureId={
-                        editingProgression?.id
-                            ? editingProgression.id
-                            : preSelectedFeature?.id
-                                ? preSelectedFeature.id
-                                : 'new'
+                        Number(editingProgression?.id ?? preSelectedFeature?.id ?? 0) || 0
                     }
-                    onSave={(feature: Feature, features: FeatureWithRelations[]) => {
-                        const featureWithRelations = features[0] || feature as FeatureWithRelations;
-                        // Ensure sourceType and editionId are set correctly before saving
-                        const featureWithEdition: FeatureWithRelations = {
-                            ...featureWithRelations,
-                            sourceType: FeatureSourceType.Edition,
-                            editionId: selectedEditionId ?? undefined,
-                        };
-                        handleSaveProgression(featureWithEdition);
+                    onSave={async (featureId: number) => {
+                        const feature = await FeatureQueryHooks.getFeatureById(featureId);
+                        if (feature) {
+                            // Ensure sourceType and editionId are set correctly before saving
+                            const featureWithEdition: FeatureWithRelations = {
+                                ...feature as FeatureWithRelations,
+                                sourceType: FeatureSourceType.Edition,
+                                editionId: selectedEditionId ?? undefined,
+                            };
+                            handleSaveProgression(featureWithEdition);
+                        }
                     }}
                     mode="modal"
-                    // Note: edition not supported in FeatureEditContext, editionId is set directly on feature
+                // Note: edition not supported in FeatureEditContext, editionId is set directly on feature
                 />
             )}
         </div>

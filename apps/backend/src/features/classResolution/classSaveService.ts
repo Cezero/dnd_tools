@@ -1,9 +1,12 @@
-import type { UpdateClassRequest } from '@shared/schema';
+import { ZodError } from 'zod';
 
-import type { ClassEditState } from './types';
+import { PrismaClient } from '@shared/prisma-client';
+import type { ClassEditState, UpdateClassRequest } from '@shared/schema';
+import { ClassEditStateSchema } from '@shared/schema';
+
 import { classService } from '../class/classService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
-import { PrismaClient } from '@shared/prisma-client';
+import { mapZodErrorsToFieldPaths, ValidationErrorWithPaths } from '../shared/utils';
 
 const prisma = new PrismaClient();
 
@@ -44,8 +47,6 @@ export class ClassSaveService {
         // Features are now managed independently via featureIds
         // The features array is no longer part of the class state
         // Feature linking/unlinking is handled separately via syncClassFeatures
-        // For backward compatibility with UpdateClassRequest, set features to null
-        updateRequest.features = null;
 
         // Transform spellcasting features
         if (classState.spellcastingProgression && classState.spellcastingProgression.length > 0) {
@@ -82,12 +83,26 @@ export class ClassSaveService {
      * Saves a class session to MySQL.
      * 
      * @param classId - The class ID
-     * @param classState - The class edit state from session
+     * @param classState - The class edit state from session (may be flexible JSON)
      * @returns The updated class
+     * @throws ValidationErrorWithPaths if state validation fails
      */
-    async saveSessionToMySQL(classId: number, classState: ClassEditState): Promise<void> {
+    async saveSessionToMySQL(classId: number, classState: ClassEditState | Record<string, unknown>): Promise<void> {
+        // Validate and coerce flexible state to ClassEditState
+        let validatedState: ClassEditState;
+        try {
+            validatedState = ClassEditStateSchema.parse(classState);
+        } catch (error) {
+            if (error instanceof ZodError) {
+                // Map Zod errors to field paths for frontend error display
+                const validationErrors = mapZodErrorsToFieldPaths(error);
+                throw new ValidationErrorWithPaths(validationErrors);
+            }
+            throw error;
+        }
+
         // Transform session state to update request
-        const updateRequest = this.transformSessionToUpdateRequest(classState);
+        const updateRequest = this.transformSessionToUpdateRequest(validatedState);
 
         // Use transaction to ensure atomicity
         await prisma.$transaction(async (tx) => {
@@ -95,7 +110,25 @@ export class ClassSaveService {
             await classService.updateClass({ id: classId }, updateRequest);
 
             // Sync feature IDs (link/unlink features)
-            await featureSystemService.syncClassFeatures(classId, classState.featureIds || [], tx);
+            const featureIds = validatedState.featureIds || [];
+
+            // Guard against accidentally removing all links
+            // Check current links before syncing
+            const currentLinks = await tx.featureClassMap.findMany({
+                where: { classId },
+                select: { featureId: true }
+            });
+            const currentFeatureIds = new Set(currentLinks.map(link => link.featureId));
+
+            if (currentFeatureIds.size > 0 && featureIds.length === 0) {
+                console.error(`[ClassSaveService] WARNING: Attempting to remove ALL ${currentFeatureIds.size} feature links for class ${classId}! classState.featureIds is empty. This is likely a bug.`);
+                console.error(`[ClassSaveService] Current feature IDs in database:`, Array.from(currentFeatureIds));
+                console.error(`[ClassSaveService] classState:`, JSON.stringify(classState, null, 2));
+                // Don't proceed with removing all links - this is likely a state management bug
+                throw new Error(`Cannot remove all feature links for class ${classId}: classState.featureIds is empty but ${currentFeatureIds.size} links exist. This indicates a state synchronization issue.`);
+            }
+
+            await featureSystemService.syncClassFeatures(classId, featureIds, tx);
         });
     }
 }

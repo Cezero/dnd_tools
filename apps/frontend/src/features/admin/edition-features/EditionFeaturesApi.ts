@@ -1,4 +1,4 @@
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeatureWithRelations } from '@shared/schema';
 
 /**

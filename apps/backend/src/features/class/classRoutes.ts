@@ -1,6 +1,6 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
-    ClassIdParamSchema,
+    IdParamSchema,
     ClassIdQuerySchema,
     CreateClassSchema,
     UpdateClassSchema,
@@ -10,6 +10,7 @@ import {
 import {
     GetAllClasses,
     GetClassById,
+    GetClassFeatures,
     CreateClass,
     UpdateClass,
     DeleteClass,
@@ -24,12 +25,13 @@ const { router: ClassRouter, get, post, put, delete: deleteRoute } = buildValida
 // Class Read Routes
 post('/query', { body: GetAllClassesQuerySchema }, GetAllClasses);
 get('/cache', {}, GetClassCache);
-get('/:id', { params: ClassIdParamSchema, query: ClassIdQuerySchema }, GetClassById);
-get('/:id/lock-status', { params: ClassIdParamSchema }, GetClassLockStatus);
+get('/:id', { params: IdParamSchema, query: ClassIdQuerySchema }, GetClassById);
+get('/:id/features', { params: IdParamSchema, query: ClassIdQuerySchema }, GetClassFeatures);
+get('/:id/lock-status', { params: IdParamSchema }, GetClassLockStatus);
 
 // Class Write Routes
 post('/', requireAdmin, { body: CreateClassSchema }, CreateClass);
-put('/:id', requireAdmin, { params: ClassIdParamSchema, body: UpdateClassSchema }, UpdateClass);
-deleteRoute('/:id', requireAdmin, { params: ClassIdParamSchema }, DeleteClass);
+put('/:id', requireAdmin, { params: IdParamSchema, body: UpdateClassSchema }, UpdateClass);
+deleteRoute('/:id', requireAdmin, { params: IdParamSchema }, DeleteClass);
 
 export { ClassRouter };

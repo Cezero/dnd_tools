@@ -7,10 +7,10 @@ import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { getSourceDisplay } from '@/services/cache';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import type { FeatureWithRelations } from '@shared/schema';
 import { FEAT_TYPES, EDITION_MAP, FeatureSourceType, DisplayType } from '@shared/static-data';
 
+import { FeatQueryHooks } from './FeatQueryHooks';
 import { formatFeatureEntity } from './FeatUtil';
 
 export function FeatDetail() {

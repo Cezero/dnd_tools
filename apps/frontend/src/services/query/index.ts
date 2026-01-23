@@ -1,7 +1,14 @@
 export { createQueryHooks } from './QueryHooksFactory';
-export { ClassQueryHooks } from './ClassQueryHooks';
-export { RaceQueryHooks } from './RaceQueryHooks';
-export { FeatureQueryHooks } from './FeatureQueryHooks';
-export { SpellQueryHooks } from './SpellQueryHooks';
-export { CharacterQueryHooks } from './CharacterQueryHooks';
 export { CacheQueryHooks } from './CacheQueryHooks';
+// Feature-specific query hooks have been moved to their respective feature folders:
+// - ClassQueryHooks → features/class/ClassQueryHooks
+// - RaceQueryHooks → features/race/RaceQueryHooks
+// - CharacterQueryHooks → features/character/CharacterQueryHooks
+// - FeatureQueryHooks → components/feature-system/FeatureQueryHooks
+// - FeatQueryHooks → features/feat/FeatQueryHooks
+// - SpellQueryHooks → features/spell/SpellQueryHooks
+// - DomainQueryHooks → features/domain/DomainQueryHooks
+// - CompanionQueryHooks → features/companion/CompanionQueryHooks
+// - ItemQueryHooks → features/item/ItemQueryHooks
+// Remaining query hooks (SkillQueryHooks, MonsterQueryHooks, TrickQueryHooks, DeityQueryHooks)
+// should be moved to their respective feature folders when those features are reorganized.

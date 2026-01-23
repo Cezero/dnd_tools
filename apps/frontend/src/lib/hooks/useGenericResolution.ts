@@ -14,8 +14,10 @@ import type { ResolutionApi, ResolutionHookResult } from './types';
  * - `TUpdate`: The type of update operations
  * 
  * **Editing Lifecycle**:
- * 1. **Start Editing**: Automatically starts editing on mount (acquires lock, adds to user session)
- * 2. **Updates**: Applies updates to entity state via `applyUpdate()`
+ * 1. **Start Editing**: Automatically starts editing on mount (acquires lock, adds to user session).
+ *    State management is transparent - `startEditing` returns only success/failure, then `fetchEntity()`
+ *    is called to fetch entity data using normal services.
+ * 2. **Updates**: Updates are handled via `updateValue()` in hooks created by `createResolutionHook()`
  * 3. **Persistence**: Saves entity state to database via `save()`
  * 4. **Cleanup**: Cancels editing on unmount if not saved
  * 
@@ -30,14 +32,9 @@ import type { ResolutionApi, ResolutionHookResult } from './types';
  * ```typescript
  * const resolution = useGenericResolution(classId, {
  *   startEditing: ClassResolutionApi.startEditing,
- *   getState: ClassResolutionApi.getState,
- *   applyUpdate: ClassResolutionApi.applyUpdate,
- *   save: ClassResolutionApi.save,
+ *   fetchEntity: ClassResolutionApi.fetchEntity,
  *   cancel: ClassResolutionApi.cancel
  * });
- * 
- * // Apply update
- * await resolution.applyUpdate({ type: 'UPDATE_CLASS_FIELD', payload: { field: 'name', value: 'New Name' } });
  * 
  * // Save state
  * await resolution.save();
@@ -68,10 +65,10 @@ import type { ResolutionApi, ResolutionHookResult } from './types';
  * const { state, updateState } = useClassEditState();
  * const resolution = useGenericResolution(state.classId, ClassResolutionApi);
  * 
- * // Sync state changes
+ * // Sync state changes using updateValue (provided by createResolutionHook)
  * useEffect(() => {
  *   if (state.name !== prevName && resolution.state) {
- *     resolution.applyUpdate({ type: 'UPDATE_CLASS_FIELD', payload: { field: 'name', value: state.name } });
+ *     resolution.updateValue('name', state.name);
  *   }
  * }, [state.name]);
  */
@@ -90,6 +87,9 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      * Start editing on mount or when reinitializeTrigger changes.
      * 
      * The `startEditing` API call acquires a lock and adds the entity to the user's editing list.
+     * State management is transparent - `startEditing` returns only success/failure.
+     * After successful start, `fetchEntity()` is called to fetch entity data using normal entity services
+     * (e.g., getFeatureById, getClassById) - NOT state management endpoints.
      * 
      * **CRITICAL**: `api` is intentionally excluded from the dependency array. API methods are
      * stable function references that don't change between renders. Including `api` causes
@@ -117,8 +117,17 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
 
             try {
                 // Start editing (acquires lock, adds to user session)
+                // State management is transparent - returns only success/failure
                 const result = await api.startEditing(entityId);
-                setState(result.state);
+                
+                if (!result.success) {
+                    throw new Error('Failed to start editing');
+                }
+                
+                // After successful startEditing, fetch entity data using normal entity services
+                // (e.g., getFeatureById, getClassById) - NOT state management endpoints
+                const entityResult = await api.fetchEntity(entityId);
+                setState(entityResult.state);
                 isEditingRef.current = true;
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Failed to start editing';
@@ -134,55 +143,6 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [entityId, reinitializeTrigger]);
 
-    /**
-     * Apply an update to the entity state.
-     * 
-     * **IMPORTANT**: This method is called automatically by Edit component useEffect hooks.
-     * Tab components should NOT call this method directly.
-     * 
-     * **Standardized Pattern**: 
-     * - Tabs update state via `updateState()`
-     * - Edit component useEffect hooks watch state changes
-     * - Edit component automatically calls this method to sync changes
-     * 
-     * **When to use manually**:
-     * - Only if you need to update the entity state outside of the standard pattern
-     * - For operations that don't go through state (e.g., direct API calls)
-     * 
-     * **For tabs**: Use `refreshState()` if you need to manually refresh entity state
-     * after operations that update the database directly.
-     * 
-     * **CRITICAL**: `api` is intentionally excluded from the dependency array. API methods are
-     * stable function references that don't change between renders. Including `api` causes
-     * infinite re-renders.
-     * 
-     * @param update - The update to apply
-     * @returns Promise resolving to updated state
-     * 
-     * @see refreshState - For manual state refresh after direct API operations
-     */
-    const applyUpdate = useCallback(async (update: TUpdate): Promise<TState | null> => {
-        if (!entityId || !isEditingRef.current) {
-            throw new Error('Not currently editing');
-        }
-
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const result = await api.applyUpdate(entityId, update);
-            setState(result.state);
-            return result.state;
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to apply update';
-            setError(errorMessage);
-            console.error('Error applying update:', err);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [entityId]);
 
     /**
      * Save entity state to database.
@@ -216,7 +176,7 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
         } finally {
             setIsLoading(false);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [entityId]);
 
     /**
@@ -262,12 +222,12 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      * - When you need to manually refresh entity state
      * 
      * **When NOT to Use**:
-     * - For normal entity updates (use state → useEffect → applyUpdate pattern instead)
+     * - For normal entity updates (use state → useEffect → updateValue pattern instead)
      * - When state changes are handled by Edit component useEffect hooks
      * 
-     * **Standardized Pattern**:
-     * - Operations that update state: Use state → useEffect → applyUpdate (automatic)
-     * - Operations that update database directly: Use API call → refreshState() (manual)
+ * **Standardized Pattern**:
+ * - Operations that update state: Use state → useEffect → updateValue (automatic)
+ * - Operations that update database directly: Use API call → refreshState() (manual)
      * 
      * **CRITICAL**: `api` is intentionally excluded from the dependency array. API methods are
      * stable function references that don't change between renders. Including `api` causes
@@ -280,7 +240,7 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
      *   await resolution.refreshState();
      * }
      * 
-     * @see applyUpdate - For state-based updates (called automatically by Edit components)
+     * @see updateValue - For state-based updates (provided by createResolutionHook, called automatically by Edit components)
      */
     const refreshState = useCallback(async (): Promise<void> => {
         if (!entityId) {
@@ -291,7 +251,8 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
         setError(null);
 
         try {
-            const result = await api.getState(entityId);
+            // Fetch entity data using normal entity services (NOT state management endpoints)
+            const result = await api.fetchEntity(entityId);
             setState(result.state);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to refresh state';
@@ -323,7 +284,6 @@ export function useGenericResolution<TEntityId, TState, TUpdate>(
         state,
         isLoading,
         error,
-        applyUpdate,
         save,
         cancel,
         refreshState,

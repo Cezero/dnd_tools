@@ -2,8 +2,8 @@ import { PreviewCard } from '@base-ui-components/react/preview-card';
 import React from 'react';
 
 import { SpellDisplayContent } from '@/features/spell/SpellDisplayContent';
+import { SpellQueryHooks } from '@/features/spell/SpellQueryHooks';
 import { GetClassLevelAbbr } from '@/features/spell/spellUtil';
-import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 
 import type { SpellTooltipProps } from './types';
 

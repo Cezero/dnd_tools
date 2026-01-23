@@ -15,6 +15,7 @@ import type { EntityTypeConfig, FeatureDetailEditProps } from './types';
 import { useEntityManagement } from './useEntityManagement';
 import { useFeatureForm } from './useFeatureForm';
 import { useGroupingState } from './useGroupingState';
+import { useFeatureEditSync } from '../FeatureEditForm/FeatureEditForm';
 
 
 export function FeatureDetailEdit({
@@ -100,6 +101,9 @@ export function FeatureDetailEdit({
         removeEntity
     } = useEntityManagement(formData, setFormData, groupingState, setGroupingState);
 
+    // Get sync function from context (if available - FeatureDetailEdit is used within FeatureEditForm)
+    const { syncNestedFieldToState } = useFeatureEditSync();
+
     // Feats are now passed as props from parent component
 
     // Hover state for group/ungroup buttons
@@ -145,7 +149,11 @@ export function FeatureDetailEdit({
 
         updateEntityGrouping(index, targetGroupingId);
         updateEntityGrouping(index + 1, targetGroupingId);
-    }, [formData, groupingState, setFormData, updateEntityGrouping]);
+
+        // Sync groupingId changes to state
+        syncNestedFieldToState(`entities.${index}.groupingId`, targetGroupingId);
+        syncNestedFieldToState(`entities.${index + 1}.groupingId`, targetGroupingId);
+    }, [formData, groupingState, setFormData, updateEntityGrouping, syncNestedFieldToState]);
 
     const handleUngroup = useCallback((index: number) => {
         setFormData(prev => {
@@ -167,17 +175,21 @@ export function FeatureDetailEdit({
                     if ((entity.groupingId || 0) === currentGroupingId) {
                         entities[i] = { ...entity, groupingId: 0 };
                         updateEntityGrouping(i, 0);
+                        // Sync groupingId change to state
+                        syncNestedFieldToState(`entities.${i}.groupingId`, 0);
                     }
                 });
             } else {
                 // If there are more than 2 entities, just ungroup the clicked one
                 entities[index] = { ...entities[index], groupingId: 0 };
                 updateEntityGrouping(index, 0);
+                // Sync groupingId change to state
+                syncNestedFieldToState(`entities.${index}.groupingId`, 0);
             }
 
             return { ...prev, entities };
         });
-    }, [setFormData, updateEntityGrouping]);
+    }, [setFormData, updateEntityGrouping, syncNestedFieldToState]);
 
     // Handle form submission
     const handleSubmit = (e: React.FormEvent) => {

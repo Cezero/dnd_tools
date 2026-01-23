@@ -1,6 +1,6 @@
 import { Response } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedNoInput, ValidatedBodyT, ValidatedQueryT } from '@/util/validated-types'
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedNoInput } from '@/util/validated-types'
 import { SpellIdParamRequest, SpellClassParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse, SpellCacheResponse } from '@shared/schema';
 
 import { spellService } from './spellService';

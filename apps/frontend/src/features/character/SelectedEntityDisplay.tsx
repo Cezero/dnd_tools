@@ -3,13 +3,13 @@ import React, { useState, useEffect } from 'react';
 
 import { EntityLink } from '@/components/entity-link';
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
+import { CompanionQueryHooks } from '@/features/companion/CompanionQueryHooks';
 import { DomainDisplay } from '@/features/domain/DomainDisplay';
+import { DomainQueryHooks } from '@/features/domain/DomainQueryHooks';
+import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
+import { SpellQueryHooks } from '@/features/spell/SpellQueryHooks';
 import { useCacheFunctions } from '@/services/cache';
-import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
-import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
-import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 import type { Domain, GetSpellResponse, GetFeatureResponse, GetCompanionResponse, GetFeatByIdResponse } from '@shared/schema';
 import { EntityAppliesToType, COMPANION_TYPE_MAP, FeatureSourceType } from '@shared/static-data';
 

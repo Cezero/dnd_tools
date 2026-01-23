@@ -1,3 +1,5 @@
+import { DraftType } from '@shared/static-data';
+
 /**
  * WebSocket client service for real-time entity state updates.
  * 
@@ -8,6 +10,7 @@
  * 
  * Client → Server:
  * - `{ type: 'subscribe', entityType: string, entityId: number }` - Subscribe to entity state updates
+ *   (entityType is the numeric DraftType enum value as a string, e.g., "1" for Class, "3" for Feature)
  * - `{ type: 'unsubscribe', entityType: string, entityId: number }` - Unsubscribe from entity state updates
  * 
  * Server → Client:
@@ -26,7 +29,7 @@
  * const wsService = WebSocketService.getInstance();
  * await wsService.connect();
  * 
- * const subscriptionId = wsService.subscribe('feature', 123, (state) => {
+ * const subscriptionId = wsService.subscribe(DraftType.Feature, 123, (state) => {
  *   console.log('Feature 123 updated:', state);
  * });
  * 
@@ -42,7 +45,7 @@ export class WebSocketService {
     private maxReconnectAttempts = 10;
     private reconnectDelay = 1000; // Start with 1 second
     private isConnecting = false;
-    private pendingSubscriptions: Array<{ entityType: string; entityId: number; callback: (state: unknown) => void }> = [];
+    private pendingSubscriptions: Array<{ draftType: DraftType; entityId: number; callback: (state: unknown) => void }> = [];
 
     private constructor() {
         // Private constructor for singleton pattern
@@ -97,7 +100,7 @@ export class WebSocketService {
 
                 // Resubscribe to all pending subscriptions
                 for (const sub of this.pendingSubscriptions) {
-                    this.subscribe(sub.entityType, sub.entityId, sub.callback);
+                    this.subscribe(sub.draftType, sub.entityId, sub.callback);
                 }
                 this.pendingSubscriptions = [];
             };
@@ -199,20 +202,21 @@ export class WebSocketService {
     /**
      * Subscribes to entity state updates.
      * 
-     * @param entityType - The entity type (e.g., 'class', 'feature', 'character')
+     * @param draftType - The draft type enum (e.g., DraftType.Feature, DraftType.Class, DraftType.Character)
      * @param entityId - The entity ID
      * @param callback - Callback function to invoke when state is updated
      * @returns Subscription ID (for unsubscribing)
      * 
      * @example
      * ```typescript
-     * const subscriptionId = wsService.subscribe('feature', 123, (state) => {
+     * const subscriptionId = wsService.subscribe(DraftType.Feature, 123, (state) => {
      *   console.log('Feature updated:', state);
      * });
      * ```
      */
-    subscribe(entityType: string, entityId: number, callback: (state: unknown) => void): string {
-        const subscriptionKey = `${entityType}:${entityId}`;
+    subscribe(draftType: DraftType, entityId: number, callback: (state: unknown) => void): string {
+        // Use numeric draftType value as string for subscription key
+        const subscriptionKey = `${draftType}:${entityId}`;
 
         if (!this.subscriptions.has(subscriptionKey)) {
             this.subscriptions.set(subscriptionKey, new Set());
@@ -221,15 +225,16 @@ export class WebSocketService {
         this.subscriptions.get(subscriptionKey)!.add(callback);
 
         // Send subscribe message if connected
+        // Backend expects entityType as string (numeric value as string for now)
         if (this.ws?.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({
                 type: 'subscribe',
-                entityType,
+                entityType: String(draftType), // Send numeric enum value as string
                 entityId
             }));
         } else {
             // Queue subscription for when connection is established
-            this.pendingSubscriptions.push({ entityType, entityId, callback });
+            this.pendingSubscriptions.push({ draftType, entityId, callback });
             // Try to connect if not already connecting
             if (!this.isConnecting && !this.ws) {
                 this.connect().catch(error => {
@@ -252,10 +257,11 @@ export class WebSocketService {
      * ```
      */
     unsubscribe(subscriptionId: string): void {
-        const [entityType, entityIdStr] = subscriptionId.split(':');
+        const [draftTypeStr, entityIdStr] = subscriptionId.split(':');
+        const draftType = parseInt(draftTypeStr, 10) as DraftType;
         const entityId = parseInt(entityIdStr, 10);
 
-        if (isNaN(entityId)) {
+        if (isNaN(draftType) || isNaN(entityId)) {
             console.error(`Invalid subscription ID: ${subscriptionId}`);
             return;
         }
@@ -263,10 +269,11 @@ export class WebSocketService {
         this.subscriptions.delete(subscriptionId);
 
         // Send unsubscribe message if connected
+        // Backend expects entityType as string (numeric value as string for now)
         if (this.ws?.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({
                 type: 'unsubscribe',
-                entityType,
+                entityType: String(draftType), // Send numeric enum value as string
                 entityId
             }));
         }

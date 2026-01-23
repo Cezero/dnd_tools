@@ -148,6 +148,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerOtherLabeler(EntityAppliesToType.Familiar, animalCompanionLabeler); // Familiar grants (use same labeler as animal companions)
 
         // Class/Race mechanics labelers (EntityType.Base)
+        this.registerBaseLabeler(EntityAppliesToType.Ability, abilityModifierLabeler);
         this.registerBaseLabeler(EntityAppliesToType.BaseAttackBonus, displayNameLabeler);
         this.registerBaseLabeler(EntityAppliesToType.HitDice, displayNameLabeler);
         this.registerBaseLabeler(EntityAppliesToType.SavingThrow, savingThrowProgressionLabeler);
@@ -160,6 +161,9 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerBaseLabeler(EntityAppliesToType.SpellcastingProgression, displayNameLabeler);
         // MovementSpeed is compatible with both Quantity (bonuses) and Base (base race speed)
         this.registerBaseLabeler(EntityAppliesToType.MovementSpeed, displayNameLabeler);
+        // Languages are compatible with both Other (language grants) and Base (base race languages)
+        this.registerBaseLabeler(EntityAppliesToType.BonusLanguage, bonusLanguageLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.AutomaticLanguage, automaticLanguageLabeler);
 
         // Proficiency (EntityType.Other with appliesTo = EntityAppliesToType.Proficiency)
         this.registerProficiencyLabeler(EntityAppliesToType.Proficiency, emptyStringLabeler);

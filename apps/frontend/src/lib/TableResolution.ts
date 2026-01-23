@@ -39,7 +39,7 @@ export async function preloadTablesFromMarkdown(props: MarkdownComponentProps): 
         const cache = new Map<ReferenceTableSlugParamRequest['slug'], HastElement>();
         for (const slug of slugs) {
             try {
-                const data = await getReferenceTableBySlug(undefined, { slug });
+                const data = await getReferenceTableBySlug({ slug });
                 const newProps = {
                     ...props,
                     tableClass: props.tableClass ?? 'md-table',

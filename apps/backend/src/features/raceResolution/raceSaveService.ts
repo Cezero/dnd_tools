@@ -1,9 +1,12 @@
-import type { UpdateRaceRequest } from '@shared/schema';
+import { ZodError } from 'zod';
 
-import type { RaceEditState } from './types';
-import { raceService } from '../race/raceService';
-import { featureSystemService } from '../featureSystem/featureSystemService';
 import { PrismaClient } from '@shared/prisma-client';
+import type { RaceEditState, UpdateRaceRequest } from '@shared/schema';
+import { RaceEditStateSchema } from '@shared/schema';
+
+import { featureSystemService } from '../featureSystem/featureSystemService';
+import { raceService } from '../race/raceService';
+import { mapZodErrorsToFieldPaths, ValidationErrorWithPaths } from '../shared/utils';
 
 const prisma = new PrismaClient();
 
@@ -39,8 +42,6 @@ export class RaceSaveService {
         // Features are now managed independently via featureIds
         // The features array is no longer part of the race state
         // Feature linking/unlinking is handled separately via syncRaceFeatures
-        // For backward compatibility with UpdateRaceRequest, set features to null
-        updateRequest.features = null;
 
         return updateRequest;
     }
@@ -53,8 +54,21 @@ export class RaceSaveService {
      * @returns The updated race
      */
     async saveSessionToMySQL(raceId: number, raceState: RaceEditState): Promise<void> {
+        // Validate and coerce flexible state to RaceEditState
+        let validatedState: RaceEditState;
+        try {
+            validatedState = RaceEditStateSchema.parse(raceState);
+        } catch (error) {
+            if (error instanceof ZodError) {
+                // Map Zod errors to field paths for frontend error display
+                const validationErrors = mapZodErrorsToFieldPaths(error);
+                throw new ValidationErrorWithPaths(validationErrors);
+            }
+            throw error;
+        }
+
         // Transform session state to update request
-        const updateRequest = this.transformSessionToUpdateRequest(raceState);
+        const updateRequest = this.transformSessionToUpdateRequest(validatedState);
 
         // Use transaction to ensure atomicity
         await prisma.$transaction(async (tx) => {
@@ -62,7 +76,7 @@ export class RaceSaveService {
             await raceService.updateRace({ id: raceId }, updateRequest);
 
             // Sync feature IDs (link/unlink features)
-            await featureSystemService.syncRaceFeatures(raceId, raceState.featureIds || [], tx);
+            await featureSystemService.syncRaceFeatures(raceId, validatedState.featureIds || [], tx);
         });
     }
 }

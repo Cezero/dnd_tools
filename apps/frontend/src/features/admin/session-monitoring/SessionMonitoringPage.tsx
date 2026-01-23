@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
+import { getDraftTypeNameFromId, type DraftType } from '@shared/static-data';
 
 import { SessionMonitoringApi } from './SessionMonitoringApi';
 import type {
@@ -58,15 +60,16 @@ export function SessionMonitoringPage(): React.JSX.Element {
     };
 
     /**
-     * Force releases a lock on an entity.
+     * Force releases a lock on a draft.
      */
-    const handleForceReleaseLock = async (entityType: string, entityId: number): Promise<void> => {
-        if (!window.confirm(`Are you sure you want to force release the lock on ${entityType}:${entityId}?`)) {
+    const handleForceReleaseLock = async (draftType: DraftType, id: number): Promise<void> => {
+        const label = `${getDraftTypeNameFromId(draftType)}:${id}`;
+        if (!window.confirm(`Are you sure you want to force release the lock on ${label}?`)) {
             return;
         }
 
         try {
-            await SessionMonitoringApi.forceReleaseLock(entityType, entityId);
+            await SessionMonitoringApi.forceReleaseLock(draftType, id);
             // Reload data to reflect the change
             await loadData();
         } catch (err) {
@@ -139,7 +142,7 @@ export function SessionMonitoringPage(): React.JSX.Element {
                                             <ul className="list-disc list-inside">
                                                 {session.viewing.map((ref, idx) => (
                                                     <li key={idx}>
-                                                        {ref.entityType}:{ref.entityId}
+                                                        {getDraftTypeNameFromId(ref.draftType)}:{ref.id}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -152,7 +155,7 @@ export function SessionMonitoringPage(): React.JSX.Element {
                                             <ul className="list-disc list-inside">
                                                 {session.editing.map((ref, idx) => (
                                                     <li key={idx}>
-                                                        {ref.entityType}:{ref.entityId}
+                                                        {getDraftTypeNameFromId(ref.draftType)}:{ref.id}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -174,17 +177,17 @@ export function SessionMonitoringPage(): React.JSX.Element {
                     <table className="min-w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
                         <thead>
                             <tr>
-                                <th className="px-4 py-2 border-b">Entity Type</th>
-                                <th className="px-4 py-2 border-b">Entity ID</th>
+                                <th className="px-4 py-2 border-b">Draft Type</th>
+                                <th className="px-4 py-2 border-b">ID</th>
                                 <th className="px-4 py-2 border-b">Has State</th>
                                 <th className="px-4 py-2 border-b">Last Updated</th>
                             </tr>
                         </thead>
                         <tbody>
                             {entityStates.map((state) => (
-                                <tr key={`${state.entityType}:${state.entityId}`}>
-                                    <td className="px-4 py-2 border-b">{state.entityType}</td>
-                                    <td className="px-4 py-2 border-b">{state.entityId}</td>
+                                <tr key={`${state.draftType}:${state.id}`}>
+                                    <td className="px-4 py-2 border-b">{getDraftTypeNameFromId(state.draftType)}</td>
+                                    <td className="px-4 py-2 border-b">{state.id}</td>
                                     <td className="px-4 py-2 border-b">
                                         {state.hasState ? (
                                             <span className="text-green-600">Yes</span>
@@ -193,7 +196,7 @@ export function SessionMonitoringPage(): React.JSX.Element {
                                         )}
                                     </td>
                                     <td className="px-4 py-2 border-b">
-                                        {state.lastUpdated ? state.lastUpdated.toLocaleString() : 'N/A'}
+                                        {state.lastUpdated ? new Date(state.lastUpdated).toLocaleString() : 'N/A'}
                                     </td>
                                 </tr>
                             ))}
@@ -209,8 +212,8 @@ export function SessionMonitoringPage(): React.JSX.Element {
                     <table className="min-w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
                         <thead>
                             <tr>
-                                <th className="px-4 py-2 border-b">Entity Type</th>
-                                <th className="px-4 py-2 border-b">Entity ID</th>
+                                <th className="px-4 py-2 border-b">Draft Type</th>
+                                <th className="px-4 py-2 border-b">ID</th>
                                 <th className="px-4 py-2 border-b">Locked By</th>
                                 <th className="px-4 py-2 border-b">Locked At</th>
                                 <th className="px-4 py-2 border-b">Actions</th>
@@ -218,18 +221,18 @@ export function SessionMonitoringPage(): React.JSX.Element {
                         </thead>
                         <tbody>
                             {locks.map((lock) => (
-                                <tr key={`${lock.entityType}:${lock.entityId}`}>
-                                    <td className="px-4 py-2 border-b">{lock.entityType}</td>
-                                    <td className="px-4 py-2 border-b">{lock.entityId}</td>
+                                <tr key={`${lock.draftType}:${lock.id}`}>
+                                    <td className="px-4 py-2 border-b">{getDraftTypeNameFromId(lock.draftType)}</td>
+                                    <td className="px-4 py-2 border-b">{lock.id}</td>
                                     <td className="px-4 py-2 border-b">
                                         {lock.lockedByUserName || `User ${lock.lockedBy}`}
                                     </td>
                                     <td className="px-4 py-2 border-b">
-                                        {lock.lockedAt ? lock.lockedAt.toLocaleString() : 'N/A'}
+                                        {lock.lockedAt ? new Date(lock.lockedAt).toLocaleString() : 'N/A'}
                                     </td>
                                     <td className="px-4 py-2 border-b">
                                         <button
-                                            onClick={() => handleForceReleaseLock(lock.entityType, lock.entityId)}
+                                            onClick={() => handleForceReleaseLock(lock.draftType, lock.id)}
                                             className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
                                         >
                                             Force Release
@@ -266,7 +269,7 @@ export function SessionMonitoringPage(): React.JSX.Element {
                                             <ul className="list-disc list-inside">
                                                 {sub.subscriptions.map((ref, idx) => (
                                                     <li key={idx}>
-                                                        {ref.entityType}:{ref.entityId}
+                                                        {getDraftTypeNameFromId(ref.draftType)}:{ref.id}
                                                     </li>
                                                 ))}
                                             </ul>

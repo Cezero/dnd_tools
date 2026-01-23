@@ -1,31 +1,9 @@
 import type { NextFunction, Response } from 'express';
 
-import type { ValidatedParamsT } from '@/util/validated-types';
-import { UserSessionService, type EntityRef } from './UserSessionService';
+import type { ValidatedBodyT, ValidatedQueryT, ValidatedNoInput } from '@/util/validated-types';
+import type { DraftRefRequest, DraftRefQueryOptional, UserSessionResponse } from '@shared/schema';
 
-/**
- * Request body for adding a viewing entity.
- */
-interface AddViewingEntityRequest {
-    entityType: string;
-    entityId: number;
-}
-
-/**
- * Request body for removing a viewing entity.
- */
-interface RemoveViewingEntityRequest {
-    entityType: string;
-    entityId: number;
-}
-
-/**
- * Request body for setting an editing entity.
- */
-interface SetEditingEntityRequest {
-    entityType: string;
-    entityId: number;
-}
+import { UserSessionService } from './UserSessionService';
 
 /**
  * Controller for user session management endpoints.
@@ -51,7 +29,7 @@ export class UserSessionController {
      * GET /api/sessions/me
      */
     async getMySession(
-        req: ValidatedParamsT<Record<string, never>, { viewing: EntityRef[]; editing: EntityRef[] }>,
+        req: ValidatedNoInput<UserSessionResponse>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -89,7 +67,7 @@ export class UserSessionController {
      * POST /api/sessions/me/viewing
      */
     async addViewingEntity(
-        req: ValidatedParamsT<Record<string, never>, AddViewingEntityRequest>,
+        req: ValidatedBodyT<DraftRefRequest>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -100,12 +78,11 @@ export class UserSessionController {
                 return;
             }
 
-            const body = req.body as AddViewingEntityRequest;
-            const { entityType, entityId } = body;
+            const { draftType, id } = req.body;
 
-            await this.userSessionService.addViewingEntity(userId, entityType, entityId);
+            await this.userSessionService.addViewingEntity(userId, draftType, id);
 
-            res.json({ success: true });
+            res.json({ success: true, draftType, id });
         } catch (error) {
             console.error('Error adding viewing entity:', error);
             res.status(500).json({ error: 'Failed to add viewing entity' });
@@ -118,7 +95,7 @@ export class UserSessionController {
      * DELETE /api/sessions/me/viewing
      */
     async removeViewingEntity(
-        req: ValidatedParamsT<Record<string, never>, RemoveViewingEntityRequest>,
+        req: ValidatedBodyT<DraftRefRequest>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -129,12 +106,11 @@ export class UserSessionController {
                 return;
             }
 
-            const body = req.body as RemoveViewingEntityRequest;
-            const { entityType, entityId } = body;
+            const { draftType, id } = req.body;
 
-            await this.userSessionService.removeViewingEntity(userId, entityType, entityId);
+            await this.userSessionService.removeViewingEntity(userId, draftType, id);
 
-            res.json({ success: true });
+            res.json({ success: true, draftType, id });
         } catch (error) {
             console.error('Error removing viewing entity:', error);
             res.status(500).json({ error: 'Failed to remove viewing entity' });
@@ -147,7 +123,7 @@ export class UserSessionController {
      * POST /api/sessions/me/editing
      */
     async setEditingEntity(
-        req: ValidatedParamsT<Record<string, never>, SetEditingEntityRequest>,
+        req: ValidatedBodyT<DraftRefRequest>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -158,12 +134,11 @@ export class UserSessionController {
                 return;
             }
 
-            const body = req.body as SetEditingEntityRequest;
-            const { entityType, entityId } = body;
+            const { draftType, id } = req.body;
 
-            await this.userSessionService.setEditingEntity(userId, entityType, entityId);
+            await this.userSessionService.setEditingEntity(userId, draftType, id);
 
-            res.json({ success: true });
+            res.json({ success: true, draftType, id });
         } catch (error) {
             console.error('Error setting editing entity:', error);
             res.status(500).json({ error: 'Failed to set editing entity' });
@@ -173,11 +148,11 @@ export class UserSessionController {
     /**
      * Clears the entity the user is editing.
      * 
-     * DELETE /api/sessions/me/editing?entityType=class&entityId=1
+     * DELETE /api/sessions/me/editing?draftType=1&id=1
      * Or DELETE /api/sessions/me/editing to clear all editing entities
      */
     async clearEditingEntity(
-        req: ValidatedParamsT<Record<string, never>, Record<string, never>>,
+        req: ValidatedQueryT<DraftRefQueryOptional>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -188,30 +163,23 @@ export class UserSessionController {
                 return;
             }
 
-            // Check if entityType and entityId are provided as query params
-            const entityType = req.query?.entityType as string | undefined;
-            const entityIdStr = req.query?.entityId as string | undefined;
+            const { draftType, id } = req.query;
 
-            if (entityType && entityIdStr) {
-                const entityId = parseInt(entityIdStr, 10);
-                if (!isNaN(entityId)) {
-                    await this.userSessionService.clearEditingEntity(userId, entityType, entityId);
-                } else {
-                    res.status(400).json({ error: 'Invalid entity ID' });
-                    return;
-                }
+            if (draftType !== undefined && id !== undefined) {
+                // Clear specific entity
+                await this.userSessionService.clearEditingEntity(userId, draftType, id);
+                res.json({ success: true, draftType, id });
             } else {
                 // Clear all editing entities by getting session and clearing editing array
                 const session = await this.userSessionService.getUserSession(userId);
                 if (session && session.editing.length > 0) {
                     // Clear all editing entities one by one
                     for (const entity of session.editing) {
-                        await this.userSessionService.clearEditingEntity(userId, entity.entityType, entity.entityId);
+                        await this.userSessionService.clearEditingEntity(userId, entity.draftType, entity.id);
                     }
                 }
+                res.json({ success: true });
             }
-
-            res.json({ success: true });
         } catch (error) {
             console.error('Error clearing editing entity:', error);
             res.status(500).json({ error: 'Failed to clear editing entity' });
@@ -221,3 +189,10 @@ export class UserSessionController {
 
 // Export singleton instance
 export const userSessionController = new UserSessionController();
+
+// Export controller methods for use in routes
+export const GetMySession = userSessionController.getMySession.bind(userSessionController);
+export const AddViewingEntity = userSessionController.addViewingEntity.bind(userSessionController);
+export const RemoveViewingEntity = userSessionController.removeViewingEntity.bind(userSessionController);
+export const SetEditingEntity = userSessionController.setEditingEntity.bind(userSessionController);
+export const ClearEditingEntity = userSessionController.clearEditingEntity.bind(userSessionController);

@@ -26,8 +26,7 @@
  * ```typescript
  * const api = useMemo(() => ({
  *   startEditing: ClassResolutionApi.startEditing,
- *   getState: ClassResolutionApi.getState,
- *   applyUpdate: ClassResolutionApi.applyUpdate,
+ *   fetchEntity: ClassResolutionApi.fetchEntity,
  *   cancel: ClassResolutionApi.cancel
  * }), []);
  * ```
@@ -36,8 +35,7 @@
  * ```typescript
  * const api: ResolutionApi<number, ClassEditState, ClassUpdate, unknown> = {
  *   startEditing: ClassResolutionApi.startEditing,
- *   getState: ClassResolutionApi.getState,
- *   applyUpdate: ClassResolutionApi.applyUpdate,
+ *   fetchEntity: ClassResolutionApi.fetchEntity,
  *   cancel: ClassResolutionApi.cancel
  * };
  * ```
@@ -67,28 +65,24 @@ export interface ResolutionApi<TEntityId, TState, TUpdate, TResolved> {
      * Start editing an entity.
      * 
      * Acquires a lock and adds entity to user's editing list.
+     * State management is transparent - this returns only success/failure.
+     * The actual entity data should be fetched using `fetchEntity()` after this succeeds.
      * 
      * @param entityId - The entity ID
-     * @returns Promise resolving to state
+     * @returns Promise resolving to success response
      */
-    startEditing: (entityId: TEntityId) => Promise<{ state: TState }>;
+    startEditing: (entityId: TEntityId) => Promise<{ success: boolean }>;
 
     /**
-     * Get current entity state.
+     * Fetch entity data using normal entity services.
+     * 
+     * **IMPORTANT**: This should use normal entity services (e.g., `getFeatureById()`, `getClassById()`),
+     * NOT state management endpoints. State management is transparent to the frontend.
      * 
      * @param entityId - The entity ID
-     * @returns Promise resolving to state
+     * @returns Promise resolving to entity data
      */
-    getState: (entityId: TEntityId) => Promise<{ state: TState }>;
-
-    /**
-     * Apply an update to the entity state.
-     * 
-     * @param entityId - The entity ID
-     * @param update - The update operation
-     * @returns Promise resolving to updated state
-     */
-    applyUpdate: (entityId: TEntityId, update: TUpdate) => Promise<{ state: TState }>;
+    fetchEntity: (entityId: TEntityId) => Promise<{ state: TState }>;
 
     /**
      * Cancel editing without saving.
@@ -111,7 +105,7 @@ export interface ResolutionApi<TEntityId, TState, TUpdate, TResolved> {
  * - `error`: Error message if operation failed (null if no error)
  * 
  * **Operations**:
- * - `applyUpdate`: Apply an update to the entity state
+ * - `updateValue`: Update a field value at a specific path
  * - `save`: Save entity state to database
  * - `cancel`: Cancel editing without saving
  * - `refreshState`: Refresh state from backend
@@ -133,7 +127,7 @@ export interface ResolutionApi<TEntityId, TState, TUpdate, TResolved> {
  *   console.log('Current state:', resolution.state);
  * }
  * 
- * await resolution.applyUpdate({ type: ClassUpdateType.UpdateClassField, payload: {...} });
+ * await resolution.updateValue('name', 'New Name');
  * ```
  */
 export interface ResolutionHookResult<TState, TUpdate> {
@@ -143,8 +137,6 @@ export interface ResolutionHookResult<TState, TUpdate> {
     isLoading: boolean;
     /** Error state for failed operations */
     error: string | null;
-    /** Apply an update to the entity state */
-    applyUpdate: (update: TUpdate) => Promise<TState | null>;
     /** Save entity state to database */
     save: () => Promise<void>;
     /** Cancel editing without saving */
@@ -153,57 +145,3 @@ export interface ResolutionHookResult<TState, TUpdate> {
     refreshState: () => Promise<void>;
 }
 
-/**
- * Configuration for state synchronization.
- * 
- * Used by sync utilities (`useFieldSync`, `useFieldsSync`, `useArraySync`)
- * to determine when and how to sync state changes to the backend.
- * 
- * **Sync Flow**:
- * 1. Sync utility detects state change
- * 2. Calls `shouldSync(prev, curr)` to determine if sync is needed
- * 3. If sync needed, calls `buildUpdate(field, value)` to create update
- * 4. Calls `applyUpdate(update)` to sync to backend
- * 
- * @template TState - The session state type
- * @template TUpdate - The update operation type
- * 
- * @example
- * ```typescript
- * const syncConfig: SyncConfig<ClassEditState, ClassUpdate> = {
- *   getEntityId: (state) => state.classId,
- *   buildUpdate: (field, value) => ({
- *     type: ClassUpdateType.UpdateClassField,
- *     payload: { field, value }
- *   }),
- *   shouldSync: (prev, curr) => prev.name !== curr.name
- * };
- * ```
- */
-export interface SyncConfig<TState, TUpdate> {
-    /**
-     * Get entity ID from state.
-     * 
-     * @param state - Current state
-     * @returns Entity ID or null if not available
-     */
-    getEntityId: (state: TState) => number | null;
-
-    /**
-     * Build update operation from field change.
-     * 
-     * @param field - Field name that changed
-     * @param value - New field value
-     * @returns Update operation
-     */
-    buildUpdate: (field: string, value: unknown) => TUpdate;
-
-    /**
-     * Determine if state should be synced.
-     * 
-     * @param prev - Previous state
-     * @param curr - Current state
-     * @returns True if state should be synced
-     */
-    shouldSync: (prev: TState, curr: TState) => boolean;
-}

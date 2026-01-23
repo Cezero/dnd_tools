@@ -3,12 +3,9 @@ import { z } from 'zod';
 import { numericParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
-import { CreateFeatureRequestSchema, FeatureResponseSchema, UpdateFeatureSchema } from './feature.js';
+import { FeatureResponseSchema, UpdateFeatureSchema } from './feature.js';
 import { CharacterFeatureChoiceForEnrichmentSchema } from './class.js';
-
-export const RaceIdParamSchema = z.object({
-    id: numericParam(),
-});
+import { ValidationErrorResponseSchema } from './validation.js';
 
 // Query schema for optional character feature choices
 export const RaceIdQuerySchema = z.object({
@@ -28,12 +25,10 @@ export const BaseRaceSchema = z.object({
     editionId: commonValidations.positiveInt('Edition ID'),
     isVisible: z.boolean().default(true),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureResponseSchema).nullable(),
+    featureIds: z.array(z.number().int()),
 });
 
-export const RaceSummarySchema = BaseRaceSchema.omit({
-    features: true,
-}).extend({
+export const RaceSummarySchema = BaseRaceSchema.extend({
     id: commonValidations.positiveInt('Race ID'),
     sizeId: z.number().int().nullable().optional(),
     speed: z.number().int().nullable().optional(),
@@ -44,17 +39,9 @@ export const GetAllRacesResponseSchema = QueryResponseSchema.extend({
     results: z.array(RaceSummarySchema),
 });
 
-export const UpdateRaceSchema = BaseRaceSchema.omit({
-    features: true,
-}).extend({
-    features: z.array(UpdateFeatureSchema).nullable(),
-}).partial();
+export const UpdateRaceSchema = BaseRaceSchema.partial();
 
-export const CreateRaceSchema = BaseRaceSchema.omit({
-    features: true,
-}).extend({
-    features: z.array(UpdateFeatureSchema).nullable(),
-});
+export const CreateRaceSchema = BaseRaceSchema;
 
 export const RaceCacheSchema = RaceSummarySchema.omit({
     description: true,
@@ -65,7 +52,6 @@ export const RaceCacheResponseSchema = QueryResponseSchema.extend({
     results: z.array(RaceCacheSchema),
 });
 
-export type RaceIdParamRequest = z.infer<typeof RaceIdParamSchema>;
 export type RaceIdQueryRequest = z.infer<typeof RaceIdQuerySchema>;
 export type CreateRaceRequest = z.infer<typeof CreateRaceSchema>;
 export type UpdateRaceRequest = z.infer<typeof UpdateRaceSchema>;
@@ -75,3 +61,17 @@ export type GetAllRacesResponse = z.infer<typeof GetAllRacesResponseSchema>;
 
 export type RaceCacheResponse = z.infer<typeof RaceCacheResponseSchema>;
 export type RaceCacheEntry = z.infer<typeof RaceCacheSchema>;
+
+// Race Edit State Schema
+export const RaceEditStateSchema = z.object({
+    raceId: z.number().int().nullable(),
+    name: z.string(),
+    editionId: commonValidations.positiveInt(),
+    isVisible: z.boolean(),
+    description: z.string().nullable(),
+    sourceBookInfo: z.array(SourceMapSchema).nullable(),
+    featureIds: z.array(z.number().int()),
+});
+
+// Race Resolution TypeScript type exports
+export type RaceEditState = z.infer<typeof RaceEditStateSchema>;

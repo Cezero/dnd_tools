@@ -1,14 +1,15 @@
 import { typedApi } from '@/services/Api';
 import {
-    ClassIdParamSchema,
-    CreateClassSchema,
-    UpdateClassSchema,
     BaseClassSchema,
+    CreateClassSchema,
     CreateResponseSchema,
-    UpdateResponseSchema,
-    GetAllClassesResponseSchema,
+    DraftLockStatusSchema,
+    GetFeaturesResponseSchema,
     GetAllClassesQuerySchema,
-    EntityLockStatusSchema,
+    GetAllClassesResponseSchema,
+    IdParamSchema,
+    UpdateClassSchema,
+    UpdateResponseSchema,
 } from '@shared/schema';
 
 export const ClassApi = {
@@ -19,11 +20,18 @@ export const ClassApi = {
         responseSchema: GetAllClassesResponseSchema,
     }),
 
-    getClassById: typedApi<undefined, typeof BaseClassSchema, typeof ClassIdParamSchema>({
+    getClassById: typedApi<undefined, typeof BaseClassSchema, typeof IdParamSchema>({
         path: '/classes/:id',
         method: 'GET',
-        paramsSchema: ClassIdParamSchema,
+        paramsSchema: IdParamSchema,
         responseSchema: BaseClassSchema,
+    }),
+
+    getClassFeatures: typedApi<undefined, typeof GetFeaturesResponseSchema, typeof IdParamSchema>({
+        path: '/classes/:id/features',
+        method: 'GET',
+        paramsSchema: IdParamSchema,
+        responseSchema: GetFeaturesResponseSchema,
     }),
 
     createClass: typedApi<typeof CreateClassSchema, typeof CreateResponseSchema>({
@@ -33,25 +41,25 @@ export const ClassApi = {
         responseSchema: CreateResponseSchema,
     }),
 
-    updateClass: typedApi<typeof UpdateClassSchema, typeof UpdateResponseSchema, typeof ClassIdParamSchema>({
+    updateClass: typedApi<typeof UpdateClassSchema, typeof UpdateResponseSchema, typeof IdParamSchema>({
         path: '/classes/:id',
         method: 'PUT',
         requestSchema: UpdateClassSchema,
-        paramsSchema: ClassIdParamSchema,
+        paramsSchema: IdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
-    deleteClass: typedApi<undefined, typeof UpdateResponseSchema, typeof ClassIdParamSchema>({
+    deleteClass: typedApi<undefined, typeof UpdateResponseSchema, typeof IdParamSchema>({
         path: '/classes/:id',
         method: 'DELETE',
-        paramsSchema: ClassIdParamSchema,
+        paramsSchema: IdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
-    getClassLockStatus: typedApi<undefined, typeof EntityLockStatusSchema, typeof ClassIdParamSchema>({
+    getClassLockStatus: typedApi<undefined, typeof DraftLockStatusSchema, typeof IdParamSchema>({
         path: '/classes/:id/lock-status',
         method: 'GET',
-        paramsSchema: ClassIdParamSchema,
-        responseSchema: EntityLockStatusSchema,
+        paramsSchema: IdParamSchema,
+        responseSchema: DraftLockStatusSchema,
     }),
 };

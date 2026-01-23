@@ -626,7 +626,7 @@ The state-based pattern ensures context is preserved throughout the editing sess
 - State Hook: `frontend/src/features/class/useClassEditState.ts`
 - Session Hook: `frontend/src/features/class/useClassResolution.ts`
 - API Client: `frontend/src/services/api/ClassResolutionApi.ts`
-- Types: `frontend/src/features/class/types.ts`, `packages/shared/schema/src/classResolution.ts`
+- Types: `frontend/src/features/class/types.ts`, `packages/shared/schema/src/class.ts`
 
 **Related Documentation**: 
 - [Backend Session Management](../backend-implementation.md#session-management) - Backend session infrastructure

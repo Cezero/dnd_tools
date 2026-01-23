@@ -15,7 +15,7 @@ import {
     CloneClassFeaturesRequestSchema,
     ForkFeatureRequestSchema,
     ForkFeatureResponseSchema,
-    EntityLockStatusSchema,
+    DraftLockStatusSchema,
 } from '@shared/schema';
 
 /**
@@ -89,11 +89,11 @@ export const FeatureSystemApi = {
         responseSchema: GetFeaturesResponseSchema,
     }),
 
-    getFeatureLockStatus: typedApi<undefined, typeof EntityLockStatusSchema, typeof FeatureIdParamSchema>({
+    getFeatureLockStatus: typedApi<undefined, typeof DraftLockStatusSchema, typeof FeatureIdParamSchema>({
         path: '/features/:id/lock-status',
         method: 'GET',
         paramsSchema: FeatureIdParamSchema,
-        responseSchema: EntityLockStatusSchema,
+        responseSchema: DraftLockStatusSchema,
     }),
 
     // Lightweight feature list for dropdown selections

@@ -20,7 +20,7 @@ export function ReferenceTableViewer() {
 
     useEffect(() => {
         const Initialize = async () => {
-            const summary = await ReferenceTableApi.getReferenceTableSummaryBySlug(undefined, { slug: slug! });
+            const summary = await ReferenceTableApi.getReferenceTableSummaryBySlug({ slug: slug! });
             setTableSummary(summary);
         };
         Initialize();

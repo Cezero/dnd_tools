@@ -111,10 +111,12 @@ Frontend clients receive and apply updates:
 ```typescript
 // Frontend WebSocket client receives update
 wsService.subscribe('feature', 123, (state) => {
-    // Update local state store
-    featureStateStore.updateFeatureState(123, state);
+    // Invalidate React Query cache to trigger refetch
+    queryClient.invalidateQueries({
+        queryKey: ['features', 'item', 123]
+    });
     
-    // React components re-render with new state
+    // React components automatically re-render with fresh data
 });
 ```
 

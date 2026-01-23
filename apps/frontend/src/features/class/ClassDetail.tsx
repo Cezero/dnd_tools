@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { ClassApi } from './ClassApi';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 
+import { ClassApi } from './ClassApi';
 import { ClassDisplay } from './ClassDisplay';
+import { ClassQueryHooks } from './ClassQueryHooks';
 
 export default function ClassDetail() {
     const { id } = useParams();
@@ -25,15 +25,22 @@ export default function ClassDetail() {
         enabled: !!classId,
     });
 
+    // Fetch feature progressions for this class (resolves featureIds to FeatureWithRelations[])
+    const { data: features = [] } = useQuery({
+        queryKey: ['class', 'features', classId],
+        queryFn: () => ClassApi.getClassFeatures({ id: classId! }),
+        enabled: !!classId,
+    });
+
     // Fetch lock status (only for admin users)
     const { data: lockStatus } = useQuery({
         queryKey: ['class', 'lock-status', classId],
-        queryFn: () => ClassApi.getClassLockStatus(undefined, { id: classId! }),
+        queryFn: () => ClassApi.getClassLockStatus({ id: classId! }),
         enabled: !!classId && isAdmin,
     });
 
     // Precache all entities referenced in feature features
-    const { isPrecaching: isPrecachingEntities } = usePrecacheFeatureEntities(cls?.features);
+    const { isPrecaching: isPrecachingEntities } = usePrecacheFeatureEntities(features);
 
     const handleBack = () => {
         navigate(`/classes${fromListParams ? `?${fromListParams}` : ''}`);
@@ -66,6 +73,7 @@ export default function ClassDetail() {
     return (
         <ClassDisplay
             cls={cls}
+            features={features}
             showHeader={true}
             showActions={true}
             onBack={handleBack}

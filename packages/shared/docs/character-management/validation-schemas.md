@@ -609,7 +609,7 @@ The character management system follows the shared [Error Handling Patterns](../
 
 The character resolution system includes response schemas for API operations that manage resolution sessions. These schemas validate the structure of responses from the resolution API endpoints.
 
-**Source File**: `packages/shared/schema/src/characterResolution.ts`
+**Source File**: `packages/shared/schema/src/character.ts`
 
 ### **SaveSessionResponseSchema**
 
@@ -627,7 +627,7 @@ Validates the response when saving a resolution session to the database.
 **Related Schemas**:
 - `CharacterWithAllDetailsSchema` - Schema for the character data structure
 
-**Source File**: `packages/shared/schema/src/characterResolution.ts`
+**Source File**: `packages/shared/schema/src/character.ts`
 
 ### **CancelSessionResponseSchema**
 
@@ -643,7 +643,7 @@ Validates the response when cancelling a resolution session.
 
 **Type Export**: Returns `void` (no type export needed)
 
-**Source File**: `packages/shared/schema/src/characterResolution.ts`
+**Source File**: `packages/shared/schema/src/character.ts`
 
 ### **GetAvailableFeatsResponseSchema**
 
@@ -662,7 +662,7 @@ Validates the response when fetching available feats for a character.
 **Related Schemas**:
 - `FeatInQueryResponseSchema` - Schema for individual feat items in the results array
 
-**Source File**: `packages/shared/schema/src/characterResolution.ts`
+**Source File**: `packages/shared/schema/src/character.ts`
 
 **Related Documentation**: [Character Resolution System](./character-resolution-system.md) for complete API endpoint documentation
 
@@ -676,10 +676,10 @@ The following types from `@shared/schema` are designed for direct use in fronten
 
 | Type | Source File | Frontend Usage |
 |------|-------------|----------------|
-| `PendingChoice` | characterResolution.ts | Choice resolution UI, displaying pending feature choices |
-| `PendingChoiceOption` | characterResolution.ts | Individual choice options in selection dialogs |
-| `SkillBonus` | characterResolution.ts | Skill bonus tracking and display |
-| `ClassSkill` | characterResolution.ts | Class skill identification for skill point allocation |
+| `PendingChoice` | character.ts | Choice resolution UI, displaying pending feature choices |
+| `PendingChoiceOption` | character.ts | Individual choice options in selection dialogs |
+| `SkillBonus` | character.ts | Skill bonus tracking and display |
+| `ClassSkill` | character.ts | Class skill identification for skill point allocation |
 | `CharacterFeatureChoice` | character.ts | Saved feature choice data |
 | `CharacterAbilityScoreResponse` | character.ts | Ability score display and editing |
 | `CharacterDisallowedSource` | character.ts | Source book restriction management |

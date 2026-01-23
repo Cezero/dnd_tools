@@ -10,7 +10,7 @@ The character system provides comprehensive character creation, editing, and man
 - Frontend: `apps/frontend/src/features/character/`
 - Backend: `apps/backend/src/features/character/`
 - Resolution: `apps/backend/src/features/characterResolution/`
-- Schema: `packages/shared/schema/src/character.ts`, `packages/shared/schema/src/characterResolution.ts`
+- Schema: `packages/shared/schema/src/character.ts`
 
 ## State Management Patterns
 

@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { ItemWithDetails } from '@shared/schema';
 
 import { ITEM_COLUMNS } from './ItemColumns';
@@ -20,7 +20,7 @@ export function ItemList(): React.JSX.Element {
     };
 
     const dataFetcher = useCallback(async () => {
-        return await ItemQueryHooks.getItems();
+        return await ItemQueryHooks.getAllItems();
     }, []);
 
     if (isAuthLoading) {

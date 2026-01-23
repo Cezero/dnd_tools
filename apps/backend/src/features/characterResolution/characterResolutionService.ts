@@ -1,4 +1,4 @@
-import type { FeatureWithRelations, CharacterWithAllDetailsResponse, DnDClass, FeatInQueryResponse, FeatureEntity, PendingChoice } from '@shared/schema';
+import type { FeatureWithRelations, CharacterWithAllDetailsResponse, DnDClass, FeatInQueryResponse, FeatureEntity, PendingChoice, Race } from '@shared/schema';
 import { EditionId } from '@shared/static-data';
 
 import { CascadingResolver } from './cascadingResolver';
@@ -50,7 +50,7 @@ export class CharacterResolutionService {
      * 
      * @see characterService.addSpellKnown - Uses resolved features for validation
      * @see characterService.removeSpellKnown - Uses resolved features for validation
-     * @see CharacterSessionService - Stores resolved features in session
+     * @see CharacterResolvedResultsService - Stores resolved features in state
      */
     static async resolveCharacterFeatures(
         character: CharacterWithAllDetailsResponse,
@@ -143,10 +143,44 @@ class FeatureResolution {
             return;
         }
 
+        // Fetch features for both classes separately
+        // Note: classDetails objects have id at runtime even though type doesn't include it
+        const primaryClassId = (this.context.classDetails as DnDClass & { id?: number }).id;
+        const secondaryClassId = (this.context.secondaryClassDetails as DnDClass & { id?: number }).id;
+
+        if (!primaryClassId || !secondaryClassId) {
+            return;
+        }
+
+        const [primaryFeatures, secondaryFeatures] = await Promise.all([
+            featureSystemService.getFeaturesByClassId(
+                primaryClassId,
+                this.context.userChoices ? Object.entries(this.context.userChoices).flatMap(([featureId, entityIds]) =>
+                    entityIds.map((entityId: number) => ({
+                        featureId: parseInt(featureId, 10),
+                        featureEntityId: entityId,
+                        appliesToId: null,
+                        appliesToSubId: null
+                    }))
+                ) : undefined
+            ),
+            featureSystemService.getFeaturesByClassId(
+                secondaryClassId,
+                this.context.userChoices ? Object.entries(this.context.userChoices).flatMap(([featureId, entityIds]) =>
+                    entityIds.map((entityId: number) => ({
+                        featureId: parseInt(featureId, 10),
+                        featureEntityId: entityId,
+                        appliesToId: null,
+                        appliesToSubId: null
+                    }))
+                ) : undefined
+            )
+        ]);
+
         // Merge classes according to gestalt rules
         const mergedClass = GestaltClassService.mergeClasses(
-            this.context.classDetails,
-            this.context.secondaryClassDetails
+            { ...this.context.classDetails, features: primaryFeatures },
+            { ...this.context.secondaryClassDetails, features: secondaryFeatures }
         );
 
         // Update context with merged class
@@ -286,16 +320,36 @@ class FeatureResolution {
 
     // Private helper methods
     private async resolveRacialFeatures(): Promise<void> {
-        if (!this.context.raceDetails || !this.context.raceDetails.features) {
+        if (!this.context.raceDetails) {
             return;
         }
 
-        // Use the feature features that are already available in the race data
-        const racialProgressions = this.context.raceDetails.features;
+        // Fetch features separately using featureSystemService
+        // Note: raceDetails object has id at runtime even though type doesn't include it
+        const raceId = (this.context.raceDetails as Race & { id?: number }).id;
+        if (!raceId) {
+            return;
+        }
+
+        const racialProgressions = await featureSystemService.getFeaturesByRaceId(
+            raceId,
+            this.context.userChoices ? Object.entries(this.context.userChoices).flatMap(([featureId, entityIds]) =>
+                entityIds.map((entityId: number) => ({
+                    featureId: parseInt(featureId, 10),
+                    featureEntityId: entityId,
+                    appliesToId: null,
+                    appliesToSubId: null
+                }))
+            ) : undefined
+        );
+
+        if (!racialProgressions || racialProgressions.length === 0) {
+            return;
+        }
 
         // Filter features to only include those at or below the target level
         const applicableProgressions = racialProgressions.filter(
-            feature => feature.level <= this.targetLevel
+            (feature: FeatureWithRelations) => feature.level <= this.targetLevel
         );
 
         // Process each applicable racial feature
@@ -311,16 +365,36 @@ class FeatureResolution {
     }
 
     private async resolveClassFeatures(classDetails: DnDClass): Promise<void> {
-        if (!classDetails || !classDetails.features) {
+        if (!classDetails) {
             return;
         }
 
-        // Use the feature features that are already available in the class data
-        const classProgressions = classDetails.features;
+        // Fetch features separately using featureSystemService
+        // Note: classDetails object has id at runtime even though type doesn't include it
+        const classId = (classDetails as DnDClass & { id?: number }).id;
+        if (!classId) {
+            return;
+        }
+
+        const classProgressions = await featureSystemService.getFeaturesByClassId(
+            classId,
+            this.context.userChoices ? Object.entries(this.context.userChoices).flatMap(([featureId, entityIds]) =>
+                entityIds.map((entityId: number) => ({
+                    featureId: parseInt(featureId, 10),
+                    featureEntityId: entityId,
+                    appliesToId: null,
+                    appliesToSubId: null
+                }))
+            ) : undefined
+        );
+
+        if (!classProgressions || classProgressions.length === 0) {
+            return;
+        }
 
         // Filter features to only include those at or below the target level
         const applicableProgressions = classProgressions.filter(
-            feature => feature.level <= this.targetLevel
+            (feature: FeatureWithRelations) => feature.level <= this.targetLevel
         );
 
         // Process each applicable class feature

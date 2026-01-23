@@ -421,7 +421,7 @@ export const ClassSummarySchema = ClassSchema.omit({
 When the same structure appears in multiple files, extract it to a shared schema:
 
 ```typescript
-// In characterResolution.ts
+// In character.ts
 export const ClassSkillSchema = z.object({
     skillId: commonValidations.positiveInt(),
     skillSubId: z.number().int().nullable(),
@@ -435,7 +435,7 @@ export const SkillBonusSchema = z.object({
 });
 
 // In spell.ts - reuse the schema
-import { ClassSkillSchema, SkillBonusSchema } from './characterResolution.js';
+import { ClassSkillSchema, SkillBonusSchema } from './character.js';
 
 export const MySchema = z.object({
     classSkills: z.array(ClassSkillSchema),
@@ -454,7 +454,7 @@ When a schema needs to be included as an optional field in another schema:
 
 ```typescript
 // In spell.ts
-import { ResolvedCharacterResultSchema } from './characterResolution.js';
+import { ResolvedCharacterResultSchema } from './character.js';
 
 export const AddSpellKnownResponseSchema = z.object({
     message: z.string(),

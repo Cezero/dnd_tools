@@ -1,4 +1,5 @@
-import type { ClassEditState, ClassUpdate } from '@shared/schema';
+import type { ClassEditState } from '@shared/schema';
+import { ClassUpdateType } from '@shared/static-data';
 
 /**
  * Database row structure for unified edit_sessions table (class type).
@@ -30,5 +31,13 @@ export interface ClassSession {
     expiresAt: Date;
 }
 
-// Re-export shared types for convenience
-export type { ClassEditState, ClassUpdate };
+/**
+ * Discriminated union type for class update operations.
+ * Used by the update applier system to apply updates to class edit state.
+ */
+export type ClassUpdate =
+    | { type: typeof ClassUpdateType.LinkFeature; payload: { featureId: number } }
+    | { type: typeof ClassUpdateType.UnlinkFeature; payload: { featureId: number } }
+    | { type: typeof ClassUpdateType.UpdateClassField; payload: { field: string; value: unknown } }
+    | { type: typeof ClassUpdateType.SetSpellcastingProgression; payload: { progression: unknown } }
+    | { type: typeof ClassUpdateType.SetSpellsKnownProgression; payload: { progression: unknown } };

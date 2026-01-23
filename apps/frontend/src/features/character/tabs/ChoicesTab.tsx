@@ -6,9 +6,9 @@ import { SelectedEntityDisplay } from '@/features/character';
 import { FeatSubIdSelectionModal } from '@/features/character/components/FeatSubIdSelectionModal';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { DomainQueryHooks } from '@/features/domain/DomainQueryHooks';
 import { useCacheFunctions } from '@/services/cache';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
-import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import type { FeatCacheEntry, FeatInQueryResponse } from '@shared/schema';
 import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter, CompanionType, FeatureSourceType } from '@shared/static-data';
 
@@ -16,10 +16,10 @@ import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter, CompanionType
 /**
  * Choices tab component for managing character feature choices (domains, feats, etc.).
  * 
- * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → updateValue pattern.
  * - Updates state via `updateState()` when choices change
- * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
- * - Do NOT call `resolution.applyUpdate()` or `handleChoiceSelection()` directly from this tab
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks using `updateValue()`
+ * - Do NOT call `resolution.updateValue()` or `handleChoiceSelection()` directly from this tab
  * 
  * @see CharacterEdit component for sync pattern documentation
  */

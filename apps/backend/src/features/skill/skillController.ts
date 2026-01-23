@@ -5,7 +5,6 @@ import {
     ValidatedParamsT,
     ValidatedBodyT,
     ValidatedParamsBodyT,
-    ValidatedQueryT,
 } from '@/util/validated-types';
 import { CreateSkillRequest, SkillIdParamRequest, UpdateSkillRequest, UpdateResponse, CreateResponse, GetSkillResponse, GetAllSkillsResponse, SkillCacheResponse } from '@shared/schema';
 

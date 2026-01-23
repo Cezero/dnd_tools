@@ -1,9 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { GestaltProgressionDisplay } from '@/features/character';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { ClassApi } from '@/features/class/ClassApi';
 import { ClassDisplay } from '@/features/class/ClassDisplay';
 import { useCacheFunctions } from '@/services/cache';
 import { EditionId, CoreComponent } from '@shared/static-data';
@@ -11,10 +13,10 @@ import { EditionId, CoreComponent } from '@shared/static-data';
 /**
  * Class tab component for managing character class selection.
  * 
- * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → updateValue pattern.
  * - Updates state via `updateState()` when class changes
- * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
- * - Do NOT call `resolution.applyUpdate()` directly from this tab
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks using `updateValue()`
+ * - Do NOT call `resolution.updateValue()` directly from this tab
  * 
  * @see CharacterEdit component for sync pattern documentation
  */
@@ -40,6 +42,18 @@ export function ClassTab({
     const primaryClassData = sharedData.primaryClass;
     const secondaryClassData = sharedData.secondaryClass;
     const isLoadingClass = sharedData.isLoadingClasses;
+
+    // Fetch features for primary and secondary classes (resolves featureIds to FeatureWithRelations[])
+    const { data: primaryFeatures = [] } = useQuery({
+        queryKey: ['class', 'features', state.classId],
+        queryFn: () => ClassApi.getClassFeatures({ id: state.classId! }),
+        enabled: !!primaryClassData && !!state.classId,
+    });
+    const { data: secondaryFeatures = [] } = useQuery({
+        queryKey: ['class', 'features', state.secondaryClassId],
+        queryFn: () => ClassApi.getClassFeatures({ id: state.secondaryClassId! }),
+        enabled: !!secondaryClassData && !!state.secondaryClassId,
+    });
 
     // Fetch classes when edition or variant settings change
     useEffect(() => {
@@ -162,6 +176,7 @@ export function ClassTab({
                 <div className="mt-6">
                     <ClassDisplay
                         cls={primaryClassData}
+                        features={primaryFeatures}
                         showHeader={false}
                         showActions={false}
                     />
@@ -174,6 +189,8 @@ export function ClassTab({
                     <GestaltProgressionDisplay
                         primaryClass={primaryClassData}
                         secondaryClass={secondaryClassData}
+                        primaryFeatures={primaryFeatures}
+                        secondaryFeatures={secondaryFeatures}
                         showHeader={true}
                     />
                 </div>
@@ -191,6 +208,7 @@ export function ClassTab({
                         <h3 className="text-lg font-semibold mb-4">Primary Class Details</h3>
                         <ClassDisplay
                             cls={primaryClassData}
+                            features={primaryFeatures}
                             showHeader={false}
                             showActions={false}
                         />

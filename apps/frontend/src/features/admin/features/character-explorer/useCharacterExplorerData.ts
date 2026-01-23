@@ -1,14 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useMemo } from 'react';
 
+import { CharacterQueryHooks } from '@/features/character/CharacterQueryHooks';
+import { CharacterResolutionApi } from '@/features/character/CharacterResolutionApi';
 import type { ResolutionContext } from '@/features/character/types';
+import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
 import type { FormattedCharacterResult, DisplayResult, BaseCharacterInfo } from '@/lib/formatters/types';
-import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
-import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { CharacterWithAllDetailsResponse, FeatureWithRelations, DnDClass, ItemWithDetails, PendingChoice } from '@shared/schema';
 import { DisplayType } from '@shared/static-data';
 
@@ -72,8 +72,9 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
                 setIsLoading(true);
                 setError(null);
 
-                // Use backend resolution API to get resolved features
-                const resolvedResult = await CharacterResolutionApi.initializeSession(character.id);
+                // Use read-only resolve API (no lock, no session) for admin character explorer
+                const result = await CharacterResolutionApi.getResolved(character.id);
+                const resolvedResult = result.resolvedCharacter;
 
                 setResolvedProgressions(resolvedResult.resolvedProgressions);
                 setPendingChoices(resolvedResult.pendingChoices);
@@ -136,8 +137,8 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
             try {
                 // Load items
                 const itemsData = await queryClient.fetchQuery({
-                    queryKey: ItemQueryHooks.getItemsQueryKey(),
-                    queryFn: ItemQueryHooks.getItemsQueryFn,
+                    queryKey: ItemQueryHooks.getAllItemsQueryKey(),
+                    queryFn: ItemQueryHooks.getAllItemsQueryFn,
                     staleTime: 5 * 60 * 1000,
                     gcTime: 10 * 60 * 1000,
                 });

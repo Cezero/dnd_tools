@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
@@ -12,9 +13,10 @@ import {
     SourceEditor
 } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { CreateFeatRequest, UpdateFeatRequest, UpdateFeatSchema, BaseFeatSchema, Feat, Feature, FeatureWithRelations } from '@shared/schema';
 import { FEAT_TYPE_LIST, EDITION_LIST, SourceType, EditionId, FeatureSourceType } from '@shared/static-data';
+
+import { FeatQueryHooks } from './FeatQueryHooks';
 
 // Type definitions for the form state
 type FeatFormData = CreateFeatRequest | UpdateFeatRequest;
@@ -342,7 +344,7 @@ export function FeatEdit() {
             };
 
             // Get existing features for this feature and add the new one
-            const existingProgressions = await FeatureSystemApi.getFeatures(undefined, { id: feature.id });
+            const existingProgressions = await FeatureSystemApi.getFeatures({ id: feature.id });
             const updatedProgressions = [...existingProgressions, newProgression].map(p => ({
                 ...p,
                 // FeatureWithRelations is now the unified Feature model, no need to add feature property
@@ -667,24 +669,22 @@ export function FeatEdit() {
                         setPreSelectedFeature(null);
                     }}
                     featureId={
-                        editingProgression?.id
-                            ? editingProgression.id
-                            : preSelectedFeature?.id
-                                ? preSelectedFeature.id
-                                : 'new'
+                        Number(editingProgression?.id ?? preSelectedFeature?.id ?? 0) || 0
                     }
-                    onSave={(feature: Feature, features: FeatureWithRelations[]) => {
-                        const featureWithRelations = features[0] || feature as FeatureWithRelations;
-                        handleSaveProgression(featureWithRelations);
+                    onSave={async (featureId: number) => {
+                        const feature = await FeatureQueryHooks.getFeatureById(featureId);
+                        if (feature) {
+                            handleSaveProgression(feature as FeatureWithRelations);
+                        }
                     }}
                     mode="modal"
                     context={
                         id && id !== 'new'
                             ? {
-                                  sourceType: FeatureSourceType.Feat,
-                                  parentId: parseInt(id),
-                                  parentType: 'feat'
-                              }
+                                sourceType: FeatureSourceType.Feat,
+                                parentId: parseInt(id),
+                                parentType: 'feat'
+                            }
                             : undefined
                     }
                 />

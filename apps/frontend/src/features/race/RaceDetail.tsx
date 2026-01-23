@@ -3,10 +3,11 @@ import React from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { RaceApi } from './RaceApi';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 
+import { RaceApi } from './RaceApi';
 import { RaceDisplay } from './RaceDisplay';
+import { RaceQueryHooks } from './RaceQueryHooks';
+
 
 export function RaceDetail() {
     const { id } = useParams();
@@ -24,10 +25,17 @@ export function RaceDetail() {
         enabled: !!raceId,
     });
 
+    // Fetch feature progressions for this race (resolves featureIds to FeatureWithRelations[])
+    const { data: features = [] } = useQuery({
+        queryKey: ['race', 'features', raceId],
+        queryFn: () => RaceApi.getRaceFeatures({ id: raceId! }),
+        enabled: !!raceId,
+    });
+
     // Fetch lock status (only for admin users)
     const { data: lockStatus } = useQuery({
         queryKey: ['race', 'lock-status', raceId],
-        queryFn: () => RaceApi.getRaceLockStatus(undefined, { id: raceId! }),
+        queryFn: () => RaceApi.getRaceLockStatus({ id: raceId! }),
         enabled: !!raceId && isAdmin,
     });
 
@@ -62,6 +70,7 @@ export function RaceDetail() {
     return (
         <RaceDisplay
             race={race}
+            features={features}
             showHeader={true}
             showActions={true}
             onBack={handleBack}

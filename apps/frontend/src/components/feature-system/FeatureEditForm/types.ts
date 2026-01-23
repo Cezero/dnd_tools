@@ -1,4 +1,4 @@
-import { Feature, FeatureWithRelations, CreateFeatureRequest, UpdateFeature } from '@shared/schema';
+import { CreateFeatureRequest, UpdateFeature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
 export interface FeatureEditContext {
@@ -9,10 +9,10 @@ export interface FeatureEditContext {
 }
 
 export interface FeatureEditFormProps {
-    featureId?: number | 'new';
+    featureId?: number;
     isOpen?: boolean;
     onClose?: () => void;
-    onSave?: (feature: Feature, features: FeatureWithRelations[], featureId: number) => void;
+    onSave?: (featureId: number) => void;
     onCancel?: () => void;
     mode?: 'modal' | 'embedded';
     context?: FeatureEditContext;

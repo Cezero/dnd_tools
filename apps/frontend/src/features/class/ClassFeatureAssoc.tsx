@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { ListSelectionDialog } from '@/components/generic-list';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import type { Feature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 

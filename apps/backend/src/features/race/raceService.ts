@@ -4,7 +4,7 @@ import {
     Race,
     CreateRaceRequest,
     UpdateRaceRequest,
-    RaceIdParamRequest,
+    IdParamRequest,
     CreateResponse,
     UpdateResponse,
     RaceCacheResponse,
@@ -53,12 +53,15 @@ export const raceService: RaceService = {
 
         return {
             total: races.length,
-            results: racesWithMechanics,
+            results: racesWithMechanics.map(race => ({
+                ...race,
+                featureIds: [] // Cache response doesn't include featureIds
+            })),
         };
     },
 
     async getRaceById(
-        id: RaceIdParamRequest,
+        id: IdParamRequest,
         characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
     ): Promise<Race | null> {
         const race = await prisma.race.findUnique({
@@ -72,21 +75,27 @@ export const raceService: RaceService = {
             return null;
         }
 
-        // Get feature features using the new architecture
-        // Pass character feature choices to enrich features with choice data
+        // Get feature IDs using the new architecture
         const features = await featureSystemService.getFeaturesByRaceId(id.id, characterFeatureChoices);
 
-        // Combine race data with enriched feature features
+        // Combine race data with feature IDs only
         const transformedRace = {
             ...race,
-            features,
+            featureIds: features.map(f => f.id),
         };
 
         return transformedRace as Race;
     },
 
+    async getRaceFeatures(
+        id: IdParamRequest,
+        characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ) {
+        return featureSystemService.getFeaturesByRaceId(id.id, characterFeatureChoices, true);
+    },
+
     async createRace(data: CreateRaceRequest): Promise<CreateResponse> {
-        const { features, ...raceData } = data;
+        const { featureIds, ...raceData } = data;
 
         const result = await prisma.race.create({
             data: {
@@ -100,33 +109,18 @@ export const raceService: RaceService = {
             },
         });
 
-        // Create feature features using consolidated feature system service
-        // Convert UpdateFeature[] to CreateFeatureRequest[] by providing defaults
-        if (features && features.length > 0) {
-            const context: FeatureContext = { raceId: result.id };
-            const createProgressions: CreateFeatureRequest[] = features.map(prog => ({
-                name: prog.name ?? '',
-                slug: prog.slug ?? '',
-                description: prog.description ?? '',
-                summary: prog.summary ?? null,
-                displayInCharacterSheet: prog.displayInCharacterSheet ?? true,
-                level: prog.level ?? 1,
-                sourceType: prog.sourceType ?? FeatureSourceType.Race,
-                domainId: prog.domainId ?? null,
-                featId: prog.featId ?? null,
-                companionId: prog.companionId ?? null,
-                editionId: prog.editionId ?? null,
-                entities: prog.entities,
-                displayConditions: prog.displayConditions,
-            }));
-            await featureSystemService.createMultipleFeatures(createProgressions, context);
+        // Sync FeatureRaceMap links using featureIds
+        if (featureIds && featureIds.length > 0) {
+            await prisma.$transaction(async (tx) => {
+                await featureSystemService.syncRaceFeatures(result.id, featureIds, tx);
+            });
         }
 
         return { id: result.id.toString(), message: 'Race created successfully' };
     },
 
-    async updateRace(id: RaceIdParamRequest, data: UpdateRaceRequest): Promise<UpdateResponse> {
-        const { features, ...raceData } = data;
+    async updateRace(id: IdParamRequest, data: UpdateRaceRequest): Promise<UpdateResponse> {
+        const { featureIds, ...raceData } = data;
 
         await prisma.$transaction(async (tx) => {
             // Delete existing race source maps
@@ -146,49 +140,11 @@ export const raceService: RaceService = {
                 }
             });
 
-            // Sync FeatureRaceMap links
-            // Features are already saved via state system, we only need to sync the links
-            if (features && features.length > 0) {
-                console.log(`[RaceService] Syncing FeatureRaceMap for race ${id.id} with ${features.length} features`);
-
-                // Extract feature IDs from the features array
-                // Features should have id fields (they were already saved via state system)
-                const featureIds: number[] = [];
-                for (const feature of features) {
-                    if (feature.id && typeof feature.id === 'number') {
-                        featureIds.push(feature.id);
-                    }
-                }
-
-                console.log(`[RaceService] Extracted ${featureIds.length} feature IDs: ${featureIds.join(', ')}`);
-
-                // Verify all feature IDs exist in database
-                if (featureIds.length > 0) {
-                    const existingFeatures = await tx.feature.findMany({
-                        where: { id: { in: featureIds } },
-                        select: { id: true }
-                    });
-
-                    const foundIds = new Set(existingFeatures.map(f => f.id));
-                    const missingIds = featureIds.filter(id => !foundIds.has(id));
-
-                    if (missingIds.length > 0) {
-                        console.error(`[RaceService] WARNING: ${missingIds.length} feature IDs not found in database: ${missingIds.join(', ')}`);
-                        // Filter out missing IDs
-                        const validFeatureIds = featureIds.filter(id => foundIds.has(id));
-                        await featureSystemService.syncRaceFeatures(id.id, validFeatureIds, tx);
-                    } else {
-                        // All IDs are valid, sync links
-                        await featureSystemService.syncRaceFeatures(id.id, featureIds, tx);
-                    }
-                } else {
-                    console.warn(`[RaceService] No valid feature IDs found in features array`);
-                    // Sync to empty list (removes all links for this race)
-                    await featureSystemService.syncRaceFeatures(id.id, [], tx);
-                }
+            // Sync FeatureRaceMap links using featureIds from request
+            if (featureIds && featureIds.length > 0) {
+                await featureSystemService.syncRaceFeatures(id.id, featureIds, tx);
             } else {
-                // No features provided - sync to empty list (removes all links for this race)
-                console.log(`[RaceService] No features provided for race ${id.id}, removing all FeatureRaceMap entries`);
+                // No featureIds provided - sync to empty list (removes all links for this race)
                 await featureSystemService.syncRaceFeatures(id.id, [], tx);
             }
         });
@@ -196,7 +152,7 @@ export const raceService: RaceService = {
         return { message: 'Race updated successfully' };
     },
 
-    async deleteRace(id: RaceIdParamRequest): Promise<UpdateResponse> {
+    async deleteRace(id: IdParamRequest): Promise<UpdateResponse> {
         await prisma.race.delete({
             where: { id: id.id },
         });
@@ -216,7 +172,10 @@ export const raceService: RaceService = {
 
         return {
             total: races.length,
-            results: races,
+            results: races.map(race => ({
+                ...race,
+                featureIds: [] // Cache response doesn't include featureIds
+            })),
         };
     },
 

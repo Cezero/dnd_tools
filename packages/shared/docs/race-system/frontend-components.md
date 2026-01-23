@@ -465,7 +465,7 @@ The state-based pattern ensures context is preserved throughout the editing sess
 - State Hook: `frontend/src/features/race/useRaceEditState.ts`
 - Session Hook: `frontend/src/features/race/useRaceResolution.ts`
 - API Client: `frontend/src/services/api/RaceResolutionApi.ts`
-- Types: `frontend/src/features/race/types.ts`, `packages/shared/schema/src/classResolution.ts`
+- Types: `frontend/src/features/race/types.ts`, `packages/shared/schema/src/race.ts`
 
 **Related Documentation**: 
 - [Backend Session Management](../backend-implementation.md#session-management) - Backend session infrastructure

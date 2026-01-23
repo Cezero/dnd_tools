@@ -20,7 +20,7 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/components/toast/useToast';
 import { CharacterApi } from '@/features/character';
 import { TabComponentProps, CharacterEditStateUpdateType, type AttackDefinition } from '@/features/character/types';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import type { CharacterWithAllDetailsResponse, ItemWithDetails } from '@shared/schema';
 
 import type { CalculatedAttackDisplay } from './types';
@@ -124,8 +124,8 @@ export function CombatTab({
     const queryClient = useQueryClient();
     useEffect(() => {
         queryClient.fetchQuery({
-            queryKey: ItemQueryHooks.getItemsQueryKey(),
-            queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+            queryKey: ItemQueryHooks.getAllItemsQueryKey(),
+            queryFn: () => ItemQueryHooks.getAllItemsQueryFn(),
             staleTime: 5 * 60 * 1000, // 5 minutes
             gcTime: 10 * 60 * 1000, // 10 minutes
         })
@@ -323,7 +323,7 @@ export function CombatTab({
         }
 
         try {
-            await CharacterApi.deleteCharacterAttackDefinition(undefined, {
+            await CharacterApi.deleteCharacterAttackDefinition({
                 id: state.characterId,
                 attackId: definition.id,
             });

@@ -1,13 +1,16 @@
+import type { DraftRef } from '@shared/schema';
+import { DraftType } from '@shared/static-data';
+
+
 import { getRedisClient } from './redisClient';
 import type { RedisSessionClient } from './types';
 
 /**
  * Entity reference type for tracking which entities a user is viewing/editing.
+ * 
+ * @deprecated Use DraftRef from @shared/schema instead
  */
-export interface EntityRef {
-    entityType: string;
-    entityId: number;
-}
+export type EntityRef = DraftRef;
 
 /**
  * User session data structure.
@@ -41,8 +44,8 @@ export interface UserSession {
  * - When a user starts editing an entity, it's added to `editing` and a lock is acquired
  * - When a user stops viewing/editing, the entity is removed from the respective array
  * 
- * @see EntityLockService - For lock management
- * @see EntityStateService - For entity state management
+ * @see DraftLockService - For lock management
+ * @see DraftStateService - For entity state management
  * @see packages/shared/docs/application-overview/entity-state-management.md - Full documentation
  * 
  * @example
@@ -155,8 +158,8 @@ export class UserSessionService {
      * If the user session doesn't exist, creates it.
      * 
      * @param userId - The user ID
-     * @param entityType - The entity type (e.g., 'class', 'feature', 'character')
-     * @param entityId - The entity ID
+     * @param objectName - The entity type name (e.g., 'class', 'feature', 'character')
+     * @param id - The entity ID
      * @throws Error if Redis operation fails
      * 
      * @example
@@ -164,16 +167,16 @@ export class UserSessionService {
      * await userSessionService.addViewingEntity(userId, 'class', 1);
      * ```
      */
-    async addViewingEntity(userId: number, entityType: string, entityId: number): Promise<void> {
+    async addViewingEntity(userId: number, draftType: DraftType, id: number): Promise<void> {
         const session = await this.getUserSession(userId);
         const now = new Date();
         
-        const entityRef: EntityRef = { entityType, entityId };
+        const entityRef: EntityRef = { draftType, id };
         
         if (session) {
             // Check if already viewing
             const isViewing = session.viewing.some(
-                e => e.entityType === entityType && e.entityId === entityId
+                e => e.draftType === draftType && e.id === id
             );
             
             if (isViewing) {
@@ -207,8 +210,8 @@ export class UserSessionService {
      * Removes an entity from the user's viewing list.
      * 
      * @param userId - The user ID
-     * @param entityType - The entity type (e.g., 'class', 'feature', 'character')
-     * @param entityId - The entity ID
+     * @param objectName - The entity type name (e.g., 'class', 'feature', 'character')
+     * @param id - The entity ID
      * @throws Error if Redis operation fails
      * 
      * @example
@@ -216,7 +219,7 @@ export class UserSessionService {
      * await userSessionService.removeViewingEntity(userId, 'class', 1);
      * ```
      */
-    async removeViewingEntity(userId: number, entityType: string, entityId: number): Promise<void> {
+    async removeViewingEntity(userId: number, draftType: DraftType, id: number): Promise<void> {
         const session = await this.getUserSession(userId);
         
         if (!session) {
@@ -224,7 +227,7 @@ export class UserSessionService {
         }
         
         const updatedViewing = session.viewing.filter(
-            e => !(e.entityType === entityType && e.entityId === entityId)
+            e => !(e.draftType === draftType && e.id === id)
         );
         
         await this.setUserSession(userId, {
@@ -241,11 +244,11 @@ export class UserSessionService {
      * list, does nothing. If the user session doesn't exist, creates it.
      * 
      * **Note**: This method does not acquire a lock. Lock acquisition should be
-     * handled separately via EntityLockService.
+     * handled separately via DraftLockService.
      * 
      * @param userId - The user ID
-     * @param entityType - The entity type (e.g., 'class', 'feature', 'character')
-     * @param entityId - The entity ID
+     * @param objectName - The entity type name (e.g., 'class', 'feature', 'character')
+     * @param id - The entity ID
      * @throws Error if Redis operation fails
      * 
      * @example
@@ -253,16 +256,16 @@ export class UserSessionService {
      * await userSessionService.setEditingEntity(userId, 'class', 1);
      * ```
      */
-    async setEditingEntity(userId: number, entityType: string, entityId: number): Promise<void> {
+    async setEditingEntity(userId: number, draftType: DraftType, id: number): Promise<void> {
         const session = await this.getUserSession(userId);
         const now = new Date();
         
-        const entityRef: EntityRef = { entityType, entityId };
+        const entityRef: EntityRef = { draftType, id };
         
         if (session) {
             // Check if already editing
             const isEditing = session.editing.some(
-                e => e.entityType === entityType && e.entityId === entityId
+                e => e.draftType === draftType && e.id === id
             );
             
             if (isEditing) {
@@ -296,11 +299,11 @@ export class UserSessionService {
      * Removes an entity from the user's editing list.
      * 
      * **Note**: This method does not release a lock. Lock release should be
-     * handled separately via EntityLockService.
+     * handled separately via DraftLockService.
      * 
      * @param userId - The user ID
-     * @param entityType - The entity type (e.g., 'class', 'feature', 'character')
-     * @param entityId - The entity ID
+     * @param objectName - The entity type name (e.g., 'class', 'feature', 'character')
+     * @param id - The entity ID
      * @throws Error if Redis operation fails
      * 
      * @example
@@ -308,7 +311,7 @@ export class UserSessionService {
      * await userSessionService.clearEditingEntity(userId, 'class', 1);
      * ```
      */
-    async clearEditingEntity(userId: number, entityType: string, entityId: number): Promise<void> {
+    async clearEditingEntity(userId: number, draftType: DraftType, id: number): Promise<void> {
         const session = await this.getUserSession(userId);
         
         if (!session) {
@@ -316,7 +319,7 @@ export class UserSessionService {
         }
         
         const updatedEditing = session.editing.filter(
-            e => !(e.entityType === entityType && e.entityId === entityId)
+            e => !(e.draftType === draftType && e.id === id)
         );
         
         await this.setUserSession(userId, {

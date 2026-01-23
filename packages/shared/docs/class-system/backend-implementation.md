@@ -287,7 +287,7 @@ Service for transforming Redis session state → MySQL.
 - Resolution Controller: `src/features/classResolution/classResolutionController.ts`
 - Update Applier: `src/features/classResolution/classUpdateApplier.ts`
 - Save Service: `src/features/classResolution/classSaveService.ts`
-- Types: `src/features/classResolution/types.ts`, `packages/shared/schema/src/classResolution.ts`
+- Types: `src/features/classResolution/types.ts`, `packages/shared/schema/src/class.ts`
 
 **Related Documentation**: 
 - [Frontend State-Based Pattern](frontend-components.md#state-based-pattern-architecture) - Frontend implementation

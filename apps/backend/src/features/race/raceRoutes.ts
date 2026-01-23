@@ -1,20 +1,21 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import { requireAdmin } from '@/middleware/authMiddleware';
 import {
-    RaceIdParamSchema,
+    IdParamSchema,
     RaceIdQuerySchema,
     CreateRaceSchema,
     UpdateRaceSchema
 } from '@shared/schema';
 
 import {
-    GetAllRaces,
-    GetRaceById,
     CreateRace,
-    UpdateRace,
     DeleteRace,
+    GetRaceById,
     GetRaceCache,
+    GetRaceFeatures,
     GetRaceLockStatus,
+    GetAllRaces,
+    UpdateRace,
 } from './raceController.js';
 
 const { router: RaceRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
@@ -22,12 +23,13 @@ const { router: RaceRouter, get, post, put, delete: deleteRoute } = buildValidat
 // Race Read Routes
 get('/', {}, GetAllRaces);
 get('/cache', {}, GetRaceCache);
-get('/:id', { params: RaceIdParamSchema, query: RaceIdQuerySchema }, GetRaceById);
-get('/:id/lock-status', { params: RaceIdParamSchema }, GetRaceLockStatus);
+get('/:id', { params: IdParamSchema, query: RaceIdQuerySchema }, GetRaceById);
+get('/:id/features', { params: IdParamSchema, query: RaceIdQuerySchema }, GetRaceFeatures);
+get('/:id/lock-status', { params: IdParamSchema }, GetRaceLockStatus);
 
 // Race Write Routes
 post('/', requireAdmin, { body: CreateRaceSchema }, CreateRace);
-put('/:id', requireAdmin, { params: RaceIdParamSchema, body: UpdateRaceSchema }, UpdateRace);
-deleteRoute('/:id', requireAdmin, { params: RaceIdParamSchema }, DeleteRace);
+put('/:id', requireAdmin, { params: IdParamSchema, body: UpdateRaceSchema }, UpdateRace);
+deleteRoute('/:id', requireAdmin, { params: IdParamSchema }, DeleteRace);
 
 export { RaceRouter };

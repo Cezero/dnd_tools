@@ -10,18 +10,18 @@ import { useParams } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { useToast } from '@/components/toast/useToast';
 import { CharacterDetailApi } from '@/features/character/CharacterDetailApi';
+import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
+import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
 import type { DisplayContext } from '@/lib/formatters/types';
 import { useCacheFunctions } from '@/services/cache/CacheFunctions';
-import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import type { DnDClass, Race, ItemWithDetails, RaceCacheEntry } from '@shared/schema';
 import { DisplayType } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
+import { CharacterQueryHooks } from './CharacterQueryHooks';
 import { DescriptionTab } from './detail-tabs/DescriptionTab';
 import { EquipmentTab } from './detail-tabs/EquipmentTab';
 import { FeaturesTab } from './detail-tabs/FeaturesTab';
@@ -181,7 +181,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.sessionId) {
+        if (!characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -196,7 +196,7 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.sessionId) {
+                    if (resolution.resolvedCharacter) {
                         return resolution.refreshState();
                     }
                 })
@@ -205,7 +205,7 @@ export function CharacterDetail(): React.JSX.Element {
                 });
             prevWoundsRef.current = state.wounds;
         }
-    }, [characterId, state.wounds, resolution.sessionId, resolution.refreshState, queryClient]);
+    }, [characterId, state.wounds, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
 
     /**
      * Sync money changes to backend.
@@ -216,7 +216,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.sessionId) {
+        if (!characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -231,7 +231,7 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.sessionId) {
+                    if (resolution.resolvedCharacter) {
                         return resolution.refreshState();
                     }
                 })
@@ -240,7 +240,7 @@ export function CharacterDetail(): React.JSX.Element {
                 });
             prevMoneyRef.current = state.money;
         }
-    }, [characterId, state.money, resolution.sessionId, resolution.refreshState, queryClient]);
+    }, [characterId, state.money, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
 
     /**
      * Sync notes changes to backend.
@@ -251,7 +251,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.sessionId) {
+        if (!characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -266,7 +266,7 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.sessionId) {
+                    if (resolution.resolvedCharacter) {
                         return resolution.refreshState();
                     }
                 })
@@ -275,7 +275,7 @@ export function CharacterDetail(): React.JSX.Element {
                 });
             prevNotesRef.current = state.notes;
         }
-    }, [characterId, state.notes, resolution.sessionId, resolution.refreshState, queryClient]);
+    }, [characterId, state.notes, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
 
     /**
      * Sync items changes to backend.
@@ -286,7 +286,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.sessionId) {
+        if (!characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -301,7 +301,7 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.sessionId) {
+                    if (resolution.resolvedCharacter) {
                         return resolution.refreshState();
                     }
                 })
@@ -310,7 +310,7 @@ export function CharacterDetail(): React.JSX.Element {
                 });
             prevItemsRef.current = state.items;
         }
-    }, [characterId, state.items, resolution.sessionId, resolution.refreshState, queryClient]);
+    }, [characterId, state.items, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
 
     /**
      * Sync spell preparations changes to backend.
@@ -321,7 +321,7 @@ export function CharacterDetail(): React.JSX.Element {
      * @see CharacterDetail component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!characterId || !resolution.sessionId) {
+        if (!characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -336,7 +336,7 @@ export function CharacterDetail(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
                     });
-                    if (resolution.sessionId) {
+                    if (resolution.resolvedCharacter) {
                         return resolution.refreshState();
                     }
                 })
@@ -345,7 +345,7 @@ export function CharacterDetail(): React.JSX.Element {
                 });
             prevSpellPreparationsRef.current = state.spellPreparations;
         }
-    }, [characterId, state.spellPreparations, resolution.sessionId, resolution.refreshState, queryClient]);
+    }, [characterId, state.spellPreparations, resolution.resolvedCharacter, resolution.refreshState, queryClient]);
 
     // Get race data from cache (for sizeId)
     const cacheFunctions = useCacheFunctions();
@@ -487,7 +487,7 @@ export function CharacterDetail(): React.JSX.Element {
             });
 
             // Reset feature uses (not tracked in state, so call API directly)
-            await CharacterDetailApi.resetDailyUses(undefined, { id: characterId });
+            await CharacterDetailApi.resetDailyUses({ id: characterId });
 
             toastManager?.add({
                 title: 'Daily uses reset successfully',
@@ -509,7 +509,7 @@ export function CharacterDetail(): React.JSX.Element {
     const handleResetAllUses = async () => {
         if (!characterId) return;
         try {
-            await CharacterDetailApi.resetAllUses(undefined, { id: characterId });
+            await CharacterDetailApi.resetAllUses({ id: characterId });
             toastManager?.add({
                 title: 'All uses reset successfully',
                 type: 'success',

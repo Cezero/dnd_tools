@@ -16,7 +16,7 @@ export * from './src/FormulaDefinitions';
 export * from './src/GenericList';
 export * from './src/DeityData';
 export * from './src/CompanionData';
-export * from './src/UpdateTypeData';
+export * from './src/DraftData';
 
 // Export DiceData with explicit names to avoid conflicts
 export * from './src/DiceData';

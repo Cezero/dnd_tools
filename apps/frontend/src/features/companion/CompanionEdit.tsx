@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
@@ -13,9 +14,10 @@ import {
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { MonsterSearchInput } from '@/components/forms/MonsterSearchInput';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
-import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import { CreateCompanionRequest, UpdateCompanionRequest, UpdateCompanionSchema, CreateCompanionSchema, CompanionWithRelations, Feature, FeatureWithRelations } from '@shared/schema';
 import { COMPANION_TYPE_LIST, CompanionType, FeatureSourceType, MonsterTypeId } from '@shared/static-data';
+
+import { CompanionQueryHooks } from './CompanionQueryHooks';
 
 type CompanionFormData = CreateCompanionRequest | UpdateCompanionRequest;
 
@@ -428,18 +430,16 @@ export function CompanionEdit() {
                     setPreSelectedFeature(null);
                 }}
                 featureId={
-                    editingProgression?.id
-                        ? editingProgression.id
-                        : preSelectedFeature?.id
-                            ? preSelectedFeature.id
-                            : 'new'
+                    Number(editingProgression?.id ?? preSelectedFeature?.id ?? 0) || 0
                 }
-                onSave={(feature: Feature, features: FeatureWithRelations[]) => {
-                    const featureWithRelations = features[0] || feature as FeatureWithRelations;
-                    handleSaveProgression(featureWithRelations);
+                onSave={async (featureId: number) => {
+                    const feature = await FeatureQueryHooks.getFeatureById(featureId);
+                    if (feature) {
+                        handleSaveProgression(feature as FeatureWithRelations);
+                    }
                 }}
                 mode="modal"
-                // Note: companion not supported in FeatureEditContext, companionId is set directly on feature
+            // Note: companion not supported in FeatureEditContext, companionId is set directly on feature
             />
         </div>
     );

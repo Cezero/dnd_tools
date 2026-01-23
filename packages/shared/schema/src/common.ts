@@ -155,29 +155,6 @@ export const commonValidations = {
         });
     },
 
-    /**
-     * Creates an optional string query parameter validator.
-     * Use optionalStringParam() instead for better query parameter handling.
-     * 
-     * @deprecated Use optionalStringParam() instead
-     */
-    stringQuery: (fieldName: string) => z.string().optional(),
-
-    /**
-     * Creates an optional integer query parameter validator.
-     * Use optionalIntegerParam() instead for better query parameter handling.
-     * 
-     * @deprecated Use optionalIntegerParam() instead
-     */
-    intQuery: (fieldName: string) => z.string().optional().transform(val => val ? parseInt(val) : undefined),
-
-    /**
-     * Creates an optional boolean query parameter validator.
-     * Use optionalBooleanParam() instead for better query parameter handling.
-     * 
-     * @deprecated Use optionalBooleanParam() instead
-     */
-    booleanQuery: (fieldName: string) => z.string().optional().transform(val => val === 'true'),
 
     /**
      * Validates the Authorization header with Bearer token format.
@@ -292,6 +269,21 @@ export const optionalIntegerParam = () => commonValidations.optionalIntegerParam
  */
 export const optionalStringParam = () => commonValidations.optionalStringParam();
 
+/**
+ * Generic parameter schema for entity ID in URL paths.
+ * Accepts both string and number, transforms to number.
+ * 
+ * @example
+ * ```typescript
+ * export const MyEntityParamsSchema = IdParamSchema;
+ * // Validates: { id: 123 } or { id: "123" } -> { id: 123 }
+ * ```
+ */
+export const IdParamSchema = z.object({
+    id: numericParam(),
+});
+export type IdParamRequest = z.infer<typeof IdParamSchema>;
+
 export const UpdateResponseSchema = z.object({
     message: z.string(),
 });
@@ -303,14 +295,3 @@ export const CreateResponseSchema = z.object({
 
 export type UpdateResponse = z.infer<typeof UpdateResponseSchema>;
 export type CreateResponse = z.infer<typeof CreateResponseSchema>;
-
-/**
- * Schema for entity lock status response.
- * Used to indicate whether an entity is locked and by which user.
- */
-export const EntityLockStatusSchema = z.object({
-    locked: z.boolean(),
-    lockedBy: z.number().int().positive().optional(),
-});
-
-export type EntityLockStatus = z.infer<typeof EntityLockStatusSchema>;

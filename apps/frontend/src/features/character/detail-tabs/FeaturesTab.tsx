@@ -1,9 +1,9 @@
 import React from 'react';
 
+import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { getQueryClient } from '@/lib/formatters/utils/queryClientAccessor';
 import { getClassNameFromCache, getFeatSummaryById, getRaceSummaryById } from '@/services/cache';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import type { Feat, FeatureWithRelations } from '@shared/schema';
 import { EntityAppliesToType, EntityType, FeatureSourceType, LANGUAGE_MAP } from '@shared/static-data';
 

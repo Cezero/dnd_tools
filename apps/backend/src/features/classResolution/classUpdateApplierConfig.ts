@@ -1,6 +1,7 @@
+import type { ClassEditState } from '@shared/schema';
 import { ClassUpdateType } from '@shared/static-data';
 
-import type { ClassEditState, ClassUpdate } from './types';
+import type { ClassUpdate } from './types';
 import type { UpdateApplierConfig } from '../shared/session/GenericUpdateApplier';
 
 /**
@@ -93,13 +94,13 @@ export const classUpdateApplierConfig: UpdateApplierConfig<ClassEditState, Class
             case ClassUpdateType.SetSpellcastingProgression:
                 return {
                     ...state,
-                    spellcastingProgression: update.payload.progression
+                    spellcastingProgression: update.payload.progression as typeof state.spellcastingProgression
                 };
 
             case ClassUpdateType.SetSpellsKnownProgression:
                 return {
                     ...state,
-                    spellsKnownProgression: update.payload.progression
+                    spellsKnownProgression: update.payload.progression as typeof state.spellsKnownProgression
                 };
 
             case ClassUpdateType.LinkFeature:

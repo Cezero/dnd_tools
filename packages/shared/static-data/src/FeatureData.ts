@@ -223,6 +223,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
     ],
     [EntityType.Base]: [
         // Base value entities for class and race mechanics
+        EntityAppliesToType.Ability, // Ability score increases
         EntityAppliesToType.BaseAttackBonus, // BAB progression
         EntityAppliesToType.SavingThrow, // Saving throw progression (for class mechanics)
         EntityAppliesToType.HitDice, // Hit dice (for class mechanics)

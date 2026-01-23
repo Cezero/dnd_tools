@@ -278,7 +278,7 @@ The **Feature System** is the central nervous system that powers all other game 
 2. **Follow Established Patterns**
    - Use ValidatedForm for all forms
    - Use GenericList for all lists
-   - Use typedApi for all API calls
+   - Use typedApi for all API calls (see [Frontend API Patterns](frontend-api-patterns.md))
    - Follow service layer patterns for backend
 
 3. **Reference Documentation**

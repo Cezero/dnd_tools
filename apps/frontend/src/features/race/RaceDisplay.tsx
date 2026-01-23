@@ -12,6 +12,7 @@ import { DisplayType, SIZE_MAP, EDITION_MAP, EntityType, EntityAppliesToType, Fe
 
 interface RaceDisplayProps {
     race: Race;
+    features?: FeatureWithRelations[];
     showHeader?: boolean;
     showActions?: boolean;
     onBack?: () => void;
@@ -24,6 +25,7 @@ interface RaceDisplayProps {
 
 export function RaceDisplay({
     race,
+    features = [],
     showHeader = true,
     showActions = false,
     onBack,
@@ -34,13 +36,13 @@ export function RaceDisplay({
     currentUserId
 }: RaceDisplayProps): React.JSX.Element {
     // Precache all entities referenced in feature features
-    usePrecacheFeatureEntities(race?.features);
+    usePrecacheFeatureEntities(features);
 
     // Extract mechanics from feature features
     const mechanics = useMemo(() => {
-        if (race.features && race.features.length > 0) {
+        if (features.length > 0) {
             const raceId = (race as { id?: number }).id;
-            return extractRaceMechanics(race.features, raceId);
+            return extractRaceMechanics(features, raceId);
         }
         // Return null values if no features
         return {
@@ -65,13 +67,13 @@ export function RaceDisplay({
 
     // Only update formatted results when race actually changes
     useEffect(() => {
-        if (!race?.features) {
+        if (!features || features.length === 0) {
             setFormattedResults({ automaticLanguages: [], bonusLanguages: [], abilityAdjustments: [], otherFeatures: [] });
             return;
         }
 
         const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-        const formattedResult = strategy.format(race.features, undefined);
+        const formattedResult = strategy.format(features, undefined);
 
         // Extract language and ability adjustment data from the formatted result
         const automaticLanguages: string[] = [];
@@ -82,18 +84,18 @@ export function RaceDisplay({
         for (const levelEntry of formattedResult.levelEntries) {
             for (const item of levelEntry.items || []) {
                 // Find the corresponding feature to determine its type
-                const foundFeature = race.features?.find(f => f.id === item.featureId);
+                const foundFeature = features.find(f => f.id === item.featureId);
                 if (!foundFeature) continue;
 
                 // Check entity type and appliesTo to identify language and ability adjustment features
                 const feature = foundFeature; // FeatureWithRelations is now the unified Feature model
-                const hasAutomaticLanguage = feature?.entities?.some(e => 
+                const hasAutomaticLanguage = feature?.entities?.some(e =>
                     e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.AutomaticLanguage
                 );
-                const hasBonusLanguage = feature?.entities?.some(e => 
+                const hasBonusLanguage = feature?.entities?.some(e =>
                     e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.BonusLanguage
                 );
-                const hasAbilityAdjustment = feature?.entities?.some(e => 
+                const hasAbilityAdjustment = feature?.entities?.some(e =>
                     e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability
                 );
 
@@ -111,7 +113,7 @@ export function RaceDisplay({
 
         setFormattedResults({ automaticLanguages, bonusLanguages, abilityAdjustments, otherFeatures });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [race?.name, race?.features?.length]); // Only run when race name or feature count changes
+    }, [race?.name, features?.length]); // Only run when race name or feature count changes
 
     const { automaticLanguages, bonusLanguages, abilityAdjustments, otherFeatures } = formattedResults;
 

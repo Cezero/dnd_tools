@@ -14,20 +14,23 @@ import { useToast } from '@/components/toast/useToast';
 import { useCharacterEditState } from '@/features/character';
 import { CharacterApi } from '@/features/character/CharacterApi';
 import { CharacterEditStateUpdateType, type EquipmentItem, type SkillRank, type TabConfig, type TabComponentProps } from '@/features/character/types';
+import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
+import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
+import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
 import { hasNoMaxRanks } from '@/lib/skill-utils';
-import type { CharacterUpdate } from '@/services/api/CharacterResolutionApi';
-import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatWithFeatureInfo, ItemWithDetails, FeatureWithRelations } from '@shared/schema';
+import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatWithFeatureInfo, ItemWithDetails, FeatureWithRelations, ValidationError } from '@shared/schema';
 import { EditionId, DisplayType, EntityType, EntityAppliesToType } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
+import { CharacterQueryHooks } from './CharacterQueryHooks';
+
+type ErrorWithValidationErrors = Error & {
+    validationErrors?: ValidationError[];
+};
 import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab, SpellSelectionTab } from './tabs';
 import { useCharacterResolution } from './useCharacterResolution';
 
@@ -36,12 +39,12 @@ import { useCharacterResolution } from './useCharacterResolution';
  * 
  * **State Synchronization Pattern**:
  * 
- * This component implements the standardized state → useEffect → API/applyUpdate pattern for
+ * This component implements the standardized state → useEffect → updateValue pattern for
  * synchronizing character state changes with the resolution session:
  * 
  * 1. **Tabs update state**: Tab components call `updateState()` to modify character state
  * 2. **CharacterEdit syncs automatically**: useEffect hooks watch state changes and automatically
- *    call `resolution.applyUpdate()` or API endpoints to sync changes
+ *    call `resolution.updateValue()` or API endpoints to sync changes
  * 3. **Resolution session updates**: Backend resolution session is updated, and resolved data
  *    flows back to tabs via `resolvedData` prop
  * 
@@ -196,12 +199,13 @@ export function CharacterEdit(): React.JSX.Element {
      * 
      * Automatically syncs primary and secondary class changes to the resolution session.
      * Watches `state.classId` and `state.secondaryClassId` for changes.
+     * Uses updateValue for path-based field updates.
      * 
      * @see CharacterEdit component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
         // Only sync if session is initialized and we have a character ID
-        if (!state.characterId || !resolution.sessionId) {
+        if (!state.characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -216,10 +220,7 @@ export function CharacterEdit(): React.JSX.Element {
         if (state.classId !== prevClassIdRef.current) {
             // Class actually changed
             if (state.classId) {
-                resolution.applyUpdate({
-                    type: 'SET_CLASS',
-                    payload: { classId: state.classId }
-                }).catch(error => {
+                resolution.updateValue('classId', state.classId).catch(error => {
                     console.error('Failed to sync class change to resolution session:', error);
                 });
             }
@@ -229,27 +230,25 @@ export function CharacterEdit(): React.JSX.Element {
         // Check if secondary class changed
         if (state.secondaryClassId !== prevSecondaryClassIdRef.current) {
             // Secondary class actually changed (including clearing it by setting to null)
-            resolution.applyUpdate({
-                type: 'SET_SECONDARY_CLASS',
-                payload: { secondaryClassId: state.secondaryClassId }
-            }).catch(error => {
+            resolution.updateValue('secondaryClassId', state.secondaryClassId).catch(error => {
                 console.error('Failed to sync secondary class change to resolution session:', error);
             });
         }
         prevSecondaryClassIdRef.current = state.secondaryClassId;
-    }, [state.characterId, state.classId, state.secondaryClassId, resolution.sessionId, resolution.applyUpdate]);
+    }, [state.characterId, state.classId, state.secondaryClassId, resolution.updateValue]);
 
     /**
      * Sync race changes to resolution session.
      * 
      * Automatically syncs race changes to the resolution session.
      * Watches `state.raceId` for changes.
+     * Uses updateValue for path-based field updates.
      * 
      * @see CharacterEdit component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
         // Only sync if session is initialized and we have a character ID
-        if (!state.characterId || !resolution.sessionId) {
+        if (!state.characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -263,28 +262,26 @@ export function CharacterEdit(): React.JSX.Element {
         if (state.raceId !== prevRaceIdRef.current) {
             // Race actually changed
             if (state.raceId) {
-                resolution.applyUpdate({
-                    type: 'SET_RACE',
-                    payload: { raceId: state.raceId }
-                }).catch(error => {
+                resolution.updateValue('raceId', state.raceId).catch(error => {
                     console.error('Failed to sync race change to resolution session:', error);
                 });
             }
         }
         prevRaceIdRef.current = state.raceId;
-    }, [state.characterId, state.raceId, resolution.sessionId, resolution.applyUpdate]);
+    }, [state.characterId, state.raceId, resolution.updateValue]);
 
     /**
      * Sync level changes to resolution session.
      * 
      * Automatically syncs level changes to the resolution session.
      * Watches `state.level` for changes.
+     * Uses updateValue for path-based field updates.
      * 
      * @see CharacterEdit component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
         // Only sync if session is initialized and we have a character ID
-        if (!state.characterId || !resolution.sessionId) {
+        if (!state.characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -297,15 +294,12 @@ export function CharacterEdit(): React.JSX.Element {
         // Check if level changed
         if (state.level !== prevLevelRef.current) {
             // Level actually changed
-            resolution.applyUpdate({
-                type: 'SET_LEVEL',
-                payload: { level: state.level }
-            }).catch(error => {
+            resolution.updateValue('level', state.level).catch(error => {
                 console.error('Failed to sync level change to resolution session:', error);
             });
         }
         prevLevelRef.current = state.level;
-    }, [state.characterId, state.level, resolution.sessionId, resolution.applyUpdate]);
+    }, [state.characterId, state.level, resolution.updateValue]);
 
     /**
      * Sync skill rank changes to resolution session.
@@ -314,10 +308,11 @@ export function CharacterEdit(): React.JSX.Element {
      * when the skillRanks array in state changes. It follows the standardized pattern where
      * tabs update state and CharacterEdit automatically handles the sync.
      * 
-     * **Pattern**: State → useEffect → applyUpdate
+     * **Pattern**: State → useEffect → updateValue
      * - Tab updates state.skillRanks via updateState()
      * - This useEffect detects the change
-     * - Automatically calls resolution.applyUpdate() for each skill rank change
+     * - Automatically calls resolution.updateValue() with the entire skillRanks array
+     * - Backend handles diffing and updates
      * 
      * **Why refs are used**: The prevSkillRanksRef tracks the previous array state to avoid
      * syncing on initial mount and to detect actual changes.
@@ -326,7 +321,7 @@ export function CharacterEdit(): React.JSX.Element {
      */
     useEffect(() => {
         // Only sync if session is initialized and we have a character ID
-        if (!state.characterId || !resolution.sessionId) {
+        if (!state.characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -341,23 +336,14 @@ export function CharacterEdit(): React.JSX.Element {
 
         // Check if skill ranks changed
         if (currentSkillRanksStr !== prevSkillRanksRef.current) {
-            // Skill ranks actually changed - sync each skill rank to resolution session
-            for (const skillRank of state.skillRanks) {
-                resolution.applyUpdate({
-                    type: 'SET_SKILL_RANK',
-                    payload: {
-                        skillId: skillRank.skillId,
-                        skillSubId: skillRank.skillSubId,
-                        customSubtype: skillRank.customSubtype,
-                        pointsSpent: skillRank.pointsSpent
-                    }
-                }).catch(error => {
-                    console.error('Failed to sync skill rank update to resolution session:', error);
-                });
-            }
+            // Skill ranks actually changed - sync entire array to resolution session
+            // Backend handles diffing and updates
+            resolution.updateValue('skillRanks', state.skillRanks).catch(error => {
+                console.error('Failed to sync skill ranks to resolution session:', error);
+            });
         }
         prevSkillRanksRef.current = currentSkillRanksStr;
-    }, [state.characterId, state.skillRanks, resolution.sessionId, resolution.applyUpdate]);
+    }, [state.characterId, state.skillRanks, resolution.updateValue]);
 
     /**
      * Sync feature choice changes to resolution session.
@@ -366,10 +352,11 @@ export function CharacterEdit(): React.JSX.Element {
      * when the featureChoices array in state changes. It follows the standardized pattern where
      * tabs update state and CharacterEdit automatically handles the sync.
      * 
-     * **Pattern**: State → useEffect → applyUpdate
+     * **Pattern**: State → useEffect → updateValue
      * - Tab updates state.featureChoices via updateState()
      * - This useEffect detects the change
-     * - Automatically calls resolution.applyUpdate() for each choice change
+     * - Automatically calls resolution.updateValue() with the entire featureChoices array
+     * - Backend handles diffing and updates
      * 
      * **Why refs are used**: The prevFeatureChoicesRef tracks the previous array state to avoid
      * syncing on initial mount and to detect actual changes.
@@ -378,7 +365,7 @@ export function CharacterEdit(): React.JSX.Element {
      */
     useEffect(() => {
         // Only sync if session is initialized and we have a character ID
-        if (!state.characterId || !resolution.sessionId) {
+        if (!state.characterId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -393,23 +380,14 @@ export function CharacterEdit(): React.JSX.Element {
 
         // Check if feature choices changed
         if (currentFeatureChoicesStr !== prevFeatureChoicesRef.current) {
-            // Feature choices actually changed - sync each choice to resolution session
-            for (const choice of state.featureChoices) {
-                resolution.applyUpdate({
-                    type: 'MAKE_CHOICE',
-                    payload: {
-                        featureId: choice.featureId,
-                        featureEntityId: choice.featureEntityId,
-                        appliesToId: choice.appliesToId,
-                        appliesToSubId: choice.appliesToSubId ?? null
-                    }
-                }).catch(error => {
-                    console.error('Failed to sync feature choice update to resolution session:', error);
-                });
-            }
+            // Feature choices actually changed - sync entire array to resolution session
+            // Backend handles diffing and updates
+            resolution.updateValue('featureChoices', state.featureChoices).catch(error => {
+                console.error('Failed to sync feature choices to resolution session:', error);
+            });
         }
         prevFeatureChoicesRef.current = currentFeatureChoicesStr;
-    }, [state.characterId, state.featureChoices, resolution.sessionId, resolution.applyUpdate]);
+    }, [state.characterId, state.featureChoices, resolution.updateValue]);
 
     /**
      * Sync spellsKnown changes to backend.
@@ -428,7 +406,7 @@ export function CharacterEdit(): React.JSX.Element {
      * @see CharacterEdit component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!state.characterId || !state.currentAdvancementId || !resolution.sessionId) {
+        if (!state.characterId || !state.currentAdvancementId || !resolution.resolvedCharacter) {
             return;
         }
 
@@ -446,40 +424,61 @@ export function CharacterEdit(): React.JSX.Element {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(state.characterId!),
                     });
-                    if (resolution.sessionId) {
-                        return resolution.refreshState();
-                    }
+                    return resolution.refreshState();
                 })
                 .catch(error => {
                     console.error('Failed to sync spellsKnown to backend:', error);
                 });
             prevSpellsKnownRef.current = state.spellsKnown;
         }
-    }, [state.characterId, state.currentAdvancementId, state.spellsKnown, resolution.sessionId, resolution.refreshState, queryClient]);
+    }, [state.characterId, state.currentAdvancementId, state.spellsKnown, resolution.refreshState, queryClient]);
 
     // Handle skill rank update - sync to backend resolution API
     const handleSkillRankUpdate = useCallback(async (skillId: number, skillSubId: number | null, customSubtype: string | null, pointsSpent: number) => {
-        if (!state.characterId || !resolution.sessionId) {
+        if (!state.characterId || !resolution.resolvedCharacter) {
             console.warn('Cannot update skill rank: session not initialized');
             return;
         }
 
         try {
-            const update: CharacterUpdate = {
-                type: 'SET_SKILL_RANK',
-                payload: {
+            // Find existing skill rank or create new one
+            const existingIndex = state.skillRanks.findIndex(
+                sr => sr.skillId === skillId &&
+                    sr.skillSubId === skillSubId &&
+                    sr.customSubtype === customSubtype
+            );
+
+            const updatedSkillRanks = [...state.skillRanks];
+            if (existingIndex >= 0) {
+                // Update existing skill rank
+                updatedSkillRanks[existingIndex] = {
                     skillId,
                     skillSubId,
                     customSubtype,
                     pointsSpent
-                }
-            };
+                };
+            } else {
+                // Add new skill rank
+                updatedSkillRanks.push({
+                    skillId,
+                    skillSubId,
+                    customSubtype,
+                    pointsSpent
+                });
+            }
 
-            await resolution.applyUpdate(update);
+            // Update state first
+            updateState({
+                type: CharacterEditStateUpdateType.SET_SKILL_RANKS,
+                payload: { skillRanks: updatedSkillRanks }
+            });
+
+            // Sync to backend using updateValue
+            await resolution.updateValue('skillRanks', updatedSkillRanks);
         } catch (error) {
             console.error('Failed to apply skill rank update:', error);
         }
-    }, [state.characterId, resolution.sessionId, resolution.applyUpdate]);
+    }, [state.characterId, state.skillRanks, resolution.resolvedCharacter, resolution.updateValue, updateState]);
 
     // Trigger feature resolution (no-op since useCharacterResolution handles it automatically)
     const triggerFeatureResolution = useCallback(async () => {
@@ -1000,9 +999,30 @@ export function CharacterEdit(): React.JSX.Element {
 
             // Debug: Log the save data to verify featureChoices are included
             // Save resolution session to database first (if session exists)
-            if (state.characterId && resolution.sessionId) {
+            if (state.characterId && resolution.resolvedCharacter) {
                 try {
-                    await resolution.saveSession();
+                    try {
+                        await resolution.save();
+                    } catch (err) {
+                        // Check if this is a validation error with field paths
+                        if (err instanceof Error && 'validationErrors' in err) {
+                            const errorWithValidation = err as ErrorWithValidationErrors;
+                            const validationErrors = errorWithValidation.validationErrors;
+                            if (validationErrors && Array.isArray(validationErrors)) {
+                                // Format validation errors for display
+                                const errorMessages = validationErrors.map(err => `${err.path}: ${err.message}`).join(', ');
+                                toastManager?.add({
+                                    title: 'Validation errors',
+                                    description: errorMessages,
+                                    type: 'error',
+                                });
+                                // TODO: Highlight invalid form fields using error paths
+                                console.error('Validation errors saving character:', validationErrors);
+                                return; // Don't navigate on validation errors
+                            }
+                        }
+                        throw err; // Re-throw if not a validation error
+                    }
                 } catch (error) {
                     console.error('Failed to save resolution session:', error);
                     // Continue with regular save even if session save fails
@@ -1208,8 +1228,8 @@ export function CharacterEdit(): React.JSX.Element {
         const fetchItems = async () => {
             try {
                 const itemsResponse = await queryClient.fetchQuery({
-                    queryKey: ItemQueryHooks.getItemsQueryKey(),
-                    queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+                    queryKey: ItemQueryHooks.getAllItemsQueryKey(),
+                    queryFn: () => ItemQueryHooks.getAllItemsQueryFn(),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });

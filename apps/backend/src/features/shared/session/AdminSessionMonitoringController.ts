@@ -1,8 +1,12 @@
-import type { NextFunction, Response } from 'express';
+import type { Response, NextFunction } from 'express';
 
-import type { ValidatedParamsT } from '@/util/validated-types';
+import { ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
+import type { DraftRefRequest } from '@shared/schema';
+import { DraftRefRequestSchema } from '@shared/schema';
+
 import { AdminSessionMonitoringService } from './AdminSessionMonitoringService';
-import { EntityLockService } from '../entityState/EntityLockService';
+import { DraftLockService } from '../draftState/DraftLockService';
+
 
 /**
  * Controller for admin session monitoring endpoints.
@@ -17,16 +21,16 @@ import { EntityLockService } from '../entityState/EntityLockService';
  * **Admin Access**: All endpoints require admin authentication.
  * 
  * @see AdminSessionMonitoringService - For monitoring logic
- * @see EntityLockService - For lock management
+ * @see DraftLockService - For lock management
  * @see packages/shared/docs/application-overview/admin-session-monitoring.md - Full documentation
  */
 export class AdminSessionMonitoringController {
     private monitoringService: AdminSessionMonitoringService;
-    private lockService: EntityLockService;
+    private lockService: DraftLockService;
 
     constructor() {
         this.monitoringService = new AdminSessionMonitoringService();
-        this.lockService = new EntityLockService();
+        this.lockService = new DraftLockService();
     }
 
     /**
@@ -35,7 +39,7 @@ export class AdminSessionMonitoringController {
      * GET /api/admin/sessions
      */
     async getAllSessions(
-        req: ValidatedParamsT<Record<string, never>, unknown>,
+        req: ValidatedNoInput<unknown>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -54,7 +58,7 @@ export class AdminSessionMonitoringController {
      * GET /api/admin/entity-states
      */
     async getAllEntityStates(
-        req: ValidatedParamsT<Record<string, never>, unknown>,
+        req: ValidatedNoInput<unknown>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -73,7 +77,7 @@ export class AdminSessionMonitoringController {
      * GET /api/admin/locks
      */
     async getAllLocks(
-        req: ValidatedParamsT<Record<string, never>, unknown>,
+        req: ValidatedNoInput<unknown>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -92,7 +96,7 @@ export class AdminSessionMonitoringController {
      * GET /api/admin/websocket-subscriptions
      */
     async getAllWebSocketSubscriptions(
-        req: ValidatedParamsT<Record<string, never>, unknown>,
+        req: ValidatedNoInput<unknown>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -106,12 +110,17 @@ export class AdminSessionMonitoringController {
     }
 
     /**
-     * Force releases a lock on an entity.
+     * Force releases a lock on a draft.
      * 
-     * POST /api/admin/locks/:entityType/:entityId/force-release
+     * POST /api/admin/locks/force-release
+     * 
+     * **Type Safety Note**: 
+     * - Uses `ValidatedBodyT` from `@/util/validated-types` for proper type safety with `buildValidatedRouter`
+     * - NEVER manually type `Request<>` - always use validated types from `@/util/validated-types`
+     * - The body type `DraftRefRequest` comes from `@shared/schema` and matches `DraftRefRequestSchema`
      */
     async forceReleaseLock(
-        req: ValidatedParamsT<{ entityType: string; entityId: string }, unknown>,
+        req: ValidatedBodyT<DraftRefRequest>,
         res: Response,
         _next: NextFunction
     ): Promise<void> {
@@ -122,17 +131,11 @@ export class AdminSessionMonitoringController {
                 return;
             }
 
-            const { entityType, entityId } = req.params;
-            const numericEntityId = parseInt(entityId, 10);
+            const { draftType, id } = req.body;
 
-            if (isNaN(numericEntityId)) {
-                res.status(400).json({ error: 'Invalid entity ID' });
-                return;
-            }
+            await this.lockService.forceReleaseLock(draftType, id, userId);
 
-            await this.lockService.forceReleaseLock(entityType, numericEntityId, userId);
-
-            res.json({ success: true });
+            res.json({ success: true, draftType, id });
         } catch (error) {
             console.error('Error force releasing lock:', error);
             res.status(500).json({ error: 'Failed to force release lock' });
@@ -142,3 +145,10 @@ export class AdminSessionMonitoringController {
 
 // Export singleton instance
 export const adminSessionMonitoringController = new AdminSessionMonitoringController();
+
+// Export controller methods for use in routes
+export const GetAllSessions = adminSessionMonitoringController.getAllSessions.bind(adminSessionMonitoringController);
+export const GetAllEntityStates = adminSessionMonitoringController.getAllEntityStates.bind(adminSessionMonitoringController);
+export const GetAllLocks = adminSessionMonitoringController.getAllLocks.bind(adminSessionMonitoringController);
+export const GetAllWebSocketSubscriptions = adminSessionMonitoringController.getAllWebSocketSubscriptions.bind(adminSessionMonitoringController);
+export const ForceReleaseLock = adminSessionMonitoringController.forceReleaseLock.bind(adminSessionMonitoringController);

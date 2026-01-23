@@ -1,4 +1,4 @@
-import { useZodValidation } from '@/hooks/useZodValidation';
+import { useZodValidation } from '@/lib/hooks/useZodValidation';
 import type { CreateRaceRequest, FeatureWithRelations, UpdateRaceRequest } from '@shared/schema';
 
 import type { RaceEditState, RaceEditStateUpdate } from '../types';

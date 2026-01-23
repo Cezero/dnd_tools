@@ -41,8 +41,8 @@ export interface FeatureSystemService {
 
     // Core methods for smart population
     getFeaturesByIds(featureIds: number[], characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>, includeClassRaceInfo?: boolean): Promise<FeatureWithRelations[]>;
-    getFeaturesByClassId(classId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
-    getFeaturesByRaceId(raceId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
+    getFeaturesByClassId(classId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>, includeClassRaceInfo?: boolean): Promise<FeatureWithRelations[]>;
+    getFeaturesByRaceId(raceId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>, includeClassRaceInfo?: boolean): Promise<FeatureWithRelations[]>;
     getFeaturesByDomainId(domainId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
     getFeaturesByFeatIds(featIds: number[], characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;
     getFeaturesByCompanionId(companionId: number, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureWithRelations[]>;

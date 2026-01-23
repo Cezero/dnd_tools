@@ -1,4 +1,4 @@
-import type { SpellIdParamRequest, GetSpellResponse, UpdateSpellRequest, GetAllSpellsResponse, UpdateResponse, ClassSpellListEntry, ClassSpellListResponse, SpellCacheResponse, Spell } from '@shared/schema';
+import type { SpellIdParamRequest, GetSpellResponse, UpdateSpellRequest, GetAllSpellsResponse, UpdateResponse, ClassSpellListResponse, SpellCacheResponse, Spell } from '@shared/schema';
 
 
 export interface SpellService {

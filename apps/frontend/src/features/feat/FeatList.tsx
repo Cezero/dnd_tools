@@ -5,10 +5,10 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { FEAT_COLUMNS } from '@/features/feat/FeatColumns';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatWithFeatureInfo } from '@shared/schema';
 
 import { routes } from './FeatConfig';
+import { FeatQueryHooks } from './FeatQueryHooks';
 
 export function FeatList(): React.JSX.Element {
     const navigate = useNavigate();

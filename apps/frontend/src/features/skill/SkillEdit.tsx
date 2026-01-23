@@ -1,8 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
-
 
 import {
     ValidatedForm,
@@ -12,13 +10,13 @@ import {
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
-import { CreateSkillSchema, UpdateSkillSchema } from '@shared/schema';
+import { CreateSkillSchema, UpdateSkillSchema, CreateSkillRequest, UpdateSkillRequest } from '@shared/schema';
 import { ABILITY_LIST, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
 
 
 // Type definitions for the form state
-type CreateSkillFormData = z.infer<typeof CreateSkillSchema>;
-type UpdateSkillFormData = z.infer<typeof UpdateSkillSchema>;
+type CreateSkillFormData = CreateSkillRequest;
+type UpdateSkillFormData = UpdateSkillRequest;
 type SkillFormData = CreateSkillFormData | UpdateSkillFormData;
 
 export function SkillEdit() {
@@ -110,12 +108,12 @@ export function SkillEdit() {
         try {
             if (id === 'new') {
                 setIsCreating(true);
-                const newSkill = await SkillQueryHooks.createSkill(formData as z.infer<typeof CreateSkillSchema>);
+                const newSkill = await SkillQueryHooks.createSkill(formData as CreateSkillRequest);
                 setMessage('Skill created successfully!');
                 setTimeout(() => navigate(`/skills/${newSkill.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
                 setIsUpdating(true);
-                await SkillQueryHooks.updateSkill(parseInt(id), formData as z.infer<typeof UpdateSkillSchema>);
+                await SkillQueryHooks.updateSkill(parseInt(id), formData as UpdateSkillRequest);
                 setMessage('Skill updated successfully!');
                 navigate(`/skills/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
             }

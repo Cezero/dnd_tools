@@ -1,7 +1,17 @@
-import { Router } from 'express';
+import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
+import {
+    DraftRefRequestSchema,
+    DraftRefQueryOptionalSchema,
+} from '@shared/schema';
 
-import { requireAuth } from '../../../middleware/authMiddleware';
-import { userSessionController } from './UserSessionController';
+import {
+    GetMySession,
+    AddViewingEntity,
+    RemoveViewingEntity,
+    SetEditingEntity,
+    ClearEditingEntity,
+} from './UserSessionController';
+import { requireAuth } from '../../../middleware/authMiddleware.js';
 
 /**
  * Router for user session management endpoints.
@@ -17,32 +27,21 @@ import { userSessionController } from './UserSessionController';
  * 
  * @see UserSessionController - For endpoint implementations
  */
-export const UserSessionRouter = Router();
-
-// All routes require authentication
-UserSessionRouter.use(requireAuth);
+const { router: UserSessionRouter, get, post, delete: deleteRoute } = buildValidatedRouter();
 
 // Get current user's session
-UserSessionRouter.get('/me', (req, res, next) => {
-    userSessionController.getMySession(req as any, res, next);
-});
+get('/me', requireAuth, {}, GetMySession);
 
 // Add entity to viewing list
-UserSessionRouter.post('/me/viewing', (req, res, next) => {
-    userSessionController.addViewingEntity(req as any, res, next);
-});
+post('/me/viewing', requireAuth, { body: DraftRefRequestSchema }, AddViewingEntity);
 
 // Remove entity from viewing list
-UserSessionRouter.delete('/me/viewing', (req, res, next) => {
-    userSessionController.removeViewingEntity(req as any, res, next);
-});
+deleteRoute('/me/viewing', requireAuth, { body: DraftRefRequestSchema }, RemoveViewingEntity);
 
 // Set editing entity
-UserSessionRouter.post('/me/editing', (req, res, next) => {
-    userSessionController.setEditingEntity(req as any, res, next);
-});
+post('/me/editing', requireAuth, { body: DraftRefRequestSchema }, SetEditingEntity);
 
-// Clear editing entity
-UserSessionRouter.delete('/me/editing', (req, res, next) => {
-    userSessionController.clearEditingEntity(req as any, res, next);
-});
+// Clear editing entity (optional query params for clearing specific entity or all)
+deleteRoute('/me/editing', requireAuth, { query: DraftRefQueryOptionalSchema }, ClearEditingEntity);
+
+export { UserSessionRouter };

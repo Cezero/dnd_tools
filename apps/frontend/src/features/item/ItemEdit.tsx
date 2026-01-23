@@ -10,7 +10,7 @@ import {
 } from '@/components/forms';
 import { CustomSelect, CustomSelectMulti } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { type Weapon, type Armor, CreateItemRequest, UpdateItemRequest, CreateItemSchema, UpdateItemSchema } from '@shared/schema';
 import {
     WEAPON_CATEGORY_LIST,

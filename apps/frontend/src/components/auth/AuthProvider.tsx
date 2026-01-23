@@ -136,7 +136,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         }
 
         try {
-            const responseData = await AuthApi.refreshToken(undefined);
+            const responseData = await AuthApi.refreshToken();
             localStorage.setItem('token', responseData.token);
             setUser(responseData.user);
             ScheduleRefreshToken(responseData.token);
@@ -152,7 +152,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
-            AuthApi.getMe(undefined)
+            AuthApi.getMe()
                 .then((responseData) => {
                     setUser(responseData.user);
                     ScheduleRefreshToken(token);

@@ -33,7 +33,7 @@ import {
     GetAllClassesQuery,
     CreateClassRequest,
     UpdateClassRequest,
-    ClassIdParamRequest,
+    IdParamRequest,
     DnDClass,
     CreateResponse,
     CreateSpellcastingProgressionRequest,
@@ -121,7 +121,7 @@ export const classService: ClassService = {
     },
 
     async getClassById(
-        query: ClassIdParamRequest,
+        query: IdParamRequest,
         characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
     ): Promise<DnDClass | null> {
         const classData = await prisma.class.findUnique({
@@ -140,15 +140,14 @@ export const classService: ClassService = {
             return null;
         }
 
-        // Get feature features using the new architecture
-        // Pass character feature choices to enrich features with choice data
+        // Get feature IDs using the new architecture
         const features = await featureSystemService.getFeaturesByClassId(query.id, characterFeatureChoices);
 
-        // Combine class data with enriched feature features
+        // Combine class data with feature IDs only
         // Spellcasting is now handled via FeatureWithRelations, so these fields are null
         const transformedClassData = {
             ...classData,
-            features,
+            featureIds: features.map(f => f.id),
             spellcastingProgression: null,
             spellsKnownProgression: null,
             sourceBookInfo: classData.sourceBookInfo !== undefined ? classData.sourceBookInfo : null,
@@ -157,8 +156,15 @@ export const classService: ClassService = {
         return transformedClassData as DnDClass;
     },
 
+    async getClassFeatures(
+        query: IdParamRequest,
+        characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ) {
+        return featureSystemService.getFeaturesByClassId(query.id, characterFeatureChoices, true);
+    },
+
     async createClass(data: CreateClassRequest): Promise<CreateResponse> {
-        const { features, spellcastingProgression, spellsKnownProgression, ...classData } = data;
+        const { featureIds, spellcastingProgression, spellsKnownProgression, ...classData } = data;
 
         const result = await prisma.$transaction(async (tx) => {
             // Create the class first
@@ -174,26 +180,9 @@ export const classService: ClassService = {
                 },
             });
 
-            // Create feature features using consolidated feature system service
-            // Convert UpdateFeature[] to CreateFeatureRequest[] by providing defaults
-            if (features && features.length > 0) {
-                const context: FeatureContext = { classId: classResult.id };
-                const createProgressions: CreateFeatureRequest[] = features.map(prog => ({
-                    name: prog.name ?? '',
-                    slug: prog.slug ?? '',
-                    description: prog.description ?? '',
-                    summary: prog.summary ?? null,
-                    displayInCharacterSheet: prog.displayInCharacterSheet ?? true,
-                    level: prog.level ?? 1,
-                    sourceType: prog.sourceType ?? FeatureSourceType.Class,
-                    domainId: prog.domainId ?? null,
-                    featId: prog.featId ?? null,
-                    companionId: prog.companionId ?? null,
-                    editionId: prog.editionId ?? null,
-                    entities: prog.entities,
-                    displayConditions: prog.displayConditions,
-                }));
-                await featureSystemService.createMultipleFeatures(createProgressions, context);
+            // Sync FeatureClassMap links using featureIds
+            if (featureIds && featureIds.length > 0) {
+                await featureSystemService.syncClassFeatures(classResult.id, featureIds, tx);
             }
 
             // Create spellcasting feature (spell slots)
@@ -346,7 +335,7 @@ export const classService: ClassService = {
         return { id: result.id.toString(), message: 'Class created successfully' };
     },
 
-    async updateClass(query: ClassIdParamRequest, data: UpdateClassRequest) {
+    async updateClass(query: IdParamRequest, data: UpdateClassRequest) {
         await prisma.$transaction(async (tx) => {
             // Delete existing source book mappings
             await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
@@ -360,11 +349,11 @@ export const classService: ClassService = {
                 select: { featureId: true }
             });
 
-            const featureIds = classFeatures.map(fp => fp.featureId);
+            const existingFeatureIds = classFeatures.map(fp => fp.featureId);
 
-            if (featureIds.length > 0) {
+            if (existingFeatureIds.length > 0) {
                 const existingSpellcastingProgressions = await tx.spellcastingProgression.findMany({
-                    where: { featureId: { in: featureIds } },
+                    where: { featureId: { in: existingFeatureIds } },
                     select: { id: true }
                 });
 
@@ -383,7 +372,7 @@ export const classService: ClassService = {
                 }
             }
 
-            const { features, spellcastingProgression, spellsKnownProgression, ...classData } = data;
+            const { featureIds, spellcastingProgression, spellsKnownProgression, ...classData } = data;
 
             // Remove deprecated fields that are now stored in feature features
             const { hitDie: _hitDie, skillPoints: _skillPoints, babProgression: _babProgression, fortProgression: _fortProgression, refProgression: _refProgression, willProgression: _willProgression, ...validClassData } = classData as Record<string, unknown>;
@@ -402,49 +391,11 @@ export const classService: ClassService = {
                 },
             });
 
-            // Sync FeatureClassMap links
-            // Features are already saved via state system, we only need to sync the links
-            if (features && features.length > 0) {
-                console.log(`[ClassService] Syncing FeatureClassMap for class ${query.id} with ${features.length} features`);
-
-                // Extract feature IDs from the features array
-                // Features should have id fields (they were already saved via state system)
-                const featureIds: number[] = [];
-                for (const feature of features) {
-                    if (feature.id && typeof feature.id === 'number' && !isTemporaryId(feature.id)) {
-                        featureIds.push(feature.id);
-                    }
-                }
-
-                console.log(`[ClassService] Extracted ${featureIds.length} feature IDs: ${featureIds.join(', ')}`);
-
-                // Verify all feature IDs exist in database
-                if (featureIds.length > 0) {
-                    const existingFeatures = await tx.feature.findMany({
-                        where: { id: { in: featureIds } },
-                        select: { id: true }
-                    });
-
-                    const foundIds = new Set(existingFeatures.map(f => f.id));
-                    const missingIds = featureIds.filter(id => !foundIds.has(id));
-
-                    if (missingIds.length > 0) {
-                        console.error(`[ClassService] WARNING: ${missingIds.length} feature IDs not found in database: ${missingIds.join(', ')}`);
-                        // Filter out missing IDs
-                        const validFeatureIds = featureIds.filter(id => foundIds.has(id));
-                        await featureSystemService.syncClassFeatures(query.id, validFeatureIds, tx);
-                    } else {
-                        // All IDs are valid, sync links
-                        await featureSystemService.syncClassFeatures(query.id, featureIds, tx);
-                    }
-                } else {
-                    console.warn(`[ClassService] No valid feature IDs found in features array`);
-                    // Sync to empty list (removes all links for this class)
-                    await featureSystemService.syncClassFeatures(query.id, [], tx);
-                }
+            // Sync FeatureClassMap links using featureIds from request
+            if (featureIds && featureIds.length > 0) {
+                await featureSystemService.syncClassFeatures(query.id, featureIds, tx);
             } else {
-                // No features provided - sync to empty list (removes all links for this class)
-                console.log(`[ClassService] No features provided for class ${query.id}, removing all FeatureClassMap entries`);
+                // No featureIds provided - sync to empty list (removes all links for this class)
                 await featureSystemService.syncClassFeatures(query.id, [], tx);
             }
 
@@ -624,7 +575,7 @@ export const classService: ClassService = {
         return { message: 'Class updated successfully' };
     },
 
-    async deleteClass(query: ClassIdParamRequest) {
+    async deleteClass(query: IdParamRequest) {
         await prisma.class.delete({
             where: { id: query.id },
         });
@@ -649,7 +600,10 @@ export const classService: ClassService = {
 
         return {
             total: classes.length,
-            results: classes,
+            results: classes.map(cls => ({
+                ...cls,
+                featureIds: [] // Cache response doesn't include featureIds
+            })),
         };
     },
 

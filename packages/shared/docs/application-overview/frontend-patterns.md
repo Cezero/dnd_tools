@@ -7,6 +7,7 @@
 This document consolidates shared frontend patterns, architecture principles, and best practices that are common across all systems. It provides a single source of truth for frontend development standards and patterns.
 
 **Related Documentation**:
+- [Frontend API Patterns](frontend-api-patterns.md) - API calling patterns using typedApi
 - [Frontend Components](frontend-components.md) - Shared component patterns
 - [Character Management Frontend Components](../character-management/frontend-components.md) - Character-specific frontend components
 - [Backend Implementation Patterns](backend-implementation.md) - Backend patterns including ID handling

@@ -5,10 +5,10 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { DOMAIN_COLUMNS } from '@/features/domain/DomainColumns';
-import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { DomainSummary } from '@shared/schema';
 
 import { routes } from './DomainConfig';
+import { DomainQueryHooks } from './DomainQueryHooks';
 
 export function DomainList(): React.JSX.Element {
     const navigate = useNavigate();

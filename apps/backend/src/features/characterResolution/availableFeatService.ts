@@ -21,6 +21,7 @@ import {
 import { extractBABProgression } from '../../utils/classMechanicsExtractor';
 import { extractSizeId } from '../../utils/raceMechanicsExtractor';
 import { featService } from '../feat/featService';
+import { featureSystemService } from '../featureSystem/featureSystemService';
 
 type FeatWithProgressions = Feat & {
     features: FeatureWithRelations[];
@@ -51,7 +52,6 @@ export class AvailableFeatService {
         const allFeatIds = allFeatsResponse.results.map(f => f.id);
 
         // Fetch features for all feats
-        const { featureSystemService } = await import('../featureSystem/featureSystemService');
         const allProgressions = await featureSystemService.getFeaturesByFeatIds(allFeatIds);
 
         // Create a map of feat ID to features

@@ -1,20 +1,22 @@
+import type { FeatureWithRelations } from '@shared/schema';
 import {
-    UpdateRaceRequest,
     CreateRaceRequest,
-    RaceIdParamRequest,
-    GetAllRacesResponse,
-    Race,
-    UpdateResponse,
     CreateResponse,
+    GetAllRacesResponse,
+    IdParamRequest,
+    Race,
     RaceCacheResponse,
+    UpdateRaceRequest,
+    UpdateResponse,
 } from '@shared/schema';
 
 // Service interface
 export interface RaceService {
-    getAllRaces: () => Promise<GetAllRacesResponse>;
-    getRaceById: (id: RaceIdParamRequest, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => Promise<Race | null>;
     createRace: (data: CreateRaceRequest) => Promise<CreateResponse>;
-    updateRace: (id: RaceIdParamRequest, data: UpdateRaceRequest) => Promise<UpdateResponse>;
-    deleteRace: (id: RaceIdParamRequest) => Promise<UpdateResponse>;
+    deleteRace: (id: IdParamRequest) => Promise<UpdateResponse>;
+    getRaceById: (id: IdParamRequest, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => Promise<Race | null>;
     getRaceCache: () => Promise<RaceCacheResponse>;
+    getRaceFeatures: (id: IdParamRequest, characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => Promise<FeatureWithRelations[]>;
+    getAllRaces: () => Promise<GetAllRacesResponse>;
+    updateRace: (id: IdParamRequest, data: UpdateRaceRequest) => Promise<UpdateResponse>;
 }

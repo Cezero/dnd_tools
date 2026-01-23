@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { CharacterQueryHooks } from '@/features/character/CharacterQueryHooks';
 import { useCacheFunctions } from '@/services/cache';
-import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import type { GetAllCharactersAdminResponse } from '@shared/schema';
 
 export function CharacterExplorerList(): React.JSX.Element {

@@ -5,8 +5,9 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { CharacterApi, CHARACTER_COLUMNS, routes } from '@/features/character';
-import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { CharacterWithRaceResponse } from '@shared/schema';
+
+import { CharacterQueryHooks } from './CharacterQueryHooks';
 
 export function CharacterList(): React.JSX.Element {
     const navigate = useNavigate();

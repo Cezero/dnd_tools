@@ -51,9 +51,18 @@ import {
     SyncSpellsKnownRequest,
     SyncSpellsKnownParamRequest,
     SpellCastParamRequest,
+    GetAvailableFeatsResponse,
+    FeatInQueryResponse,
 } from '@shared/schema';
 
+
 import { characterService } from './characterService';
+import { AvailableFeatService } from '../characterResolution/availableFeatService';
+import { CharacterResolutionService } from '../characterResolution/characterResolutionService';
+import { classService } from '../class/classService';
+import { featService } from '../feat/featService';
+import { raceService } from '../race/raceService';
+import { resolveCharacterToResult } from '../shared/draftState/draftRegistry';
 
 const prisma = new PrismaClient();
 
@@ -94,6 +103,15 @@ export async function GetCharacterWithAllDetails(req: ValidatedParamsT<Character
     }
 
     res.json(character);
+}
+
+/**
+ * Resolve character to ResolvedCharacterResult (read-only, no lock/session).
+ * Used by admin character explorer. Runs the full resolution pipeline.
+ */
+export async function ResolveCharacter(req: ValidatedParamsT<CharacterIdParamRequest, unknown>, res: Response, _next: NextFunction) {
+    const resolved = await resolveCharacterToResult(req.params.id);
+    res.json({ resolvedCharacter: resolved });
 }
 
 export async function CreateCharacter(req: ValidatedBodyT<CreateCharacterRequest>, res: Response, _next: NextFunction) {
@@ -490,4 +508,90 @@ export async function UncastSpell(req: ValidatedParamsT<SpellCastParamRequest>, 
 export async function ResetDailySpellPreparations(req: ValidatedParamsT<CharacterIdParamRequest>, res: Response, _next: NextFunction) {
     await characterService.resetDailySpellPreparations(req.params.id);
     res.json({ message: 'Daily spell preparations reset successfully' });
+}
+
+/**
+ * Get available feats for a character
+ */
+export async function GetAvailableFeats(
+    req: ValidatedParamsT<CharacterIdParamRequest, GetAvailableFeatsResponse>,
+    res: Response,
+    _next: NextFunction
+) {
+    const userId = req.user?.id;
+    if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+    }
+
+    const characterId = req.params.id;
+
+    try {
+        // Load character with all details
+        const character = await characterService.getCharacterWithAllDetails({ id: characterId });
+        if (!character) {
+            res.status(404).json({ error: 'Character not found' });
+            return;
+        }
+
+        // Verify ownership
+        if (character.userId !== userId) {
+            res.status(403).json({ error: 'Access denied' });
+            return;
+        }
+
+        // Load race and class details
+        const raceDetails = character.raceId ? await raceService.getRaceById({ id: character.raceId }) : null;
+        const classDetails = character.advancements?.[0]?.classId
+            ? await classService.getClassById({ id: character.advancements[0].classId })
+            : null;
+
+        // Calculate target level
+        const targetLevel = character.characterLevel || 1;
+
+        // Create resolution context to get resolved features
+        const context = {
+            character,
+            targetLevel,
+            advancement: character.advancements?.find(adv => adv.level === targetLevel),
+            raceDetails,
+            classDetails,
+            secondaryClassDetails: character.advancements?.[0]?.secondaryClassId
+                ? await classService.getClassById({ id: character.advancements[0].secondaryClassId })
+                : null,
+            isGestalt: !!character.advancements?.[0]?.secondaryClassId,
+            userChoices: undefined,
+            includePendingChoices: false,
+            resolveCascading: true,
+            maxResolutionDepth: 10,
+        };
+
+        // Resolve features to get features
+        const resolutionResult = await CharacterResolutionService.resolveCharacterFeatures(
+            character,
+            targetLevel,
+            context
+        );
+
+        // Get all feats
+        const allFeatsResponse = await featService.getAllFeats();
+        const allFeats = allFeatsResponse.results;
+
+        // Filter qualified feats (feats the character qualifies for)
+        const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
+            character,
+            resolutionResult.resolvedProgressions,
+            classDetails,
+            raceDetails,
+            allFeats
+        );
+
+        res.json({
+            results: qualifiedFeats,
+            total: qualifiedFeats.length
+        });
+    } catch (error) {
+        console.error('Error getting available feats:', error);
+        res.status(500).json({ error: 'Failed to get available feats' });
+    }
 }

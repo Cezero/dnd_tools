@@ -1,9 +1,20 @@
+import type { DraftRefRequest } from '@shared/schema';
+
 /**
  * Entity type discriminator for session storage.
  * 
  * Used to distinguish between different entity types in Redis session storage.
  */
 export type EntityType = 'class' | 'race' | 'character';
+
+/**
+ * Request body type for entity operations (viewing, editing).
+ * 
+ * Used in API requests to specify which entity a user is viewing or editing.
+ * 
+ * @deprecated Use DraftRefRequest from @shared/schema instead
+ */
+export type EntityRefRequest = DraftRefRequest;
 
 /**
  * Interface for Redis operations used by session services.

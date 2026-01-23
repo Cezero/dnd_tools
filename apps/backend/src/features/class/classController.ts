@@ -1,35 +1,37 @@
 import { Response, NextFunction } from 'express';
 
 import {
-    ValidatedParamsT,
-    ValidatedParamsQueryT,
     ValidatedBodyT,
-    ValidatedParamsBodyT,
     ValidatedNoInput,
+    ValidatedParamsBodyT,
+    ValidatedParamsQueryT,
+    ValidatedParamsT,
 } from '@/util/validated-types';
 import {
-    ClassIdParamRequest,
+    ClassCacheResponse,
     ClassIdQueryRequest,
     CreateClassRequest,
-    UpdateClassRequest,
-    GetAllClassesResponse,
-    GetAllClassesQuery,
     DnDClass,
+    GetAllClassesQuery,
+    GetAllClassesResponse,
+    GetFeaturesResponse,
+    IdParamRequest,
+    UpdateClassRequest,
     UpdateResponse,
-    ClassCacheResponse,
 } from '@shared/schema';
-
-import { EntityLockService } from '../shared/entityState/EntityLockService';
+import { DraftType } from '@shared/static-data';
 
 import { classService } from './classService';
+import { DraftLockService } from '../shared/draftState/DraftLockService';
 
-let entityLockServiceInstance: EntityLockService | null = null;
 
-function getEntityLockService(): EntityLockService {
-    if (!entityLockServiceInstance) {
-        entityLockServiceInstance = new EntityLockService();
+let draftLockServiceInstance: DraftLockService | null = null;
+
+function getDraftLockService(): DraftLockService {
+    if (!draftLockServiceInstance) {
+        draftLockServiceInstance = new DraftLockService();
     }
-    return entityLockServiceInstance;
+    return draftLockServiceInstance;
 }
 
 /**
@@ -45,7 +47,7 @@ export async function GetAllClasses(req: ValidatedBodyT<GetAllClassesQuery, GetA
  * Optionally accepts character feature choices to enrich features with choice data.
  */
 export async function GetClassById(
-    req: ValidatedParamsQueryT<ClassIdParamRequest, ClassIdQueryRequest, DnDClass>,
+    req: ValidatedParamsQueryT<IdParamRequest, ClassIdQueryRequest, DnDClass>,
     res: Response,
     _next: NextFunction
 ) {
@@ -60,6 +62,18 @@ export async function GetClassById(
 }
 
 /**
+ * Fetches feature progressions for a class. Used by ClassDetail/ClassDisplay to resolve featureIds to FeatureWithRelations[].
+ */
+export async function GetClassFeatures(
+    req: ValidatedParamsQueryT<IdParamRequest, ClassIdQueryRequest, GetFeaturesResponse>,
+    res: Response,
+    _next: NextFunction
+) {
+    const features = await classService.getClassFeatures(req.params, req.query.characterFeatureChoices);
+    res.json(features);
+}
+
+/**
  * Creates a new class.
  */
 export async function CreateClass(req: ValidatedBodyT<CreateClassRequest>, res: Response, _next: NextFunction) {
@@ -70,7 +84,7 @@ export async function CreateClass(req: ValidatedBodyT<CreateClassRequest>, res: 
 /**
  * Updates an existing class.
  */
-export async function UpdateClass(req: ValidatedParamsBodyT<ClassIdParamRequest, UpdateClassRequest, UpdateResponse>, res: Response, _next: NextFunction) {
+export async function UpdateClass(req: ValidatedParamsBodyT<IdParamRequest, UpdateClassRequest, UpdateResponse>, res: Response, _next: NextFunction) {
     await classService.updateClass(req.params, req.body);
     res.status(200).json({ message: 'Class updated successfully' });
 }
@@ -78,7 +92,7 @@ export async function UpdateClass(req: ValidatedParamsBodyT<ClassIdParamRequest,
 /**
  * Deletes a class.
  */
-export async function DeleteClass(req: ValidatedParamsT<ClassIdParamRequest>, res: Response, _next: NextFunction) {
+export async function DeleteClass(req: ValidatedParamsT<IdParamRequest>, res: Response, _next: NextFunction) {
     await classService.deleteClass(req.params);
     res.json({ message: 'Class deleted successfully' });
 }
@@ -98,12 +112,12 @@ export async function GetClassCache(req: ValidatedNoInput<ClassCacheResponse>, r
  * This is a read-only operation that doesn't require authentication.
  */
 export async function GetClassLockStatus(
-    req: ValidatedParamsT<ClassIdParamRequest>,
+    req: ValidatedParamsT<IdParamRequest>,
     res: Response,
     _next: NextFunction
 ) {
-    const lockService = getEntityLockService();
-    const lockedBy = await lockService.checkLock('class', req.params.id);
+    const lockService = getDraftLockService();
+    const lockedBy = await lockService.checkLock(DraftType.Class, req.params.id);
 
     if (lockedBy === null) {
         res.json({ locked: false });

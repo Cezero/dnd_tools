@@ -1303,10 +1303,10 @@ export const featureSystemService: FeatureSystemService = {
                 // CRITICAL: Never delete features that have class or race links
                 // Class/race features are managed through FeatureClassMap/FeatureRaceMap, not through this method
                 // Also check if the feature's sourceType is Class or Race to be extra safe
-                const isClassOrRaceFeature = feature.sourceType === FeatureSourceType.Class || 
-                                            feature.sourceType === FeatureSourceType.Race ||
-                                            classLinkCount > 0 || 
-                                            raceLinkCount > 0;
+                const isClassOrRaceFeature = feature.sourceType === FeatureSourceType.Class ||
+                    feature.sourceType === FeatureSourceType.Race ||
+                    classLinkCount > 0 ||
+                    raceLinkCount > 0;
 
                 // Only delete if not shared and not a class/race feature
                 if (!isClassOrRaceFeature) {
@@ -1468,7 +1468,8 @@ export const featureSystemService: FeatureSystemService = {
     // Lightweight wrapper methods
     async getFeaturesByClassId(
         classId: number,
-        characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+        characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>,
+        includeClassRaceInfo = false
     ): Promise<FeatureWithRelations[]> {
         // Get feature IDs for this class via many-to-many relationship
         const classLinks = await prisma.featureClassMap.findMany({
@@ -1477,13 +1478,13 @@ export const featureSystemService: FeatureSystemService = {
         });
         const featureIds = classLinks.map(link => link.featureId);
 
-        // Delegate to core method with choices, exclude class/race info (context is clear - it's for this class)
-        return await this.getFeaturesByIds(featureIds, characterFeatureChoices, false);
+        return await this.getFeaturesByIds(featureIds, characterFeatureChoices, includeClassRaceInfo);
     },
 
     async getFeaturesByRaceId(
         raceId: number,
-        characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+        characterFeatureChoices?: Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>,
+        includeClassRaceInfo = false
     ): Promise<FeatureWithRelations[]> {
         // Get feature IDs for this race via many-to-many relationship
         const raceLinks = await prisma.featureRaceMap.findMany({
@@ -1492,8 +1493,7 @@ export const featureSystemService: FeatureSystemService = {
         });
         const featureIds = raceLinks.map(link => link.featureId);
 
-        // Delegate to core method with choices, exclude class/race info (context is clear - it's for this race)
-        return await this.getFeaturesByIds(featureIds, characterFeatureChoices, false);
+        return await this.getFeaturesByIds(featureIds, characterFeatureChoices, includeClassRaceInfo);
     },
 
     async getFeaturesByDomainId(

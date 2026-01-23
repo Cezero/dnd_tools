@@ -10,14 +10,15 @@ import type { GestaltProgressionDisplayProps } from './types';
 export function GestaltProgressionDisplay({
     primaryClass,
     secondaryClass,
+    primaryFeatures = [],
+    secondaryFeatures = [],
     showHeader = true
 }: GestaltProgressionDisplayProps): React.JSX.Element {
-    // Extract mechanics from feature features
-    // Note: classId may not be available on DnDClass type, so we extract without it
+    // Extract mechanics from feature features (use primaryFeatures/secondaryFeatures resolved from featureIds)
     const primaryMechanics = useMemo(() => {
-        if (primaryClass.features) {
+        if (primaryFeatures.length > 0) {
             const classId = (primaryClass as { id?: number }).id;
-            return extractClassMechanics(primaryClass.features, classId);
+            return extractClassMechanics(primaryFeatures, classId);
         }
         return {
             hitDie: null,
@@ -27,12 +28,12 @@ export function GestaltProgressionDisplay({
             refProgression: null,
             willProgression: null,
         };
-    }, [primaryClass]);
+    }, [primaryClass, primaryFeatures]);
 
     const secondaryMechanics = useMemo(() => {
-        if (secondaryClass.features) {
+        if (secondaryFeatures.length > 0) {
             const classId = (secondaryClass as { id?: number }).id;
-            return extractClassMechanics(secondaryClass.features, classId);
+            return extractClassMechanics(secondaryFeatures, classId);
         }
         return {
             hitDie: null,
@@ -42,15 +43,15 @@ export function GestaltProgressionDisplay({
             refProgression: null,
             willProgression: null,
         };
-    }, [secondaryClass]);
+    }, [secondaryClass, secondaryFeatures]);
 
     // Create gestalt feature by combining both classes' feature features
     // The feature generator will calculate the better BAB/saves at each level
     const primaryClassId = (primaryClass as { id?: number }).id;
     const secondaryClassId = (secondaryClass as { id?: number }).id;
     const combinedProgressions = [
-        ...(primaryClass.features || []),
-        ...(secondaryClass.features || [])
+        ...primaryFeatures,
+        ...secondaryFeatures
     ];
 
     const gestaltProgression = generateClassProgression({

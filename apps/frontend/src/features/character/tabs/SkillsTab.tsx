@@ -1,11 +1,12 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { AnalogSkillService } from '@/features/character';
 import type { SkillRank, TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { ClassApi } from '@/features/class/ClassApi';
 import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { buildFormulaParams } from '@/lib/formatters/formula-utils';
 import type { FormattedSkill } from '@/lib/formatters/types';
@@ -27,10 +28,10 @@ import {
 /**
  * Skills tab component for managing character skill ranks.
  * 
- * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → updateValue pattern.
  * - Updates state via `updateState()` when skill ranks change
- * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
- * - Do NOT call `resolution.applyUpdate()` directly from this tab
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks using `updateValue()`
+ * - Do NOT call `resolution.updateValue()` directly from this tab
  * 
  * @see CharacterEdit component for sync pattern documentation
  */
@@ -52,6 +53,18 @@ export function SkillsTab({
         secondary: sharedData.secondaryClass || undefined
     }), [sharedData.primaryClass, sharedData.secondaryClass]);
     const raceDetails = sharedData.race;
+
+    // Fetch class features (resolves featureIds) for skill points and formula display
+    const { data: primaryClassFeatures = [] } = useQuery({
+        queryKey: ['class', 'features', state.classId],
+        queryFn: () => ClassApi.getClassFeatures({ id: state.classId! }),
+        enabled: !!state.classId && !!classDetails.primary,
+    });
+    const { data: secondaryClassFeatures = [] } = useQuery({
+        queryKey: ['class', 'features', state.secondaryClassId],
+        queryFn: () => ClassApi.getClassFeatures({ id: state.secondaryClassId! }),
+        enabled: !!state.secondaryClassId && !!classDetails.secondary,
+    });
 
     // Extract data from centralized state
     const { skillRanks, abilityScores, level } = state;
@@ -268,11 +281,11 @@ export function SkillsTab({
                 // For gestalt characters, use the higher of the two class skill points
                 const primaryId = classDetails.primary ? (classDetails.primary as { id?: number }).id : undefined;
                 const secondaryId = classDetails.secondary ? (classDetails.secondary as { id?: number }).id : undefined;
-                const primaryMechanics = classDetails.primary?.features
-                    ? extractClassMechanics(classDetails.primary.features, primaryId)
+                const primaryMechanics = primaryClassFeatures.length > 0
+                    ? extractClassMechanics(primaryClassFeatures, primaryId)
                     : { skillPoints: null };
-                const secondaryMechanics = classDetails.secondary?.features
-                    ? extractClassMechanics(classDetails.secondary.features, secondaryId)
+                const secondaryMechanics = secondaryClassFeatures.length > 0
+                    ? extractClassMechanics(secondaryClassFeatures, secondaryId)
                     : { skillPoints: null };
                 const primarySkillPoints = primaryMechanics.skillPoints ?? 2;
                 const secondarySkillPoints = secondaryMechanics.skillPoints ?? 2;
@@ -280,8 +293,8 @@ export function SkillsTab({
             } else {
                 // For single class characters, use the primary class skill points
                 const primaryId = classDetails.primary ? (classDetails.primary as { id?: number }).id : undefined;
-                const primaryMechanics = classDetails.primary?.features
-                    ? extractClassMechanics(classDetails.primary.features, primaryId)
+                const primaryMechanics = primaryClassFeatures.length > 0
+                    ? extractClassMechanics(primaryClassFeatures, primaryId)
                     : { skillPoints: null };
                 classSkillPoints = primaryMechanics.skillPoints ?? 2;
             }
@@ -302,7 +315,7 @@ export function SkillsTab({
         totalSkillPoints = Math.max(totalSkillPoints, level);
 
         return totalSkillPoints;
-    }, [state, level, getAbilityScore, classDetails, totalBonusSkillPoints]);
+    }, [state, level, getAbilityScore, classDetails, totalBonusSkillPoints, primaryClassFeatures, secondaryClassFeatures]);
 
     // Calculate skill points spent
     const skillPointsSpent = useMemo(() => {
@@ -630,10 +643,10 @@ export function SkillsTab({
         const intelligenceScore = getAbilityScore(AbilityId.Intelligence);
         const intModifier = GetAbilityModifier(intelligenceScore);
 
-        // Get class skill points from feature features
+        // Get class skill points from feature features (use primaryClassFeatures/secondaryClassFeatures from ClassApi.getClassFeatures)
         const primaryId = classDetails.primary ? (classDetails.primary as { id?: number }).id : undefined;
-        const primaryMechanics = classDetails.primary?.features
-            ? extractClassMechanics(classDetails.primary.features, primaryId)
+        const primaryMechanics = primaryClassFeatures.length > 0
+            ? extractClassMechanics(primaryClassFeatures, primaryId)
             : { skillPoints: null };
         let classSkillPoints = primaryMechanics.skillPoints ?? 2;
         let className = classDetails.primary?.name || 'Unknown';
@@ -641,8 +654,8 @@ export function SkillsTab({
         // Handle gestalt characters
         if (isGestalt && secondaryClassId && classDetails.secondary) {
             const secondaryId = classDetails.secondary ? (classDetails.secondary as { id?: number }).id : undefined;
-            const secondaryMechanics = classDetails.secondary.features
-                ? extractClassMechanics(classDetails.secondary.features, secondaryId)
+            const secondaryMechanics = secondaryClassFeatures.length > 0
+                ? extractClassMechanics(secondaryClassFeatures, secondaryId)
                 : { skillPoints: null };
             const primarySkillPoints = primaryMechanics.skillPoints ?? 2;
             const secondarySkillPoints = secondaryMechanics.skillPoints ?? 2;

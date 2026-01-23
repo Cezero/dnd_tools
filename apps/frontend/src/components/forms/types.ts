@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { type ValidationState } from '@/hooks/useZodValidation';
+import { type ValidationState, useZodValidation } from '@/lib/hooks/useZodValidation';
 import type { SourceMap } from '@shared/schema';
 import { CoreComponent, SourceType, EditionId } from '@shared/static-data';
 
@@ -83,7 +83,7 @@ export interface ValidatedFormProps {
     className?: string;
     formData: Record<string, unknown>;
     setFormData: (data: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) => void;
-    validation: ReturnType<typeof import('@/hooks/useZodValidation').useZodValidation>;
+    validation: ReturnType<typeof useZodValidation>;
 }
 
 /**

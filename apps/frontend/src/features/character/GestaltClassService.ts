@@ -1,14 +1,21 @@
 import type { DnDClass, CharacterAdvancementWithDetailsResponse, FeatureWithRelations, SpellcastingProgressionWithSlots } from '@shared/schema';
 import { EntityAppliesToType } from '@shared/static-data';
 
+/** Class with optional features resolved from featureIds (callers must populate for mergeClasses) */
+export type DnDClassWithFeatures = DnDClass & { features?: FeatureWithRelations[] };
+
 /**
  * Service for handling gestalt character class merging according to D&D 3.5 gestalt rules
  */
 export class GestaltClassService {
     /**
-     * Merge two classes according to gestalt rules
+     * Merge two classes according to gestalt rules.
+     * Callers must pass classes with features populated from featureIds (e.g. via ClassApi.getClassFeatures).
      */
-    static mergeClasses(primaryClass: DnDClass, secondaryClass: DnDClass): DnDClass {
+    static mergeClasses(primaryClass: DnDClassWithFeatures, secondaryClass: DnDClassWithFeatures): DnDClass & { features: (FeatureWithRelations & { sourceClassName?: string })[] } {
+        const merged = this.mergeFeatures(primaryClass.features ?? [], secondaryClass.features ?? [], primaryClass.name, secondaryClass.name);
+        const featureIds = merged.map(f => f.id).filter((id): id is number => typeof id === 'number' && id > 0);
+
         return {
             // Basic class info from primary class
             name: `${primaryClass.name}/${secondaryClass.name}`,
@@ -21,11 +28,10 @@ export class GestaltClassService {
             isDivine: primaryClass.isDivine || secondaryClass.isDivine,
             description: primaryClass.description,
             sourceBookInfo: primaryClass.sourceBookInfo,
+            featureIds,
 
-            // Mechanics are now handled via feature features, not class fields
-
-            // Merged features with source tracking
-            features: this.mergeFeatures(primaryClass.features || [], secondaryClass.features || [], primaryClass.name, secondaryClass.name),
+            // Merged features with source tracking (for callers that need the full feature list)
+            features: merged,
 
             // Merged spellcasting features
             spellcastingProgression: [

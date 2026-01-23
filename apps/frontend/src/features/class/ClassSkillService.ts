@@ -158,7 +158,8 @@ export class ClassSkillService {
         character: CharacterWithAllDetailsResponse,
         skillId: number,
         abilityScore: number,
-        effectiveClassDetails?: DnDClass
+        effectiveClassDetails?: DnDClass,
+        classFeatures?: FeatureWithRelations[]
     ): number {
         const abilityModifier = Math.floor((abilityScore - 10) / 2);
         let totalRanks = 0;
@@ -179,7 +180,8 @@ export class ClassSkillService {
                     advancement,
                     skillId,
                     skillEntry.skillSubId,
-                    skillEntry.customSubtype
+                    skillEntry.customSubtype,
+                    classFeatures
                 );
 
                 if (isClassSkill) {
@@ -201,13 +203,15 @@ export class ClassSkillService {
         advancement: CharacterAdvancementWithDetailsResponse,
         skillId: number,
         skillSubId?: number | null,
-        _customSubtype?: string | null
+        _customSubtype?: string | null,
+        classFeatures?: FeatureWithRelations[]
     ): boolean {
-        if (!effectiveClassDetails?.features) return false;
+        const features = classFeatures ?? [];
+        if (features.length === 0) return false;
 
         // Check if the specific subtype is a class skill
         const isSpecificSubtypeClassSkill = this.isSkillSubtypeClassSkillForClass(
-            effectiveClassDetails.features,
+            features,
             skillId,
             skillSubId
         );
@@ -218,7 +222,7 @@ export class ClassSkillService {
 
         // Check if the parent skill is a class skill with appliesToSubId: -1 (all subtypes)
         const isParentSkillClassSkill = this.isSkillClassSkillForClass(
-            effectiveClassDetails.features,
+            features,
             skillId
         );
 

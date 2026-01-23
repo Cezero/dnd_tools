@@ -120,7 +120,7 @@ export interface SkillRank {
     pointsSpent: number;
 }
 
-// SkillBonus is imported from @shared/schema (characterResolution.ts)
+// SkillBonus is imported from @shared/schema (character.ts)
 
 /**
  * UI state for the Skills tab during character editing.
@@ -148,7 +148,7 @@ export type SkillTabUpdates = Partial<SkillTabState>;
 // ============================================================================
 // Choice Tab Types
 // ============================================================================
-// PendingChoice is imported from @shared/schema (characterResolution.ts)
+// PendingChoice is imported from @shared/schema (character.ts)
 
 /**
  * UI state for the Choices tab during character editing.
@@ -578,6 +578,10 @@ export interface ResolvedFeatures {
 export interface GestaltProgressionDisplayProps {
     primaryClass: DnDClass;
     secondaryClass: DnDClass;
+    /** Features resolved from primaryClass.featureIds (e.g. via ClassApi.getClassFeatures) */
+    primaryFeatures?: FeatureWithRelations[];
+    /** Features resolved from secondaryClass.featureIds (e.g. via ClassApi.getClassFeatures) */
+    secondaryFeatures?: FeatureWithRelations[];
     showHeader?: boolean;
 }
 

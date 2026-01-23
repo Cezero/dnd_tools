@@ -1,9 +1,10 @@
+import type { Server as HTTPServer , IncomingMessage } from 'http';
 import { WebSocketServer as WSServer, WebSocket } from 'ws';
-import type { Server as HTTPServer } from 'http';
-import type { IncomingMessage } from 'http';
+
+import { DraftType } from '@shared/static-data';
 
 import { authService } from '../../auth/authService';
-import { EntityStatePubSub } from '../entityState/EntityStatePubSub';
+import { DraftStatePubSub } from '../draftState/DraftStatePubSub';
 
 /**
  * WebSocket message types for client-server communication.
@@ -43,7 +44,7 @@ interface ClientConnection {
     ws: WebSocket;
     clientId: string;
     userId: number | null;
-    subscriptions: Set<string>; // Set of "entityType:entityId" strings
+    subscriptions: Set<string>; // Set of "draftType:entityId" strings (draftType is numeric)
 }
 
 /**
@@ -62,12 +63,12 @@ interface ClientConnection {
  * - `{ type: 'stateUpdate', entityType: string, entityId: number, state: T }` - Entity state update
  * - `{ type: 'error', message: string }` - Error message
  * 
- * **Channel Pattern**: `channel:state:{entityType}:{entityId}`
+ * **Channel Pattern**: `channel:state:{draftType}:{entityId}` (draftType is numeric enum value)
  * 
  * **Authentication**: User authentication should be handled via the initial HTTP upgrade request.
  * The userId is extracted from the request and stored with the client connection.
  * 
- * @see EntityStatePubSub - For Redis pub/sub operations
+ * @see DraftStatePubSub - For Redis pub/sub operations
  * @see packages/shared/docs/application-overview/websocket-state-updates.md - Full documentation
  * 
  * @example
@@ -82,13 +83,13 @@ interface ClientConnection {
 export class WebSocketServer {
     private wss: WSServer | null = null;
     private clients: Map<string, ClientConnection> = new Map();
-    private pubSub: EntityStatePubSub;
+    private pubSub: DraftStatePubSub;
     private nextClientId = 1;
     // Track how many clients are subscribed to each entity
-    private entitySubscriptions: Map<string, Set<string>> = new Map(); // "entityType:entityId" -> Set of clientIds
+    private entitySubscriptions: Map<string, Set<string>> = new Map(); // "draftType:entityId" -> Set of clientIds (draftType is numeric)
 
     constructor() {
-        this.pubSub = new EntityStatePubSub();
+        this.pubSub = new DraftStatePubSub();
     }
 
     /**
@@ -248,7 +249,7 @@ export class WebSocketServer {
      * Handles a client subscription to an entity state.
      * 
      * @param clientId - The client ID
-     * @param entityType - The entity type
+     * @param entityType - The entity type (string representation of numeric DraftType from frontend)
      * @param entityId - The entity ID
      */
     private async handleSubscribe(clientId: string, entityType: string, entityId: number): Promise<void> {
@@ -257,7 +258,14 @@ export class WebSocketServer {
             return;
         }
 
-        const subscriptionKey = `${entityType}:${entityId}`;
+        // Parse string entityType to numeric DraftType enum
+        const draftType = parseInt(entityType, 10) as DraftType;
+        if (isNaN(draftType) || !Object.values(DraftType).includes(draftType)) {
+            this.sendError(connection.ws, `Invalid entity type: ${entityType}`);
+            return;
+        }
+
+        const subscriptionKey = `${draftType}:${entityId}`;
 
         if (connection.subscriptions.has(subscriptionKey)) {
             // Already subscribed
@@ -270,14 +278,14 @@ export class WebSocketServer {
                 this.entitySubscriptions.set(subscriptionKey, new Set());
 
                 // Subscribe to Redis pub/sub channel (only once per entity, regardless of client count)
-                await this.pubSub.subscribe(entityType, entityId, (state) => {
+                await this.pubSub.subscribe(draftType, entityId, (state) => {
                     // Broadcast to all clients subscribed to this entity
                     const clientIds = this.entitySubscriptions.get(subscriptionKey);
                     if (clientIds) {
                         for (const subscribedClientId of clientIds) {
                             const subscribedConnection = this.clients.get(subscribedClientId);
                             if (subscribedConnection) {
-                                this.sendStateUpdate(subscribedConnection.ws, entityType, entityId, state);
+                                this.sendStateUpdate(subscribedConnection.ws, draftType, entityId, state);
                             }
                         }
                     }
@@ -287,10 +295,10 @@ export class WebSocketServer {
             // Add this client to the entity's subscription set
             this.entitySubscriptions.get(subscriptionKey)!.add(clientId);
             connection.subscriptions.add(subscriptionKey);
-            console.log(`Client ${clientId} subscribed to ${entityType}:${entityId}`);
+            console.log(`Client ${clientId} subscribed to ${draftType}:${entityId}`);
         } catch (error) {
-            console.error(`Error subscribing client ${clientId} to ${entityType}:${entityId}:`, error);
-            this.sendError(connection.ws, `Failed to subscribe to ${entityType}:${entityId}`);
+            console.error(`Error subscribing client ${clientId} to ${draftType}:${entityId}:`, error);
+            this.sendError(connection.ws, `Failed to subscribe to ${draftType}:${entityId}`);
         }
     }
 
@@ -298,7 +306,7 @@ export class WebSocketServer {
      * Handles a client unsubscription from an entity state.
      * 
      * @param clientId - The client ID
-     * @param entityType - The entity type
+     * @param entityType - The entity type (string representation of numeric DraftType from frontend)
      * @param entityId - The entity ID
      */
     private async handleUnsubscribe(clientId: string, entityType: string, entityId: number): Promise<void> {
@@ -307,7 +315,14 @@ export class WebSocketServer {
             return;
         }
 
-        const subscriptionKey = `${entityType}:${entityId}`;
+        // Parse string entityType to numeric DraftType enum
+        const draftType = parseInt(entityType, 10) as DraftType;
+        if (isNaN(draftType) || !Object.values(DraftType).includes(draftType)) {
+            this.sendError(connection.ws, `Invalid entity type: ${entityType}`);
+            return;
+        }
+
+        const subscriptionKey = `${draftType}:${entityId}`;
 
         if (!connection.subscriptions.has(subscriptionKey)) {
             // Not subscribed
@@ -315,14 +330,23 @@ export class WebSocketServer {
         }
 
         try {
-            // Unsubscribe from Redis pub/sub channel
-            await this.pubSub.unsubscribe(entityType, entityId);
+            // Remove this client from the entity's subscription set
+            const clientIds = this.entitySubscriptions.get(subscriptionKey);
+            if (clientIds) {
+                clientIds.delete(clientId);
+
+                // If no more clients are subscribed, unsubscribe from Redis
+                if (clientIds.size === 0) {
+                    await this.pubSub.unsubscribe(draftType, entityId);
+                    this.entitySubscriptions.delete(subscriptionKey);
+                }
+            }
 
             connection.subscriptions.delete(subscriptionKey);
-            console.log(`Client ${clientId} unsubscribed from ${entityType}:${entityId}`);
+            console.log(`Client ${clientId} unsubscribed from ${draftType}:${entityId}`);
         } catch (error) {
-            console.error(`Error unsubscribing client ${clientId} from ${entityType}:${entityId}:`, error);
-            this.sendError(connection.ws, `Failed to unsubscribe from ${entityType}:${entityId}`);
+            console.error(`Error unsubscribing client ${clientId} from ${draftType}:${entityId}:`, error);
+            this.sendError(connection.ws, `Failed to unsubscribe from ${draftType}:${entityId}`);
         }
     }
 
@@ -341,10 +365,11 @@ export class WebSocketServer {
 
         // Unsubscribe from all subscriptions
         for (const subscriptionKey of connection.subscriptions) {
-            const [entityType, entityIdStr] = subscriptionKey.split(':');
+            const [draftTypeStr, entityIdStr] = subscriptionKey.split(':');
+            const draftType = parseInt(draftTypeStr, 10) as DraftType;
             const entityId = parseInt(entityIdStr, 10);
 
-            if (!isNaN(entityId)) {
+            if (!isNaN(draftType) && !isNaN(entityId) && Object.values(DraftType).includes(draftType)) {
                 try {
                     // Remove this client from the entity's subscription set
                     const clientIds = this.entitySubscriptions.get(subscriptionKey);
@@ -353,7 +378,7 @@ export class WebSocketServer {
 
                         // If no more clients are subscribed, unsubscribe from Redis
                         if (clientIds.size === 0) {
-                            await this.pubSub.unsubscribe(entityType, entityId);
+                            await this.pubSub.unsubscribe(draftType, entityId);
                             this.entitySubscriptions.delete(subscriptionKey);
                         }
                     }
@@ -371,14 +396,14 @@ export class WebSocketServer {
      * Sends a state update to a client.
      * 
      * @param ws - The WebSocket connection
-     * @param entityType - The entity type
+     * @param draftType - The draft type (numeric enum value)
      * @param entityId - The entity ID
      * @param state - The updated state
      */
-    private sendStateUpdate(ws: WebSocket, entityType: string, entityId: number, state: unknown): void {
+    private sendStateUpdate(ws: WebSocket, draftType: DraftType, entityId: number, state: unknown): void {
         const message: StateUpdateMessage = {
             type: 'stateUpdate',
-            entityType,
+            entityType: String(draftType), // Send as string for frontend compatibility
             entityId,
             state
         };
@@ -408,18 +433,18 @@ export class WebSocketServer {
     /**
      * Broadcasts a state update to all subscribed clients.
      * 
-     * This is called by EntityStateService when state is updated.
+     * This is called by DraftStateService when state is updated.
      * 
-     * @param entityType - The entity type
+     * @param draftType - The draft type (numeric enum value)
      * @param entityId - The entity ID
      * @param state - The updated state
      */
-    async broadcastStateUpdate<T>(entityType: string, entityId: number, state: T): Promise<void> {
-        const subscriptionKey = `${entityType}:${entityId}`;
+    async broadcastStateUpdate<T>(draftType: DraftType, entityId: number, state: T): Promise<void> {
+        const subscriptionKey = `${draftType}:${entityId}`;
 
         for (const [clientId, connection] of this.clients.entries()) {
             if (connection.subscriptions.has(subscriptionKey)) {
-                this.sendStateUpdate(connection.ws, entityType, entityId, state);
+                this.sendStateUpdate(connection.ws, draftType, entityId, state);
             }
         }
     }

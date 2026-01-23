@@ -46,7 +46,7 @@ The feature system frontend follows the shared [Component Architecture](../appli
 **ArrayPairEditor**: Utility component for editing array-based data
 **FeatureSystemApi**: API client for backend communication (includes lock status checks)
 **FeatureSystemService**: Service layer for feature operations
-**FeatureStateStore**: Cache for feature data from database (does NOT subscribe to editing state changes)
+**FeatureQueryHooks**: React Query hooks for fetching and caching feature data from database
 
 ## 🔧 **Core Components**
 
@@ -271,19 +271,21 @@ Type-safe API client for backend communication.
 
 **Source File**: `apps/frontend/src/components/feature-system/FeatureSystemApi.ts`
 
-### **FeatureStateStore**
+### **FeatureQueryHooks**
 
-Global store for caching feature data from the database.
+React Query hooks for fetching and caching feature data from the database.
 
-**Purpose**: Provides caching for feature data fetched from the database. Does NOT subscribe to editing state changes.
+**Purpose**: Provides imperative and declarative methods for fetching feature data with automatic caching via React Query.
 
 **Key Features**:
-- **Database Caching**: Caches feature data fetched from database via `FeatureSystemApi.getFeatureById`
-- **No WebSocket**: Does NOT subscribe to editing state changes (editing state is isolated)
-- **Viewing Only**: Use `loadFeatureData` for viewing features (fetches from database)
+- **React Query Integration**: Uses TanStack Query for automatic caching, refetching, and cache invalidation
+- **Imperative Usage**: `FeatureQueryHooks.getFeatureById(featureId)` for programmatic fetching
+- **Declarative Usage**: Use with `useQuery` hook for reactive data fetching
+- **Automatic Cache Management**: React Query handles cache invalidation on mutations
+- **Viewing Only**: Use `getFeatureById` for viewing features (fetches from database)
 - **Editing**: Use `useFeatureResolution` hook for editing (uses isolated entity state)
 
-**Source File**: `apps/frontend/src/lib/stores/FeatureStateStore.tsx`
+**Source File**: `apps/frontend/src/components/feature-system/FeatureQueryHooks.ts`
 
 ### **FeatureSystemService**
 

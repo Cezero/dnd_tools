@@ -39,6 +39,7 @@ import {
     SpellCastParamSchema,
     FeatureUsesParamSchema,
     CharacterItemIdParamSchema,
+    GetAvailableFeatsResponseSchema,
 } from '@shared/schema';
 
 import {
@@ -46,6 +47,7 @@ import {
     GetAllCharactersAdmin,
     GetCharacterById,
     GetCharacterWithAllDetails,
+    ResolveCharacter,
     CreateCharacter,
     DeleteCharacter,
     SaveCharacter,
@@ -95,6 +97,7 @@ import {
     CastSpell,
     UncastSpell,
     ResetDailySpellPreparations,
+    GetAvailableFeats,
 } from './characterController';
 import { requireAuth, requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -105,6 +108,7 @@ get('/', requireAuth, {}, GetAllCharacters);
 get('/admin/all', requireAuth, requireAdmin, {}, GetAllCharactersAdmin);
 get('/:id', requireAuth, { params: CharacterIdParamSchema }, GetCharacterById);
 get('/:id/details', requireAuth, { params: CharacterIdParamSchema }, GetCharacterWithAllDetails);
+get('/:id/resolve', requireAuth, { params: CharacterIdParamSchema }, ResolveCharacter);
 
 // Character Write Routes
 post('/', requireAuth, { body: CreateCharacterSchema }, CreateCharacter);
@@ -166,5 +170,8 @@ post('/:id/spell-preparations/:preparationId/uncast', requireAuth, { params: Spe
 post('/:id/spell-preparations/sync', requireAuth, { params: CharacterIdParamSchema, body: SyncSpellPreparationsRequestSchema }, SyncSpellPreparations);
 post('/:id/spell-preparations/reset-daily', requireAuth, { params: CharacterIdParamSchema }, ResetDailySpellPreparations);
 post('/:id/advancements/:advancementId/spells-known/sync', requireAuth, { params: SyncSpellsKnownParamSchema, body: SyncSpellsKnownRequestSchema }, SyncSpellsKnown);
+
+// Get Available Feats
+get('/:id/available-feats', requireAuth, { params: CharacterIdParamSchema }, GetAvailableFeats);
 
 export { CharacterRouter };

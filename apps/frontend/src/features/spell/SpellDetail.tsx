@@ -3,9 +3,9 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { DetailPage } from '@/components/common/DetailPage';
-import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 
 import { SpellDisplayContent } from './SpellDisplayContent';
+import { SpellQueryHooks } from './SpellQueryHooks';
 import { GetClassLevelAbbr } from './spellUtil';
 
 export function SpellDetail(): React.JSX.Element {

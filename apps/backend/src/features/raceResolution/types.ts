@@ -1,4 +1,5 @@
-import type { RaceEditState, RaceUpdate } from '@shared/schema';
+import type { RaceEditState } from '@shared/schema';
+import { RaceUpdateType } from '@shared/static-data';
 
 /**
  * Database row structure for unified edit_sessions table (race type).
@@ -30,5 +31,11 @@ export interface RaceSession {
     expiresAt: Date;
 }
 
-// Re-export shared types for convenience
-export type { RaceEditState, RaceUpdate };
+/**
+ * Discriminated union type for race update operations.
+ * Used by the update applier system to apply updates to race edit state.
+ */
+export type RaceUpdate =
+    | { type: typeof RaceUpdateType.LinkFeature; payload: { featureId: number } }
+    | { type: typeof RaceUpdateType.UnlinkFeature; payload: { featureId: number } }
+    | { type: typeof RaceUpdateType.UpdateRaceField; payload: { field: string; value: unknown } };

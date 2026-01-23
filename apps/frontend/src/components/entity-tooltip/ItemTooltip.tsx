@@ -2,8 +2,8 @@ import { PreviewCard } from '@base-ui-components/react/preview-card';
 import React from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { formatCostAsCurrency } from '@/features/item/utils';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { WEAPON_CATEGORIES, WEAPON_TYPES, DAMAGE_TYPES, ARMOR_CATEGORIES } from '@shared/static-data';
 
 import type { ItemTooltipProps } from './types';

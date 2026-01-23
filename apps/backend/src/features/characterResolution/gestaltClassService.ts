@@ -3,6 +3,14 @@ import type { DnDClass, FeatureWithRelations } from '@shared/schema';
 import { GestaltFeatureFilter } from './gestaltFeatureFilter';
 
 /**
+ * Extended DnDClass type that includes features array (as returned by getClassById).
+ * The runtime object includes features even though the DnDClass type doesn't.
+ */
+type DnDClassWithFeatures = DnDClass & {
+    features?: FeatureWithRelations[];
+};
+
+/**
  * Service for handling gestalt character class merging according to D&D 3.5 gestalt rules
  * Ported from frontend GestaltClassService
  */
@@ -10,7 +18,7 @@ export class GestaltClassService {
     /**
      * Merge two classes according to gestalt rules
      */
-    static mergeClasses(primaryClass: DnDClass, secondaryClass: DnDClass): DnDClass {
+    static mergeClasses(primaryClass: DnDClassWithFeatures, secondaryClass: DnDClassWithFeatures): DnDClassWithFeatures {
         return {
             // Basic class info from primary class
             name: `${primaryClass.name}/${secondaryClass.name}`,
@@ -23,6 +31,10 @@ export class GestaltClassService {
             isDivine: primaryClass.isDivine || secondaryClass.isDivine,
             description: primaryClass.description,
             sourceBookInfo: primaryClass.sourceBookInfo,
+            featureIds: [
+                ...(primaryClass.featureIds || []),
+                ...(secondaryClass.featureIds || [])
+            ],
 
             // Note: All mechanics (hitDie, skillPoints, BAB, saving throws, casting ability/type)
             // are now stored in feature entities, not on the class model

@@ -1,13 +1,14 @@
 import { typedApi } from '@/services/Api';
 import {
-    RaceIdParamSchema,
-    UpdateRaceSchema,
-    CreateResponseSchema,
-    UpdateResponseSchema,
-    GetAllRacesResponseSchema,
     BaseRaceSchema,
     CreateRaceSchema,
-    EntityLockStatusSchema,
+    CreateResponseSchema,
+    DraftLockStatusSchema,
+    GetFeaturesResponseSchema,
+    GetAllRacesResponseSchema,
+    IdParamSchema,
+    UpdateRaceSchema,
+    UpdateResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -37,11 +38,18 @@ export const RaceApi = {
         responseSchema: GetAllRacesResponseSchema,
     }),
 
-    getRaceById: typedApi<undefined, typeof BaseRaceSchema, typeof RaceIdParamSchema>({
+    getRaceById: typedApi<undefined, typeof BaseRaceSchema, typeof IdParamSchema>({
         path: '/races/:id',
         method: 'GET',
-        paramsSchema: RaceIdParamSchema,
+        paramsSchema: IdParamSchema,
         responseSchema: BaseRaceSchema,
+    }),
+
+    getRaceFeatures: typedApi<undefined, typeof GetFeaturesResponseSchema, typeof IdParamSchema>({
+        path: '/races/:id/features',
+        method: 'GET',
+        paramsSchema: IdParamSchema,
+        responseSchema: GetFeaturesResponseSchema,
     }),
 
     createRace: typedApi<typeof CreateRaceSchema, typeof CreateResponseSchema>({
@@ -51,25 +59,25 @@ export const RaceApi = {
         responseSchema: CreateResponseSchema,
     }),
 
-    updateRace: typedApi<typeof UpdateRaceSchema, typeof UpdateResponseSchema, typeof RaceIdParamSchema>({
+    updateRace: typedApi<typeof UpdateRaceSchema, typeof UpdateResponseSchema, typeof IdParamSchema>({
         path: '/races/:id',
         method: 'PUT',
         requestSchema: UpdateRaceSchema,
-        paramsSchema: RaceIdParamSchema,
+        paramsSchema: IdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
-    deleteRace: typedApi<undefined, typeof UpdateResponseSchema, typeof RaceIdParamSchema>({
+    deleteRace: typedApi<undefined, typeof UpdateResponseSchema, typeof IdParamSchema>({
         path: '/races/:id',
         method: 'DELETE',
-        paramsSchema: RaceIdParamSchema,
+        paramsSchema: IdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
-    getRaceLockStatus: typedApi<undefined, typeof EntityLockStatusSchema, typeof RaceIdParamSchema>({
+    getRaceLockStatus: typedApi<undefined, typeof DraftLockStatusSchema, typeof IdParamSchema>({
         path: '/races/:id/lock-status',
         method: 'GET',
-        paramsSchema: RaceIdParamSchema,
-        responseSchema: EntityLockStatusSchema,
+        paramsSchema: IdParamSchema,
+        responseSchema: DraftLockStatusSchema,
     }),
 };

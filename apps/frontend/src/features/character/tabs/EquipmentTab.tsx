@@ -9,9 +9,9 @@ import { TabComponentProps, CharacterEditStateUpdateType } from '@/features/char
 import { canSplitItem, getOccupiedLocations, getSplitTargetLocation, getSplitTargetLocationName, calculateSplitQuantities } from '@/features/character/utils/equipmentUtils';
 import { getTotalGoldInGp, convertGpToMoney, addGpToMoney, getItemCostInGp } from '@/features/character/utils/moneyUtils';
 import { useStartingGold } from '@/features/character/utils/startingGold';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { formatCostAsCurrency } from '@/features/item/utils';
 import { extractProficiencies } from '@/lib/attack-calculation';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { ItemWithDetails } from '@shared/schema';
 import { CURRENCY_LIST, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, DAMAGE_TYPES, FilterType, LOCATION_ENUM, LOCATION_LIST } from '@shared/static-data';
 
@@ -438,8 +438,8 @@ export function EquipmentTab({
         return async () => {
             // Use queryClient.fetchQuery to leverage TanStack Query cache
             const result = await queryClient.fetchQuery({
-                queryKey: ItemQueryHooks.getItemsQueryKey(),
-                queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+                queryKey: ItemQueryHooks.getAllItemsQueryKey(),
+                queryFn: () => ItemQueryHooks.getAllItemsQueryFn(),
                 staleTime: 5 * 60 * 1000, // 5 minutes
                 gcTime: 10 * 60 * 1000, // 10 minutes
             });
@@ -473,8 +473,8 @@ export function EquipmentTab({
 
         // Fetch all items to get details for owned items - use TanStack Query cache
         const allItemsResult = await queryClient.fetchQuery({
-            queryKey: ItemQueryHooks.getItemsQueryKey(),
-            queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+            queryKey: ItemQueryHooks.getAllItemsQueryKey(),
+            queryFn: () => ItemQueryHooks.getAllItemsQueryFn(),
             staleTime: 5 * 60 * 1000, // 5 minutes
             gcTime: 10 * 60 * 1000, // 10 minutes
         });

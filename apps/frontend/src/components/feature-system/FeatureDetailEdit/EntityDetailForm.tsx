@@ -18,14 +18,104 @@ import { ConditionEditor } from './ConditionEditor';
 import { FormulaManager } from './FormulaManager';
 import type { BaseFormProps } from './types';
 import { getAppliesToSubIdSelectOptions, useProficiencySubIdOptions, shouldShowValue, shouldShowFormula } from './utils';
+import { useFeatureEditSync } from '../FeatureEditForm/FeatureEditForm';
 
 export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeature, feature: _feature, editionId }: BaseFormProps) {
     const { formData, setFormData } = useFormContext();
+    const { syncNestedFieldToState } = useFeatureEditSync();
     const entities = useMemo(() =>
         formData.entities as FeatureEntity[] || [],
         [formData]
     );
     const entity = entities[index];
+
+    // Add blur handlers for entity fields (similar to FeatureEditForm)
+    useEffect(() => {
+        // Get input elements by their name attributes (field paths)
+        const fieldPaths = [
+            `entities.${index}.type`,
+            `entities.${index}.value`,
+            `entities.${index}.formulaParams.formulaId`,
+            `entities.${index}.bonusType`,
+            `entities.${index}.appliesTo`,
+            `entities.${index}.appliesToId`,
+            `entities.${index}.appliesToSubId`
+        ];
+
+        const cleanupFunctions: Array<() => void> = [];
+
+        const createBlurHandler = (fieldPath: string) => {
+            return async (e: FocusEvent) => {
+                const target = e.target as HTMLInputElement | HTMLSelectElement;
+                if (!target) return;
+
+                let value: unknown = target.value;
+                if (target.type === 'number') {
+                    value = target.value === '' ? null : Number(target.value);
+                }
+
+                await syncNestedFieldToState(fieldPath, value);
+            };
+        };
+
+        // Attach blur handlers to inputs (text/number inputs)
+        const inputFields = [
+            `entities.${index}.value`,
+            `entities.${index}.appliesToId`,
+            `entities.${index}.appliesToSubId`
+        ];
+
+        inputFields.forEach(fieldPath => {
+            const element = document.querySelector(`input[name="${fieldPath}"], textarea[name="${fieldPath}"]`) as HTMLInputElement | HTMLTextAreaElement | null;
+            if (element) {
+                const handler = createBlurHandler(fieldPath);
+                element.addEventListener('blur', handler);
+                cleanupFunctions.push(() => element.removeEventListener('blur', handler));
+            }
+        });
+
+        return () => {
+            cleanupFunctions.forEach(cleanup => cleanup());
+        };
+    }, [index, syncNestedFieldToState]);
+
+    // Watch formData changes for select fields (ValidatedCustomSelect uses buttons, no blur events)
+    const prevEntityRef = useRef(entity);
+    useEffect(() => {
+        if (!prevEntityRef.current) {
+            prevEntityRef.current = entity;
+            return;
+        }
+
+        const prev = prevEntityRef.current;
+        const typeChanged = prev.type !== entity.type;
+        
+        // Sync type first if it changed
+        if (typeChanged) {
+            // Sync type first - appliesTo will be handled separately if it's a valid change
+            syncNestedFieldToState(`entities.${index}.type`, entity.type);
+            // Don't sync appliesTo if it changed to null (cleared due to type incompatibility)
+            // The sync function will skip null appliesTo values
+        }
+        
+        // Sync appliesTo if it changed and is not null (valid enum value)
+        // Skip if it's null (was cleared due to type incompatibility)
+        if (prev.appliesTo !== entity.appliesTo && entity.appliesTo !== null) {
+            syncNestedFieldToState(`entities.${index}.appliesTo`, entity.appliesTo);
+        }
+        
+        if (prev.bonusType !== entity.bonusType) {
+            syncNestedFieldToState(`entities.${index}.bonusType`, entity.bonusType);
+        }
+        if (prev.formulaParams?.formulaId !== entity.formulaParams?.formulaId) {
+            syncNestedFieldToState(`entities.${index}.formulaParams.formulaId`, entity.formulaParams?.formulaId ?? null);
+        }
+        if (prev.displayInDetail !== entity.displayInDetail) {
+            syncNestedFieldToState(`entities.${index}.displayInDetail`, entity.displayInDetail);
+        }
+
+        prevEntityRef.current = entity;
+    }, [entity, index, syncNestedFieldToState]);
 
     const [showConditions, setShowConditions] = useState((entity.conditions && entity.conditions.length > 0) || false);
     const prevAppliesToRef = useRef<number | null>(null);
@@ -288,6 +378,8 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                                             i === index ? { ...ent, appliesToSubId: value } : ent
                                         )
                                     }));
+                                    // Sync to state
+                                    syncNestedFieldToState(`entities.${index}.appliesToSubId`, value);
                                 }}
                                 label="Spells"
                                 placeholder="Search for a spell or select 'All'..."

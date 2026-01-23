@@ -230,7 +230,7 @@ export function ReferenceTableEditor() {
                 setTableSlug('');
                 setLoading(false);
             } else {
-                const tableData = await ReferenceTableApi.getReferenceTableByIdentifier(undefined, { slug: slug });
+                const tableData = await ReferenceTableApi.getReferenceTableByIdentifier({ slug: slug });
                 const { columns, rows } = tableData;
                 setTableName(tableData.name);
                 setTableDescription(tableData.description ?? '');

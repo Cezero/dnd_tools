@@ -2,7 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import type { MonsterCacheResponse } from '@shared/schema';
 
-import { getIdByNameFromCache, getIdByNameFromCacheStandalone, getStandaloneQueryClient } from './utils';
+import { getIdByNameFromCacheStandalone, getStandaloneQueryClient } from './utils';
 
 /**
  * Monster cache functions

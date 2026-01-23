@@ -1,37 +1,48 @@
+import type { DraftRef } from '@shared/schema';
+import { DraftType, isValidDraftType } from '@shared/static-data';
+
+
 import { getRedisClient } from './redisClient';
 import type { RedisSessionClient } from './types';
-import { UserSessionService, type UserSession, type EntityRef } from './UserSessionService';
-import { EntityLockService } from '../entityState/EntityLockService';
-import { EntityStateService } from '../entityState/EntityStateService';
+import { UserSessionService, type UserSession } from './UserSessionService';
 import { userProfileService } from '../../userProfile/userProfileService';
+import { DraftLockService } from '../draftState/DraftLockService';
+import { DraftStateService } from '../draftState/DraftStateService';
 
 /**
  * Admin session information for monitoring.
+ * 
+ * Note: Uses DraftRef (from @shared/schema) for entity references.
+ * Date fields are Date objects (not ISO strings like in schema).
  */
 export interface AdminSessionInfo {
     userId: number;
     userName: string;
-    viewing: EntityRef[];
-    editing: EntityRef[];
+    viewing: DraftRef[];
+    editing: DraftRef[];
     sessionKey: string;
 }
 
 /**
- * Entity state information for monitoring.
+ * Draft state information for monitoring.
+ * 
+ * Note: lastUpdated is a Date object (not ISO string like in DraftStateInfo schema).
  */
 export interface EntityStateInfo {
-    entityType: string;
-    entityId: number;
+    draftType: DraftType;
+    id: number;
     hasState: boolean;
     lastUpdated: Date | null;
 }
 
 /**
- * Entity lock information for monitoring.
+ * Draft lock information for monitoring.
+ * 
+ * Note: lockedAt is a Date object (not ISO string like in DraftLockInfo schema).
  */
 export interface EntityLockInfo {
-    entityType: string;
-    entityId: number;
+    draftType: DraftType;
+    id: number;
     lockedBy: number;
     lockedByUserName: string | null;
     lockedAt: Date | null;
@@ -39,12 +50,14 @@ export interface EntityLockInfo {
 
 /**
  * WebSocket subscription information for monitoring.
+ * 
+ * Note: Uses DraftRef (from @shared/schema) for entity references.
  */
 export interface WebSocketSubscriptionInfo {
     clientId: string;
     userId: number | null;
     userName: string | null;
-    subscriptions: EntityRef[];
+    subscriptions: DraftRef[];
 }
 
 /**
@@ -59,8 +72,8 @@ export interface WebSocketSubscriptionInfo {
  * **Admin Access**: All methods should be protected by admin authentication middleware.
  * 
  * @see UserSessionService - For user session data
- * @see EntityLockService - For lock data
- * @see EntityStateService - For entity state data
+ * @see DraftLockService - For lock data
+ * @see DraftStateService - For entity state data
  * @see packages/shared/docs/application-overview/admin-session-monitoring.md - Full documentation
  * 
  * @example
@@ -77,14 +90,14 @@ export interface WebSocketSubscriptionInfo {
 export class AdminSessionMonitoringService {
     private redis: RedisSessionClient;
     private userSessionService: UserSessionService;
-    private lockService: EntityLockService;
-    private stateService: EntityStateService;
+    private lockService: DraftLockService;
+    private stateService: DraftStateService;
 
     constructor() {
         this.redis = getRedisClient();
         this.userSessionService = new UserSessionService();
-        this.lockService = new EntityLockService();
-        this.stateService = new EntityStateService();
+        this.lockService = new DraftLockService();
+        this.stateService = new DraftStateService();
     }
 
     /**
@@ -171,17 +184,23 @@ export class AdminSessionMonitoringService {
             const states: EntityStateInfo[] = [];
 
             for (const key of stateKeys) {
-                // Parse entity type and ID from key: state:{entityType}:{entityId}
-                const match = key.match(/^state:([^:]+):(\d+)$/);
+                // Parse draft type (numeric enum) and ID from key: state:{draftType}:{id}
+                const match = key.match(/^state:(\d+):(\d+)$/);
                 if (!match) {
                     continue;
                 }
 
-                const [, entityType, entityIdStr] = match;
-                const entityId = parseInt(entityIdStr, 10);
+                const [, draftTypeStr, idStr] = match;
+                const draftType = parseInt(draftTypeStr, 10);
+                const id = parseInt(idStr, 10);
 
-                if (isNaN(entityId)) {
+                if (isNaN(draftType) || isNaN(id)) {
                     continue;
+                }
+
+                // Validate draft type
+                if (!isValidDraftType(draftType)) {
+                    continue; // Skip invalid draft types
                 }
 
                 // Get state to check if it exists and get last updated time
@@ -191,8 +210,8 @@ export class AdminSessionMonitoringService {
                 // TODO: Extract lastUpdated from state if available
                 // For now, we can't easily get lastUpdated without parsing the state
                 states.push({
-                    entityType,
-                    entityId,
+                    draftType,
+                    id,
                     hasState,
                     lastUpdated: null // TODO: Extract from state if available
                 });
@@ -224,17 +243,23 @@ export class AdminSessionMonitoringService {
             const locks: EntityLockInfo[] = [];
 
             for (const key of lockKeys) {
-                // Parse entity type and ID from key: lock:{entityType}:{entityId}
-                const match = key.match(/^lock:([^:]+):(\d+)$/);
+                // Parse draft type (numeric enum) and ID from key: lock:{draftType}:{id}
+                const match = key.match(/^lock:(\d+):(\d+)$/);
                 if (!match) {
                     continue;
                 }
 
-                const [, entityType, entityIdStr] = match;
-                const entityId = parseInt(entityIdStr, 10);
+                const [, draftTypeStr, idStr] = match;
+                const draftType = parseInt(draftTypeStr, 10);
+                const id = parseInt(idStr, 10);
 
-                if (isNaN(entityId)) {
+                if (isNaN(draftType) || isNaN(id)) {
                     continue;
+                }
+
+                // Validate draft type
+                if (!isValidDraftType(draftType)) {
+                    continue; // Skip invalid draft types
                 }
 
                 // Get lock value (userId)
@@ -252,8 +277,8 @@ export class AdminSessionMonitoringService {
                 const lockedByUserName = await this.getUserName(lockedBy);
 
                 locks.push({
-                    entityType,
-                    entityId,
+                    draftType,
+                    id,
                     lockedBy,
                     lockedByUserName: lockedByUserName || `User ${lockedBy}`,
                     lockedAt: null // TODO: Extract from lock metadata if available

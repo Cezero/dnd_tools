@@ -2,14 +2,14 @@ import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { GenericList } from '@/components/generic-list';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { ClassSummary, Feature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
 import { ClassApi } from './ClassApi';
 import { CLASS_COLUMNS } from './ClassColumns';
+import { ClassQueryHooks } from './ClassQueryHooks';
 import { FEATURE_COLUMNS } from './FeatureColumns';
 
 export default function ClassList(): React.JSX.Element {
@@ -85,7 +85,7 @@ export default function ClassList(): React.JSX.Element {
                         delete: async (item) => {
                             // Use ClassApi for all classes
                             try {
-                                await ClassApi.deleteClass(undefined, { id: item.id });
+                                await ClassApi.deleteClass({ id: item.id });
                                 // The QueryBasedList will handle refreshing the data
                             } catch (error) {
                                 console.error('Failed to delete class:', error);

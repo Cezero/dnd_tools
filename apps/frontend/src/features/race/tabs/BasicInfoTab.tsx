@@ -45,6 +45,7 @@ export function BasicInfoTab({
                                 onValueChange={(value) => updateState({ type: RaceEditStateUpdateType.SET_EDITION_ID, payload: { editionId: value as number } })}
                                 options={EDITION_LIST}
                                 placeholder="Select edition"
+                                useAbbreviation={true}
                             />
                             <CustomCheckbox
                                 label="Visible in Lists"

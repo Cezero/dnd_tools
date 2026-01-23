@@ -5,7 +5,7 @@ import { FeatureSourceType, FeatureBonusType, FeaturePrerequisiteType, Condition
 import { numericParam, optionalBooleanParam, commonValidations } from "./common";
 import { SpellcastingLinkSchema } from "./spellcasting";
 import { QueryResponseSchema } from "./query";
-import { ItemSchema } from "./item";
+import { ValidationErrorResponseSchema } from './validation.js';
 
 // Feature Prerequisite Schema
 export const FeaturePrerequisiteSchema = z.object({
@@ -410,3 +410,20 @@ export type FormulaCalculationParams = z.infer<typeof FormulaCalculationParamsSc
 export type CloneClassFeaturesRequest = z.infer<typeof CloneClassFeaturesRequestSchema>;
 export type ForkFeatureRequest = z.infer<typeof ForkFeatureRequestSchema>;
 export type ForkFeatureResponse = z.infer<typeof ForkFeatureResponseSchema>;
+
+// Feature Resolution Schemas
+/**
+ * Feature State Schema.
+ * 
+ * The feature state is the full FeatureWithRelations object, containing all
+ * feature data including entities, prerequisites, and related information.
+ * 
+ * This schema is used for validating feature state stored in Redis.
+ */
+export const FeatureStateSchema = FeatureWithRelationsSchema;
+
+// Feature Resolution TypeScript type exports
+export type FeatureState = z.infer<typeof FeatureStateSchema>;
+
+// Re-export state management types for convenience
+export type { UpdateStateValueRequest, UpdateStateValueResponse } from './state.js';

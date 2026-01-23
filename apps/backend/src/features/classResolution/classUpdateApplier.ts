@@ -1,6 +1,8 @@
 
+import type { ClassEditState } from '@shared/schema';
+
 import { classUpdateApplierConfig } from './classUpdateApplierConfig';
-import type { ClassEditState, ClassUpdate } from './types';
+import type { ClassUpdate } from './types';
 import { applyUpdateToState as genericApplyUpdateToState } from '../shared/session/GenericUpdateApplier';
 
 /**

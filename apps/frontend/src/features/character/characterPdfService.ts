@@ -4,6 +4,8 @@ import ordinal from 'ordinal';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
 import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
+import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
@@ -11,13 +13,12 @@ import { displayStrategyFactory, formatSpellSchool, formatSpellComponents } from
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
 import { hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes, getSkillSubtypeName } from '@/lib/skill-utils';
 import { getRaceNameFromCache, getClassNameFromCache, getSkillSummaryById, formatSourceFromObject } from '@/services/cache';
-import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureWithRelations, CharacterItem, Spell } from '@shared/schema';
 import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
+
+import { CharacterQueryHooks } from './CharacterQueryHooks';
 
 /**
  * Generate a PDF character sheet for a character matching the D&D 3.5 character sheet format
@@ -77,8 +78,8 @@ export async function generateCharacterPdf(
     if (queryClient) {
         try {
             const itemsResponse = await queryClient.fetchQuery({
-                queryKey: ItemQueryHooks.getItemsQueryKey(),
-                queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+                queryKey: ItemQueryHooks.getAllItemsQueryKey(),
+                queryFn: () => ItemQueryHooks.getAllItemsQueryFn(),
                 staleTime: 5 * 60 * 1000, // 5 minutes
                 gcTime: 10 * 60 * 1000, // 10 minutes
             });

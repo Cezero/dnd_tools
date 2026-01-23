@@ -1,9 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query';
 
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
+import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
+import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import type {
     Feat,
     FeatCacheResponse,

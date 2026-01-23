@@ -1,11 +1,18 @@
-import { Api } from '@/services/Api';
 
-import type {
-    AdminSessionInfo,
-    EntityStateInfo,
-    EntityLockInfo,
-    WebSocketSubscriptionInfo
-} from './types';
+import { typedApi } from '@/services/Api';
+import {
+    AdminSessionsResponseSchema,
+    DraftStatesResponseSchema,
+    DraftLocksResponseSchema,
+    WebSocketSubscriptionsResponseSchema,
+    DraftRefRequestSchema,
+    DraftSaveResponseSchema,
+    type AdminSessionInfo,
+    type DraftStateInfo,
+    type DraftLockInfo,
+    type WebSocketSubscriptionInfo,
+} from '@shared/schema';
+import { DraftType } from '@shared/static-data';
 
 /**
  * API client for admin session monitoring endpoints.
@@ -13,63 +20,111 @@ import type {
  * Provides methods for fetching session monitoring data and
  * performing admin actions like force-releasing locks.
  * 
+ * All methods use `typedApi` for type-safe API calls with automatic validation.
+ * 
  * @see packages/shared/docs/application-overview/admin-session-monitoring.md - Full documentation
  */
+const getAllSessionsApi = typedApi<undefined, typeof AdminSessionsResponseSchema>({
+    path: '/admin/sessions',
+    method: 'GET',
+    responseSchema: AdminSessionsResponseSchema,
+});
+
+const getAllEntityStatesApi = typedApi<undefined, typeof DraftStatesResponseSchema>({
+    path: '/admin/entity-states',
+    method: 'GET',
+    responseSchema: DraftStatesResponseSchema,
+});
+
+const getAllLocksApi = typedApi<undefined, typeof DraftLocksResponseSchema>({
+    path: '/admin/locks',
+    method: 'GET',
+    responseSchema: DraftLocksResponseSchema,
+});
+
+const getAllWebSocketSubscriptionsApi = typedApi<undefined, typeof WebSocketSubscriptionsResponseSchema>({
+    path: '/admin/websocket-subscriptions',
+    method: 'GET',
+    responseSchema: WebSocketSubscriptionsResponseSchema,
+});
+
+const forceReleaseLockApi = typedApi<typeof DraftRefRequestSchema, typeof DraftSaveResponseSchema>({
+    path: '/admin/locks/force-release',
+    method: 'POST',
+    requestSchema: DraftRefRequestSchema,
+    responseSchema: DraftSaveResponseSchema,
+});
+
 export const SessionMonitoringApi = {
     /**
      * Gets all active user sessions.
      * 
      * @returns Promise resolving to array of session information
+     * 
+     * @example
+     * ```typescript
+     * const sessions = await SessionMonitoringApi.getAllSessions();
+     * ```
      */
     getAllSessions: async (): Promise<AdminSessionInfo[]> => {
-        return Api<AdminSessionInfo[]>('/admin/sessions', {
-            method: 'GET',
-        });
+        return getAllSessionsApi();
     },
 
     /**
      * Gets all entity states.
      * 
      * @returns Promise resolving to array of entity state information
+     * 
+     * @example
+     * ```typescript
+     * const states = await SessionMonitoringApi.getAllEntityStates();
+     * ```
      */
-    getAllEntityStates: async (): Promise<EntityStateInfo[]> => {
-        return Api<EntityStateInfo[]>('/admin/entity-states', {
-            method: 'GET',
-        });
+    getAllEntityStates: async (): Promise<DraftStateInfo[]> => {
+        return getAllEntityStatesApi();
     },
 
     /**
      * Gets all entity locks.
      * 
      * @returns Promise resolving to array of entity lock information
+     * 
+     * @example
+     * ```typescript
+     * const locks = await SessionMonitoringApi.getAllLocks();
+     * ```
      */
-    getAllLocks: async (): Promise<EntityLockInfo[]> => {
-        return Api<EntityLockInfo[]>('/admin/locks', {
-            method: 'GET',
-        });
+    getAllLocks: async (): Promise<DraftLockInfo[]> => {
+        return getAllLocksApi();
     },
 
     /**
      * Gets all WebSocket subscriptions.
      * 
      * @returns Promise resolving to array of WebSocket subscription information
+     * 
+     * @example
+     * ```typescript
+     * const subscriptions = await SessionMonitoringApi.getAllWebSocketSubscriptions();
+     * ```
      */
     getAllWebSocketSubscriptions: async (): Promise<WebSocketSubscriptionInfo[]> => {
-        return Api<WebSocketSubscriptionInfo[]>('/admin/websocket-subscriptions', {
-            method: 'GET',
-        });
+        return getAllWebSocketSubscriptionsApi();
     },
 
     /**
-     * Force releases a lock on an entity.
+     * Force releases a lock on a draft.
      * 
-     * @param entityType - The entity type
-     * @param entityId - The entity ID
+     * @param draftType - The draft type (e.g., DraftType.Feature, DraftType.Class, DraftType.Race, DraftType.Character)
+     * @param id - The draft ID
      * @returns Promise resolving to success response
+     * 
+     * @example
+     * ```typescript
+     * await SessionMonitoringApi.forceReleaseLock(DraftType.Feature, 123);
+     * ```
      */
-    forceReleaseLock: async (entityType: string, entityId: number): Promise<{ success: boolean }> => {
-        return Api<{ success: boolean }>(`/admin/locks/${entityType}/${entityId}/force-release`, {
-            method: 'POST',
-        });
+    forceReleaseLock: async (draftType: DraftType, id: number): Promise<{ success: boolean }> => {
+        return forceReleaseLockApi({ draftType, id });
     },
 };

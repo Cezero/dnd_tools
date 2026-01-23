@@ -99,6 +99,7 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
             onBlur: handleBlur,
             className: inputClassName,
             disabled,
+            'data-1p-ignore': 'true',
             ...props,
         };
 

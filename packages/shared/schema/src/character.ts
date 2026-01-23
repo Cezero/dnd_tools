@@ -1,7 +1,12 @@
 import { z } from 'zod';
-import { QueryResponseSchema } from './query.js';
+import { EntityAppliesToType } from '@shared/static-data';
 import { AbilityId, SpellSlotType } from '@shared/static-data';
+import { QueryResponseSchema } from './query.js';
 import { numericParam, commonValidations } from './common.js';
+import { FeatureWithRelationsSchema } from './feature.js';
+import { FeatInQueryResponseSchema } from './feat.js';
+import { CharacterSpellSelectionEntrySchema } from './spell.js';
+import { ValidationErrorResponseSchema } from './validation.js';
 
 export const CharacterIdParamSchema = z.object({
     id: numericParam(),
@@ -498,3 +503,139 @@ export type SpellCastParamRequest = z.infer<typeof SpellCastParamSchema>;
 
 // Character context type
 export type CharacterContext = z.infer<typeof CharacterContextSchema>;
+
+
+// Pending choice schema
+export const PendingChoiceSchema = z.object({
+    id: z.string(),
+    type: z.enum(EntityAppliesToType),
+    name: z.string(),
+    description: z.string(),
+    source: z.string(),
+    level: commonValidations.positiveInt(),
+    required: z.boolean(),
+    maxSelections: z.number().int().nonnegative(),
+    minSelections: z.number().int().nonnegative(),
+    options: z.array(commonValidations.positiveInt()), // Just an array of numeric IDs - frontend will look up names from cache
+});
+
+/**
+ * Schema for a class skill entry.
+ * Represents a skill that is a class skill for a character, including optional skill subtype.
+ * 
+ * This schema is used in resolved character results to indicate which skills are class skills.
+ * 
+ * @see ResolvedCharacterResultSchema - Used in resolved character results
+ * @see AddSpellKnownResponseSchema - Also used in spell addition responses
+ */
+export const ClassSkillSchema = z.object({
+    skillId: commonValidations.positiveInt(),
+    skillSubId: z.number().int().nullable(),
+});
+
+/**
+ * Schema for a skill bonus entry.
+ * Represents a bonus applied to a skill, with the source of the bonus.
+ * 
+ * This schema is used in resolved character results to track skill bonuses from various sources.
+ * 
+ * @see ResolvedCharacterResultSchema - Used in resolved character results
+ * @see AddSpellKnownResponseSchema - Also used in spell addition responses
+ */
+export const SkillBonusSchema = z.object({
+    skillId: commonValidations.positiveInt(),
+    skillSubId: z.number().int().nullable(),
+    bonus: z.number(),
+    source: z.string(),
+});
+
+/**
+ * Schema for spell selection data for a single class.
+ * 
+ * Contains all spell-related data for a specific spellcasting class, including:
+ * - Available spells for the class
+ * - Domain spells (if the character has domains)
+ * - Available free spells for spellbook classes
+ * 
+ * @see ResolvedCharacterResultSchema - Used in resolved character results
+ */
+export const ClassSpellSelectionSchema = z.object({
+    spells: z.array(CharacterSpellSelectionEntrySchema),
+    domainSpells: z.array(CharacterSpellSelectionEntrySchema).optional(),
+    availableFreeSpells: z.number().int().nonnegative().optional(),
+});
+
+/**
+ * Schema for resolved character result.
+ * Contains all computed data from character resolution including progressions, choices, skills, feats, spells, and warnings.
+ * 
+ * This schema represents the complete state of a character after resolution, including:
+ * - Resolved feature progressions
+ * - Pending choices that need user input
+ * - Class skills and skill bonuses
+ * - Available and granted feats
+ * - Qualified feats (list of feats the character qualifies for)
+ * - Spell selection data (by class ID)
+ * - Warnings and errors from resolution
+ * 
+ * **Feat Data Distinction**:
+ * - `availableFeatsCount` (number): Count of feat slots/choices available to the character. Answers "How many feats can you select?"
+ * - `qualifiedFeats` (array): List of feats the character qualifies for based on prerequisites, proficiencies, etc. Answers "Which feats can you select from?"
+ * 
+ * **Spell Selection Data**: The `spellSelection` field contains spell selection data for each spellcasting class
+ * the character has. This data is calculated during resolution using resolved progressions, making it
+ * architecturally consistent with other resolved data.
+ * 
+ * @see ResolvedCharacterResult - TypeScript type for this schema
+ * @see AddSpellKnownResponseSchema - Uses this schema for resolvedCharacter field
+ * @see ClassSpellSelectionSchema - Schema for individual class spell selection data
+ */
+export const ResolvedCharacterResultSchema = z.object({
+    resolvedProgressions: z.array(FeatureWithRelationsSchema),
+    pendingChoices: z.array(PendingChoiceSchema),
+    classSkills: z.array(ClassSkillSchema),
+    skillBonuses: z.array(SkillBonusSchema),
+    grantedFeats: z.array(commonValidations.positiveInt()),
+    /** Count of feat slots/choices available to the character. Calculated from resolved progressions. */
+    availableFeatsCount: commonValidations.nonNegativeInt(),
+    availableFighterBonusFeats: commonValidations.nonNegativeInt(),
+    /** List of feats the character qualifies for, filtered by prerequisites, proficiencies, owned feats, etc. */
+    qualifiedFeats: z.array(FeatInQueryResponseSchema),
+    spellSelection: z.record(z.string(), ClassSpellSelectionSchema).optional(),
+    /** Map of entity IDs to resolved formula values. Keyed by entity ID (or composite key). Used for BAB, saves, and other formula-based mechanics. */
+    resolvedFormulaValues: z.record(z.string(), z.number()).optional(),
+    warnings: z.array(z.string()),
+    errors: z.array(z.string())
+});
+
+/**
+ * Schema for the available feats response.
+ * 
+ * Returns a paginated list of feats that are available for selection by the character,
+ * filtered by prerequisites, proficiencies, and other character-specific requirements.
+ * 
+ * The response includes:
+ * - `results`: Array of feat data (using FeatInQueryResponseSchema for type safety)
+ * - `total`: Total count of available feats (non-negative integer)
+ * 
+ * @see GetAvailableFeatsResponse - TypeScript type for this schema
+ * @see FeatInQueryResponseSchema - Schema for individual feat items in the results array
+ */
+export const GetAvailableFeatsResponseSchema = z.object({
+    results: z.array(FeatInQueryResponseSchema),
+    total: z.number().int().nonnegative(),
+});
+
+/** Response for GET /characters/:id/resolve - read-only character resolution (no lock, no session) */
+export const GetCharacterResolveResponseSchema = z.object({
+    resolvedCharacter: ResolvedCharacterResultSchema,
+});
+
+// Character Resolution TypeScript type exports
+export type PendingChoice = z.infer<typeof PendingChoiceSchema>;
+export type ClassSkill = z.infer<typeof ClassSkillSchema>;
+export type SkillBonus = z.infer<typeof SkillBonusSchema>;
+export type ClassSpellSelection = z.infer<typeof ClassSpellSelectionSchema>;
+export type ResolvedCharacterResult = z.infer<typeof ResolvedCharacterResultSchema>;
+export type GetAvailableFeatsResponse = z.infer<typeof GetAvailableFeatsResponseSchema>;
+export type GetCharacterResolveResponse = z.infer<typeof GetCharacterResolveResponseSchema>;

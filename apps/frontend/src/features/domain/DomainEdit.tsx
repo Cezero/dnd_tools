@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import {
     ValidatedForm,
@@ -11,9 +12,10 @@ import {
     SourceEditor
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { CreateDomainRequest, UpdateDomainRequest, UpdateDomainSchema, CreateDomainSchema, FeatureWithRelations, Feature, CreateFeatureRequest, Domain } from '@shared/schema';
 import { EDITION_LIST, SourceType, FeatureSourceType } from '@shared/static-data';
+
+import { DomainQueryHooks } from './DomainQueryHooks';
 
 // Type definitions for the form state
 type DomainFormData = CreateDomainRequest | UpdateDomainRequest;
@@ -385,24 +387,22 @@ export function DomainEdit() {
                     setPreSelectedFeature(undefined);
                 }}
                 featureId={
-                    editingProgression?.id
-                        ? editingProgression.id
-                        : preSelectedFeature?.id
-                            ? preSelectedFeature.id
-                            : 'new'
+                    Number(editingProgression?.id ?? preSelectedFeature?.id ?? 0) || 0
                 }
-                onSave={(feature: Feature, features: FeatureWithRelations[]) => {
-                    const featureWithRelations = features[0] || feature as FeatureWithRelations;
-                    handleSaveProgression(featureWithRelations);
+                onSave={async (featureId: number) => {
+                    const feature = await FeatureQueryHooks.getFeatureById(featureId);
+                    if (feature) {
+                        handleSaveProgression(feature as FeatureWithRelations);
+                    }
                 }}
                 mode="modal"
                 context={
                     id && id !== 'new'
                         ? {
-                              sourceType: FeatureSourceType.Domain,
-                              parentId: parseInt(id),
-                              parentType: 'domain'
-                          }
+                            sourceType: FeatureSourceType.Domain,
+                            parentId: parseInt(id),
+                            parentType: 'domain'
+                        }
                         : undefined
                 }
             />

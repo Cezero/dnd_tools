@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { DraftType } from '@shared/static-data';
+
 import { WebSocketService } from '../services/WebSocketService';
 
 /**
@@ -21,7 +23,7 @@ import { WebSocketService } from '../services/WebSocketService';
  * - Errors are logged to console
  * - Connection state is exposed via `isConnected` and `error` return values
  * 
- * @param entityType - The entity type (e.g., 'class', 'feature', 'character')
+ * @param draftType - The draft type enum (e.g., DraftType.Feature, DraftType.Class, DraftType.Character)
  * @param entityId - The entity ID (null to unsubscribe)
  * @param onUpdate - Callback function invoked when state is updated
  * @returns Object with connection state and manual control functions
@@ -31,7 +33,7 @@ import { WebSocketService } from '../services/WebSocketService';
  * 
  * @example
  * ```typescript
- * const { isConnected, error } = useEntityStateSubscription('feature', 123, (state) => {
+ * const { isConnected, error } = useEntityStateSubscription(DraftType.Feature, 123, (state) => {
  *   console.log('Feature 123 updated:', state);
  *   setFeatureState(state);
  * });
@@ -42,7 +44,7 @@ import { WebSocketService } from '../services/WebSocketService';
  * ```
  */
 export function useEntityStateSubscription(
-    entityType: string,
+    draftType: DraftType,
     entityId: number | null,
     onUpdate: (state: unknown) => void
 ): { isConnected: boolean; error: string | null; subscribe: () => void; unsubscribe: () => void } {
@@ -60,7 +62,7 @@ export function useEntityStateSubscription(
         }
 
         try {
-            const id = wsService.subscribe(entityType, entityId, (state) => {
+            const id = wsService.subscribe(draftType, entityId, (state) => {
                 try {
                     onUpdate(state);
                 } catch (err) {
@@ -97,7 +99,7 @@ export function useEntityStateSubscription(
         return () => {
             unsubscribe();
         };
-    }, [entityType, entityId]);
+    }, [draftType, entityId]);
 
     // Check connection status periodically
     useEffect(() => {

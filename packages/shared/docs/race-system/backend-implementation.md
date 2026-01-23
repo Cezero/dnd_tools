@@ -275,7 +275,7 @@ Service for transforming Redis session state → MySQL.
 - Resolution Controller: `src/features/raceResolution/raceResolutionController.ts`
 - Update Applier: `src/features/raceResolution/raceUpdateApplier.ts`
 - Save Service: `src/features/raceResolution/raceSaveService.ts`
-- Types: `src/features/raceResolution/types.ts`, `packages/shared/schema/src/raceResolution.ts`
+- Types: `src/features/raceResolution/types.ts`, `packages/shared/schema/src/race.ts`
 
 **Related Documentation**: 
 - [Frontend State-Based Pattern](frontend-components.md#state-based-pattern-architecture) - Frontend implementation

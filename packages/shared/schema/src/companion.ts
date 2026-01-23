@@ -74,6 +74,10 @@ export const CharacterCompanionIdParamSchema = z.object({
     id: numericParam(),
 });
 
+export const CharacterCompanionCharacterIdParamSchema = z.object({
+    characterId: numericParam(),
+});
+
 // Response schemas
 export const GetAllCompanionsResponseSchema = QueryResponseSchema.extend({
     results: z.array(CompanionWithRelationsSchema),
@@ -105,6 +109,7 @@ export type CreateCharacterCompanionRequest = z.infer<typeof CreateCharacterComp
 export type UpdateCharacterCompanionRequest = z.infer<typeof UpdateCharacterCompanionSchema>;
 export type CompanionIdParamRequest = z.infer<typeof CompanionIdParamSchema>;
 export type CharacterCompanionIdParamRequest = z.infer<typeof CharacterCompanionIdParamSchema>;
+export type CharacterCompanionCharacterIdParamRequest = z.infer<typeof CharacterCompanionCharacterIdParamSchema>;
 export type GetAllCompanionsResponse = z.infer<typeof GetAllCompanionsResponseSchema>;
 export type GetCompanionResponse = z.infer<typeof GetCompanionResponseSchema>;
 export type GetAllCharacterCompanionsResponse = z.infer<typeof GetAllCharacterCompanionsResponseSchema>;

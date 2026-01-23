@@ -3,16 +3,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { RaceSummary, Feature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
 import { RaceApi } from './RaceApi';
 import { useRaceColumns } from './RaceColumns';
 import { routes } from './RaceConfig';
+import { RaceQueryHooks } from './RaceQueryHooks';
 import { FEATURE_COLUMNS } from '../class/FeatureColumns';
 
 export function RaceList(): React.JSX.Element {

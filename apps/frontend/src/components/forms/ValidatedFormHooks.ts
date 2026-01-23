@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import { z } from 'zod';
 
-import { useZodValidation } from '@/hooks/useZodValidation';
+import { useZodValidation } from '@/lib/hooks/useZodValidation';
 
 // Form context type
 export interface FormContextType {

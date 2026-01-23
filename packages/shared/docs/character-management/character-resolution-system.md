@@ -180,7 +180,7 @@ All endpoints are prefixed with `/api/characters/:characterId/resolution/`
 
 ## 📋 **Validation Schemas**
 
-The character resolution system uses Zod schemas for request and response validation. All schemas are defined in `packages/shared/schema/src/characterResolution.ts` and exported through the main schema package.
+The character resolution system uses Zod schemas for request and response validation. All schemas are defined in `packages/shared/schema/src/character.ts` and exported through the main schema package.
 
 ### **Response Schemas**
 
@@ -188,13 +188,13 @@ The character resolution system uses Zod schemas for request and response valida
 - Validates the response when saving a resolution session to the database
 - Structure: `{ character: CharacterWithAllDetailsSchema }`
 - The character field contains the updated character with all details after the session is saved
-- Source: `packages/shared/schema/src/characterResolution.ts`
+- Source: `packages/shared/schema/src/character.ts`
 
 **`CancelSessionResponseSchema`**:
 - Validates the response when cancelling a resolution session
 - Structure: `{ success: boolean }` transformed to `void`
 - The transform pattern is used because the backend returns a success indicator but the frontend API client expects `Promise<void>`
-- Source: `packages/shared/schema/src/characterResolution.ts`
+- Source: `packages/shared/schema/src/character.ts`
 
 **`GetAvailableFeatsResponseSchema`**:
 - Validates the response when fetching available feats for a character
@@ -202,7 +202,7 @@ The character resolution system uses Zod schemas for request and response valida
 - The results array contains feats filtered by prerequisites, proficiencies, and character-specific requirements
 - The total field indicates the total count of available feats
 - Uses `FeatInQueryResponseSchema` for type-safe feat data
-- Source: `packages/shared/schema/src/characterResolution.ts`
+- Source: `packages/shared/schema/src/character.ts`
 
 **Related Documentation**: [Validation Schema Patterns](../application-overview/validation-schemas.md) for common validation patterns
 
@@ -654,7 +654,7 @@ To add support for new choice types:
 
 To add new character update types:
 
-1. Add case to `CharacterUpdateSchema` in `packages/shared/schema/src/characterResolution.ts`
+1. Add case to `CharacterUpdateSchema` in `packages/shared/schema/src/character.ts`
 2. Add update handler in `characterResolutionController.ts` (`applyUpdateToState()`)
 3. Update frontend `CharacterUpdate` type
 4. Update `useCharacterResolution` hook if needed

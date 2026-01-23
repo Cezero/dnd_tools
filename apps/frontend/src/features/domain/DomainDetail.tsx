@@ -2,7 +2,8 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { DomainDisplay } from '@/features/domain/DomainDisplay';
-import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
+
+import { DomainQueryHooks } from './DomainQueryHooks';
 
 export function DomainDetail() {
     const { id } = useParams();

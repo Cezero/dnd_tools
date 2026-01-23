@@ -41,6 +41,9 @@ import type {
 } from './types';
 import { getCharacterBAB } from '../attack-calculation/utils';
 
+/** Class with optional features resolved from featureIds (callers may attach when building classDetailsMap) */
+type DnDClassWithOptionalFeatures = DnDClass & { features?: FeatureWithRelations[] };
+
 export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     protected formatProgressions(
         features: FeatureWithRelations[],
@@ -597,7 +600,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         resolvedProgressions: FeatureWithRelations[],
         items: ItemWithDetails[],
         characterItems: CharacterItem[],
-        classDetailsMap: Map<number, DnDClass>,
+        classDetailsMap: Map<number, DnDClassWithOptionalFeatures>,
         context?: DisplayContext,
         race?: Race | null
     ): FormattedCharacterResult {
@@ -703,7 +706,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         resolvedProgressions: FeatureWithRelations[],
         items: ItemWithDetails[],
         characterItems: CharacterItem[],
-        classDetailsMap: Map<number, DnDClass>,
+        classDetailsMap: Map<number, DnDClassWithOptionalFeatures>,
         _context?: DisplayContext
     ): FormattedAttackResult[] {
         const attacks: FormattedAttackResult[] = [];
@@ -789,7 +792,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         resolvedProgressions: FeatureWithRelations[],
         _items: ItemWithDetails[],
         _characterItems: CharacterItem[],
-        classDetailsMap: Map<number, DnDClass>,
+        classDetailsMap: Map<number, DnDClassWithOptionalFeatures>,
         _context?: DisplayContext
     ): FormattedSkill[] {
         const skills: FormattedSkill[] = [];
@@ -1099,7 +1102,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureWithRelations[],
         _items: ItemWithDetails[],
-        classDetailsMap: Map<number, DnDClass>,
+        classDetailsMap: Map<number, DnDClassWithOptionalFeatures>,
         _context?: DisplayContext
     ): { fortitude: FormattedSavingThrow; reflex: FormattedSavingThrow; will: FormattedSavingThrow } {
         const fortResult = CharacterCalculationService.getSavingThrow(character, SaveType.Fortitude, resolvedProgressions, classDetailsMap);
@@ -1715,7 +1718,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     private _formatBaseAttackBonus(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureWithRelations[],
-        classDetailsMap: Map<number, DnDClass>,
+        classDetailsMap: Map<number, DnDClassWithOptionalFeatures>,
         resolvedFormulaValues?: Record<string, number>
     ): string {
         // Use getCharacterBAB which handles pre-resolved formula values when available,
@@ -1744,7 +1747,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     private _formatGrapple(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureWithRelations[],
-        classDetailsMap: Map<number, DnDClass>,
+        classDetailsMap: Map<number, DnDClassWithOptionalFeatures>,
         _context?: DisplayContext
     ): FormattedGrapple {
         // Calculate BAB
@@ -1833,7 +1836,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      */
     private _formatClassLevels(
         character: CharacterWithAllDetailsResponse,
-        classDetailsMap: Map<number, DnDClass>
+        classDetailsMap: Map<number, DnDClassWithOptionalFeatures>
     ): FormattedClassLevel[] {
         const classLevelCounts = new Map<number, number>();
         for (const advancement of character.advancements) {

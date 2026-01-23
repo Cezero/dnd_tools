@@ -7,7 +7,6 @@ import { ProtectedRoute, AdminRoute } from '@/components/auth/ProtectedRoute';
 import { RegisterPage } from '@/components/auth/RegisterPage';
 import { Layout } from '@/components/Layout';
 import { FeatureRoutes } from '@/features/FeatureRoutes';
-import { FeatureStateStoreProvider } from '@/lib/stores/FeatureStateStore';
 import { CacheProvider } from '@/providers/CacheProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { RouteConfig } from '@/types';
@@ -17,9 +16,8 @@ export function App(): React.JSX.Element {
     <div className="isolate">
       <AuthProvider>
         <QueryProvider>
-          <FeatureStateStoreProvider>
-            <CacheProvider>
-              <Router>
+          <CacheProvider>
+            <Router>
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
@@ -57,7 +55,6 @@ export function App(): React.JSX.Element {
                 </Routes>
             </Router>
           </CacheProvider>
-          </FeatureStateStoreProvider>
         </QueryProvider>
       </AuthProvider>
     </div>

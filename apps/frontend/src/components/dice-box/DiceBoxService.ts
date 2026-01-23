@@ -76,12 +76,12 @@ const deleteAdminConfigApi = typedApi<undefined, typeof UpdateResponseSchema, ty
 export class DiceBoxService {
     // Get available admin dice configurations for user selection
     static async getAvailableConfigs(): Promise<GetAllDiceConfigsResponse> {
-        return getAvailableConfigsApi(undefined);
+        return getAvailableConfigsApi();
     }
 
     // Get user's dice configuration
     static async getUserDiceConfig(): Promise<UserDiceConfig> {
-        return getUserDiceConfigApi(undefined);
+        return getUserDiceConfigApi();
     }
 
     // Update user's dice configuration
@@ -92,7 +92,7 @@ export class DiceBoxService {
     // Get the full DiceBox configuration for frontend use
     static async getFullConfig(): Promise<DiceBoxAdminConfig | null> {
         try {
-            return await getFullConfigApi(undefined);
+            return await getFullConfigApi();
         } catch (error) {
             if (error instanceof Error && error.message.includes('404')) {
                 return null;
@@ -104,7 +104,7 @@ export class DiceBoxService {
     // Get the current DiceBox admin configuration (admin only)
     static async getAdminConfig(): Promise<DiceBoxAdminConfig | null> {
         try {
-            return await getAdminConfigApi(undefined);
+            return await getAdminConfigApi();
         } catch (error) {
             if (error instanceof Error && error.message.includes('404')) {
                 return null;
@@ -135,6 +135,6 @@ export class DiceBoxService {
 
     // Delete a DiceBox admin configuration (admin only)
     static async deleteAdminConfig(configId: number): Promise<{ message: string }> {
-        return deleteAdminConfigApi(undefined, { id: configId });
+        return deleteAdminConfigApi({ id: configId });
     }
 } 

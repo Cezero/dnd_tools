@@ -11,12 +11,12 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     useValidatedForm,
 } from '@/components/forms';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import {
     CreateClassSchema,
     UpdateClassSchema,
@@ -31,14 +31,12 @@ import {
     EntityType,
     EntityAppliesToType,
     FeatureSourceType,
-    ClassUpdateType,
 } from '@shared/static-data';
-
-import { useFeatureStateStore } from '@/lib/stores/FeatureStateStore';
 
 import { ClassApi } from './ClassApi';
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
 import { ClassProficiencyService } from './ClassProficiencyService';
+import { ClassQueryHooks } from './ClassQueryHooks';
 import { ClassSkillService } from './ClassSkillService';
 import {
     BasicInfoTab,
@@ -61,10 +59,10 @@ export default function ClassEdit() {
     const queryClient = useQueryClient();
 
     // Use centralized state management
-    const classId = id !== 'new' ? parseInt(id) : null;
+    // Handle both 'new' and '0' for new entities (backward compatibility)
+    const classId = (id !== 'new' && id !== '0') ? parseInt(id) : (id === '0' ? 0 : null);
     const resolution = useClassResolution(classId);
     const { state, updateState } = useClassEditState();
-    const featureStateStore = useFeatureStateStore();
 
     // UI-only state (not part of class edit state)
     const [message, setMessage] = useState('');
@@ -109,10 +107,8 @@ export default function ClassEdit() {
     const formDataRef = useRef<ClassFormData | null>(null);
 
     // Update ref when preSelectedFeatureId changes
-    // Note: We load the full feature from FeatureStateStore when needed
     useEffect(() => {
         // preSelectedFeatureRef is no longer used since we use preSelectedFeatureId
-        // This effect can be removed or used to load feature from FeatureStateStore if needed
     }, [state.preSelectedFeatureId]);
 
     // Track previous values to avoid unnecessary updates and infinite loops
@@ -173,7 +169,7 @@ export default function ClassEdit() {
             isEqual(state.spellsKnownProgression, sessionState.spellsKnownProgression);
 
         // Use deep equality to check if session state data has actually changed
-        // This prevents re-initialization when applyUpdate returns a new object with same data
+        // This prevents re-initialization when updateValue returns a new object with same data
         if (prevStateRef.current && isEqual(prevStateRef.current, sessionState)) {
             return;
         }
@@ -244,7 +240,7 @@ export default function ClassEdit() {
         prevSpellsKnownRef.current = sessionState.spellsKnownProgression;
     }, [memoizedClassState, updateState, classId]);
 
-    // Load features from FeatureStateStore using featureIds
+    // Load features using FeatureQueryHooks
     // Declare early so it can be used in callbacks
     const [loadedFeatures, setLoadedFeatures] = useState<FeatureWithRelations[]>([]);
     const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
@@ -285,7 +281,7 @@ export default function ClassEdit() {
             // Check if class proficiency feature already exists (class source with Base proficiency entities)
             let classProficiencyFeature = loadedFeatures.find(fp =>
                 fp.sourceType === FeatureSourceType.Class &&
-                fp.classes?.some(c => c.classId === (id !== 'new' ? parseInt(id) : 0)) &&
+                fp.classes?.some(c => c.classId === ((id !== 'new' && id !== '0') ? parseInt(id) : 0)) &&
                 fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency)
             );
 
@@ -343,7 +339,7 @@ export default function ClassEdit() {
         description: state.description || '',
         spellcastingProgression: state.spellcastingProgression,
         spellsKnownProgression: state.spellsKnownProgression,
-        ...(id !== 'new' && state.classId ? { id: state.classId } : {})
+        ...((id !== 'new' && id !== '0') && state.classId ? { id: state.classId } : {})
     }), [state, id]);
 
     // Update formData ref whenever formData changes
@@ -420,32 +416,29 @@ export default function ClassEdit() {
 
             setIsLoadingFeatures(true);
             try {
-                const features: FeatureWithRelations[] = [];
-                const validFeatureIds: number[] = [];
                 const missingFeatureIds: number[] = [];
 
-                for (const featureId of state.featureIds) {
-                    try {
-                        // For read-only viewing, use loadFeatureData to avoid creating sessions
-                        const featureData = await featureStateStore.loadFeatureData(featureId);
-                        if (featureData) {
-                            features.push(featureData);
-                            validFeatureIds.push(featureId);
-                        }
-                    } catch (error) {
-                        // Handle missing features gracefully
-                        const errorMessage = error instanceof Error ? error.message : String(error);
-                        if (errorMessage.includes('not found') || errorMessage.includes('Not Found')) {
-                            console.warn(`Feature ${featureId} not found, removing from class feature list`);
-                            missingFeatureIds.push(featureId);
-                        } else {
+                const features = await Promise.all(
+                    state.featureIds.map(async (featureId) => {
+                        try {
+                            return await FeatureQueryHooks.getFeatureById(featureId);
+                        } catch (error) {
+                            // Handle missing features gracefully
+                            const errorMessage = error instanceof Error ? error.message : String(error);
+                            if (errorMessage.includes('not found') || errorMessage.includes('Not Found')) {
+                                console.warn(`Feature ${featureId} not found, removing from class feature list`);
+                                missingFeatureIds.push(featureId);
+                                return null;
+                            }
                             // Re-throw unexpected errors
                             throw error;
                         }
-                    }
-                }
+                    })
+                );
+                const validFeatures = features.filter((f): f is FeatureWithRelations => f !== null);
+                const validFeatureIds = validFeatures.map(f => f.id);
 
-                setLoadedFeatures(features);
+                setLoadedFeatures(validFeatures);
                 prevFeatureIdsRef.current = [...validFeatureIds];
 
                 // Remove missing feature IDs from state if any were found
@@ -467,7 +460,7 @@ export default function ClassEdit() {
 
         loadFeatures();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [state.featureIds]); // Only depend on featureIds, not featureStateStore
+    }, [state.featureIds]);
 
     /**
      * Handles linking a feature to the class.
@@ -476,19 +469,19 @@ export default function ClassEdit() {
     const handleAddProgression = useCallback(async (feature: FeatureWithRelations) => {
         // Load feature data (no session needed for linking)
         // Note: We don't check if loaded because we're just linking, not editing
-        await featureStateStore.loadFeatureData(feature.id);
+        await FeatureQueryHooks.getFeatureById(feature.id);
 
         // Link feature to class (updates FeatureClassMap)
         updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: feature.id } });
 
-        // Also apply update to class state
+        // Sync updated featureIds array to backend
         if (resolution.classState && classId) {
-            await resolution.applyUpdate({
-                type: ClassUpdateType.LinkFeature,
-                payload: { featureId: feature.id }
-            });
+            const updatedFeatureIds = state.featureIds.includes(feature.id)
+                ? state.featureIds
+                : [...state.featureIds, feature.id];
+            await resolution.updateValue('featureIds', updatedFeatureIds);
         }
-    }, [updateState, featureStateStore, resolution, classId]);
+    }, [updateState, resolution, classId, state.featureIds]);
 
     /**
      * Handles adding a feature to the class by creating a default level 1 feature.
@@ -496,7 +489,7 @@ export default function ClassEdit() {
     const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
         try {
             // Fetch the feature's existing features to copy entities
-            const existingProgressions = await FeatureSystemApi.getFeatures(undefined, { id: feature.id });
+            const existingProgressions = await FeatureSystemApi.getFeatures({ id: feature.id });
 
             // Find the first feature with entities to copy, or use empty entities
             const sourceProgression = existingProgressions.find(p => p.entities && p.entities.length > 0);
@@ -519,17 +512,17 @@ export default function ClassEdit() {
             // Link feature to class
             updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: feature.id } });
 
-            // Also apply update to class state
+            // Sync updated featureIds array to backend
             if (resolution.classState && classId) {
-                await resolution.applyUpdate({
-                    type: ClassUpdateType.LinkFeature,
-                    payload: { featureId: feature.id }
-                });
+                const updatedFeatureIds = state.featureIds.includes(feature.id)
+                    ? state.featureIds
+                    : [...state.featureIds, feature.id];
+                await resolution.updateValue('featureIds', updatedFeatureIds);
             }
         } catch (error) {
             console.error('Failed to link feature:', error);
         }
-    }, [updateState, resolution, classId]);
+    }, [updateState, resolution, classId, state.featureIds, createFeature]);
 
     /**
      * Handles unlinking a feature from the class.
@@ -539,14 +532,12 @@ export default function ClassEdit() {
         // Unlink feature from class (updates FeatureClassMap)
         updateState({ type: ClassEditStateUpdateType.UNLINK_FEATURE, payload: { featureId } });
 
-        // Also apply update to class state
+        // Sync updated featureIds array to backend
         if (resolution.classState && classId) {
-            await resolution.applyUpdate({
-                type: ClassUpdateType.UnlinkFeature,
-                payload: { featureId }
-            });
+            const updatedFeatureIds = state.featureIds.filter(id => id !== featureId);
+            await resolution.updateValue('featureIds', updatedFeatureIds);
         }
-    }, [updateState, resolution, classId]);
+    }, [updateState, resolution, classId, state.featureIds]);
 
     /**
      * Handles updating a feature.
@@ -562,10 +553,8 @@ export default function ClassEdit() {
             updateState({ type: ClassEditStateUpdateType.LINK_FEATURE, payload: { featureId: updatedProgression.id } });
 
             if (resolution.classState && classId) {
-                await resolution.applyUpdate({
-                    type: ClassUpdateType.LinkFeature,
-                    payload: { featureId: updatedProgression.id }
-                });
+                const updatedFeatureIds = [...state.featureIds, updatedProgression.id];
+                await resolution.updateValue('featureIds', updatedFeatureIds);
             }
         }
     }, [updateState, state.featureIds, resolution, classId]);
@@ -592,7 +581,7 @@ export default function ClassEdit() {
     // Initialize cls for new classes (used by some legacy code)
     // formData is derived from state, so cls will update automatically when state changes
     useEffect(() => {
-        if (id === 'new') {
+        if (id === 'new' || id === '0') {
             setCls(formData);
         }
     }, [id, formData]);
@@ -622,10 +611,9 @@ export default function ClassEdit() {
      * 
      * Automatically syncs class field changes to the resolution session.
      * Watches class fields for changes.
+     * Uses updateValue for path-based field updates.
      */
     useEffect(() => {
-        const { applyUpdate } = resolutionRef.current;
-
         // Only sync if class state is loaded and we have a class ID
         if (!classId || !resolutionRef.current.classState) {
             return;
@@ -738,12 +726,9 @@ export default function ClassEdit() {
             fieldsToSync.push({ field: 'sourceBookInfo', value: state.sourceBookInfo });
         }
 
-        // Apply all field updates
+        // Apply all field updates using updateValue
         fieldsToSync.forEach(({ field, value }) => {
-            applyUpdate({
-                type: ClassUpdateType.UpdateClassField,
-                payload: { field, value }
-            }).catch(error => {
+            resolutionRef.current.updateValue(field, value).catch(error => {
                 console.error(`Failed to sync ${field} change to session:`, error);
             });
         });
@@ -766,11 +751,9 @@ export default function ClassEdit() {
     /**
      * Sync feature features to backend session.
      * 
-     * Detects ADD/UPDATE/REMOVE operations by comparing previous and current features.
+     * Uses updateValue to sync the entire featureIds array. Backend handles diffing.
      */
     useEffect(() => {
-        const { applyUpdate } = resolutionRef.current;
-
         if (!classId || !resolutionRef.current.classState) {
             return;
         }
@@ -795,31 +778,16 @@ export default function ClassEdit() {
             return;
         }
 
-        // Detect removed features
-        const removedFeatureIds = prevFeatureIds.filter(prevId =>
-            !currentFeatureIds.includes(prevId)
-        );
-        removedFeatureIds.forEach(featureId => {
-            applyUpdate({
-                type: ClassUpdateType.UnlinkFeature,
-                payload: { featureId }
-            }).catch(error => {
-                console.error('Failed to sync feature removal:', error);
-            });
-        });
-
-        // Detect added features
-        const addedFeatureIds = currentFeatureIds.filter(currentId =>
-            !prevFeatureIds.includes(currentId)
-        );
-
-        addedFeatureIds.forEach(featureId => {
-            applyUpdate({
-                type: ClassUpdateType.LinkFeature,
-                payload: { featureId }
-            }).catch(error => {
-                console.error('Failed to sync feature addition:', error);
-            });
+        // Update featureIds array using updateValue
+        // This is simpler than tracking individual adds/removes
+        resolutionRef.current.updateValue('featureIds', currentFeatureIds).catch(error => {
+            // Handle lock errors gracefully - if class is locked by another user or lock expired,
+            // the link will be synced when the class is saved
+            if (error && typeof error === 'object' && 'status' in error && error.status === 409) {
+                console.warn(`[ClassEdit] Class is locked, deferring featureIds sync until class save:`, error);
+            } else {
+                console.error('[ClassEdit] Failed to sync featureIds:', error);
+            }
         });
 
         // Features are now managed independently, so we don't need to detect updates here
@@ -832,10 +800,9 @@ export default function ClassEdit() {
 
     /**
      * Sync spellcasting feature to backend session.
+     * Uses updateValue for path-based field updates.
      */
     useEffect(() => {
-        const { applyUpdate } = resolutionRef.current;
-
         if (!classId || !resolutionRef.current.classState) {
             return;
         }
@@ -861,11 +828,8 @@ export default function ClassEdit() {
             return;
         }
 
-        applyUpdate({
-            type: ClassUpdateType.SetSpellcastingProgression,
-            payload: { progression: state.spellcastingProgression }
-        }).catch(error => {
-            console.error('Failed to sync spellcasting feature:', error);
+        resolutionRef.current.updateValue('spellcastingProgression', state.spellcastingProgression || []).catch(error => {
+            console.error('Failed to sync spellcasting progression:', error);
         });
 
         prevSpellcastingRef.current = currentSpellcasting;
@@ -873,10 +837,9 @@ export default function ClassEdit() {
 
     /**
      * Sync spells known feature to backend session.
+     * Uses updateValue for path-based field updates.
      */
     useEffect(() => {
-        const { applyUpdate } = resolutionRef.current;
-
         if (!classId || !resolutionRef.current.classState) {
             return;
         }
@@ -902,11 +865,8 @@ export default function ClassEdit() {
             return;
         }
 
-        applyUpdate({
-            type: ClassUpdateType.SetSpellsKnownProgression,
-            payload: { progression: state.spellsKnownProgression }
-        }).catch(error => {
-            console.error('Failed to sync spells known feature:', error);
+        resolutionRef.current.updateValue('spellsKnownProgression', state.spellsKnownProgression).catch(error => {
+            console.error('Failed to sync spells known progression:', error);
         });
 
         prevSpellsKnownRef.current = currentSpellsKnown;
@@ -951,7 +911,7 @@ export default function ClassEdit() {
         try {
             setIsSaving(true);
 
-            if (id === 'new') {
+            if (id === 'new' || id === '0') {
                 // For new classes, we need to create via the regular API first
                 // Then we can use the session system for future edits
                 const classData: CreateClassRequest = {
@@ -964,25 +924,7 @@ export default function ClassEdit() {
                     spellsKnown: state.spellsKnown,
                     isDivine: state.isDivine,
                     description: state.description || '',
-                    features: loadedFeatures.map(prog => {
-                        const { classes: _classes, races: _races, ...progressionData } = prog;
-                        return {
-                            ...progressionData,
-                            entities: prog.entities?.map(entity => {
-                                const { featureId: __, ...entityData } = entity;
-                                if (entityData.formulaParams && entityData.formulaParams.formulaId) {
-                                    const formulaParamsData = { ...entityData.formulaParams };
-                                    delete (formulaParamsData as { id?: unknown }).id;
-                                    entityData.formulaParams = formulaParamsData;
-                                    delete entityData.formulaParamsId;
-                                } else {
-                                    delete entityData.formulaParams;
-                                    delete entityData.formulaParamsId;
-                                }
-                                return entityData;
-                            }) || [],
-                        };
-                    }),
+                    featureIds: state.featureIds,
                     spellcastingProgression: state.spellcastingProgression.map(prog => {
                         const { id: _, classId: __, ...progressionData } = prog;
                         return {
@@ -1037,40 +979,48 @@ export default function ClassEdit() {
             }
         } catch (err) {
             console.error('Error saving class:', err);
-            console.error('Error details:', {
-                name: err instanceof Error ? err.name : 'Unknown',
-                message: err instanceof Error ? err.message : 'Unknown error',
-                stack: err instanceof Error ? err.stack : 'No stack trace'
-            });
 
-            // Try to extract more detailed error information
-            let errorMessage = 'Failed to save class';
-            if (err instanceof Error) {
-                errorMessage = err.message;
-            } else if (typeof err === 'object' && err !== null) {
-                // Try to extract error details from response
-                const errorObj = err as { response?: { data?: { error?: string } }; message?: string };
-                if (errorObj.response?.data?.error) {
-                    errorMessage = errorObj.response.data.error;
-                } else if (errorObj.message) {
-                    errorMessage = errorObj.message;
+            // Check if this is a validation error with field paths
+            if (err instanceof Error && 'validationErrors' in err) {
+                const validationErrors = (err as { validationErrors?: Array<{ path: string; message: string; code: string }> }).validationErrors;
+                if (validationErrors && Array.isArray(validationErrors)) {
+                    // Format validation errors for display
+                    const errorMessages = validationErrors.map(err => `${err.path}: ${err.message}`).join(', ');
+                    setError(`Validation errors: ${errorMessages}`);
+                    // TODO: Highlight invalid form fields using error paths
+                    console.error('Validation errors saving class:', validationErrors);
+                } else {
+                    setError(err.message || 'Failed to save class');
                 }
+            } else {
+                // Try to extract more detailed error information
+                let errorMessage = 'Failed to save class';
+                if (err instanceof Error) {
+                    errorMessage = err.message;
+                } else if (typeof err === 'object' && err !== null) {
+                    // Try to extract error details from response
+                    const errorObj = err as { response?: { data?: { error?: string } }; message?: string };
+                    if (errorObj.response?.data?.error) {
+                        errorMessage = errorObj.response.data.error;
+                    } else if (errorObj.message) {
+                        errorMessage = errorObj.message;
+                    }
+                }
+                setError(errorMessage);
             }
-
-            setError(errorMessage);
         } finally {
             setIsSaving(false);
         }
     };
 
     // Show loading state while session is initializing (for existing classes)
-    if (id !== 'new' && resolution.isLoading && !resolution.classState) {
+    if ((id !== 'new' && id !== '0') && resolution.isLoading && !resolution.classState) {
         return <div className="flex justify-center items-center h-64">Loading...</div>;
     }
 
     // Show error state
     const displayError = resolution.error || error;
-    if (displayError && !resolution.classState && id !== 'new') {
+    if (displayError && !resolution.classState && (id !== 'new' && id !== '0')) {
         return (
             <div className="flex flex-col items-center justify-center h-64">
                 <p className="text-red-500 mb-4">{displayError}</p>
@@ -1085,7 +1035,7 @@ export default function ClassEdit() {
     }
 
     // For new classes, ensure we have initial form data
-    if (id === 'new' && !cls) {
+    if ((id === 'new' || id === '0') && !cls) {
         setCls(formData);
     }
 
@@ -1191,7 +1141,7 @@ export default function ClassEdit() {
                                 onRemoveSkill={handleRemoveSkill}
                                 onAddProficiency={handleAddProficiency}
                                 onRemoveProficiency={handleRemoveProficiency}
-                                classId={id !== 'new' ? parseInt(id) : undefined}
+                                classId={(id !== 'new' && id !== '0') ? parseInt(id) : undefined}
                             />
                         )}
                     </div>
@@ -1211,7 +1161,7 @@ export default function ClassEdit() {
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isLoading || form.validation.validationState.hasErrors}
                     >
-                        {isLoading ? 'Saving...' : id === 'new' ? 'Create Class' : 'Update Class'}
+                        {isLoading ? 'Saving...' : (id === 'new' || id === '0') ? 'Create Class' : 'Update Class'}
                     </button>
                 </div>
             </ValidatedForm>
@@ -1247,16 +1197,14 @@ export default function ClassEdit() {
                     updateState({ type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID, payload: { preSelectedFeatureId: undefined } });
                 }}
                 featureId={
-                    // Ensure featureId is never 0 - treat 0 as invalid and use 'new' instead
+                    // Use 0 for new features
                     state.editingFeatureId && state.editingFeatureId > 0
                         ? state.editingFeatureId
                         : state.preSelectedFeatureId && state.preSelectedFeatureId > 0
                             ? state.preSelectedFeatureId
-                            : 'new'
+                            : 0
                 }
-                onSave={async (feature: Feature, features: FeatureWithRelations[], featureId: number) => {
-                    const featureWithRelations = features[0] || feature as FeatureWithRelations;
-                    
+                onSave={async (featureId: number) => {
                     // Ensure the featureId is in the class's feature list
                     // The feature was already saved via state system, we just need to track its ID
                     // The useEffect hook will automatically sync the link to the backend
@@ -1268,12 +1216,12 @@ export default function ClassEdit() {
                             payload: { featureId }
                         });
                     }
-                    
+
                     // Refresh session state to get updated feature data from backend
                     if (state.editingFeatureId && resolution.refreshState) {
                         await resolution.refreshState();
                     }
-                    
+
                     updateState({ type: ClassEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: null } });
                     updateState({ type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID, payload: { preSelectedFeatureId: undefined } });
                 }}

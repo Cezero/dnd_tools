@@ -9,7 +9,8 @@ import {
 } from '@/util/validated-types';
 import {
     Race,
-    RaceIdParamRequest,
+    GetFeaturesResponse,
+    IdParamRequest,
     RaceIdQueryRequest,
     CreateRaceRequest,
     UpdateRaceRequest,
@@ -18,18 +19,19 @@ import {
     CreateResponse,
     RaceCacheResponse,
 } from '@shared/schema';
-
-import { EntityLockService } from '../shared/entityState/EntityLockService';
+import { DraftType } from '@shared/static-data';
 
 import { raceService } from './raceService';
+import { DraftLockService } from '../shared/draftState/DraftLockService';
 
-let entityLockServiceInstance: EntityLockService | null = null;
 
-function getEntityLockService(): EntityLockService {
-    if (!entityLockServiceInstance) {
-        entityLockServiceInstance = new EntityLockService();
+let draftLockServiceInstance: DraftLockService | null = null;
+
+function getDraftLockService(): DraftLockService {
+    if (!draftLockServiceInstance) {
+        draftLockServiceInstance = new DraftLockService();
     }
-    return entityLockServiceInstance;
+    return draftLockServiceInstance;
 }
 
 /**
@@ -45,7 +47,7 @@ export async function GetAllRaces(req: ValidatedNoInput<GetAllRacesResponse>, re
  * Optionally accepts character feature choices to enrich features with choice data.
  */
 export async function GetRaceById(
-    req: ValidatedParamsQueryT<RaceIdParamRequest, RaceIdQueryRequest, Race>,
+    req: ValidatedParamsQueryT<IdParamRequest, RaceIdQueryRequest, Race>,
     res: Response,
     _next: NextFunction
 ) {
@@ -60,9 +62,21 @@ export async function GetRaceById(
 }
 
 /**
+ * Fetches feature progressions for a race. Used by RaceDetail/RaceDisplay to resolve featureIds to FeatureWithRelations[].
+ */
+export async function GetRaceFeatures(
+    req: ValidatedParamsQueryT<IdParamRequest, RaceIdQueryRequest, GetFeaturesResponse>,
+    res: Response,
+    _next: NextFunction
+) {
+    const features = await raceService.getRaceFeatures(req.params, req.query.characterFeatureChoices);
+    res.json(features);
+}
+
+/**
  * Updates an existing race.
  */
-export async function UpdateRace(req: ValidatedParamsBodyT<RaceIdParamRequest, UpdateRaceRequest, UpdateResponse>, res: Response, _next: NextFunction) {
+export async function UpdateRace(req: ValidatedParamsBodyT<IdParamRequest, UpdateRaceRequest, UpdateResponse>, res: Response, _next: NextFunction) {
     try {
         await raceService.updateRace(req.params, req.body);
         res.json({ message: 'Race updated successfully' });
@@ -86,7 +100,7 @@ export async function CreateRace(req: ValidatedBodyT<CreateRaceRequest, CreateRe
 /**
  * Deletes a race.
  */
-export async function DeleteRace(req: ValidatedParamsT<RaceIdParamRequest, UpdateResponse>, res: Response, _next: NextFunction) {
+export async function DeleteRace(req: ValidatedParamsT<IdParamRequest, UpdateResponse>, res: Response, _next: NextFunction) {
     const result = await raceService.deleteRace(req.params);
     res.json(result);
 }
@@ -106,12 +120,12 @@ export async function GetRaceCache(req: ValidatedNoInput<RaceCacheResponse>, res
  * This is a read-only operation that doesn't require authentication.
  */
 export async function GetRaceLockStatus(
-    req: ValidatedParamsT<RaceIdParamRequest>,
+    req: ValidatedParamsT<IdParamRequest>,
     res: Response,
     _next: NextFunction
 ) {
-    const lockService = getEntityLockService();
-    const lockedBy = await lockService.checkLock('race', req.params.id);
+    const lockService = getDraftLockService();
+    const lockedBy = await lockService.checkLock(DraftType.Race, req.params.id);
 
     if (lockedBy === null) {
         res.json({ locked: false });

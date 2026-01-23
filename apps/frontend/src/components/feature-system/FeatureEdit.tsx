@@ -1,8 +1,8 @@
-import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { Feature, FeatureWithRelations } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
@@ -10,7 +10,6 @@ export function FeatureEdit() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const queryClient = useQueryClient();
     const fromListParams = location.state?.fromListParams || '';
     const fromPage = location.state?.fromPage || 'features';
 
@@ -46,55 +45,26 @@ export function FeatureEdit() {
         }
     };
 
-    const handleSave = async (feature: Feature, features: FeatureWithRelations[]) => {
-        const parentType = location.state?.parentType;
-        const parentId = location.state?.parentId;
-
-        if (parentType === 'class' && parentId) {
-            await queryClient.invalidateQueries({
-                queryKey: ['classes', 'item', parentId]
-            });
-            await queryClient.invalidateQueries({
-                queryKey: ['classes'],
-                exact: false
-            });
-        }
-        if (parentType === 'race' && parentId) {
-            await queryClient.invalidateQueries({
-                queryKey: ['races', 'item', parentId]
-            });
-            await queryClient.invalidateQueries({
-                queryKey: ['races'],
-                exact: false
-            });
-        }
-        if (parentType === 'feat' && parentId) {
-            await queryClient.invalidateQueries({
-                queryKey: ['feats', 'item', parentId]
-            });
-            await queryClient.invalidateQueries({
-                queryKey: ['feats'],
-                exact: false
-            });
-            await queryClient.invalidateQueries({
-                queryKey: ['feats-cache'],
-                exact: false
-            });
-        }
-
-        setTimeout(() => {
-            if (location.state?.from === 'ListSelectionDialog' && feature.id) {
-                navigate(location.state.returnPath, {
-                    state: {
-                        newFeature: {
-                            featureId: feature.id,
-                            name: feature.name,
-                            description: feature.description,
-                            slug: feature.slug,
-                            level: 1
+    const handleSave = async (featureId: number) => {
+        setTimeout(async () => {
+            if (location.state?.from === 'ListSelectionDialog' && featureId) {
+                // Fetch feature data if needed for navigation state
+                const feature = await FeatureQueryHooks.getFeatureById(featureId);
+                if (feature) {
+                    navigate(location.state.returnPath, {
+                        state: {
+                            newFeature: {
+                                featureId: feature.id,
+                                name: feature.name,
+                                description: feature.description,
+                                slug: feature.slug,
+                                level: 1
+                            }
                         }
-                    }
-                });
+                    });
+                } else {
+                    navigate(location.state.returnPath);
+                }
             } else {
                 navigate(getBackLink());
             }
@@ -124,7 +94,7 @@ export function FeatureEdit() {
         };
     }
 
-    const featureIdNum = id === 'new' ? 'new' : (id ? parseInt(id) : 'new');
+    const featureIdNum = id === 'new' || id === '0' ? 0 : (id ? parseInt(id) : 0);
 
     return (
         <FeatureEditForm

@@ -10,18 +10,18 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
-import { useFeatureStateStore } from '@/lib/stores/FeatureStateStore';
 import {
     ValidatedForm,
     useValidatedForm
 } from '@/components/forms';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { UpdateRaceSchema, BaseRaceSchema, Feature, FeatureWithRelations, CreateRaceRequest, type RaceEditState, SourceMap } from '@shared/schema';
-import { EntityAppliesToType, EntityType, FeatureSourceType, RaceUpdateType } from '@shared/static-data';
+import { EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
 import { RaceApi } from './RaceApi';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
+import { RaceQueryHooks } from './RaceQueryHooks';
 import {
     BasicInfoTab,
     AbilitiesTab,
@@ -50,10 +50,10 @@ export function RaceEdit() {
     const queryClient = useQueryClient();
 
     // Use centralized state management
-    const raceId = id !== 'new' ? parseInt(id) : null;
+    // Handle both 'new' and '0' for new entities (backward compatibility)
+    const raceId = (id !== 'new' && id !== '0') ? parseInt(id) : (id === '0' ? 0 : null);
     const resolution = useRaceResolution(raceId);
     const { state, updateState } = useRaceEditState();
-    const featureStateStore = useFeatureStateStore();
 
     // UI-only state (not part of race edit state)
     const [message, setMessage] = useState('');
@@ -66,7 +66,7 @@ export function RaceEdit() {
     const isLoading = resolution.isLoading || isSaving;
 
     // Determine which schema to use based on whether we're creating or editing
-    const schema = id === 'new' ? BaseRaceSchema : UpdateRaceSchema;
+    const schema = (id === 'new' || id === '0') ? BaseRaceSchema : UpdateRaceSchema;
 
     // Tab configuration - use state instead of local activeTab
     const tabs: TabConfig[] = [
@@ -79,7 +79,7 @@ export function RaceEdit() {
 
     const CurrentTabComponent = tabs.find(tab => tab.id === state.activeTab)?.component;
 
-    // Load features from FeatureStateStore using featureIds
+    // Load features using FeatureQueryHooks
     const [loadedFeatures, setLoadedFeatures] = useState<FeatureWithRelations[]>([]);
     const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
     const prevFeatureIdsRef = useRef<number[]>([]);
@@ -103,32 +103,29 @@ export function RaceEdit() {
 
             setIsLoadingFeatures(true);
             try {
-                const features: FeatureWithRelations[] = [];
-                const validFeatureIds: number[] = [];
                 const missingFeatureIds: number[] = [];
 
-                for (const featureId of state.featureIds) {
-                    try {
-                        // For read-only viewing, use loadFeatureData to avoid creating sessions
-                        const featureData = await featureStateStore.loadFeatureData(featureId);
-                        if (featureData) {
-                            features.push(featureData);
-                            validFeatureIds.push(featureId);
-                        }
-                    } catch (error) {
-                        // Handle missing features gracefully
-                        const errorMessage = error instanceof Error ? error.message : String(error);
-                        if (errorMessage.includes('not found') || errorMessage.includes('Not Found')) {
-                            console.warn(`Feature ${featureId} not found, removing from race feature list`);
-                            missingFeatureIds.push(featureId);
-                        } else {
+                const features = await Promise.all(
+                    state.featureIds.map(async (featureId) => {
+                        try {
+                            return await FeatureQueryHooks.getFeatureById(featureId);
+                        } catch (error) {
+                            // Handle missing features gracefully
+                            const errorMessage = error instanceof Error ? error.message : String(error);
+                            if (errorMessage.includes('not found') || errorMessage.includes('Not Found')) {
+                                console.warn(`Feature ${featureId} not found, removing from race feature list`);
+                                missingFeatureIds.push(featureId);
+                                return null;
+                            }
                             // Re-throw unexpected errors
                             throw error;
                         }
-                    }
-                }
+                    })
+                );
+                const validFeatures = features.filter((f): f is FeatureWithRelations => f !== null);
+                const validFeatureIds = validFeatures.map(f => f.id);
 
-                setLoadedFeatures(features);
+                setLoadedFeatures(validFeatures);
                 prevFeatureIdsRef.current = [...validFeatureIds];
 
                 // Remove missing feature IDs from state if any were found
@@ -150,7 +147,7 @@ export function RaceEdit() {
 
         loadFeatures();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [state.featureIds]); // Only depend on featureIds, not featureStateStore
+    }, [state.featureIds]);
 
     // Derive formData from state (single source of truth)
     // This is used for form validation only - tabs should use state directly
@@ -162,7 +159,7 @@ export function RaceEdit() {
         sourceBookInfo: state.sourceBookInfo,
         // Features are managed independently, so formData doesn't need featureIds
         // The form validation will work without it
-        ...(id !== 'new' && state.raceId ? { id: state.raceId } : {})
+        ...((id !== 'new' && id !== '0') && state.raceId ? { id: state.raceId } : {})
     }), [state, id]);
 
     // Wrapper for setFormData that updates state instead
@@ -336,7 +333,7 @@ export function RaceEdit() {
     // Initialize race for new races (used by some legacy code)
     // formData is derived from state, so race will update automatically when state changes
     useEffect(() => {
-        if (id === 'new') {
+        if (id === 'new' || id === '0') {
             setRace(formData);
         }
     }, [id, formData, setFormData]);
@@ -359,10 +356,9 @@ export function RaceEdit() {
      * Watches race fields for changes.
      * 
      * **Important**: This only syncs user-initiated changes, not changes from backend sync.
+     * Uses updateValue for path-based field updates.
      */
     useEffect(() => {
-        const { applyUpdate } = resolution;
-
         // Only sync if race state is loaded and we have a race ID
         if (!raceId || !resolution.raceState) {
             return;
@@ -439,10 +435,7 @@ export function RaceEdit() {
         (async () => {
             try {
                 for (const { field, value } of fieldsToSync) {
-                    await applyUpdate({
-                        type: RaceUpdateType.UpdateRaceField,
-                        payload: { field, value }
-                    });
+                    await resolution.updateValue(field, value);
                 }
             } catch (error) {
                 console.error('Failed to sync changes to session:', error);
@@ -462,7 +455,7 @@ export function RaceEdit() {
             description: state.description,
             sourceBookInfo: state.sourceBookInfo,
         };
-    }, [raceId, resolution.raceState, resolution.applyUpdate, state.name, state.editionId, state.isVisible, state.description, state.sourceBookInfo]);
+    }, [raceId, resolution.raceState, resolution.updateValue, state.name, state.editionId, state.isVisible, state.description, state.sourceBookInfo]);
 
     // Track previous features to detect changes
     const prevFeaturesRef = useRef<number[]>([]);
@@ -470,11 +463,9 @@ export function RaceEdit() {
     /**
      * Sync feature features to backend session.
      * 
-     * Detects ADD/UPDATE/REMOVE operations by comparing previous and current features.
+     * Uses updateValue to sync the entire featureIds array. Backend handles diffing.
      */
     useEffect(() => {
-        const { applyUpdate } = resolution;
-
         if (!raceId || !resolution.raceState) {
             return;
         }
@@ -488,30 +479,15 @@ export function RaceEdit() {
             return;
         }
 
-        // Detect removed features (unlinked)
-        const removedFeatureIds = prevFeatureIds.filter(prevId =>
-            !currentFeatureIds.includes(prevId)
-        );
-        removedFeatureIds.forEach(featureId => {
-            applyUpdate({
-                type: RaceUpdateType.UnlinkFeature,
-                payload: { featureId }
-            }).catch(error => {
-                console.error('Failed to sync feature unlink:', error);
-            });
-        });
+        // Only sync if featureIds actually changed
+        if (prevFeatureIds.length === currentFeatureIds.length &&
+            prevFeatureIds.every((id, index) => id === currentFeatureIds[index])) {
+            return;
+        }
 
-        // Detect added features (linked)
-        const addedFeatureIds = currentFeatureIds.filter(currId =>
-            !prevFeatureIds.includes(currId)
-        );
-        addedFeatureIds.forEach(featureId => {
-            applyUpdate({
-                type: RaceUpdateType.LinkFeature,
-                payload: { featureId }
-            }).catch(error => {
-                console.error('Failed to sync feature link:', error);
-            });
+        // Update entire featureIds array - backend handles diffing
+        resolution.updateValue('featureIds', currentFeatureIds).catch(error => {
+            console.error('Failed to sync featureIds:', error);
         });
 
         // Note: Feature updates are handled by the feature state system, not here
@@ -519,7 +495,7 @@ export function RaceEdit() {
 
         // Update ref
         prevFeaturesRef.current = [...currentFeatureIds];
-    }, [raceId, resolution, state.featureIds]);
+    }, [raceId, resolution.raceState, resolution.updateValue, state.featureIds]);
 
     useEffect(() => {
         if (location.state?.newFeature) {
@@ -547,7 +523,7 @@ export function RaceEdit() {
         // For now, this needs to be refactored to work with featureIds
         // TODO: Refactor language handling to work with independent feature state system
         console.warn('handleAddLanguage needs refactoring for independent feature state system');
-        // TODO: Refactor to work with featureIds and FeatureStateStore
+        // TODO: Refactor to work with featureIds and FeatureQueryHooks
         return;
         /* Old code - needs refactoring
         const appliesToType = isAutomatic ? EntityAppliesToType.AutomaticLanguage : EntityAppliesToType.BonusLanguage;
@@ -642,7 +618,7 @@ export function RaceEdit() {
     const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
         try {
             // Fetch the feature's existing features to copy entities
-            const existingProgressions = await FeatureSystemApi.getFeatures(undefined, { id: feature.id });
+            const existingProgressions = await FeatureSystemApi.getFeatures({ id: feature.id });
 
             // Find the first feature with entities to copy, or use empty entities
             const sourceProgression = existingProgressions.find(p => p.entities && p.entities.length > 0);
@@ -698,7 +674,7 @@ export function RaceEdit() {
      */
     const handleRemoveLanguage = useCallback((languageId: number) => {
         // Features are now managed independently - need to refactor
-        // TODO: Refactor to work with featureIds and FeatureStateStore
+        // TODO: Refactor to work with featureIds and FeatureQueryHooks
         console.warn('handleRemoveLanguage needs refactoring for independent feature state system');
         return;
         /* Old code - needs refactoring
@@ -745,7 +721,7 @@ export function RaceEdit() {
      */
     const handleAbilityChange = useCallback((abilityId: number, parsedValue: number) => {
         // Features are now managed independently - need to refactor
-        // TODO: Refactor to work with featureIds and FeatureStateStore
+        // TODO: Refactor to work with featureIds and FeatureQueryHooks
         console.warn('handleAbilityChange needs refactoring for independent feature state system');
         return;
         /* Old code - needs refactoring
@@ -877,7 +853,7 @@ export function RaceEdit() {
         try {
             setIsSaving(true);
 
-            if (id === 'new') {
+            if (id === 'new' || id === '0') {
                 // For new races, we need to create via the regular API first
                 // Then we can use the session system for future edits
                 const raceData: CreateRaceRequest = {
@@ -886,9 +862,7 @@ export function RaceEdit() {
                     isVisible: state.isVisible,
                     description: state.description,
                     sourceBookInfo: state.sourceBookInfo,
-                    // Features are managed independently via featureIds
-                    // The backend will handle feature linking via syncRaceFeatures
-                    features: null
+                    featureIds: state.featureIds
                 };
 
                 const newRace = await RaceApi.createRace(raceData);
@@ -950,7 +924,7 @@ export function RaceEdit() {
     };
 
     // Show loading state while session is initializing (for existing races)
-    if (id !== 'new' && resolution.isLoading && !resolution.raceState) {
+    if ((id !== 'new' && id !== '0') && resolution.isLoading && !resolution.raceState) {
         return <div className="flex justify-center items-center h-64">Loading...</div>;
     }
 
@@ -974,7 +948,7 @@ export function RaceEdit() {
         <div className="w-4/5 mx-auto p-6">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
-                    {id === 'new' ? 'Create New Race' : 'Edit Race'}
+                    {(id === 'new' || id === '0') ? 'Create New Race' : 'Edit Race'}
                 </h1>
             </div>
 
@@ -1030,13 +1004,13 @@ export function RaceEdit() {
                                 updateState={updateState}
                                 validation={form.validation}
                                 isLoading={isLoading}
-                                features={[]} // Features are loaded by FeaturesManager from FeatureStateStore
+                                features={[]} // Features are loaded by FeaturesManager using FeatureQueryHooks
                                 setFeatures={(features) => {
                                     // Update featureIds based on the features
                                     const updatedFeatureIds = features.map(f => f.id).filter((id): id is number => id !== null);
                                     updateState({ type: RaceEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
                                 }}
-                                raceId={id !== 'new' ? parseInt(id) : undefined}
+                                raceId={(id !== 'new' && id !== '0') ? parseInt(id) : undefined}
                                 isFeatureAssocOpen={state.isFeatureAssocOpen}
                                 setIsFeatureAssocOpen={(open) => updateState({ type: RaceEditStateUpdateType.SET_IS_FEATURE_ASSOC_OPEN, payload: { isFeatureAssocOpen: open } })}
                                 onAddLanguage={handleAddLanguage}
@@ -1067,7 +1041,7 @@ export function RaceEdit() {
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isLoading || form.validation.validationState.hasErrors}
                     >
-                        {isLoading ? 'Saving...' : id === 'new' ? 'Create Race' : 'Update Race'}
+                        {isLoading ? 'Saving...' : (id === 'new' || id === '0') ? 'Create Race' : 'Update Race'}
                     </button>
                 </div>
             </ValidatedForm>
@@ -1089,16 +1063,14 @@ export function RaceEdit() {
                     updateState({ type: RaceEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: null } });
                 }}
                 featureId={
-                    // Ensure featureId is never 0 - treat 0 as invalid and use 'new' instead
+                    // Use 0 for new features
                     state.editingFeatureId !== null && state.editingFeatureId > 0
                         ? state.editingFeatureId
                         : state.preSelectedFeatureId !== undefined && state.preSelectedFeatureId > 0
                             ? state.preSelectedFeatureId
-                            : 'new'
+                            : 0
                 }
-                onSave={async (feature: Feature, features: FeatureWithRelations[], featureId: number) => {
-                    const featureWithRelations = features[0] || feature as FeatureWithRelations;
-                    
+                onSave={async (featureId: number) => {
                     // Ensure the featureId is in the race's feature list
                     // The feature was already saved via state system, we just need to track its ID
                     // The useEffect hook will automatically sync the link to the backend
@@ -1106,12 +1078,15 @@ export function RaceEdit() {
                         // Add the feature ID to the race's feature list
                         updateState({ type: RaceEditStateUpdateType.LINK_FEATURE, payload: { featureId } });
                     }
-                    
+
+                    // Force reload by resetting prevFeatureIdsRef to trigger useEffect reload
+                    prevFeatureIdsRef.current = [];
+
                     // Refresh session state to get updated feature data from backend
                     if (state.editingFeatureId !== null && resolution.refreshState) {
                         await resolution.refreshState();
                     }
-                    
+
                     updateState({ type: RaceEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: null } });
                     updateState({ type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID, payload: { preSelectedFeatureId: undefined } });
                 }}

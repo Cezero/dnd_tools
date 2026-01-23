@@ -6,10 +6,9 @@ import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ListSelectionDialog } from '@/components/generic-list';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
-import { useFeatureStateStore } from '@/lib/stores/FeatureStateStore';
 import { Feature, FeatureWithRelations } from '@shared/schema';
 
+import { FeatureQueryHooks } from './FeatureQueryHooks';
 import type { EditState, FeaturesManagerProps, MinimalFeatureState } from './types';
 import { ClassEditStateUpdateType } from '../../features/class/types';
 import { RaceEditStateUpdateType } from '../../features/race/types';
@@ -32,9 +31,8 @@ export function FeaturesManager({
     const [isFeatureSelectionOpen, setIsFeatureSelectionOpen] = useState(false);
     const [isFeatureEditOpen, setIsFeatureEditOpen] = useState(false);
     const [isNewFeatureDialogOpen, setIsNewFeatureDialogOpen] = useState(false);
-    const [editingFeatureId, setEditingFeatureId] = useState<number | 'new' | undefined>(undefined);
+    const [editingFeatureId, setEditingFeatureId] = useState<number | undefined>(undefined);
     const queryClient = useQueryClient();
-    const featureStateStore = useFeatureStateStore();
 
     // Get featureIds from state (for ClassEditState/RaceEditState) or features array (for MinimalFeatureState)
     const featureIds = useMemo(() => {
@@ -48,17 +46,17 @@ export function FeaturesManager({
         }
     }, [state]);
 
-    // Load features from FeatureStateStore
+    // Load features using FeatureQueryHooks
     const [features, setFeatures] = useState<FeatureWithRelations[]>([]);
     const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
     const prevFeatureIdsRef = useRef<number[]>([]);
 
     useEffect(() => {
         // Only reload if featureIds actually changed
-        const featureIdsChanged = 
+        const featureIdsChanged =
             prevFeatureIdsRef.current.length !== featureIds.length ||
             prevFeatureIdsRef.current.some((id, index) => id !== featureIds[index]);
-        
+
         if (!featureIdsChanged && prevFeatureIdsRef.current.length > 0) {
             return;
         }
@@ -72,28 +70,25 @@ export function FeaturesManager({
 
             setIsLoadingFeatures(true);
             try {
-                const loadedFeatures: FeatureWithRelations[] = [];
-
-                for (const featureId of featureIds) {
-                    try {
-                        // For read-only viewing, use loadFeatureData to avoid creating sessions
-                        const featureData = await featureStateStore.loadFeatureData(featureId);
-                        if (featureData) {
-                            loadedFeatures.push(featureData);
-                        }
-                    } catch (error) {
-                        // Handle missing features gracefully - log warning but don't fail entire load
-                        const errorMessage = error instanceof Error ? error.message : String(error);
-                        if (errorMessage.includes('not found') || errorMessage.includes('Not Found')) {
-                            console.warn(`Feature ${featureId} not found, skipping`);
-                        } else {
+                const loadedFeatures = await Promise.all(
+                    featureIds.map(async (featureId) => {
+                        try {
+                            return await FeatureQueryHooks.getFeatureById(featureId);
+                        } catch (error) {
+                            // Handle missing features gracefully - log warning but don't fail entire load
+                            const errorMessage = error instanceof Error ? error.message : String(error);
+                            if (errorMessage.includes('not found') || errorMessage.includes('Not Found')) {
+                                console.warn(`Feature ${featureId} not found, skipping`);
+                                return null;
+                            }
                             // Re-throw unexpected errors
                             throw error;
                         }
-                    }
-                }
+                    })
+                );
+                const validFeatures = loadedFeatures.filter((f): f is FeatureWithRelations => f !== null);
 
-                setFeatures(loadedFeatures);
+                setFeatures(validFeatures);
                 prevFeatureIdsRef.current = [...featureIds];
             } catch (error) {
                 console.error('Error loading features:', error);
@@ -103,8 +98,8 @@ export function FeaturesManager({
         };
 
         loadFeatures();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [featureIds]); // Only depend on featureIds, not featureStateStore
+
+    }, [featureIds]);
 
     const getContextIdFromState = (editState: EditState | MinimalFeatureState): number => {
         if ('classId' in editState) {
@@ -176,90 +171,42 @@ export function FeaturesManager({
     };
 
 
-    const handleFeatureSave = async (feature: Feature, _progressions: FeatureWithRelations[]) => {
-        await queryClient.invalidateQueries({
-            queryKey: ['features'],
-            exact: false
-        });
-        await queryClient.invalidateQueries({
-            queryKey: ['features', 'item', feature.id]
-        });
-        await queryClient.invalidateQueries({
-            queryKey: ['features', 'features', feature.id]
-        });
+    const handleFeatureSave = async (featureId: number) => {
+        const wasNewFeature = editingFeatureId === 0 || isNewFeatureDialogOpen;
 
-        if (parentType === 'class' && contextId) {
-            await queryClient.invalidateQueries({
-                queryKey: ['classes', 'item', contextId]
-            });
-            await queryClient.invalidateQueries({
-                queryKey: ['classes'],
-                exact: false
-            });
-        }
-        if (parentType === 'race' && contextId) {
-            await queryClient.invalidateQueries({
-                queryKey: ['races', 'item', contextId]
-            });
-            await queryClient.invalidateQueries({
-                queryKey: ['races'],
-                exact: false
-            });
-        }
-        if (parentType === 'domain' && contextId) {
-            await queryClient.invalidateQueries({
-                queryKey: ['domains', 'item', contextId]
-            });
-            await queryClient.invalidateQueries({
-                queryKey: ['domains'],
-                exact: false
-            });
-        }
-        if (parentType === 'feat' && contextId) {
-            await queryClient.invalidateQueries({
-                queryKey: ['feats', 'item', contextId]
-            });
-            await queryClient.invalidateQueries({
-                queryKey: ['feats'],
-                exact: false
-            });
-            await queryClient.invalidateQueries({
-                queryKey: ['feats-cache'],
-                exact: false
-            });
-        }
-
-        const wasNewFeature = editingFeatureId === 'new' || isNewFeatureDialogOpen;
+        // Force reload by resetting prevFeatureIdsRef to trigger useEffect reload
+        prevFeatureIdsRef.current = [];
 
         setIsFeatureEditOpen(false);
         setIsNewFeatureDialogOpen(false);
         setEditingFeatureId(undefined);
 
         // If this was a new feature created, link it to the parent entity
-        if (wasNewFeature && feature.id) {
+        if (wasNewFeature && featureId) {
             try {
-                // Load feature data (no session needed for linking)
-                await featureStateStore.loadFeatureData(feature.id);
-
                 // Link feature to parent entity
                 if (isMinimalState(state)) {
-                    updateState({
-                        type: 'ADD_FEATURE_PROGRESSION',
-                        payload: { feature: feature as FeatureWithRelations }
-                    });
+                    // For minimal state, we need the full feature for ADD_FEATURE_PROGRESSION
+                    const feature = await FeatureQueryHooks.getFeatureById(featureId);
+                    if (feature) {
+                        updateState({
+                            type: 'ADD_FEATURE_PROGRESSION',
+                            payload: { feature: feature as FeatureWithRelations }
+                        });
+                    }
                 } else if ('classId' in state) {
                     updateState({
                         type: ClassEditStateUpdateType.LINK_FEATURE,
-                        payload: { featureId: feature.id }
+                        payload: { featureId }
                     });
                 } else {
                     updateState({
                         type: RaceEditStateUpdateType.LINK_FEATURE,
-                        payload: { featureId: feature.id }
+                        payload: { featureId }
                     });
                 }
             } catch (error) {
-                console.error(`Failed to link newly created feature ${feature.id}:`, error);
+                console.error(`Failed to link newly created feature ${featureId}:`, error);
             }
         }
     };
@@ -271,7 +218,7 @@ export function FeaturesManager({
 
     /**
      * Handles associating existing features by linking them to the parent entity.
-     * Features are loaded into the FeatureStateStore and linked via featureIds.
+     * Features are loaded via FeatureQueryHooks and linked via featureIds.
      */
     const handleAssociateFeatures = async (selectedFeatures: { id: number; name: string; description: string; slug: string }[]) => {
         // Get current feature IDs (excluding special features)
@@ -283,16 +230,16 @@ export function FeaturesManager({
         // Find features to add (newly selected)
         const featuresToAdd = selectedFeatureIds.filter(id => !currentFeatureIds.includes(id));
 
-        // Load features into store and link them
+        // Load features and link them
         for (const feature of selectedFeatures.filter(f => featuresToAdd.includes(f.id))) {
             try {
                 // Load feature data (no session needed for linking)
-                await featureStateStore.loadFeatureData(feature.id);
+                await FeatureQueryHooks.getFeatureById(feature.id);
 
                 // Link feature to parent entity
                 if (isMinimalState(state)) {
                     // For minimal state, we still need the full feature object
-                    const featuresResponse = await FeatureSystemApi.getFeatures(undefined, { id: feature.id });
+                    const featuresResponse = await FeatureSystemApi.getFeatures({ id: feature.id });
                     const fullFeature = featuresResponse[0];
                     if (fullFeature) {
                         updateState({
@@ -322,7 +269,7 @@ export function FeaturesManager({
      */
     const handleCreateNewFeature = () => {
         setIsNewFeatureDialogOpen(true);
-        setEditingFeatureId('new');
+        setEditingFeatureId(0);
     };
 
     return (

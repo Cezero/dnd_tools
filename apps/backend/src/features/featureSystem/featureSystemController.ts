@@ -21,18 +21,19 @@ import {
     ForkFeatureResponse,
     FeatureCacheResponse,
 } from '@shared/schema';
-
-import { EntityLockService } from '../shared/entityState/EntityLockService';
+import { DraftType } from '@shared/static-data';
 
 import { featureSystemService } from './featureSystemService.js';
+import { DraftLockService } from '../shared/draftState/DraftLockService';
 
-let entityLockServiceInstance: EntityLockService | null = null;
 
-function getEntityLockService(): EntityLockService {
-    if (!entityLockServiceInstance) {
-        entityLockServiceInstance = new EntityLockService();
+let draftLockServiceInstance: DraftLockService | null = null;
+
+function getDraftLockService(): DraftLockService {
+    if (!draftLockServiceInstance) {
+        draftLockServiceInstance = new DraftLockService();
     }
-    return entityLockServiceInstance;
+    return draftLockServiceInstance;
 }
 
 /**
@@ -70,8 +71,8 @@ export async function GetFeatureLockStatus(
     res: Response,
     _next: NextFunction
 ) {
-    const lockService = getEntityLockService();
-    const lockedBy = await lockService.checkLock('feature', req.params.id);
+        const lockService = getDraftLockService();
+    const lockedBy = await lockService.checkLock(DraftType.Feature, req.params.id);
 
     if (lockedBy === null) {
         res.json({ locked: false });
@@ -96,16 +97,26 @@ export async function GetFeatureById(req: ValidatedParamsT<FeatureIdParamRequest
 
 /**
  * Creates a new feature.
+ * 
+ * @deprecated This endpoint bypasses the state system and should not be used for feature editing.
+ * Use the feature resolution API (`POST /features/:featureId/start-editing` -> `PUT /features/:featureId/update` -> `POST /features/:featureId/save`) instead.
+ * This endpoint is kept for backward compatibility but may be removed in a future version.
  */
 export async function CreateFeature(req: ValidatedBodyT<CreateFeatureBasicRequest, CreateResponse>, res: Response, _next: NextFunction) {
+    console.warn('[DEPRECATED] CreateFeature endpoint called. This bypasses the state system. Use feature resolution API instead.');
     const result = await featureSystemService.createFeature(req.body);
     res.status(201).json(result);
 }
 
 /**
  * Updates an existing feature by ID.
+ * 
+ * @deprecated This endpoint bypasses the state system and should not be used for feature editing.
+ * Use the feature resolution API (`POST /features/:featureId/start-editing` -> `PUT /features/:featureId/update` -> `POST /features/:featureId/save`) instead.
+ * This endpoint is kept for backward compatibility but may be removed in a future version.
  */
 export async function UpdateFeatureById(req: ValidatedParamsBodyT<FeatureIdParamRequest, UpdateFeature, UpdateResponse>, res: Response, _next: NextFunction) {
+    console.warn(`[DEPRECATED] UpdateFeatureById endpoint called for feature ${req.params.id}. This bypasses the state system. Use feature resolution API instead.`);
     const result = await featureSystemService.updateFeature(req.params, req.body);
     res.status(200).json(result);
 }

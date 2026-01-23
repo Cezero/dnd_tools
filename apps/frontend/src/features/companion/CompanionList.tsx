@@ -5,10 +5,10 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { useCompanionColumns } from '@/features/companion/CompanionColumns';
-import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import { CompanionWithRelations } from '@shared/schema';
 
 import { routes } from './CompanionConfig';
+import { CompanionQueryHooks } from './CompanionQueryHooks';
 
 export function CompanionList(): React.JSX.Element {
     const navigate = useNavigate();

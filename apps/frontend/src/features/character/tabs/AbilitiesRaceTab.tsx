@@ -1,4 +1,5 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { useQuery } from '@tanstack/react-query';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import { useDiceBox } from '@/components/dice-box';
@@ -7,9 +8,11 @@ import { useLogPanel } from '@/components/log-panel';
 import { useToast } from '@/components/toast/useToast';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { RaceApi } from '@/features/race/RaceApi';
 import { RaceDisplay } from '@/features/race/RaceDisplay';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useCacheFunctions } from '@/services/cache';
+import type { Race } from '@shared/schema';
 import {
     ABILITY_LIST,
     ABILITY_MAP,
@@ -31,10 +34,10 @@ import {
 /**
  * Abilities and race tab component for managing character ability scores and race selection.
  * 
- * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → updateValue pattern.
  * - Updates state via `updateState()` when abilities or race change
- * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
- * - Do NOT call `resolution.applyUpdate()` directly from this tab
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks using `updateValue()`
+ * - Do NOT call `resolution.updateValue()` directly from this tab
  * 
  * @see CharacterEdit component for sync pattern documentation
  */
@@ -479,8 +482,8 @@ export function AbilitiesRaceTab({
     const [races, setRaces] = useState<CoreComponent[]>([]);
     const [isLoadingRaces, setIsLoadingRaces] = useState(false);
 
-    // Get selected race details from sharedData
-    const [selectedRaceDetails, setSelectedRaceDetails] = useState<{ features?: unknown[] } | null>(null);
+    // Get selected race details from sharedData (Race; features come from raceFeatures via RaceApi.getRaceFeatures)
+    const [selectedRaceDetails, setSelectedRaceDetails] = useState<Race | null>(null);
 
     // Track which race we've already resolved to prevent infinite loops
     const resolvedRaceIdRef = useRef<number | null>(null);
@@ -507,12 +510,18 @@ export function AbilitiesRaceTab({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state.editionId]);
 
+    // Fetch race features (resolves featureIds to FeatureWithRelations[]) for getRacialModifier
+    const { data: raceFeatures = [] } = useQuery({
+        queryKey: ['race', 'features', state.raceId],
+        queryFn: () => RaceApi.getRaceFeatures({ id: state.raceId! }),
+        enabled: !!state.raceId,
+    });
+
     // Use race data from sharedData (fetched in CharacterEdit with cache)
     // Update selectedRaceDetails when sharedData.race changes
     useEffect(() => {
         if (sharedData.race && state.raceId) {
-            // sharedData.race doesn't have an id property, but we know it matches state.raceId
-            setSelectedRaceDetails({ ...sharedData.race, features: sharedData.race.features } as { features?: unknown[] });
+            setSelectedRaceDetails({ ...sharedData.race });
         } else if (!state.raceId) {
             setSelectedRaceDetails(null);
         }
@@ -526,12 +535,12 @@ export function AbilitiesRaceTab({
         }
     }, [state.raceId, selectedRaceDetails, sharedData.isLoadingRace, triggerFeatureResolution]);
 
-    // Helper function to get racial modifier for ability scores
+    // Helper function to get racial modifier for ability scores (uses raceFeatures from RaceApi.getRaceFeatures)
     const getRacialModifier = useCallback((abilityId: number): number => {
-        if (!selectedRaceDetails?.features) return 0;
+        if (!raceFeatures || raceFeatures.length === 0) return 0;
 
         // Look for ability adjustment features
-        const abilityFeatures = selectedRaceDetails.features.filter((fp: unknown) => {
+        const abilityFeatures = raceFeatures.filter((fp: unknown) => {
             const feature = fp as { sourceType: number; entities?: { type: number; appliesTo: number; appliesToId: number; value: number }[] };
             return feature.sourceType === FeatureSourceType.Race &&
                 feature.entities?.some(e =>
@@ -549,7 +558,7 @@ export function AbilitiesRaceTab({
             .find(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId);
 
         return abilityEntity?.value ?? 0;
-    }, [selectedRaceDetails?.features]);
+    }, [raceFeatures]);
 
     const getAdjustedAbilityValue = useCallback((abilityId: number): number | null => {
         const baseValue = getAbilityScore(abilityId);
@@ -1016,7 +1025,8 @@ export function AbilitiesRaceTab({
                         {state.raceId && selectedRaceDetails && (
                             <div className="mt-4">
                                 <RaceDisplay
-                                    race={selectedRaceDetails as unknown as Parameters<typeof RaceDisplay>[0]['race']}
+                                    race={selectedRaceDetails}
+                                    features={raceFeatures}
                                     showHeader={false}
                                     showActions={false}
                                 />

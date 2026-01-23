@@ -2,9 +2,9 @@ import { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
+import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { Feature } from '@shared/schema';
 
 import { FEATURE_COLUMNS, routes } from './FeatureConfig';

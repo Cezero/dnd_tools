@@ -9,7 +9,7 @@ The spellcasting system uses a combination of backend APIs and frontend utilitie
 **Source Files**:
 - Frontend Utilities: `apps/frontend/src/features/character/utils/spellbookUtils.ts`, `apps/frontend/src/features/character/utils/spellcastingUtils.ts`
 - Backend APIs: `apps/backend/src/features/character/characterService.ts`
-- Schema: `packages/shared/schema/src/spell.ts`, `packages/shared/schema/src/characterResolution.ts`
+- Schema: `packages/shared/schema/src/spell.ts`, `packages/shared/schema/src/character.ts`
 
 ## Architecture
 

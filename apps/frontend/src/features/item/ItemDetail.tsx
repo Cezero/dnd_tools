@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { DetailPage } from '@/components/common/DetailPage';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import {
     WEAPON_CATEGORIES,
     WEAPON_TYPES,

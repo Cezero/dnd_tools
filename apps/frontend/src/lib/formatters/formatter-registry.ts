@@ -206,6 +206,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerOtherFormatter(EntityAppliesToType.SpellbookSpell, spellbookSpellFormatter);
 
         // Class/Race mechanics formatters (EntityType.Base)
+        this.registerBaseFormatter(EntityAppliesToType.Ability, signedValueFormatter);
         this.registerBaseFormatter(EntityAppliesToType.BaseAttackBonus, baseAttackBonusFormatter);
         this.registerBaseFormatter(EntityAppliesToType.HitDice, diceFormatter);
         this.registerBaseFormatter(EntityAppliesToType.SavingThrow, savingThrowProgressionFormatter);
@@ -220,6 +221,9 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerBaseFormatter(EntityAppliesToType.MovementSpeed, movementSpeedFormatter);
         // Skill is compatible with both Other (skill grants) and Base (class skills)
         this.registerBaseFormatter(EntityAppliesToType.Skill, emptyStringFormatter);
+        // Languages are compatible with both Other (language grants) and Base (base race languages)
+        this.registerBaseFormatter(EntityAppliesToType.BonusLanguage, languageFormatter);
+        this.registerBaseFormatter(EntityAppliesToType.AutomaticLanguage, languageFormatter);
 
         // Proficiency-compatible types
         this.registerProficiencyFormatter(EntityAppliesToType.Proficiency, proficiencyFormatter);

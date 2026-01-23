@@ -9,7 +9,7 @@ The character system uses a variety of TypeScript types across frontend and back
 **Source Files**:
 - Frontend Types: `apps/frontend/src/features/character/types.ts`
 - Backend Types: `apps/backend/src/features/character/types.ts`
-- Shared Schema: `packages/shared/schema/src/character.ts`, `packages/shared/schema/src/characterResolution.ts`
+- Shared Schema: `packages/shared/schema/src/character.ts`
 
 ## Type Categories
 

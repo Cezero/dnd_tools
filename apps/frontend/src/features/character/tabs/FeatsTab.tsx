@@ -11,10 +11,10 @@ import { FeatSubIdSelectionModal } from '../components/FeatSubIdSelectionModal';
 /**
  * Feats tab component for managing character feat selection.
  * 
- * **Sync Pattern**: This tab follows the standardized state → useEffect → applyUpdate pattern.
+ * **Sync Pattern**: This tab follows the standardized state → useEffect → updateValue pattern.
  * - Updates state via `updateState()` when feats change
- * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks
- * - Do NOT call `resolution.applyUpdate()` directly from this tab
+ * - CharacterEdit automatically syncs changes to resolution session via useEffect hooks using `updateValue()`
+ * - Do NOT call `resolution.updateValue()` directly from this tab
  * 
  * @see CharacterEdit component for sync pattern documentation
  */

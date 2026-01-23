@@ -3,8 +3,6 @@ import typescriptPlugin from "@typescript-eslint/eslint-plugin";
 import typescriptParser from "@typescript-eslint/parser";
 import importPlugin from "eslint-plugin-import";
 import prismaPlugin from "eslint-plugin-prisma";
-import reactHooks from 'eslint-plugin-react-hooks';
-import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from "globals";
 
 import { noTypeofSchemaParse } from '../../eslint-rules/no-typeof-schema-parse.ts'
@@ -14,8 +12,6 @@ export default [
         ignores: ["node_modules", "dist", "build", "public"],
     },
     js.configs.recommended,
-    reactHooks.configs['recommended-latest'],
-    reactRefresh.configs.vite,
     importPlugin.flatConfigs.recommended,
     {
         // Base config applied to all files
@@ -57,8 +53,6 @@ export default [
                     'no-type-of-schema-parse': noTypeofSchemaParse,
                 },
             },
-            reactHooks: reactHooks,
-            reactRefresh: reactRefresh
         },
 
         rules: {
@@ -95,9 +89,6 @@ export default [
                 varsIgnorePattern: "^_",
                 caughtErrorsIgnorePattern: "^_",
             }],
-            "react-hooks/rules-of-hooks": "error",
-            "react-hooks/exhaustive-deps": "warn",
-            "react-refresh/only-export-components": "warn",
         },
 
         // Extend is replaced by manually adding configs as entries in the array or via 'extends' plugin if supported

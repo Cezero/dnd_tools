@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { numericParam, optionalBooleanParam, commonValidations } from './common.js';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
-import { CastingType, ProgressionType } from '@shared/static-data';
-import { CreateFeatureRequestSchema, FeatureResponseSchema, UpdateFeatureSchema } from './feature.js';
+import { FeatureResponseSchema, UpdateFeatureSchema } from './feature.js';
 import { CreateSpellcastingProgressionSchema, SpellcastingProgressionWithSlotsSchema } from './spellcasting.js';
+import { ValidationErrorResponseSchema } from './validation.js';
 
 // Simplified schema for character feature choices (for enriching progressions)
 // Shared between class and race endpoints
@@ -30,13 +30,9 @@ export const BaseClassSchema = z.object({
     isDivine: z.boolean().default(false),
     description: commonValidations.description(10000).nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureResponseSchema).nullable(),
+    featureIds: z.array(z.number().int()),
     spellcastingProgression: z.array(SpellcastingProgressionWithSlotsSchema).optional().nullable(),
     spellsKnownProgression: z.array(SpellcastingProgressionWithSlotsSchema).optional().nullable(),
-});
-
-export const ClassIdParamSchema = z.object({
-    id: numericParam(),
 });
 
 // Query schema for optional character feature choices
@@ -52,7 +48,6 @@ export const ClassIdQuerySchema = z.object({
 });
 
 export const ClassSummarySchema = BaseClassSchema.omit({
-    features: true,
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
@@ -83,27 +78,22 @@ export const GetAllClassesResponseSchema = QueryResponseSchema.extend({
 });
 
 export const UpdateClassSchema = BaseClassSchema.omit({
-    features: true,
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
-    features: z.array(UpdateFeatureSchema).nullable(),
     spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 }).partial();
 
 export const CreateClassSchema = BaseClassSchema.omit({
-    features: true,
     spellcastingProgression: true,
     spellsKnownProgression: true,
 }).extend({
-    features: z.array(UpdateFeatureSchema).nullable(),
     spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 });
 
 export type ClassSummary = z.infer<typeof ClassSummarySchema>;
-export type ClassIdParamRequest = z.infer<typeof ClassIdParamSchema>;
 export type ClassIdQueryRequest = z.infer<typeof ClassIdQuerySchema>;
 export type CharacterFeatureChoiceForEnrichment = z.infer<typeof CharacterFeatureChoiceForEnrichmentSchema>;
 export type GetAllClassesQuery = z.infer<typeof GetAllClassesQuerySchema>;
@@ -114,3 +104,31 @@ export type DnDClass = z.infer<typeof BaseClassSchema>;
 
 export type ClassCacheResponse = z.infer<typeof ClassCacheResponseSchema>;
 export type ClassCacheEntry = z.infer<typeof ClassCacheSchema>;
+
+// Class Edit State Schema
+export const ClassEditStateSchema = z.object({
+    classId: z.number().int().nullable(),
+    name: z.string(),
+    abbreviation: z.string(),
+    editionId: commonValidations.positiveInt(),
+    isPrestige: z.boolean(),
+    isVisible: z.boolean(),
+    canCastSpells: z.boolean(),
+    spellsKnown: z.boolean(),
+    isDivine: z.boolean(),
+    description: z.string().nullable(),
+    sourceBookInfo: z.array(SourceMapSchema).nullable(),
+    featureIds: z.array(z.number().int()),
+    spellcastingProgression: z.array(SpellcastingProgressionWithSlotsSchema),
+    spellsKnownProgression: z.array(SpellcastingProgressionWithSlotsSchema),
+});
+
+// Schema for class entity with ID (used in resolution system)
+// Extends BaseClassSchema with id field for cases where ID is needed
+export const ClassWithIdSchema = BaseClassSchema.extend({
+    id: commonValidations.positiveInt('Class ID'),
+});
+
+// Class Resolution TypeScript type exports
+export type ClassEditState = z.infer<typeof ClassEditStateSchema>;
+export type ClassWithId = z.infer<typeof ClassWithIdSchema>;

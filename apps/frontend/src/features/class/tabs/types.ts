@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useZodValidation } from '@/hooks/useZodValidation';
+import { useZodValidation } from '@/lib/hooks/useZodValidation';
 import type { CreateClassRequest, UpdateClassRequest, FeatureWithRelations, SpellcastingProgressionWithSlots } from '@shared/schema';
 
 import type { ClassEditState, ClassEditStateUpdate } from '../types';

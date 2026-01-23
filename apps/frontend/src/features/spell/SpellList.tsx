@@ -3,10 +3,10 @@ import React, { useCallback } from 'react';
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
 import { useSpellColumns } from '@/features/spell/SpellColumns';
-import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 import { Spell } from '@shared/schema';
 
 import { routes } from './SpellConfig';
+import { SpellQueryHooks } from './SpellQueryHooks';
 
 export function SpellList(): React.JSX.Element {
     const { isLoading: isAuthLoading } = useAuthAuto();

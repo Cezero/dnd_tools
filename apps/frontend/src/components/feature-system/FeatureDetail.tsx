@@ -4,12 +4,13 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { DetailPage } from '@/components/common/DetailPage';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { GetFeatureResponse, FeatureWithRelations } from '@shared/schema';
 import { DisplayType, FeatureSourceType } from '@shared/static-data';
+
+import { FeatureQueryHooks } from './FeatureQueryHooks';
 
 export function FeatureDetail() {
     const { id } = useParams();
@@ -38,7 +39,7 @@ export function FeatureDetail() {
     // Fetch lock status (only for admin users)
     const { data: lockStatus } = useQuery({
         queryKey: ['feature', 'lock-status', featureId],
-        queryFn: () => FeatureSystemApi.getFeatureLockStatus(undefined, { id: featureId! }),
+        queryFn: () => FeatureSystemApi.getFeatureLockStatus({ id: featureId! }),
         enabled: !!featureId && isAdmin,
     });
 

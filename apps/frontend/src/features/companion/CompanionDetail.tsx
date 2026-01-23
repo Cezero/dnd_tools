@@ -4,8 +4,9 @@ import { useAuthAuto } from '@/components/auth';
 import { EntityLink } from '@/components/entity-link';
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import { getMonsterNameFromCache } from '@/services/cache';
-import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import { COMPANION_TYPE_MAP, FeatureSourceType } from '@shared/static-data';
+
+import { CompanionQueryHooks } from './CompanionQueryHooks';
 
 export function CompanionDetail() {
     const { id } = useParams();

@@ -14,9 +14,10 @@ import {
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { useCacheFunctions } from '@/services/cache';
-import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 import { SpellLevelMapping, GetSpellResponse, UpdateSpellSchema, UpdateSpellRequest } from '@shared/schema';
 import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP, SPELL_SUBSCHOOL_MAP, SPELL_SCHOOL_LIST, SourceType, EditionId, CoreComponent } from '@shared/static-data';
+
+import { SpellQueryHooks } from './SpellQueryHooks';
 
 
 export function SpellEdit() {

@@ -1,6 +1,7 @@
+import type { RaceEditState } from '@shared/schema';
 import { RaceUpdateType } from '@shared/static-data';
 
-import type { RaceEditState, RaceUpdate } from './types';
+import type { RaceUpdate } from './types';
 import type { UpdateApplierConfig } from '../shared/session/GenericUpdateApplier';
 
 /**

@@ -1,7 +1,14 @@
-import { Router } from 'express';
+import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
+import { DraftRefRequestSchema } from '@shared/schema';
 
-import { requireAdmin } from '../../../middleware/authMiddleware';
-import { adminSessionMonitoringController } from './AdminSessionMonitoringController';
+import {
+    GetAllSessions,
+    GetAllEntityStates,
+    GetAllLocks,
+    GetAllWebSocketSubscriptions,
+    ForceReleaseLock,
+} from './AdminSessionMonitoringController';
+import { requireAdmin } from '../../../middleware/authMiddleware.js';
 
 /**
  * Router for admin session monitoring endpoints.
@@ -13,36 +20,25 @@ import { adminSessionMonitoringController } from './AdminSessionMonitoringContro
  * - GET /api/admin/entity-states - Get all entity states
  * - GET /api/admin/locks - Get all entity locks
  * - GET /api/admin/websocket-subscriptions - Get all WebSocket subscriptions
- * - POST /api/admin/locks/:entityType/:entityId/force-release - Force release a lock
+ * - POST /api/admin/locks/force-release - Force release a lock (draftType and id in body)
  * 
  * @see AdminSessionMonitoringController - For endpoint implementations
  */
-export const AdminSessionMonitoringRouter = Router();
-
-// All routes require admin authentication
-AdminSessionMonitoringRouter.use(requireAdmin);
+const { router: AdminSessionMonitoringRouter, get, post } = buildValidatedRouter();
 
 // Get all user sessions
-AdminSessionMonitoringRouter.get('/sessions', (req, res, next) => {
-    adminSessionMonitoringController.getAllSessions(req as any, res, next);
-});
+get('/sessions', requireAdmin, {}, GetAllSessions);
 
 // Get all entity states
-AdminSessionMonitoringRouter.get('/entity-states', (req, res, next) => {
-    adminSessionMonitoringController.getAllEntityStates(req as any, res, next);
-});
+get('/entity-states', requireAdmin, {}, GetAllEntityStates);
 
 // Get all locks
-AdminSessionMonitoringRouter.get('/locks', (req, res, next) => {
-    adminSessionMonitoringController.getAllLocks(req as any, res, next);
-});
+get('/locks', requireAdmin, {}, GetAllLocks);
 
 // Get all WebSocket subscriptions
-AdminSessionMonitoringRouter.get('/websocket-subscriptions', (req, res, next) => {
-    adminSessionMonitoringController.getAllWebSocketSubscriptions(req as any, res, next);
-});
+get('/websocket-subscriptions', requireAdmin, {}, GetAllWebSocketSubscriptions);
 
 // Force release a lock
-AdminSessionMonitoringRouter.post('/locks/:entityType/:entityId/force-release', (req, res, next) => {
-    adminSessionMonitoringController.forceReleaseLock(req as any, res, next);
-});
+post('/locks/force-release', requireAdmin, { body: DraftRefRequestSchema }, ForceReleaseLock);
+
+export { AdminSessionMonitoringRouter };
