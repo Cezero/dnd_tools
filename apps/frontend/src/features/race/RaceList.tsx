@@ -9,7 +9,6 @@ import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { RaceSummary, Feature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
-import { RaceApi } from './RaceApi';
 import { useRaceColumns } from './RaceColumns';
 import { routes } from './RaceConfig';
 import { RaceQueryHooks } from './RaceQueryHooks';
@@ -65,7 +64,7 @@ export function RaceList(): React.JSX.Element {
                 dataFetcher={racesDataFetcher}
                 itemDesc="race"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(RaceApi.deleteRace)}
+                deleteServiceFunction={createIdDeleteServiceFunction((id: number) => RaceQueryHooks.deleteRace(id))}
             />
 
             {isAdmin && (

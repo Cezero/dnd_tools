@@ -2,7 +2,7 @@ import { createResolutionHook } from '@/lib/hooks/createResolutionHook';
 import { DraftType } from '@shared/static-data';
 
 
-import { ClassApi } from './ClassApi';
+import { ClassQueryHooks } from './ClassQueryHooks';
 import { ClassResolutionApi, type ClassEditState } from './ClassResolutionApi';
 
 const useClassResolutionBase = createResolutionHook<number, ClassEditState, never>({
@@ -11,7 +11,7 @@ const useClassResolutionBase = createResolutionHook<number, ClassEditState, neve
         startEditing: ClassResolutionApi.startEditing,
         fetchEntity: async (id: number) => {
             // Fetch class data using normal entity service (NOT state management endpoint)
-            const classData = await ClassApi.getClassById({ id });
+            const classData = await ClassQueryHooks.getClassById(id);
             return {
                 state: classData as ClassEditState,
             };

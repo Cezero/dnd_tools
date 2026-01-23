@@ -18,7 +18,6 @@ import {
 import { UpdateRaceSchema, BaseRaceSchema, Feature, FeatureWithRelations, CreateRaceRequest, type RaceEditState, SourceMap } from '@shared/schema';
 import { DraftAction, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
-import { RaceApi } from './RaceApi';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
 import { RaceQueryHooks } from './RaceQueryHooks';
 import {
@@ -833,7 +832,7 @@ export function RaceEdit() {
                     featureIds: state.featureIds
                 };
 
-                const newRace = await RaceApi.createRace(raceData);
+                const newRace = await RaceQueryHooks.createRace(raceData);
                 setMessage('Race created successfully!');
                 // Invalidate race caches
                 await queryClient.invalidateQueries({

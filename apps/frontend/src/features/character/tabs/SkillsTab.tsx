@@ -6,7 +6,7 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { AnalogSkillService } from '@/features/character';
 import type { SkillRank, TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
-import { ClassApi } from '@/features/class/ClassApi';
+import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
 import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { buildFormulaParams } from '@/lib/formatters/formula-utils';
 import type { FormattedSkill } from '@/lib/formatters/types';
@@ -56,13 +56,13 @@ export function SkillsTab({
 
     // Fetch class features (resolves featureIds) for skill points and formula display
     const { data: primaryClassFeatures = [] } = useQuery({
-        queryKey: ['class', 'features', state.classId],
-        queryFn: () => ClassApi.getClassFeatures({ id: state.classId! }),
+        queryKey: ClassQueryHooks.getClassFeaturesQueryKey(state.classId!),
+        queryFn: () => ClassQueryHooks.getClassFeatures(state.classId!),
         enabled: !!state.classId && !!classDetails.primary,
     });
     const { data: secondaryClassFeatures = [] } = useQuery({
-        queryKey: ['class', 'features', state.secondaryClassId],
-        queryFn: () => ClassApi.getClassFeatures({ id: state.secondaryClassId! }),
+        queryKey: ClassQueryHooks.getClassFeaturesQueryKey(state.secondaryClassId!),
+        queryFn: () => ClassQueryHooks.getClassFeatures(state.secondaryClassId!),
         enabled: !!state.secondaryClassId && !!classDetails.secondary,
     });
 
@@ -643,7 +643,7 @@ export function SkillsTab({
         const intelligenceScore = getAbilityScore(AbilityId.Intelligence);
         const intModifier = GetAbilityModifier(intelligenceScore);
 
-        // Get class skill points from feature features (use primaryClassFeatures/secondaryClassFeatures from ClassApi.getClassFeatures)
+        // Get class skill points from feature features (use primaryClassFeatures/secondaryClassFeatures from ClassQueryHooks.getClassFeatures)
         const primaryId = classDetails.primary ? (classDetails.primary as { id?: number }).id : undefined;
         const primaryMechanics = primaryClassFeatures.length > 0
             ? extractClassMechanics(primaryClassFeatures, primaryId)

@@ -96,7 +96,7 @@ Count free grants (isFreeGrant: true) for a specific advancement.
 SpellSelectionTab follows the standard state management pattern:
 
 1. **Uses state management**: Calls `updateState()` with `SET_SPELLS_KNOWN` to modify `state.spellsKnown`
-2. **CharacterEdit syncs**: useEffect in CharacterEdit watches `state.spellsKnown` and calls `CharacterApi.syncSpellsKnown()` automatically
+2. **CharacterEdit syncs**: useEffect in CharacterEdit watches `state.spellsKnown` and calls `CharacterQueryHooks.syncSpellsKnown()` automatically
 3. **Uses resolved character data**: Uses spell selection data from resolved character response
 4. **Backend validation**: Spell level validation is handled by the backend in `syncSpellsKnown()`. The UI allows optimistic selection and the backend validates and rejects invalid spells.
 

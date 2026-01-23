@@ -44,7 +44,7 @@ The character editing system uses a standardized state → useEffect → API + r
 SpellSelectionTab follows the standard state management pattern with one important architectural detail:
 
 - **Uses state management**: Calls `updateState()` with `SET_SPELLS_KNOWN` to modify `state.spellsKnown`
-- **CharacterEdit syncs**: useEffect in CharacterEdit watches `state.spellsKnown` and calls `CharacterApi.syncSpellsKnown()` automatically
+- **CharacterEdit syncs**: useEffect in CharacterEdit watches `state.spellsKnown` and calls `CharacterQueryHooks.syncSpellsKnown()` automatically
 - **Uses resolved character data**: Uses spell selection data from resolved character response (architecturally correct)
 - **Backend validation**: Spell level validation is handled by the backend in `syncSpellsKnown()`. The UI allows optimistic selection and the backend validates and rejects invalid spells.
 
@@ -76,7 +76,7 @@ All of this data is already part of the resolved character, making it the correc
 Spell operations follow the standard state management pattern:
 
 1. **Tab updates state**: SpellSelectionTab calls `updateState()` with `SET_SPELLS_KNOWN` to modify `state.spellsKnown`
-2. **CharacterEdit syncs**: useEffect in CharacterEdit watches `state.spellsKnown` and calls `CharacterApi.syncSpellsKnown()` automatically
+2. **CharacterEdit syncs**: useEffect in CharacterEdit watches `state.spellsKnown` and calls `CharacterQueryHooks.syncSpellsKnown()` automatically
 3. **Backend validates**: Backend validates spell level and other constraints in `syncSpellsKnown()`
 4. **Resolution refreshes**: After sync, resolution state is refreshed to get updated resolved data
 

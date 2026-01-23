@@ -88,7 +88,7 @@ The spell system manages D&D spells including their definitions, mechanics, comp
   - **Component Accuracy**: Documentation accurately describes all actual frontend components
   - **Source File Paths**: All documented source file paths are correct
   - **Component Structure**: Documentation correctly describes the component architecture and organization
-  - **API Integration**: Documentation accurately describes the SpellApi implementation
+  - **API Integration**: Documentation accurately describes the SpellQueryHooks implementation
   - **Form Handling**: Documentation correctly describes the form validation and handling patterns
   - **User Interface**: Documentation accurately describes the user interface patterns and workflows
   - **Column Configuration**: Documentation correctly describes the SpellColumns implementation

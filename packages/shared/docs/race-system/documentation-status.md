@@ -92,7 +92,7 @@ The Race System documentation covers the implementation of D&D race management, 
   - **Accuracy**: Documentation accurately describes the actual frontend components
   - **Component Coverage**: Complete coverage of all major components (RaceList, RaceEdit, RaceDisplay, RaceDetail)
   - **Tab Components**: Accurate description of tab-based architecture with all tabs documented
-  - **API Integration**: Accurate description of RaceApi service and API endpoints
+  - **API Integration**: Accurate description of RaceQueryHooks service and API endpoints
   - **Source File References**: All source file paths are correct
   - **Cross-System References**: Good references to Feature System integration
   - **Critical Issues**: None identified

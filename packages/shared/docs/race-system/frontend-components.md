@@ -11,7 +11,7 @@ The frontend implementation follows the shared [Frontend Component Architecture]
 **Source Files**: 
 - Core Components: `frontend/src/features/race/RaceEdit.tsx`, `frontend/src/features/race/RaceList.tsx`, `frontend/src/features/race/RaceDisplay.tsx`
 - Detail Components: `frontend/src/features/race/RaceDetail.tsx`
-- API Layer: `frontend/src/features/race/RaceApi.ts`
+- API Layer: `frontend/src/features/race/RaceQueryHooks.ts`
 - Configuration: `frontend/src/features/race/RaceConfig.ts`
 - Tab Components: `frontend/src/features/race/tabs/` (BasicInfoTab.tsx, FeaturesTab.tsx, AbilitiesTab.tsx, LanguagesTab.tsx, DescriptionTab.tsx)
 - Tab Types: `frontend/src/features/race/tabs/types.ts`
@@ -34,7 +34,7 @@ The race system frontend follows the shared [Component Architecture](../applicat
 **RaceDisplay**: Comprehensive race information display component (shows lock status, disables edit when locked)
 **RaceEdit**: Main race creation and editing interface with tab-based layout (uses isolated entity state)
 **Tab Components**: Specialized components for different aspects of race editing
-**RaceApi**: API client for backend communication (includes lock status checks)
+**RaceQueryHooks**: Canonical API interface for race endpoints (createQueryHooks-based; uses typedApi under the hood)
 
 ## 🔧 **Core Components**
 
@@ -280,9 +280,9 @@ Tab for managing race descriptions and lore.
 
 ## 🔌 **API Integration**
 
-### **RaceApi Service**
+### **RaceQueryHooks**
 
-API client for race system backend communication.
+Query hooks + imperative methods for race system backend communication.
 
 **Purpose**: Provides type-safe API communication for all race operations.
 
@@ -299,7 +299,7 @@ API client for race system backend communication.
 - **PUT /api/races/:id**: Update existing race
 - **DELETE /api/races/:id**: Delete race
 
-**Source File**: `frontend/src/features/race/RaceApi.ts`
+**Source File**: `frontend/src/features/race/RaceQueryHooks.ts`
 
 ## 🎨 **User Interface Patterns**
 

@@ -2,7 +2,7 @@ import { createResolutionHook } from '@/lib/hooks/createResolutionHook';
 import { DraftType } from '@shared/static-data';
 
 
-import { RaceApi } from './RaceApi';
+import { RaceQueryHooks } from './RaceQueryHooks';
 import { RaceResolutionApi, type RaceEditState } from './RaceResolutionApi';
 
 const useRaceResolutionBase = createResolutionHook<number, RaceEditState, never>({
@@ -11,7 +11,7 @@ const useRaceResolutionBase = createResolutionHook<number, RaceEditState, never>
         startEditing: RaceResolutionApi.startEditing,
         fetchEntity: async (id: number) => {
             // Fetch race data using normal entity service (NOT state management endpoint)
-            const raceData = await RaceApi.getRaceById({ id });
+            const raceData = await RaceQueryHooks.getRaceById(id);
             return {
                 state: raceData as RaceEditState,
             };

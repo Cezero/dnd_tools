@@ -3,7 +3,9 @@ import {
     BaseRaceSchema,
     CreateRaceSchema,
     CreateResponseSchema,
+    DraftLockStatusSchema,
     GetAllRacesResponseSchema,
+    GetFeaturesResponseSchema,
     IdParamSchema,
     UpdateRaceSchema,
     UpdateResponseSchema,
@@ -56,6 +58,30 @@ const deleteRaceConfig = createQueryHooks({
     queryKey: 'races',
 });
 
+const raceFeaturesConfig = createQueryHooks({
+    path: '/races/:id/features',
+    method: 'GET',
+    paramsSchema: IdParamSchema,
+    responseSchema: GetFeaturesResponseSchema,
+    queryKey: 'races',
+    queryKeyBuilder: (params) => {
+        const typedParams = params as { pathParams?: { id?: number } } | undefined;
+        return ['races', 'features', typedParams?.pathParams?.id];
+    },
+});
+
+const raceLockStatusConfig = createQueryHooks({
+    path: '/races/:id/lock-status',
+    method: 'GET',
+    paramsSchema: IdParamSchema,
+    responseSchema: DraftLockStatusSchema,
+    queryKey: 'races',
+    queryKeyBuilder: (params) => {
+        const typedParams = params as { pathParams?: { id?: number } } | undefined;
+        return ['races', 'lock-status', typedParams?.pathParams?.id];
+    },
+});
+
 export const RaceQueryHooks = {
     // Imperative methods
     getRaces: (params?: unknown) => racesConfig.fetch(params),
@@ -77,6 +103,8 @@ export const RaceQueryHooks = {
     deleteRace: (raceId: number) => deleteRaceConfig.mutate({
         pathParams: { id: raceId }
     }),
+    getRaceFeatures: (raceId: number) => raceFeaturesConfig.fetch({ pathParams: { id: raceId } }),
+    getRaceLockStatus: (raceId: number) => raceLockStatusConfig.fetch({ pathParams: { id: raceId } }),
 
     // Expose query functions for advanced usage
     getRacesQueryFn: racesConfig.queryFn,
@@ -92,4 +120,8 @@ export const RaceQueryHooks = {
     },
     getRacesQueryKey: (params?: unknown) => racesConfig.queryKeyBuilder(params),
     getRaceByIdQueryKey: (raceId: number) => raceByIdConfig.queryKeyBuilder({ pathParams: { id: raceId } }),
+    getRaceFeaturesQueryFn: raceFeaturesConfig.queryFn,
+    getRaceLockStatusQueryFn: raceLockStatusConfig.queryFn,
+    getRaceFeaturesQueryKey: (raceId: number) => raceFeaturesConfig.queryKeyBuilder({ pathParams: { id: raceId } }),
+    getRaceLockStatusQueryKey: (raceId: number) => raceLockStatusConfig.queryKeyBuilder({ pathParams: { id: raceId } }),
 };

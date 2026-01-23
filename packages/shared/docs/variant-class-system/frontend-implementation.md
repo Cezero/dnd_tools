@@ -64,7 +64,7 @@ The variant system integrates seamlessly with the existing ClassEdit component t
 - **Data Loading**: Fetches base class data when `baseClassId` changes
 - **State Structure**: Maintains separate state for base class data and variant overrides
 - **Data Caching**: Caches base class data to avoid repeated API calls
-- **Integration**: Uses `ClassApi.getClassById()` for base class retrieval
+- **Integration**: Uses `ClassQueryHooks.getClassById()` for base class retrieval
 
 **Feature Progression Creation**: Creates feature progressions with correct source types
 - **Parameters**: `baseProgression: Partial<FeatureProgression>` - Base progression data
@@ -90,7 +90,7 @@ Specialized component for managing spell overrides in variant classes.
 
 **Base Class Spell Loading**: Loads base class spells when base class changes
 - **Parameters**: `baseClassId: number` - The base class ID for spell loading
-- **Business Logic**: Calls `SpellApi.getSpellsForClass()` to load base class spells, filters available spells for adding/removing
+- **Business Logic**: Calls `SpellQueryHooks.getSpellsForClass()` to load base class spells, filters available spells for adding/removing
 - **State Management**: Updates `baseClassSpells` state with loaded spell data
 - **Error Handling**: Handles loading errors and provides fallback empty arrays
 

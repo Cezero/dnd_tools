@@ -8,8 +8,8 @@ import { useLogPanel } from '@/components/log-panel';
 import { useToast } from '@/components/toast/useToast';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
-import { RaceApi } from '@/features/race/RaceApi';
 import { RaceDisplay } from '@/features/race/RaceDisplay';
+import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useCacheFunctions } from '@/services/cache';
 import type { Race } from '@shared/schema';
@@ -482,7 +482,7 @@ export function AbilitiesRaceTab({
     const [races, setRaces] = useState<CoreComponent[]>([]);
     const [isLoadingRaces, setIsLoadingRaces] = useState(false);
 
-    // Get selected race details from sharedData (Race; features come from raceFeatures via RaceApi.getRaceFeatures)
+    // Get selected race details from sharedData (Race; features come from raceFeatures via RaceQueryHooks.getRaceFeatures)
     const [selectedRaceDetails, setSelectedRaceDetails] = useState<Race | null>(null);
 
     // Track which race we've already resolved to prevent infinite loops
@@ -513,7 +513,7 @@ export function AbilitiesRaceTab({
     // Fetch race features (resolves featureIds to FeatureWithRelations[]) for getRacialModifier
     const { data: raceFeatures = [] } = useQuery({
         queryKey: ['race', 'features', state.raceId],
-        queryFn: () => RaceApi.getRaceFeatures({ id: state.raceId! }),
+        queryFn: () => RaceQueryHooks.getRaceFeatures(state.raceId!),
         enabled: !!state.raceId,
     });
 
@@ -535,7 +535,7 @@ export function AbilitiesRaceTab({
         }
     }, [state.raceId, selectedRaceDetails, sharedData.isLoadingRace, triggerFeatureResolution]);
 
-    // Helper function to get racial modifier for ability scores (uses raceFeatures from RaceApi.getRaceFeatures)
+    // Helper function to get racial modifier for ability scores (uses raceFeatures from RaceQueryHooks.getRaceFeatures)
     const getRacialModifier = useCallback((abilityId: number): number => {
         if (!raceFeatures || raceFeatures.length === 0) return 0;
 

@@ -59,7 +59,7 @@ Frontend Components (React)
 ├── SkillEdit (Skill Creation/Editing)
 ├── SkillList (Skill Browsing)
 ├── SkillDetail (Skill Information)
-└── SkillApi (API Communication)
+└── SkillQueryHooks (API Communication)
 
 Backend Services
 ├── SkillService (Skill CRUD Operations)

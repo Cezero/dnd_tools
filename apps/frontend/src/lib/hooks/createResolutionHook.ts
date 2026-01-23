@@ -64,7 +64,7 @@ interface ResolutionHookConfig<TEntityId, TState, TUpdate> {
  *   draftType: DraftType.Character,
  *   api: {
  *     startEditing: CharacterResolutionApi.startEditing,
- *     fetchEntity: async (id) => ({ state: await CharacterApi.getCharacterById({ id }) }),
+ *     fetchEntity: async (id) => ({ state: await CharacterQueryHooks.getCharacterById(id) }),
  *     cancel: CharacterResolutionApi.cancel,
  *     save: CharacterResolutionApi.save,
  *   },

@@ -12,7 +12,6 @@ import { useAuthAuto } from '@/components/auth';
 import { useLogPanel } from '@/components/log-panel';
 import { useToast } from '@/components/toast/useToast';
 import { useCharacterEditState } from '@/features/character';
-import { CharacterApi } from '@/features/character/CharacterApi';
 import { CharacterEditStateUpdateType, type EquipmentItem, type SkillRank, type TabConfig, type TabComponentProps } from '@/features/character/types';
 import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
 import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
@@ -398,7 +397,7 @@ export function CharacterEdit(): React.JSX.Element {
      * **Pattern**: State → useEffect → API + refreshState (same as spellPreparations in CharacterDetail)
      * - Tab updates state.spellsKnown via updateState()
      * - This useEffect detects the change using lodash/isEqual
-     * - Automatically calls CharacterApi.syncSpellsKnown() with full array
+     * - Automatically calls CharacterQueryHooks.syncSpellsKnown() with full array
      * - Backend handles diffing and updates database
      * - Refreshes resolution state after sync
      * 
@@ -416,9 +415,10 @@ export function CharacterEdit(): React.JSX.Element {
         }
 
         if (!isEqual(state.spellsKnown, prevSpellsKnownRef.current)) {
-            CharacterApi.syncSpellsKnown(
-                { spellsKnown: state.spellsKnown },
-                { id: state.characterId, advancementId: state.currentAdvancementId }
+            CharacterQueryHooks.syncSpellsKnown(
+                state.characterId,
+                state.currentAdvancementId,
+                { spellsKnown: state.spellsKnown }
             )
                 .then(() => {
                     queryClient.invalidateQueries({
@@ -1032,9 +1032,9 @@ export function CharacterEdit(): React.JSX.Element {
             // Use unified save endpoint - backend handles all orchestration
             let result;
             if (state.characterId) {
-                result = await CharacterApi.saveCharacter(saveData, { id: state.characterId });
+                result = await CharacterQueryHooks.saveCharacter(state.characterId, saveData);
             } else {
-                result = await CharacterApi.createCharacterWithSave(saveData);
+                result = await CharacterQueryHooks.createCharacterWithSave(saveData);
                 const characterId = parseInt(result.id, 10);
                 updateState({ type: CharacterEditStateUpdateType.SET_CHARACTER_ID, payload: { characterId } });
                 updateState({ type: CharacterEditStateUpdateType.SET_NAME, payload: { name: characterName } });

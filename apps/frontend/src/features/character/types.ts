@@ -578,9 +578,9 @@ export interface ResolvedFeatures {
 export interface GestaltProgressionDisplayProps {
     primaryClass: DnDClass;
     secondaryClass: DnDClass;
-    /** Features resolved from primaryClass.featureIds (e.g. via ClassApi.getClassFeatures) */
+    /** Features resolved from primaryClass.featureIds (e.g. via ClassQueryHooks.getClassFeatures) */
     primaryFeatures?: FeatureWithRelations[];
-    /** Features resolved from secondaryClass.featureIds (e.g. via ClassApi.getClassFeatures) */
+    /** Features resolved from secondaryClass.featureIds (e.g. via ClassQueryHooks.getClassFeatures) */
     secondaryFeatures?: FeatureWithRelations[];
     showHeader?: boolean;
 }

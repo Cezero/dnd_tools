@@ -2,7 +2,7 @@ import { createResolutionHook } from '@/lib/hooks/createResolutionHook';
 import { DraftType } from '@shared/static-data';
 
 
-import { CharacterApi } from './CharacterApi';
+import { CharacterQueryHooks } from './CharacterQueryHooks';
 import { CharacterResolutionApi, type ResolvedCharacterResult } from './CharacterResolutionApi';
 
 const useCharacterResolutionBase = createResolutionHook<number, ResolvedCharacterResult, never>({
@@ -12,7 +12,7 @@ const useCharacterResolutionBase = createResolutionHook<number, ResolvedCharacte
         fetchEntity: async (id: number) => {
             // Fetch character data using normal entity service (NOT state management endpoint)
             // Note: CharacterSchema may not include all resolved fields, but we use normal service
-            const characterData = await CharacterApi.getCharacterById({ id });
+            const characterData = await CharacterQueryHooks.getCharacterById(id);
             return {
                 state: characterData as unknown as ResolvedCharacterResult,
             };

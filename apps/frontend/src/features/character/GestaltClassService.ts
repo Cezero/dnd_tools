@@ -10,7 +10,7 @@ export type DnDClassWithFeatures = DnDClass & { features?: FeatureWithRelations[
 export class GestaltClassService {
     /**
      * Merge two classes according to gestalt rules.
-     * Callers must pass classes with features populated from featureIds (e.g. via ClassApi.getClassFeatures).
+     * Callers must pass classes with features populated from featureIds (e.g. via ClassQueryHooks.getClassFeatures).
      */
     static mergeClasses(primaryClass: DnDClassWithFeatures, secondaryClass: DnDClassWithFeatures): DnDClass & { features: (FeatureWithRelations & { sourceClassName?: string })[] } {
         const merged = this.mergeFeatures(primaryClass.features ?? [], secondaryClass.features ?? [], primaryClass.name, secondaryClass.name);

@@ -33,7 +33,6 @@ import {
     FeatureSourceType,
 } from '@shared/static-data';
 
-import { ClassApi } from './ClassApi';
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
 import { ClassProficiencyService } from './ClassProficiencyService';
 import { ClassQueryHooks } from './ClassQueryHooks';
@@ -886,7 +885,7 @@ export default function ClassEdit() {
                     })
                 };
 
-                const newClass = await ClassApi.createClass(classData);
+                const newClass = await ClassQueryHooks.createClass(classData);
                 setMessage('Class created successfully!');
                 // Invalidate class caches
                 await queryClient.invalidateQueries({

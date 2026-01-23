@@ -4,7 +4,6 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 
-import { RaceApi } from './RaceApi';
 import { RaceDisplay } from './RaceDisplay';
 import { RaceQueryHooks } from './RaceQueryHooks';
 
@@ -27,15 +26,15 @@ export function RaceDetail() {
 
     // Fetch feature progressions for this race (resolves featureIds to FeatureWithRelations[])
     const { data: features = [] } = useQuery({
-        queryKey: ['race', 'features', raceId],
-        queryFn: () => RaceApi.getRaceFeatures({ id: raceId! }),
+        queryKey: RaceQueryHooks.getRaceFeaturesQueryKey(raceId!),
+        queryFn: () => RaceQueryHooks.getRaceFeatures(raceId!),
         enabled: !!raceId,
     });
 
     // Fetch lock status (only for admin users)
     const { data: lockStatus } = useQuery({
-        queryKey: ['race', 'lock-status', raceId],
-        queryFn: () => RaceApi.getRaceLockStatus({ id: raceId! }),
+        queryKey: RaceQueryHooks.getRaceLockStatusQueryKey(raceId!),
+        queryFn: () => RaceQueryHooks.getRaceLockStatus(raceId!),
         enabled: !!raceId && isAdmin,
     });
 

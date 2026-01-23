@@ -10,7 +10,7 @@ The frontend implementation follows the shared [Frontend Component Architecture]
 
 **Source Files**: 
 - Core Components: `frontend/src/features/character/CharacterEdit.tsx`, `frontend/src/features/character/CharacterList.tsx`, `frontend/src/features/character/CharacterPage.tsx`
-- API Layer: `frontend/src/features/character/CharacterApi.ts`
+- API Layer: `frontend/src/features/character/CharacterQueryHooks.ts`, `frontend/src/features/character/CharacterDetailQueryHooks.ts`
 - Configuration: `frontend/src/features/character/CharacterConfig.ts`
 - Columns: `frontend/src/features/character/CharacterColumns.ts`
 - Utilities: `frontend/src/features/character/AnalogSkillService.ts`
@@ -31,7 +31,8 @@ The character management frontend follows the shared [Component Architecture](..
 **CharacterList**: Primary component for displaying and managing character collections
 **CharacterEdit**: Main character creation and editing interface with comprehensive form handling
 **CharacterPage**: Container component for character detail views with tab navigation
-**CharacterApi**: API client for backend communication
+**CharacterQueryHooks**: Canonical API interface for character CRUD + editing-related endpoints (createQueryHooks-based; uses typedApi under the hood)
+**CharacterDetailQueryHooks**: Canonical API interface for view-mode character detail endpoints (wounds, money, items, spell preparations, uses)
 **Tab Components**: Specialized components for different character aspects (abilities, skills, feats, equipment, etc.)
 
 ## 🔧 **Core Components**
@@ -362,9 +363,9 @@ Component for managing character spell selection (known spells, spellbook spells
 
 ## 🔌 **API Integration**
 
-### **CharacterApi Service**
+### **CharacterQueryHooks**
 
-API client for character management backend communication.
+Query hooks + imperative methods for character management backend communication.
 
 **Purpose**: Provides type-safe API communication for all character operations.
 
@@ -383,7 +384,7 @@ API client for character management backend communication.
 - **PUT /api/characters/:id**: Update existing character
 - **DELETE /api/characters/:id**: Delete character
 
-**Source File**: `frontend/src/features/character/CharacterApi.ts`
+**Source Files**: `frontend/src/features/character/CharacterQueryHooks.ts`, `frontend/src/features/character/CharacterDetailQueryHooks.ts`
 
 ## 🎨 **User Interface Patterns**
 

@@ -5,8 +5,8 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { GestaltProgressionDisplay } from '@/features/character';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
-import { ClassApi } from '@/features/class/ClassApi';
 import { ClassDisplay } from '@/features/class/ClassDisplay';
+import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
 import { useCacheFunctions } from '@/services/cache';
 import { EditionId, CoreComponent } from '@shared/static-data';
 
@@ -45,13 +45,13 @@ export function ClassTab({
 
     // Fetch features for primary and secondary classes (resolves featureIds to FeatureWithRelations[])
     const { data: primaryFeatures = [] } = useQuery({
-        queryKey: ['class', 'features', state.classId],
-        queryFn: () => ClassApi.getClassFeatures({ id: state.classId! }),
+        queryKey: ClassQueryHooks.getClassFeaturesQueryKey(state.classId!),
+        queryFn: () => ClassQueryHooks.getClassFeatures(state.classId!),
         enabled: !!primaryClassData && !!state.classId,
     });
     const { data: secondaryFeatures = [] } = useQuery({
-        queryKey: ['class', 'features', state.secondaryClassId],
-        queryFn: () => ClassApi.getClassFeatures({ id: state.secondaryClassId! }),
+        queryKey: ClassQueryHooks.getClassFeaturesQueryKey(state.secondaryClassId!),
+        queryFn: () => ClassQueryHooks.getClassFeatures(state.secondaryClassId!),
         enabled: !!secondaryClassData && !!state.secondaryClassId,
     });
 

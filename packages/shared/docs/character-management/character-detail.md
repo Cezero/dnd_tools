@@ -51,7 +51,7 @@ The `CharacterDetail` component (`apps/frontend/src/features/character/Character
 - **Reset Functionality**: Provides "Reset Daily Uses" menu option that resets both feature uses and spell cast status
 
 ### **View vs Edit**
-- **CharacterDetail** (view at `/characters/:id`): Uses read-only `GET /characters/:id/resolve` for display. Does **not** acquire edit locks or create drafts. View-mode edits (wounds, spell preparation) use discrete endpoints (`CharacterDetailApi.updateWounds`, `syncSpellPreparations`, etc.) that persist to the database on each call.
+- **CharacterDetail** (view at `/characters/:id`): Uses read-only `GET /characters/:id/resolve` for display. Does **not** acquire edit locks or create drafts. View-mode edits (wounds, spell preparation) use discrete endpoints via `CharacterDetailQueryHooks` that persist to the database on each call.
 - **CharacterEdit** (edit at `/characters/:id/edit`): Uses `useCharacterResolution` and `startEditing`; acquires locks and creates drafts for structured editing.
 
 ### **View-Mode Edits (target architecture; future work)**
@@ -98,7 +98,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 - Uses `FormattedCharacterResult` from `CharacterSheetDisplayStrategy` for all calculated values
 - `ValueTooltip` components display breakdown information for all values
 - `DiceButton` components enable quick dice rolls
-- Wounds are editable and sync with backend via `CharacterDetailApi.updateWounds`
+- Wounds are editable and sync with backend via `CharacterDetailQueryHooks.updateWounds`
 - HP color coding: red (dying/disabled), orange (≤25%), yellow (≤50%), green (>50%)
 
 ### **Skills Tab**
@@ -153,7 +153,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 **Source File**: `apps/frontend/src/features/character/detail-tabs/SpellsTab.tsx`
 
 **Key Implementation Details**:
-- Fetches spell preparations using `CharacterDetailApi.getSpellPreparations`
+- Fetches spell preparations using `CharacterDetailQueryHooks.getSpellPreparations`
 - Stores preparations in a `Map` keyed by `${classId}-${spellId}-${spellLevel}` for efficient lookup
 - Uses mutations for create/update/delete spell preparations with 500ms debouncing
 - Uses mutations for cast/uncast with immediate invalidation
@@ -180,7 +180,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 **Source File**: `apps/frontend/src/features/character/detail-tabs/FeaturesTab.tsx`
 
 **Key Implementation Details**:
-- Fetches feature uses using `CharacterDetailApi.getCharacterUses`
+- Fetches feature uses using `CharacterDetailQueryHooks.getCharacterUses`
 - Uses mutations for updating feature uses
 - Features are formatted using `CharacterSheetDisplayStrategy`
 - Uses are displayed with frequency information (PER_DAY, PER_WEEK, etc.)
@@ -201,9 +201,9 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 **Source File**: `apps/frontend/src/features/character/detail-tabs/EquipmentTab.tsx`
 
 **Key Implementation Details**:
-- Money is editable and syncs with backend via `CharacterDetailApi.updateMoney`
-- Items can be added via `CharacterDetailApi.addItem`
-- Items can be removed via `CharacterDetailApi.removeItem`
+- Money is editable and syncs with backend via `CharacterDetailQueryHooks.updateMoney`
+- Items can be added via `CharacterDetailQueryHooks.addItem`
+- Items can be removed via `CharacterDetailQueryHooks.removeItem`
 - Equipment slots are displayed with equipped items
 
 ### **Notes Tab**
@@ -218,15 +218,15 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 **Source File**: `apps/frontend/src/features/character/detail-tabs/NotesTab.tsx`
 
 **Key Implementation Details**:
-- Notes are editable and sync with backend via `CharacterDetailApi.updateNotes`
+- Notes are editable and sync with backend via `CharacterDetailQueryHooks.updateNotes`
 - Character limit is enforced (10,000 characters)
 - Notes are stored in `UserCharacter.notes` field (Text field in database)
 
 ## 🔧 **API Integration**
 
-### **CharacterDetailApi**
+### **CharacterDetailQueryHooks**
 
-The `CharacterDetailApi` (`apps/frontend/src/features/character/CharacterDetailApi.ts`) provides type-safe API methods for all CharacterDetail operations:
+`CharacterDetailQueryHooks` (`apps/frontend/src/features/character/CharacterDetailQueryHooks.ts`) provides createQueryHooks-based methods for CharacterDetail operations (wounds, money, items, notes, spell preparations, uses).
 
 **Uses Tracking**:
 - `getCharacterUses(characterId)`: Get all feature uses for character

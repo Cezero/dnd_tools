@@ -5,7 +5,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 
-import { ClassApi } from './ClassApi';
 import { ClassDisplay } from './ClassDisplay';
 import { ClassQueryHooks } from './ClassQueryHooks';
 
@@ -27,15 +26,15 @@ export default function ClassDetail() {
 
     // Fetch feature progressions for this class (resolves featureIds to FeatureWithRelations[])
     const { data: features = [] } = useQuery({
-        queryKey: ['class', 'features', classId],
-        queryFn: () => ClassApi.getClassFeatures({ id: classId! }),
+        queryKey: ClassQueryHooks.getClassFeaturesQueryKey(classId!),
+        queryFn: () => ClassQueryHooks.getClassFeatures(classId!),
         enabled: !!classId,
     });
 
     // Fetch lock status (only for admin users)
     const { data: lockStatus } = useQuery({
-        queryKey: ['class', 'lock-status', classId],
-        queryFn: () => ClassApi.getClassLockStatus({ id: classId! }),
+        queryKey: ClassQueryHooks.getClassLockStatusQueryKey(classId!),
+        queryFn: () => ClassQueryHooks.getClassLockStatus(classId!),
         enabled: !!classId && isAdmin,
     });
 

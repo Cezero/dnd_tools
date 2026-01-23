@@ -191,7 +191,7 @@ The spell system integrates with the feature system through spell-related featur
 - **Static Data**: `shared/static-data/src/SpellData.ts`
 - **Backend Services**: `backend/src/features/spell/`
 - **Frontend Components**: `frontend/src/features/spell/`
-- **API Client**: `frontend/src/features/spell/SpellApi.ts`
+- **API Client**: `frontend/src/features/spell/SpellQueryHooks.ts`
 
 ### **Key Data Structures**
 - **Spell Components**: V (Verbal), S (Somatic), M (Material), F (Focus), DF (Divine Focus), X (XP)

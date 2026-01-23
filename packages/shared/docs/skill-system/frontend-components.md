@@ -10,7 +10,7 @@ The frontend implementation follows the shared [Frontend Component Architecture]
 
 **Source Files**: 
 - Core Components: `frontend/src/features/skill/SkillEdit.tsx`, `frontend/src/features/skill/SkillList.tsx`, `frontend/src/features/skill/SkillDetail.tsx`
-- API Layer: `frontend/src/features/skill/SkillApi.ts`
+- API Layer: `frontend/src/services/query/SkillQueryHooks.ts`
 - Configuration: `frontend/src/features/skill/SkillConfig.ts`
 - Columns: `frontend/src/features/skill/SkillColumns.ts`
 - Utility Functions: `frontend/src/lib/skill-utils.ts`
@@ -30,7 +30,7 @@ The skill system frontend follows the shared [Component Architecture](../applica
 **SkillList**: Primary component for displaying and managing skill collections
 **SkillDetail**: Container component for skill detail views with navigation
 **SkillEdit**: Main skill creation and editing interface with comprehensive form handling
-**SkillApi**: API client for backend communication
+**SkillQueryHooks**: Canonical API interface for skill endpoints (createQueryHooks-based; uses typedApi under the hood)
 
 ## 🔧 **Core Components**
 
@@ -91,9 +91,9 @@ Comprehensive editing interface for creating and modifying skills. This componen
 
 ## 🔌 **API Integration**
 
-### **SkillApi Service**
+### **SkillQueryHooks**
 
-API client for skill system backend communication.
+Query hooks + imperative methods for skill system backend communication.
 
 **Purpose**: Provides type-safe API communication for all skill operations.
 
@@ -110,7 +110,7 @@ API client for skill system backend communication.
 - **PUT /api/skills/:id**: Update existing skill
 - **DELETE /api/skills/:id**: Delete skill
 
-**Source File**: `frontend/src/features/skill/SkillApi.ts`
+**Source File**: `frontend/src/services/query/SkillQueryHooks.ts`
 
 ## 🎨 **User Interface Patterns**
 

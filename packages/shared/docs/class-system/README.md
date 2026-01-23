@@ -113,7 +113,7 @@ The system follows a five-layer architecture:
 
 4. **Frontend Layer**: Explore **[Frontend Components](frontend-components.md)** for UI implementation
    - **Source Files**: `apps/frontend/src/features/class/` (ClassList.tsx, ClassEdit.tsx, ClassDetail.tsx)
-   - **API Client**: `apps/frontend/src/features/class/ClassApi.ts` for type-safe API calls
+   - **API Client**: `apps/frontend/src/features/class/ClassQueryHooks.ts` for canonical query hooks + imperative methods
    - **Example**: `<ClassList editionId={5} onClassSelect={handleSelect} />`
 
 ### **For Content Creators**

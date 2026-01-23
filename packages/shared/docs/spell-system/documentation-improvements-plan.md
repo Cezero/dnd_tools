@@ -48,7 +48,7 @@
 - **API Controllers**: Complete documentation of spellController.ts request handling
 - **API Routes**: Complete documentation of spellRoutes.ts endpoint definitions
 - **Frontend Components**: Complete documentation of SpellList, SpellDetail, SpellEdit components
-- **API Client**: Complete documentation of SpellApi.ts client implementation
+- **API Client**: Complete documentation of SpellQueryHooks.ts client implementation
 - **UI Patterns**: Complete documentation of spell-specific UI patterns and interactions
 
 **Quality Assessment**:
@@ -142,7 +142,7 @@
 - **SpellList.tsx**: Spell list component and filtering
 - **SpellDetail.tsx**: Spell detail display component
 - **SpellEdit.tsx**: Spell editing component with complex relationships
-- **SpellApi.ts**: API client implementation
+- **SpellQueryHooks.ts**: API client implementation
 - **SpellColumns.ts**: List column definitions and filtering
 
 #### **Integration Analysis**

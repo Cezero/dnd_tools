@@ -41,7 +41,7 @@ Based on the verified implementation status, the following actions are required:
 ### **High Priority (Blocking Character Creation)**
 1. **Fix Character Save Functionality**
    - Add save button to CharacterEdit component
-   - Implement save handler that calls CharacterApi.createCharacter
+   - Implement save handler that calls CharacterQueryHooks.createCharacter
    - Add loading states and error handling
 
 2. **Implement Character-Feature Integration**

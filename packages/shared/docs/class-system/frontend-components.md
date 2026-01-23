@@ -17,7 +17,7 @@ The frontend implementation follows the shared [Frontend Component Architecture]
 **Source Files**: 
 - Core Components: `frontend/src/features/class/ClassEdit.tsx`, `frontend/src/features/class/ClassList.tsx`, `frontend/src/features/class/ClassDisplay.tsx`
 - Detail Components: `frontend/src/features/class/ClassDetail.tsx`
-- API Layer: `frontend/src/features/class/ClassApi.ts`
+- API Layer: `frontend/src/features/class/ClassQueryHooks.ts`
 - Configuration: `frontend/src/features/class/ClassConfig.ts`
 - Tab Components: `frontend/src/features/class/tabs/` (BasicInfoTab.tsx, FeaturesTab.tsx, SkillsTab.tsx, ProficienciesTab.tsx, SpellcastingTab.tsx, DescriptionTab.tsx)
 - Tab Types: `frontend/src/features/class/tabs/types.ts`
@@ -40,7 +40,7 @@ The class system frontend follows the shared [Component Architecture](../applica
 **ClassDisplay**: Comprehensive class information display component (shows lock status, disables edit when locked)
 **ClassEdit**: Main class creation and editing interface with tab-based layout (uses isolated entity state)
 **Tab Components**: Specialized components for different aspects of class editing
-**ClassApi**: API client for backend communication (includes lock status checks)
+**ClassQueryHooks**: Canonical API interface for class endpoints (createQueryHooks-based; uses typedApi under the hood)
 
 ## 🔧 **Core Components**
 
@@ -375,9 +375,9 @@ Tab for managing class descriptions and lore.
 
 ## 🔌 **API Integration**
 
-### **ClassApi Service**
+### **ClassQueryHooks**
 
-API client for class system backend communication.
+Query hooks + imperative methods for class system backend communication.
 
 **Purpose**: Provides type-safe API communication for all class operations.
 
@@ -394,7 +394,7 @@ API client for class system backend communication.
 - **PUT /api/classes/:id**: Update existing class
 - **DELETE /api/classes/:id**: Delete class
 
-**Source File**: `frontend/src/features/class/ClassApi.ts`
+**Source File**: `frontend/src/features/class/ClassQueryHooks.ts`
 
 ## 🎨 **User Interface Patterns**
 

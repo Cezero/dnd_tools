@@ -92,7 +92,7 @@ Each system analysis includes:
 - [x] **Validation Schemas**: Compare character-management/validation-schemas.md to actual Zod schemas in character.ts. Update status file with findings.
 - [x] **Static Data**: Compare character-management/static-data.md to actual static data (AbilityScoreData.ts, AlignmentData.ts, etc.). Update status file with findings.
 - [x] **Backend Implementation**: Compare character-management/backend-implementation.md to actual backend services (characterService.ts, characterController.ts, characterRoutes.ts). Update status file with findings.
-- [x] **Frontend Components**: Compare character-management/frontend-components.md to actual frontend components (CharacterEdit.tsx, CharacterList.tsx, CharacterApi.ts, tabs/). Update status file with findings.
+- [x] **Frontend Components**: Compare character-management/frontend-components.md to actual frontend components (CharacterEdit.tsx, CharacterList.tsx, CharacterQueryHooks.ts, CharacterDetailQueryHooks.ts, tabs/). Update status file with findings.
 
 ### 2.2 Integration Analysis
 - [x] **Calculation System**: Analyze character-management integration with characterCalculation feature for derived statistics. Update status file with findings.
@@ -252,7 +252,7 @@ Each system analysis includes:
 - [x] **Validation Schemas**: Compare feature-system/validation-schemas.md to actual Zod schemas in feature.ts
 - [x] **Static Data**: Compare feature-system/static-data.md to actual static data (FeatureData.ts, FormulaDefinitions.ts)
 - [x] **Backend Implementation**: Compare feature-system/backend-implementation.md to actual backend services (featureSystemService.ts, featureSystemController.ts, featureSystemRoutes.ts)
-- [x] **Frontend Components**: Compare feature-system/frontend-components.md to actual frontend components (FeatureEdit.tsx, FeatureDetail.tsx, FeatureProgressionDetailEdit.tsx, FeatureSystemApi.ts)
+- [x] **Frontend Components**: Compare feature-system/frontend-components.md to actual frontend components (FeatureEditForm.tsx, FeatureDetail.tsx, FeatureQueryHooks.ts)
 
 ### 8.2 Specialized Documentation
 - [x] **Formula System**: Compare feature-system/formula-system.md to actual formula implementation and FormulaDefinitions.ts
@@ -323,7 +323,7 @@ Each system analysis includes:
 - [x] **Validation Schemas**: Compare race-system/validation-schemas.md to actual Zod schemas in race.ts
 - [x] **Static Data**: Compare race-system/static-data.md to actual static data (check if RaceData.ts exists)
 - [x] **Backend Implementation**: Compare race-system/backend-implementation.md to actual backend services (raceService.ts, raceController.ts, raceRoutes.ts)
-- [x] **Frontend Components**: Compare race-system/frontend-components.md to actual frontend components (RaceEdit.tsx, RaceList.tsx, RaceDisplay.tsx, RaceDetail.tsx, RaceApi.ts, tabs/)
+- [x] **Frontend Components**: Compare race-system/frontend-components.md to actual frontend components (RaceEdit.tsx, RaceList.tsx, RaceDisplay.tsx, RaceDetail.tsx, RaceQueryHooks.ts, tabs/)
 
 ### 10.2 Specialized Documentation
 - [x] **Architecture Principles**: Analyze race-system/architecture-principles.md for accuracy and completeness
@@ -374,7 +374,7 @@ Each system analysis includes:
 - [x] **Validation Schemas**: Compare skill-system/validation-schemas.md to actual Zod schemas in skill.ts
 - [x] **Static Data**: Compare skill-system/static-data.md to actual static data (SkillData.ts)
 - [x] **Backend Implementation**: Compare skill-system/backend-implementation.md to actual backend services (skillService.ts, skillController.ts, skillRoutes.ts)
-- [x] **Frontend Components**: Compare skill-system/frontend-components.md to actual frontend components (SkillEdit.tsx, SkillList.tsx, SkillDetail.tsx, SkillApi.ts)
+- [x] **Frontend Components**: Compare skill-system/frontend-components.md to actual frontend components (SkillEdit.tsx, SkillList.tsx, SkillDetail.tsx, SkillQueryHooks.ts)
 
 ### 12.2 Documentation Standards Compliance
 - [x] **Standards Adherence**: Verify all skill-system documentation adheres to documentation-standards.md requirements
@@ -398,7 +398,7 @@ Each system analysis includes:
 - [x] **Validation Schemas**: Compare spell-system/validation-schemas.md to actual Zod schemas in spell.ts
 - [x] **Static Data**: Compare spell-system/static-data.md to actual static data (SpellData.ts)
 - [x] **Backend Implementation**: Compare spell-system/backend-implementation.md to actual backend services (spellService.ts, spellController.ts, spellRoutes.ts)
-- [x] **Frontend Components**: Compare spell-system/frontend-components.md to actual frontend components (SpellEdit.tsx, SpellList.tsx, SpellDetail.tsx, SpellApi.ts)
+- [x] **Frontend Components**: Compare spell-system/frontend-components.md to actual frontend components (SpellEdit.tsx, SpellList.tsx, SpellDetail.tsx, SpellQueryHooks.ts)
 
 ### 13.2 Specialized Documentation
 - [x] **Documentation Improvements**: Analyze spell-system/documentation-improvements-plan.md for accuracy and completeness

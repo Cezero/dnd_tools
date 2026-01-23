@@ -3,8 +3,10 @@ import {
     BaseClassSchema,
     CreateClassSchema,
     CreateResponseSchema,
+    DraftLockStatusSchema,
     GetAllClassesQuerySchema,
     GetAllClassesResponseSchema,
+    GetFeaturesResponseSchema,
     IdParamSchema,
     UpdateClassSchema,
     UpdateResponseSchema,
@@ -58,6 +60,30 @@ const deleteClassConfig = createQueryHooks({
     queryKey: 'classes',
 });
 
+const classFeaturesConfig = createQueryHooks({
+    path: '/classes/:id/features',
+    method: 'GET',
+    paramsSchema: IdParamSchema,
+    responseSchema: GetFeaturesResponseSchema,
+    queryKey: 'classes',
+    queryKeyBuilder: (params) => {
+        const typedParams = params as { pathParams?: { id?: number } } | undefined;
+        return ['classes', 'features', typedParams?.pathParams?.id];
+    },
+});
+
+const classLockStatusConfig = createQueryHooks({
+    path: '/classes/:id/lock-status',
+    method: 'GET',
+    paramsSchema: IdParamSchema,
+    responseSchema: DraftLockStatusSchema,
+    queryKey: 'classes',
+    queryKeyBuilder: (params) => {
+        const typedParams = params as { pathParams?: { id?: number } } | undefined;
+        return ['classes', 'lock-status', typedParams?.pathParams?.id];
+    },
+});
+
 export const ClassQueryHooks = {
     // Imperative methods
     getClasses: (data: unknown) => classesConfig.fetch({ requestData: data }),
@@ -79,6 +105,8 @@ export const ClassQueryHooks = {
     deleteClass: (classId: number) => deleteClassConfig.mutate({
         pathParams: { id: classId }
     }),
+    getClassFeatures: (classId: number) => classFeaturesConfig.fetch({ pathParams: { id: classId } }),
+    getClassLockStatus: (classId: number) => classLockStatusConfig.fetch({ pathParams: { id: classId } }),
 
     // Expose query functions for advanced usage
     getClassesQueryFn: classesConfig.queryFn,
@@ -94,4 +122,8 @@ export const ClassQueryHooks = {
     },
     getClassesQueryKey: (params?: unknown) => classesConfig.queryKeyBuilder(params),
     getClassByIdQueryKey: (classId: number) => classByIdConfig.queryKeyBuilder({ pathParams: { id: classId } }),
+    getClassFeaturesQueryFn: classFeaturesConfig.queryFn,
+    getClassLockStatusQueryFn: classLockStatusConfig.queryFn,
+    getClassFeaturesQueryKey: (classId: number) => classFeaturesConfig.queryKeyBuilder({ pathParams: { id: classId } }),
+    getClassLockStatusQueryKey: (classId: number) => classLockStatusConfig.queryKeyBuilder({ pathParams: { id: classId } }),
 };

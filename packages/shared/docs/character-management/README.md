@@ -221,7 +221,7 @@ The character system integrates with the spell system through spell preparation:
 - **Validation Schemas**: `shared/schema/src/character.ts`
 - **Backend Services**: `backend/src/features/character/`
 - **Frontend Components**: `frontend/src/features/character/`
-- **API Client**: `frontend/src/features/character/CharacterApi.ts`
+- **API Client**: `frontend/src/features/character/CharacterQueryHooks.ts`, `frontend/src/features/character/CharacterDetailQueryHooks.ts`
 - **Calculation Services**: `backend/src/features/characterCalculation/`
 
 ### **Key Data Structures**

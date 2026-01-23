@@ -9,7 +9,6 @@ import { useParams } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { useToast } from '@/components/toast/useToast';
-import { CharacterDetailApi } from '@/features/character/CharacterDetailApi';
 import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
 import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
@@ -20,6 +19,7 @@ import { useCacheFunctions } from '@/services/cache/CacheFunctions';
 import type { DnDClass, Race, ItemWithDetails, RaceCacheEntry } from '@shared/schema';
 import { DisplayType } from '@shared/static-data';
 
+import { CharacterDetailQueryHooks } from './CharacterDetailQueryHooks';
 import { generateCharacterPdf } from './characterPdfService';
 import { CharacterQueryHooks } from './CharacterQueryHooks';
 import { DescriptionTab } from './detail-tabs/DescriptionTab';
@@ -187,7 +187,7 @@ export function CharacterDetail(): React.JSX.Element {
         }
 
         if (state.wounds !== prevWoundsRef.current) {
-            CharacterDetailApi.updateWounds({ wounds: state.wounds }, { id: characterId })
+            CharacterDetailQueryHooks.updateWounds(characterId, { wounds: state.wounds })
                 .then(() => {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
@@ -222,7 +222,7 @@ export function CharacterDetail(): React.JSX.Element {
         }
 
         if (!isEqual(state.money, prevMoneyRef.current)) {
-            CharacterDetailApi.updateMoney(state.money, { id: characterId })
+            CharacterDetailQueryHooks.updateMoney(characterId, state.money)
                 .then(() => {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
@@ -257,7 +257,7 @@ export function CharacterDetail(): React.JSX.Element {
         }
 
         if (state.notes !== prevNotesRef.current) {
-            CharacterDetailApi.updateNotes({ notes: state.notes }, { id: characterId })
+            CharacterDetailQueryHooks.updateNotes(characterId, { notes: state.notes })
                 .then(() => {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
@@ -292,7 +292,7 @@ export function CharacterDetail(): React.JSX.Element {
         }
 
         if (!isEqual(state.items, prevItemsRef.current)) {
-            CharacterDetailApi.syncItems({ items: state.items }, { id: characterId })
+            CharacterDetailQueryHooks.syncItems(characterId, { items: state.items })
                 .then(() => {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
@@ -327,7 +327,7 @@ export function CharacterDetail(): React.JSX.Element {
         }
 
         if (!isEqual(state.spellPreparations, prevSpellPreparationsRef.current)) {
-            CharacterDetailApi.syncSpellPreparations({ spellPreparations: state.spellPreparations }, { id: characterId })
+            CharacterDetailQueryHooks.syncSpellPreparations(characterId, { spellPreparations: state.spellPreparations })
                 .then(() => {
                     queryClient.invalidateQueries({
                         queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
@@ -483,7 +483,7 @@ export function CharacterDetail(): React.JSX.Element {
             });
 
             // Reset feature uses (not tracked in state, so call API directly)
-            await CharacterDetailApi.resetDailyUses({ id: characterId });
+            await CharacterDetailQueryHooks.resetDailyUses(characterId);
 
             toastManager?.add({
                 title: 'Daily uses reset successfully',
@@ -508,7 +508,7 @@ export function CharacterDetail(): React.JSX.Element {
     const handleResetAllUses = async () => {
         if (!characterId) return;
         try {
-            await CharacterDetailApi.resetAllUses({ id: characterId });
+            await CharacterDetailQueryHooks.resetAllUses(characterId);
             toastManager?.add({
                 title: 'All uses reset successfully',
                 type: 'success',

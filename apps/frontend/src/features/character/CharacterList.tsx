@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { CharacterApi, CHARACTER_COLUMNS, routes } from '@/features/character';
+import { CHARACTER_COLUMNS, routes } from '@/features/character';
 import { CharacterWithRaceResponse } from '@shared/schema';
 
 import { CharacterQueryHooks } from './CharacterQueryHooks';
@@ -43,7 +43,7 @@ export function CharacterList(): React.JSX.Element {
                 dataFetcher={dataFetcher}
                 itemDesc="character"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(CharacterApi.deleteCharacter)}
+                deleteServiceFunction={createIdDeleteServiceFunction((id: number) => CharacterQueryHooks.deleteCharacter(id))}
                 basePath=""
             />
         </div>

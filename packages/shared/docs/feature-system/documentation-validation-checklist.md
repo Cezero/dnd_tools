@@ -263,7 +263,6 @@ Use this section to track validation activities:
 - FeatureProgressionDetailEdit
 - FeaturesTab
 - ArrayPairEditor
-- FeatureSystemApi
-- FeatureSystemService
+- FeatureQueryHooks
 
 This validation checklist ensures that the feature system documentation remains accurate, comprehensive, and useful for developers working with the system.

@@ -18,7 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 
 import { useToast } from '@/components/toast/useToast';
-import { CharacterApi } from '@/features/character';
+import { CharacterQueryHooks } from '@/features/character/CharacterQueryHooks';
 import { TabComponentProps, CharacterEditStateUpdateType, type AttackDefinition } from '@/features/character/types';
 import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import type { CharacterWithAllDetailsResponse, ItemWithDetails } from '@shared/schema';
@@ -323,10 +323,7 @@ export function CombatTab({
         }
 
         try {
-            await CharacterApi.deleteCharacterAttackDefinition({
-                id: state.characterId,
-                attackId: definition.id,
-            });
+            await CharacterQueryHooks.deleteCharacterAttackDefinition(state.characterId, definition.id);
 
             // Refetch character data to get updated attack definitions
             if (refetchCharacter) {
@@ -365,13 +362,7 @@ export function CombatTab({
         try {
             if (editingDefinition) {
                 // Update existing
-                await CharacterApi.updateCharacterAttackDefinition({
-                    ...definitionData,
-                    characterId: state.characterId,
-                }, {
-                    id: state.characterId,
-                    attackId: editingDefinition.id,
-                });
+                await CharacterQueryHooks.updateCharacterAttackDefinition(state.characterId, editingDefinition.id, definitionData);
 
                 // Refetch character data to get updated attack definitions
                 if (refetchCharacter) {
@@ -396,12 +387,7 @@ export function CombatTab({
                 });
             } else {
                 // Create new
-                const result = await CharacterApi.createCharacterAttackDefinition({
-                    ...definitionData,
-                    characterId: state.characterId,
-                }, {
-                    id: state.characterId,
-                });
+                const result = await CharacterQueryHooks.createCharacterAttackDefinition(state.characterId, definitionData);
 
                 // Refetch character data to get updated attack definitions
                 if (refetchCharacter) {
@@ -475,9 +461,7 @@ export function CombatTab({
         }
 
         try {
-            await CharacterApi.reorderCharacterAttackDefinitions({ attackDefinitionIds }, {
-                id: state.characterId,
-            });
+            await CharacterQueryHooks.reorderCharacterAttackDefinitions(state.characterId, { attackDefinitionIds });
 
             // Refetch character data to get updated attack definitions
             if (refetchCharacter) {

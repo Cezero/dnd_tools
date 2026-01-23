@@ -1,5 +1,4 @@
 export { AnalogSkillService } from './AnalogSkillService';
-export { CharacterApi } from './CharacterApi';
 export { CHARACTER_COLUMNS } from './CharacterColumns';
 export { routes, navigation } from './CharacterConfig';
 export { CharacterDetail } from './CharacterDetail';

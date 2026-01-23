@@ -33,7 +33,7 @@ The Feature System integrates with the [Variant Class System](../variant-class-s
 - **Feature Source Types**: Uses `FeatureSourceType.ClassVariant` for variant features
 - **Context Management**: Passes `variantOverrideId` context for proper foreign key relationships
 - **Override Resolution**: Leverages feature system service for proper feature population
-- **Feature Creation**: Uses `FeatureSystemApi` for creating new features in variants
+- **Feature Creation**: Uses `FeatureQueryHooks` for creating new features in variants
 - **Feature Modification**: Uses existing ClassEdit patterns for feature editing in variants
 
 **Related Documentation**:
@@ -46,7 +46,7 @@ The Feature System integrates with the [Variant Class System](../variant-class-s
 - Validation: `packages/shared/schema/src/feature.ts`
 - Static Data: `packages/shared/static-data/src/FeatureData.ts`, `packages/shared/static-data/src/FormulaDefinitions.ts`
 - Backend: `apps/backend/src/features/featureSystem/` (featureSystemService.ts, featureSystemController.ts, featureSystemRoutes.ts, types.ts)
-- Frontend: `apps/frontend/src/components/feature-system/` (FeatureEdit.tsx, FeatureEditForm/, FeatureDetail.tsx, FeatureDisplay/, FeatureProgressionDetailEdit.tsx, FeaturesManager.tsx, FeatureSystemApi.ts, FeatureSystemService.ts, ArrayPairEditor.tsx, types.ts)
+- Frontend: `apps/frontend/src/components/feature-system/` (FeatureEditForm/, FeatureDetail.tsx, FeatureDisplay/, FeaturesManager.tsx, FeatureQueryHooks.ts, ArrayPairEditor.tsx, types.ts)
 
 ## 🏗️ **Documentation Structure**
 
@@ -246,8 +246,7 @@ The frontend provides user interfaces for feature management and interaction:
 - `apps/frontend/src/components/feature-system/FeatureDetail.tsx`
 - `apps/frontend/src/components/feature-system/FeatureProgressionDetailEdit.tsx`
 - `apps/frontend/src/components/feature-system/FeaturesTab.tsx`
-- `apps/frontend/src/components/feature-system/FeatureSystemApi.ts`
-- `apps/frontend/src/components/feature-system/FeatureSystemService.ts`
+- `apps/frontend/src/components/feature-system/FeatureQueryHooks.ts`
 - `apps/frontend/src/components/feature-system/ArrayPairEditor.tsx`
 - `apps/frontend/src/components/feature-system/types.ts`
 
