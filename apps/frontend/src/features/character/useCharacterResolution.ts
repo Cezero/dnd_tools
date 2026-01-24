@@ -1,22 +1,15 @@
+import { useEffect, useState } from 'react';
+
 import { createResolutionHook } from '@/lib/hooks/createResolutionHook';
+import { useTopicSubscription } from '@/lib/hooks/useTopicSubscription';
 import { DraftType } from '@shared/static-data';
-
-
-import { CharacterQueryHooks } from './CharacterQueryHooks';
 import { CharacterResolutionApi, type ResolvedCharacterResult } from './CharacterResolutionApi';
 
 const useCharacterResolutionBase = createResolutionHook<number, ResolvedCharacterResult, never>({
     draftType: DraftType.Character,
     api: {
         startEditing: CharacterResolutionApi.startEditing,
-        fetchEntity: async (id: number) => {
-            // Fetch character data using normal entity service (NOT state management endpoint)
-            // Note: CharacterSchema may not include all resolved fields, but we use normal service
-            const characterData = await CharacterQueryHooks.getCharacterById(id);
-            return {
-                state: characterData as unknown as ResolvedCharacterResult,
-            };
-        },
+        fetchEntity: async (_id: number) => ({ state: null }),
         cancel: async (id: number) => {
             await CharacterResolutionApi.cancel(id);
         },
@@ -38,9 +31,40 @@ const useCharacterResolutionBase = createResolutionHook<number, ResolvedCharacte
  */
 export function useCharacterResolution(characterId: number | null) {
     const resolution = useCharacterResolutionBase(characterId);
+    const [resolvedCharacter, setResolvedCharacter] = useState<ResolvedCharacterResult | null>(null);
+
+    // Seed resolved state via read-only endpoint (useful before WS connects).
+    useEffect(() => {
+        if (!characterId) {
+            setResolvedCharacter(null);
+            return;
+        }
+        if (characterId < 1) {
+            // Draft-only character creation uses topic updates; there is no persisted character to resolve via GET.
+            setResolvedCharacter(null);
+            return;
+        }
+
+        CharacterResolutionApi.getResolved(characterId)
+            .then((result) => {
+                setResolvedCharacter(result.resolvedCharacter);
+            })
+            .catch((error) => {
+                console.error('Failed to fetch resolved character:', error);
+            });
+    }, [characterId]);
+
+    // Subscribe to resolved character topic updates.
+    useTopicSubscription<ResolvedCharacterResult>(
+        'characterResolved',
+        characterId,
+        (payload) => {
+            setResolvedCharacter(payload);
+        }
+    );
 
     return {
-        resolvedCharacter: resolution.state,
+        resolvedCharacter,
         isLoading: resolution.isLoading,
         error: resolution.error,
         updateValue: resolution.updateValue,

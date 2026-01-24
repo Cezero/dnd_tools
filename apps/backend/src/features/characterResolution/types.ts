@@ -55,8 +55,11 @@ export interface ResolutionResult {
 
 /**
  * Character edit state stored in session
+ * 
+ * TODO why does this exist? doesn't it duplicate a Zod validation schema?
  */
 export interface CharacterEditState {
+    name: string;
     characterId: number;
     abilityScores: Array<{
         abilityId: number;

@@ -15,6 +15,8 @@ export * from './item.js';
 export * from './feature.js';
 export * from './spellcasting.js';
 export * from './state.js';
+export * from './advancementDraft.js';
+export * from './websocket.js';
 export * from './transformationForm.js';
 export * from './domain.js';
 export * from './deity.js';

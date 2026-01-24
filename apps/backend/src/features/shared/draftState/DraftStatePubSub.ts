@@ -208,6 +208,67 @@ export class DraftStatePubSub {
     }
 
     /**
+     * Subscribes to an arbitrary Redis channel.
+     *
+     * This is used for non-draft projections (e.g. resolved character snapshots) that do not
+     * fit the `channel:state:{draftType}:{id}` pattern.
+     */
+    async subscribeChannel(channel: string, callback: (state: unknown) => void): Promise<void> {
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+
+        try {
+            if (!this.subscriptions.has(channel)) {
+                this.subscriptions.set(channel, new Set());
+                await this.subscriber.subscribe(channel, (_message: string, _channelName: string) => {
+                    // Message handling is done via the shared 'message' event handler.
+                });
+            }
+
+            this.subscriptions.get(channel)!.add(callback);
+        } catch (error) {
+            console.error(`Error subscribing to ${channel}:`, error);
+            throw new Error(`Failed to subscribe: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * Unsubscribes from an arbitrary Redis channel.
+     */
+    async unsubscribeChannel(channel: string): Promise<void> {
+        try {
+            const callbacks = this.subscriptions.get(channel);
+
+            if (callbacks) {
+                callbacks.clear();
+                this.subscriptions.delete(channel);
+                await this.subscriber.unsubscribe(channel);
+            }
+        } catch (error) {
+            console.error(`Error unsubscribing from ${channel}:`, error);
+            throw new Error(`Failed to unsubscribe: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * Publishes a message to an arbitrary Redis channel.
+     */
+    async publishChannel<T>(channel: string, state: T): Promise<void> {
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+
+        try {
+            const message = JSON.stringify(state);
+            await this.publisher.publish(channel, message);
+        } catch (error) {
+            console.error(`Error publishing to ${channel}:`, error);
+            throw new Error(`Failed to publish: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
      * Subscribes to entity state updates.
      * 
      * When the entity state is updated and published, the callback will be invoked
@@ -240,9 +301,8 @@ export class DraftStatePubSub {
                 // Subscribe to channel if this is the first callback
                 // Redis v4 subscribe requires channel and listener callback
                 // The listener receives (message, channel) arguments
-                await this.subscriber.subscribe(channel, (message: string, channelName: string) => {
-                    // Message handling is done via 'message' event listener
-                    // This callback is required by the API but we use the event-based approach
+                await this.subscriber.subscribe(channel, (_message: string, _channelName: string) => {
+                    // Message handling is done via the shared 'message' event handler.
                 });
             }
 
@@ -309,14 +369,7 @@ export class DraftStatePubSub {
         }
 
         const channel = this.buildChannelName(draftType, id);
-
-        try {
-            const message = JSON.stringify(state);
-            await this.publisher.publish(channel, message);
-        } catch (error) {
-            console.error(`Error publishing to ${channel}:`, error);
-            throw new Error(`Failed to publish: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+        await this.publishChannel(channel, state);
     }
 
     /**

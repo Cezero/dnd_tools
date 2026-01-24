@@ -1,23 +1,28 @@
 import {
+    AdvancementEditStateSchema,
     CharacterEditStateSchema,
     ClassDraftStateSchema,
     FeatureDraftStateSchema,
     RaceDraftStateSchema,
+    type AdvancementEditState,
     type CharacterEditState,
+    type CharacterWithAllDetailsResponse,
     type ClassDraftState,
     type FeatureDraftState,
     type RaceDraftState,
     type ResolvedCharacterResult,
 } from '@shared/schema';
-import { DraftType, FeatureSourceType } from '@shared/static-data';
+import { DraftType, EditionId, FeatureSourceType } from '@shared/static-data';
 
-import { DraftStatePubSub } from './DraftStatePubSub';
 import type { DraftConfig } from './types';
+import { prisma } from '@/lib/prisma';
 import { characterService } from '../../character/characterService';
+import { AdvancementSaveService } from '../../advancementDraft/advancementSaveService';
 import { CharacterSaveService } from '../../characterDraft/characterSaveService';
 import { AvailableFeatService } from '../../characterResolution/availableFeatService';
 import { buildCharacterEditState } from '../../characterResolution/characterEditStateBuilder';
 import { calculateSpellSelection, filterInvalidAppliesToEntities } from '../../characterResolution/characterResolutionController';
+import { characterResolutionProjectionService } from '../../characterResolution/characterResolutionProjectionService';
 import { CharacterResolutionService } from '../../characterResolution/characterResolutionService';
 import { GestaltMechanicsResolver } from '../../characterResolution/gestaltMechanicsResolver';
 import { ResolvedFeatureService } from '../../characterResolution/resolvedFeatureService';
@@ -92,7 +97,7 @@ class FeatureSaveServiceAdapter {
         this.featureStateService = new FeatureStateService(featureSystemService);
     }
 
-    async saveSessionToMySQL(featureId: number, _state: FeatureDraftState | Record<string, unknown>, userId: number): Promise<number> {
+    async saveSessionToMySQL(featureId: number, _state: FeatureDraftState | Record<string, unknown>, userId: number, _context?: unknown): Promise<number> {
         return await this.featureStateService.saveFeatureStateToDatabase(featureId, userId);
     }
 }
@@ -105,7 +110,7 @@ class ClassSaveServiceAdapter {
         this.classSaveService = new ClassSaveService();
     }
 
-    async saveSessionToMySQL(classId: number, state: ClassDraftState | Record<string, unknown>, userId: number): Promise<number> {
+    async saveSessionToMySQL(classId: number, state: ClassDraftState | Record<string, unknown>, userId: number, _context?: unknown): Promise<number> {
         return await this.classSaveService.saveSessionToMySQL(classId, state, userId);
     }
 }
@@ -118,8 +123,25 @@ class RaceSaveServiceAdapter {
         this.raceSaveService = new RaceSaveService();
     }
 
-    async saveSessionToMySQL(raceId: number, state: RaceDraftState | Record<string, unknown>, userId: number): Promise<number> {
+    async saveSessionToMySQL(raceId: number, state: RaceDraftState | Record<string, unknown>, userId: number, _context?: unknown): Promise<number> {
         return await this.raceSaveService.saveSessionToMySQL(raceId, state, userId);
+    }
+}
+
+// Wrapper for AdvancementSaveService to match the DraftConfig interface
+class AdvancementSaveServiceAdapter {
+    private advancementSaveService: AdvancementSaveService;
+
+    constructor() {
+        this.advancementSaveService = new AdvancementSaveService();
+    }
+
+    async saveSessionToMySQL(advancementId: number, state: unknown, userId: number, _context?: unknown): Promise<number> {
+        return await this.advancementSaveService.saveSessionToMySQL(
+            advancementId,
+            state as Record<string, unknown>,
+            userId
+        );
     }
 }
 
@@ -128,7 +150,7 @@ draftRegistry.set(DraftType.Class, {
     editStateSchema: ClassDraftStateSchema,
     saveService: new ClassSaveServiceAdapter(),
     getInitialState: buildClassInitialState,
-    getInitialCreateState: async (draftId: number) => {
+    getInitialCreateState: async (draftId: number, _userId: number, _context?: unknown) => {
         return {
             classId: draftId,
             name: '',
@@ -152,7 +174,7 @@ draftRegistry.set(DraftType.Race, {
     editStateSchema: RaceDraftStateSchema,
     saveService: new RaceSaveServiceAdapter(),
     getInitialState: buildRaceInitialState,
-    getInitialCreateState: async (draftId: number) => {
+    getInitialCreateState: async (draftId: number, _userId: number, _context?: unknown) => {
         return {
             raceId: draftId,
             name: '',
@@ -169,7 +191,7 @@ draftRegistry.set(DraftType.Feature, {
     editStateSchema: FeatureDraftStateSchema,
     saveService: new FeatureSaveServiceAdapter(),
     getInitialState: buildFeatureInitialState,
-    getInitialCreateState: async (draftId: number) => {
+    getInitialCreateState: async (draftId: number, _userId: number, _context?: unknown) => {
         return {
             id: draftId,
             slug: '',
@@ -192,6 +214,108 @@ draftRegistry.set(DraftType.Feature, {
     },
 });
 
+async function buildAdvancementInitialState(advancementId: number): Promise<AdvancementEditState> {
+    const advancement = await prisma.characterAdvancement.findUnique({
+        where: { id: advancementId },
+        include: {
+            skills: true,
+            feats: true,
+            spellsKnown: true,
+            featureChoices: true,
+        },
+    });
+
+    if (!advancement) {
+        throw new Error(`Advancement ${advancementId} not found`);
+    }
+
+    return {
+        advancementId: advancement.id,
+        characterId: advancement.characterId,
+        level: advancement.level,
+        version: advancement.version,
+        classId: advancement.classId,
+        secondaryClassId: advancement.secondaryClassId ?? null,
+        hitPoints: advancement.hitPoints,
+        abilityId: advancement.abilityId ?? null,
+        notes: advancement.notes ?? null,
+        skills: advancement.skills.map((s) => ({
+            skillId: s.skillId,
+            skillSubId: s.skillSubId ?? null,
+            pointsSpent: s.pointsSpent,
+            customSubtype: s.customSubtype ?? null,
+        })),
+        feats: advancement.feats.map((f) => ({
+            featId: f.featId,
+            featSubId: f.featSubId ?? null,
+        })),
+        spellsKnown: advancement.spellsKnown.map((s) => ({
+            spellId: s.spellId,
+            isFreeGrant: s.isFreeGrant ?? false,
+        })),
+        featureChoices: advancement.featureChoices.map((c) => ({
+            id: c.id,
+            characterId: c.characterId,
+            featureId: c.featureId,
+            advancementId: c.advancementId,
+            featureEntityId: c.featureEntityId,
+            appliesToId: c.appliesToId,
+            appliesToSubId: c.appliesToSubId ?? null,
+            choiceIndex: c.choiceIndex ?? null,
+            choiceGroupId: c.choiceGroupId ?? null,
+            choiceData: c.choiceData ?? null,
+            linkedChoiceGroupId: c.linkedChoiceGroupId ?? null,
+        })),
+    };
+}
+
+draftRegistry.set(DraftType.Advancement, {
+    editStateSchema: AdvancementEditStateSchema,
+    saveService: new AdvancementSaveServiceAdapter(),
+    getInitialState: buildAdvancementInitialState,
+    getInitialCreateState: async (draftId: number, _userId: number, context?: unknown) => {
+        // Context is required for new advancement drafts (create / level-up).
+        if (!context || typeof context !== 'object') {
+            throw new Error('Advancement draft requires context: { characterId, level, mode }');
+        }
+
+        const maybe = context as { characterId?: unknown; level?: unknown; mode?: unknown };
+        const characterId = typeof maybe.characterId === 'number' ? maybe.characterId : NaN;
+        const level = typeof maybe.level === 'number' ? maybe.level : NaN;
+        const mode = typeof maybe.mode === 'string' ? maybe.mode : 'unknown';
+
+        if (Number.isNaN(characterId) || Number.isNaN(level)) {
+            throw new Error('Advancement draft context must include numeric characterId and level');
+        }
+
+        if (mode === 'edit-current') {
+            // For persisted characters, edit-current should startEditing using the persisted advancementId.
+            // Frontend should use UserCharacter.currentAdvancementId for this.
+            // TODO(retrain): consider allowing id=0 + mode=edit-current to resolve to currentAdvancementId server-side.
+            throw new Error('Advancement edit-current requires startEditing with a persisted advancement id');
+        }
+
+        return {
+            advancementId: draftId,
+            characterId,
+            level,
+            version: 1,
+            classId: 0,
+            secondaryClassId: null,
+            hitPoints: 0,
+            abilityId: null,
+            notes: null,
+            skills: [],
+            feats: [],
+            spellsKnown: [],
+            featureChoices: [],
+        };
+    },
+    onStateUpdate: async (_id, state, _userId, _update) => {
+        characterResolutionProjectionService.scheduleFromAdvancementDraft(state as AdvancementEditState);
+    },
+});
+
 // Helper function to build initial character state
 async function buildCharacterInitialState(characterId: number): Promise<CharacterEditState> {
     const character = await characterService.getCharacterWithAllDetails({ id: characterId });
@@ -203,12 +327,43 @@ async function buildCharacterInitialState(characterId: number): Promise<Characte
     return buildCharacterEditState(character, targetLevel, isGestalt);
 }
 
+type CharacterAdvancementWithDetails = NonNullable<CharacterWithAllDetailsResponse['advancements']>[number];
+
+function selectEffectiveAdvancements(
+    advancements: CharacterWithAllDetailsResponse['advancements'] | undefined
+): CharacterAdvancementWithDetails[] {
+    if (!advancements || advancements.length === 0) {
+        return [];
+    }
+
+    const byLevel = new Map<number, CharacterAdvancementWithDetails>();
+    for (const adv of advancements) {
+        const existing = byLevel.get(adv.level);
+        if (!existing) {
+            byLevel.set(adv.level, adv);
+            continue;
+        }
+        const existingVersion = existing.version ?? 0;
+        const nextVersion = adv.version ?? 0;
+        if (nextVersion >= existingVersion) {
+            byLevel.set(adv.level, adv);
+        }
+    }
+
+    return Array.from(byLevel.values()).sort((a, b) => a.level - b.level);
+}
+
 /** Compute ResolvedCharacterResult from characterId and edit state. Used by triggerCharacterResolution and resolveCharacterToResult. */
 async function computeResolvedCharacterResult(characterId: number, characterState: CharacterEditState): Promise<ResolvedCharacterResult> {
     const character = await characterService.getCharacterWithAllDetails({ id: characterId });
     if (!character) {
         throw new Error(`Character ${characterId} not found`);
     }
+    const effectiveAdvancements = selectEffectiveAdvancements(character.advancements);
+    const effectiveCharacter = {
+        ...character,
+        advancements: effectiveAdvancements,
+    };
 
     const raceDetails = characterState.raceId ? await raceService.getRaceById({ id: characterState.raceId }) : null;
     const classDetails = characterState.classId ? await classService.getClassById({ id: characterState.classId }) : null;
@@ -216,9 +371,9 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
     const userChoices: Record<number, number[]> = {};
 
     const context = {
-        character,
+        character: effectiveCharacter,
         targetLevel: characterState.level,
-        advancement: character.advancements?.find(adv => adv.level === characterState.level),
+        advancement: effectiveAdvancements.find(adv => adv.level === characterState.level),
         raceDetails,
         classDetails,
         secondaryClassDetails,
@@ -230,7 +385,7 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
     };
 
     const resolutionResult = await CharacterResolutionService.resolveCharacterFeatures(
-        character,
+        effectiveCharacter,
         characterState.level,
         context
     );
@@ -240,8 +395,8 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
     const grantedFeats = ResolvedFeatureService.getGrantedFeats(resolutionResult.resolvedProgressions);
 
     const classLevels = new Map<number, number>();
-    if (character.advancements) {
-        for (const adv of character.advancements) {
+    if (effectiveAdvancements.length > 0) {
+        for (const adv of effectiveAdvancements) {
             const currentLevel = classLevels.get(adv.classId) ?? 0;
             classLevels.set(adv.classId, currentLevel + 1);
             if (adv.secondaryClassId) {
@@ -262,7 +417,7 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
 
     const allFeatsResponse = await featService.getAllFeats();
     const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
-        character,
+        effectiveCharacter,
         resolutionResult.resolvedProgressions,
         classDetails,
         raceDetails,
@@ -271,7 +426,7 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
 
     const spellSelection = await calculateSpellSelection(
         characterId,
-        character,
+        effectiveCharacter,
         resolutionResult.resolvedProgressions
     );
 
@@ -280,13 +435,13 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
 
     let resolvedFormulaValues = ResolvedFeatureService.resolveFormulaValues(
         enrichedProgressions,
-        character,
+        effectiveCharacter,
         characterState.level
     );
 
-    if (characterState.isGestalt || character.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)) {
+    if (characterState.isGestalt || effectiveAdvancements.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)) {
         resolvedFormulaValues = GestaltMechanicsResolver.resolveGestaltMechanics(
-            character,
+            effectiveCharacter,
             enrichedProgressions,
             resolvedFormulaValues
         );
@@ -317,22 +472,6 @@ export async function resolveCharacterToResult(characterId: number): Promise<Res
     return computeResolvedCharacterResult(characterId, state);
 }
 
-// Helper function to trigger character resolution and publish via WebSocket
-async function triggerCharacterResolution(characterId: number, state: unknown, _userId: number): Promise<void> {
-    const characterState = state as CharacterEditState;
-    try {
-        const resolvedCharacterResult = await computeResolvedCharacterResult(characterId, characterState);
-        const pubSub = new DraftStatePubSub();
-        await pubSub.initialize();
-        await pubSub.publish(DraftType.Character, characterId, {
-            type: 'characterResolution',
-            resolvedCharacter: resolvedCharacterResult,
-        });
-    } catch (error) {
-        console.error(`Error triggering character resolution for character ${characterId}:`, error);
-    }
-}
-
 // Character save service placeholder
 class CharacterSaveServiceAdapter {
     private characterSaveService: CharacterSaveService;
@@ -341,11 +480,12 @@ class CharacterSaveServiceAdapter {
         this.characterSaveService = new CharacterSaveService();
     }
 
-    async saveSessionToMySQL(characterId: number, state: unknown, userId: number): Promise<number> {
+    async saveSessionToMySQL(characterId: number, state: unknown, userId: number, context?: unknown): Promise<number> {
         return await this.characterSaveService.saveSessionToMySQL(
             characterId,
             state as Record<string, unknown>,
-            userId
+            userId,
+            context
         );
     }
 }
@@ -355,10 +495,28 @@ draftRegistry.set(DraftType.Character, {
     editStateSchema: CharacterEditStateSchema,
     saveService: new CharacterSaveServiceAdapter(),
     getInitialState: buildCharacterInitialState,
-    getInitialCreateState: async () => {
-        throw new Error('DraftType.Character does not support startEditing(id=0) at this time.');
+    getInitialCreateState: async (draftId: number, _userId: number, _context?: unknown) => {
+        return {
+            characterId: draftId,
+            name: '',
+            abilityScores: [],
+            skillRanks: [],
+            raceId: null,
+            classId: null,
+            secondaryClassId: null,
+            level: 1,
+            editionId: EditionId.DND_3_5E,
+            isGestalt: false,
+            allowVariantClasses: false,
+            ignoreLevelAdjustment: false,
+            featureChoices: [],
+            selectedFeats: [],
+            disallowedSources: [],
+        };
     },
-    onStateUpdate: triggerCharacterResolution,
+    onStateUpdate: async (id, state, _userId, _update) => {
+        characterResolutionProjectionService.scheduleFromCharacterDraft(id, state as CharacterEditState);
+    },
 });
 
 /**

@@ -75,8 +75,12 @@ export const DraftApi = {
      * const result = await DraftApi.startEditing(DraftType.Class, 123);
      * ```
      */
-    startEditing: async (draftType: DraftType, id: number): Promise<StartEditingResponse> => {
-        return startEditingApi({ draftType, id });
+    startEditing: async (draftType: DraftType, id: number, context?: unknown): Promise<StartEditingResponse> => {
+        return startEditingApi({
+            draftType,
+            id,
+            ...(context !== undefined && { context }),
+        });
     },
 
     /**
@@ -101,7 +105,8 @@ export const DraftApi = {
         id: number,
         path: string,
         value: string | number | boolean | null,
-        action?: DraftAction
+        action?: DraftAction,
+        context?: unknown
     ): Promise<UpdateStateValueResponse> => {
         return updateValueApi({
             draftType,
@@ -109,6 +114,7 @@ export const DraftApi = {
             path,
             value,
             ...(action !== undefined && { action }),
+            ...(context !== undefined && { context }),
         });
     },
 
@@ -124,8 +130,12 @@ export const DraftApi = {
      * const result = await DraftApi.save(DraftType.Class, 123);
      * ```
      */
-    save: async (draftType: DraftType, id: number): Promise<DraftSaveResponse> => {
-        return saveApi({ draftType, id });
+    save: async (draftType: DraftType, id: number, context?: unknown): Promise<DraftSaveResponse> => {
+        return saveApi({
+            draftType,
+            id,
+            ...(context !== undefined && { context }),
+        });
     },
 
     /**
@@ -140,7 +150,11 @@ export const DraftApi = {
      * await DraftApi.cancel(DraftType.Class, 123);
      * ```
      */
-    cancel: async (draftType: DraftType, id: number): Promise<CancelEditingResponse> => {
-        return cancelApi({ draftType, id });
+    cancel: async (draftType: DraftType, id: number, context?: unknown): Promise<CancelEditingResponse> => {
+        return cancelApi({
+            draftType,
+            id,
+            ...(context !== undefined && { context }),
+        });
     },
 };

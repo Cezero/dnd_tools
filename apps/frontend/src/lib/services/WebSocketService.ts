@@ -41,11 +41,13 @@ export class WebSocketService {
     private static instance: WebSocketService | null = null;
     private ws: WebSocket | null = null;
     private subscriptions: Map<string, Set<(state: unknown) => void>> = new Map();
+    private topicSubscriptions: Map<string, Set<(payload: unknown) => void>> = new Map();
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 10;
     private reconnectDelay = 1000; // Start with 1 second
     private isConnecting = false;
     private pendingSubscriptions: Array<{ draftType: DraftType; entityId: number; callback: (state: unknown) => void }> = [];
+    private pendingTopicSubscriptions: Array<{ topic: 'characterResolved'; topicId: number; callback: (payload: unknown) => void }> = [];
 
     private constructor() {
         // Private constructor for singleton pattern
@@ -103,6 +105,12 @@ export class WebSocketService {
                     this.subscribe(sub.draftType, sub.entityId, sub.callback);
                 }
                 this.pendingSubscriptions = [];
+
+                // Resubscribe to all pending topic subscriptions
+                for (const sub of this.pendingTopicSubscriptions) {
+                    this.subscribeTopic(sub.topic, sub.topicId, sub.callback);
+                }
+                this.pendingTopicSubscriptions = [];
             };
 
             this.ws.onmessage = (event) => {
@@ -159,7 +167,16 @@ export class WebSocketService {
      * 
      * @param message - The message from the server
      */
-    private handleMessage(message: { type: string; entityType?: string; entityId?: number; state?: unknown; message?: string }): void {
+    private handleMessage(message: {
+        type: string;
+        entityType?: string;
+        entityId?: number;
+        state?: unknown;
+        topic?: string;
+        topicId?: number;
+        payload?: unknown;
+        message?: string;
+    }): void {
         switch (message.type) {
             case 'stateUpdate':
                 if (message.entityType && message.entityId !== undefined && message.state !== undefined) {
@@ -171,6 +188,22 @@ export class WebSocketService {
                                 callback(message.state);
                             } catch (error) {
                                 console.error('Error in subscription callback:', error);
+                            }
+                        });
+                    }
+                }
+                break;
+
+            case 'topicUpdate':
+                if (message.topic && message.topicId !== undefined) {
+                    const subscriptionKey = `${message.topic}:${message.topicId}`;
+                    const callbacks = this.topicSubscriptions.get(subscriptionKey);
+                    if (callbacks) {
+                        callbacks.forEach(callback => {
+                            try {
+                                callback(message.payload);
+                            } catch (error) {
+                                console.error('Error in topic subscription callback:', error);
                             }
                         });
                     }
@@ -195,7 +228,9 @@ export class WebSocketService {
             this.ws = null;
         }
         this.subscriptions.clear();
+        this.topicSubscriptions.clear();
         this.pendingSubscriptions = [];
+        this.pendingTopicSubscriptions = [];
         this.reconnectAttempts = 0;
     }
 
@@ -275,6 +310,59 @@ export class WebSocketService {
                 type: 'unsubscribe',
                 entityType: String(draftType), // Send numeric enum value as string
                 entityId
+            }));
+        }
+    }
+
+    /**
+     * Subscribes to a topic-based projection update.
+     *
+     * Topics are not DraftTypes. They represent derived projections (like resolved character)
+     * published by the backend when underlying drafts change.
+     */
+    subscribeTopic(topic: 'characterResolved', topicId: number, callback: (payload: unknown) => void): string {
+        const subscriptionKey = `${topic}:${topicId}`;
+
+        if (!this.topicSubscriptions.has(subscriptionKey)) {
+            this.topicSubscriptions.set(subscriptionKey, new Set());
+        }
+
+        this.topicSubscriptions.get(subscriptionKey)!.add(callback);
+
+        if (this.ws?.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: 'subscribeTopic',
+                topic,
+                topicId,
+            }));
+        } else {
+            this.pendingTopicSubscriptions.push({ topic, topicId, callback });
+            if (!this.isConnecting && !this.ws) {
+                this.connect().catch(error => {
+                    console.error('Failed to connect for topic subscription:', error);
+                });
+            }
+        }
+
+        return subscriptionKey;
+    }
+
+    unsubscribeTopic(subscriptionId: string): void {
+        const [topic, topicIdStr] = subscriptionId.split(':');
+        const topicId = parseInt(topicIdStr, 10);
+
+        if (topic !== 'characterResolved' || Number.isNaN(topicId)) {
+            console.error(`Invalid topic subscription ID: ${subscriptionId}`);
+            return;
+        }
+
+        this.topicSubscriptions.delete(subscriptionId);
+
+        if (this.ws?.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: 'unsubscribeTopic',
+                topic,
+                topicId,
             }));
         }
     }

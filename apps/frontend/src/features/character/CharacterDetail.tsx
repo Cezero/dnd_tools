@@ -5,7 +5,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import isEqual from 'lodash/isEqual';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { useToast } from '@/components/toast/useToast';
@@ -65,6 +65,7 @@ import { useCharacterDetailState } from './useCharacterDetailState';
  */
 export function CharacterDetail(): React.JSX.Element {
     const { user, isLoading: isAuthLoading } = useAuthAuto();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { id } = useParams<{ id: string }>();
     const toastManager = useToast();
@@ -78,6 +79,7 @@ export function CharacterDetail(): React.JSX.Element {
         characterId ? { pathParams: { id: characterId } } : undefined,
         { enabled: !!characterId }
     );
+    const isLevelOneOnly = (characterData?.characterLevel ?? 0) <= 1;
 
     // Resolved character for display only (formatting, export); no locks or drafts
     const { data: resolvedData, isLoading: isLoadingResolved } = CharacterQueryHooks.useGetCharacterResolved(
@@ -674,6 +676,30 @@ export function CharacterDetail(): React.JSX.Element {
                             <Menu.Portal>
                                 <Menu.Positioner className="outline-none" sideOffset={8}>
                                     <Menu.Popup className="min-w-[160px] origin-[var(--transform-origin)] rounded-md bg-white dark:bg-gray-800 py-1 text-gray-900 dark:text-gray-100 shadow-lg shadow-gray-200 dark:shadow-gray-900 outline outline-1 outline-gray-200 dark:outline-gray-700 transition-[transform,scale,opacity] data-[ending-style]:scale-90 data-[ending-style]:opacity-0 data-[starting-style]:scale-90 data-[starting-style]:opacity-0">
+                                        {isLevelOneOnly && (
+                                            <Menu.Item
+                                                onClick={() => {
+                                                    if (!characterId) {
+                                                        return;
+                                                    }
+                                                    navigate(`/characters/${characterId}/edit`);
+                                                }}
+                                                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"
+                                            >
+                                                Edit
+                                            </Menu.Item>
+                                        )}
+                                        <Menu.Item
+                                            onClick={() => {
+                                                if (!characterId) {
+                                                    return;
+                                                }
+                                                navigate(`/characters/${characterId}/edit`, { state: { levelUp: true } });
+                                            }}
+                                            className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"
+                                        >
+                                            Level Up
+                                        </Menu.Item>
                                         <Menu.Item
                                             onClick={handleResetDailyUses}
                                             className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"

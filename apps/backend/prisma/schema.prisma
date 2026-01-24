@@ -723,6 +723,10 @@ model UserCharacter {
   silver   Int @default(0)
   copper   Int @default(0)
 
+  // Current advancement pointer (fast lookup)
+  // NOTE: authoritative pointer; retraining revisions are handled separately (TODO).
+  currentAdvancementId Int?
+
   abilityScores      UserCharacterAbilityScore[]
   characterItems     CharacterItem[]
   attackDefinitions  CharacterAttackDefinition[]
@@ -736,6 +740,8 @@ model UserCharacter {
   race  Race   @relation(fields: [raceId], references: [id])
   deity Deity? @relation(fields: [deityId], references: [id])
   user  User   @relation(fields: [userId], references: [id])
+
+  currentAdvancement CharacterAdvancement? @relation("CurrentAdvancement", fields: [currentAdvancementId], references: [id], onDelete: SetNull)
 }
 
 model UserCharacterAbilityScore {
@@ -777,6 +783,8 @@ model CharacterAdvancement {
   feats          AdvancementFeat[]
   spellsKnown    AdvancementSpell[]
   featureChoices CharacterFeatureChoice[]
+
+  currentForCharacters UserCharacter[] @relation("CurrentAdvancement")
 
   @@unique([characterId, level, version])
 }

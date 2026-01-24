@@ -17,6 +17,7 @@ The WebSocket state update system provides real-time bidirectional communication
 - `apps/backend/src/features/shared/websocket/WebSocketServer.ts`
 - `apps/frontend/src/lib/services/WebSocketService.ts`
 - `apps/frontend/src/lib/hooks/useEntityStateSubscription.ts`
+- `apps/frontend/src/lib/hooks/useTopicSubscription.ts`
 
 ## 🏗️ **Architecture**
 
@@ -61,6 +62,28 @@ The WebSocket client:
 }
 ```
 
+#### **Subscribe Topic**
+
+Topic subscriptions are for **derived projections** (not DraftTypes). The first topic is `characterResolved`.
+
+```typescript
+{
+    type: 'subscribeTopic',
+    topic: 'characterResolved',
+    topicId: number // characterId
+}
+```
+
+#### **Unsubscribe Topic**
+
+```typescript
+{
+    type: 'unsubscribeTopic',
+    topic: 'characterResolved',
+    topicId: number // characterId
+}
+```
+
 ### **Server → Client Messages**
 
 #### **State Update**
@@ -83,6 +106,17 @@ The WebSocket client:
 }
 ```
 
+#### **Topic Update**
+
+```typescript
+{
+    type: 'topicUpdate',
+    topic: 'characterResolved',
+    topicId: number, // characterId
+    payload: ResolvedCharacterResult
+}
+```
+
 ## 🔄 **Subscription Flow**
 
 1. Client subscribes to entity state updates
@@ -90,6 +124,16 @@ The WebSocket client:
 3. State update is published to Redis Pub/Sub
 4. WebSocket server receives update and forwards to subscribed clients
 5. Frontend clients receive and apply updates
+
+### **Topic subscription flow (resolved character)**
+
+For resolved character updates, the backend publishes to a separate Redis channel:
+
+- `channel:character:resolved:{characterId}`
+
+The WebSocket server forwards these as `topicUpdate` messages for clients subscribed to:
+
+- `topic: 'characterResolved'` + `topicId: characterId`
 
 ## 🔐 **Authentication**
 

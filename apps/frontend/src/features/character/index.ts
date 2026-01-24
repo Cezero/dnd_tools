@@ -8,6 +8,7 @@ export { FeatureEntityHandlers } from './FeatureEntityHandlers';
 export { GestaltClassService } from './GestaltClassService';
 export { GestaltProgressionDisplay } from './GestaltProgressionDisplay';
 export { SelectedEntityDisplay } from './SelectedEntityDisplay';
+export { useAdvancementDraft } from './useAdvancementDraft';
 export { useCharacterEditState } from './useCharacterEditState';
 export { useChoiceResolver } from './useChoiceResolver';
 export { isClassSkill, getGrantedFeats } from './featureProgressionUtils';

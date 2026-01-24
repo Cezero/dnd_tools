@@ -6,6 +6,36 @@ import { numericParam } from './common.js';
 import { ValidationErrorResponseSchema } from './validation.js';
 
 /**
+ * Draft context payload for starting and updating drafts.
+ *
+ * Draft context is primarily used when `id = 0` (minted draft id) and the backend needs
+ * additional information to initialize the draft state (e.g., which character/level an
+ * Advancement draft belongs to).
+ *
+ * Note: `characterId` must support negative draft-only IDs during character creation.
+ */
+export const AdvancementDraftModeSchema = z.enum([
+    'create',
+    'edit-current',
+    'level-up',
+    // Future workflow stub (out of scope for current implementation plan)
+    'retrain',
+]);
+
+export const AdvancementDraftContextSchema = z.object({
+    characterId: z.number().int(),
+    level: z.number().int().min(1, 'Level must be at least 1'),
+    mode: AdvancementDraftModeSchema,
+});
+
+/**
+ * DraftContextSchema is intentionally permissive so the generic draft API can evolve without
+ * introducing breaking changes across all callers. Backend services should validate context
+ * more strictly based on `draftType`.
+ */
+export const DraftContextSchema = z.unknown();
+
+/**
  * Schema for draft reference requests (draftType and id).
  * 
  * Used in user session APIs for tracking which drafts a user is viewing or editing.
@@ -38,6 +68,14 @@ export const DraftRefRequestSchema = z.object({
      * - a positive integer for an existing persisted entity draft
      */
     id: z.number().int(),
+
+    /**
+     * Optional draft initialization context.
+     *
+     * Used when `id = 0` and the backend needs extra information to build an initial draft
+     * state (e.g., `{ characterId, level, mode }` for `DraftType.Advancement`).
+     */
+    context: DraftContextSchema.optional(),
 });
 
 export type DraftRefRequest = z.infer<typeof DraftRefRequestSchema>;

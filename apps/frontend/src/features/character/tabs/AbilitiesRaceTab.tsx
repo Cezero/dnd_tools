@@ -47,7 +47,8 @@ export function AbilitiesRaceTab({
     resolvedData: _resolvedData,
     isLoading,
     triggerFeatureResolution,
-    sharedData
+    sharedData,
+    character
 }: TabComponentProps): React.JSX.Element {
     const { getRaceSelectByEdition } = useCacheFunctions();
     const { rollDice, rollDiceGroups, isReady, isRolling, lastResult, onRollComplete } = useDiceBox();
@@ -61,6 +62,17 @@ export function AbilitiesRaceTab({
     const [showChevrons, setShowChevrons] = useState(true);
     const [pointBuyConfig, setPointBuyConfig] = useState<PointBuyOptions>(PointBuyOptions.Challenging);
     const [customPointBuy, setCustomPointBuy] = useState<number>(22);
+
+    const isCharacterCoreLocked = useMemo(() => {
+        if (!character || !state.characterId || state.characterId < 1) {
+            return false;
+        }
+
+        const hasLevel2Plus = character.advancements?.some((a) => a.level >= 2) ?? false;
+        const isEditingAbovePersistedLevel = (state.level ?? 1) > (character.characterLevel ?? 1);
+
+        return hasLevel2Plus || isEditingAbovePersistedLevel;
+    }, [character, state.characterId, state.level]);
 
     // State for debounced input handling
     const [inputValues, setInputValues] = useState<Record<number, string>>({});
@@ -786,7 +798,8 @@ export function AbilitiesRaceTab({
                                                     onChange={(e) => handleInputChange(ability.id, e.target.value)}
                                                     onFocus={() => handleInputFocus(ability.id)}
                                                     onBlur={() => handleInputBlur(ability.id)}
-                                                    className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    disabled={isCharacterCoreLocked}
+                                                    className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:text-gray-500 dark:disabled:text-gray-400 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                     min="3"
                                                     max="18"
                                                     draggable={baseValue !== null}
@@ -997,6 +1010,7 @@ export function AbilitiesRaceTab({
                                         setAbilityScore(ability.id, 8);
                                     });
                                 }}
+                                disabled={isCharacterCoreLocked}
                                 className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-xs"
                             >
                                 Reset
@@ -1015,7 +1029,7 @@ export function AbilitiesRaceTab({
                             options={Array.isArray(races) ? races : []}
                             label="Race"
                             placeholder={isLoadingRaces ? "Loading races..." : "Select"}
-                            disabled={isLoadingRaces}
+                            disabled={isLoadingRaces || isCharacterCoreLocked}
                             labelExtraClassName='text-lg font-semibold'
                             componentExtraClassName="flex items-center mb-4 gap-2"
                             itemTextExtraClassName='w-16'

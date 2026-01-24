@@ -1,6 +1,7 @@
 import type { Response, NextFunction } from 'express';
 
 import { ValidatedBodyT } from '@/util/validated-types';
+import { prisma } from '@/lib/prisma';
 import type {
     DraftRefRequest,
     UpdateStateValueRequest,
@@ -24,6 +25,100 @@ let draftLockServiceInstance: DraftLockService | null = null;
 let draftStateServiceInstance: DraftStateService | null = null;
 let userSessionServiceInstance: UserSessionService | null = null;
 let stateUpdateServiceInstance: StateUpdateService | null = null;
+
+async function validateAdvancementStartEditingRequest(args: {
+    entityId: number;
+    context: unknown;
+}): Promise<void> {
+    const { context, entityId } = args;
+
+    if (entityId !== 0) {
+        const advancement = await prisma.characterAdvancement.findUnique({
+            where: { id: entityId },
+            select: { characterId: true },
+        });
+
+        if (!advancement) {
+            throw new Error(`Advancement ${entityId} not found`);
+        }
+
+        const character = await prisma.userCharacter.findUnique({
+            where: { id: advancement.characterId },
+            select: { currentAdvancementId: true },
+        });
+
+        if (!character) {
+            throw new Error(`Character ${advancement.characterId} not found`);
+        }
+
+        const allowedId =
+            character.currentAdvancementId ??
+            (await prisma.characterAdvancement.findFirst({
+                where: { characterId: advancement.characterId },
+                orderBy: [{ level: 'desc' }, { version: 'desc' }],
+                select: { id: true },
+            }))?.id;
+
+        if (!allowedId) {
+            throw new Error(`Character ${advancement.characterId} has no advancements`);
+        }
+
+        if (entityId !== allowedId) {
+            throw new Error('Only the current advancement is editable');
+        }
+
+        return;
+    }
+
+    if (!context || typeof context !== 'object') {
+        throw new Error('Advancement draft requires context: { characterId, level, mode }');
+    }
+
+    const maybe = context as { characterId?: unknown; level?: unknown; mode?: unknown };
+    const characterId = typeof maybe.characterId === 'number' ? maybe.characterId : NaN;
+    const level = typeof maybe.level === 'number' ? maybe.level : NaN;
+    const mode = typeof maybe.mode === 'string' ? maybe.mode : 'unknown';
+
+    if (Number.isNaN(characterId) || Number.isNaN(level)) {
+        throw new Error('Advancement draft context must include numeric characterId and level');
+    }
+
+    if (mode === 'create') {
+        if (level !== 1) {
+            throw new Error('Create advancement drafts must start at level 1');
+        }
+        // characterId may be draft-only (negative) during creation
+        return;
+    }
+
+    if (mode === 'level-up') {
+        if (characterId < 1) {
+            throw new Error('Level-up advancement drafts require a persisted characterId');
+        }
+
+        const characterExists = await prisma.userCharacter.findUnique({
+            where: { id: characterId },
+            select: { id: true },
+        });
+        if (!characterExists) {
+            throw new Error(`Character ${characterId} not found`);
+        }
+
+        const max = await prisma.characterAdvancement.aggregate({
+            where: { characterId },
+            _max: { level: true },
+        });
+
+        const maxLevel = max._max.level ?? 0;
+        if (level !== maxLevel + 1) {
+            throw new Error(`Level-up drafts must target level ${maxLevel + 1}`);
+        }
+        return;
+    }
+
+    // TODO(retrain): add retrain mode validation and append-only semantics
+    throw new Error(`Unsupported advancement draft mode: ${mode}`);
+}
 
 function getDraftLockService(): DraftLockService {
     if (!draftLockServiceInstance) {
@@ -80,12 +175,21 @@ export async function StartDraftEditing(
             return;
         }
 
-        const { draftType, id: entityId } = req.body;
+        const { context, draftType, id: entityId } = req.body;
 
         // Validate draft type
         if (!isValidDraftType(draftType)) {
             res.status(400).json({ error: `Invalid draft type: ${draftType}` });
             return;
+        }
+
+        if (draftType === DraftType.Advancement) {
+            try {
+                await validateAdvancementStartEditingRequest({ entityId, context });
+            } catch (error) {
+                res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid advancement startEditing request' });
+                return;
+            }
         }
 
         const lockService = getDraftLockService();
@@ -95,11 +199,6 @@ export async function StartDraftEditing(
 
         // For new drafts (id = 0), mint a unique negative draft ID and initialize state.
         if (entityId === 0) {
-            if (draftType === DraftType.Character) {
-                res.status(400).json({ error: 'DraftType.Character does not support startEditing(id=0).' });
-                return;
-            }
-
             const mintDraftId = (): number => {
                 // `Date.now() * 1000` keeps us within Number.MAX_SAFE_INTEGER; add a small random component for same-ms collisions.
                 const seed = Date.now() * 1000 + Math.floor(Math.random() * 1000);
@@ -128,8 +227,15 @@ export async function StartDraftEditing(
 
             try {
                 await userSessionService.setEditingEntity(userId, draftType, draftId);
-                const initialState = await draftConfig.getInitialCreateState(draftId, userId);
-                await stateService.setState(draftType, draftId, initialState);
+                try {
+                    const initialState = await draftConfig.getInitialCreateState(draftId, userId, context);
+                    await stateService.setState(draftType, draftId, initialState);
+                } catch (error) {
+                    await lockService.releaseLock(draftType, draftId, userId);
+                    await userSessionService.clearEditingEntity(userId, draftType, draftId);
+                    res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to initialize draft state' });
+                    return;
+                }
 
                 res.json({
                     success: true,
@@ -168,9 +274,13 @@ export async function StartDraftEditing(
                 entityState = initialState;
             }
 
-            // For character, trigger resolution and publish via WebSocket
-            if (draftType === DraftType.Character && draftConfig.onStateUpdate) {
-                await draftConfig.onStateUpdate(entityId, entityState as unknown, userId);
+            // Optional draft-specific side effects (e.g., character resolution publish).
+            if (draftConfig.onStateUpdate) {
+                await draftConfig.onStateUpdate(entityId, entityState as unknown, userId, {
+                    path: '',
+                    action: 0,
+                    context,
+                });
             }
 
             res.json({
@@ -223,7 +333,7 @@ export async function UpdateDraftValue(
             return;
         }
 
-        const { action, draftType, id: entityId, path, value } = req.body;
+        const { action, context, draftType, id: entityId, path, value } = req.body;
 
         // Validate draft type
         if (!isValidDraftType(draftType)) {
@@ -249,13 +359,13 @@ export async function UpdateDraftValue(
             action
         );
 
-        // For character, trigger resolution and publish via WebSocket after state update
-        if (draftType === DraftType.Character && draftConfig.onStateUpdate) {
-            const stateService = getDraftStateService();
-            const currentState = await stateService.getState(draftType, entityId);
-            if (currentState) {
-                await draftConfig.onStateUpdate(entityId, currentState as unknown, userId);
-            }
+        // Optional draft-specific side effects (e.g., character resolution publish).
+        if (draftConfig.onStateUpdate) {
+            await draftConfig.onStateUpdate(entityId, updateResult.updatedState as unknown, userId, {
+                path,
+                action: action ?? 0,
+                context,
+            });
         }
 
         res.json({
@@ -307,7 +417,7 @@ export async function SaveDraftState(
             return;
         }
 
-        const { draftType, id: entityId } = req.body;
+        const { context, draftType, id: entityId } = req.body;
 
         // Validate draft type
         if (!isValidDraftType(draftType)) {
@@ -367,8 +477,27 @@ export async function SaveDraftState(
         const savedEntityId = await draftConfig.saveService.saveSessionToMySQL(
             entityId,
             validatedState,
-            userId
+            userId,
+            context
         );
+
+        // If this was a composite create-save, also clean up the linked Advancement draft session.
+        const maybeContext = context as { advancementDraftId?: unknown } | undefined;
+        const advancementDraftId =
+            typeof maybeContext?.advancementDraftId === 'number' ? maybeContext.advancementDraftId : null;
+        if (draftType === DraftType.Character && advancementDraftId && advancementDraftId !== 0) {
+            try {
+                const advLockedBy = await lockService.checkLock(DraftType.Advancement, advancementDraftId);
+                if (advLockedBy === userId) {
+                    await lockService.releaseLock(DraftType.Advancement, advancementDraftId, userId);
+                }
+                await userSessionService.clearEditingEntity(userId, DraftType.Advancement, advancementDraftId);
+                await stateService.deleteState(DraftType.Advancement, advancementDraftId);
+            } catch (error) {
+                // Best-effort cleanup; don't fail the save response.
+                console.error('Error cleaning up linked advancement draft after character save:', error);
+            }
+        }
 
         // Release lock and clear from user session
         await lockService.releaseLock(draftType, entityId, userId);

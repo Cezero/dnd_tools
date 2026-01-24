@@ -1,50 +1,23 @@
 import type { Server as HTTPServer , IncomingMessage } from 'http';
 import { WebSocketServer as WSServer, WebSocket } from 'ws';
 
+import { WebSocketClientMessageSchema, type WebSocketClientMessage, type WebSocketServerMessage } from '@shared/schema';
 import { DraftType } from '@shared/static-data';
 
 import { authService } from '../../auth/authService';
 import { DraftStatePubSub } from '../draftState/DraftStatePubSub';
 
 /**
- * WebSocket message types for client-server communication.
- */
-interface SubscribeMessage {
-    type: 'subscribe';
-    entityType: string;
-    entityId: number;
-}
-
-interface UnsubscribeMessage {
-    type: 'unsubscribe';
-    entityType: string;
-    entityId: number;
-}
-
-type ClientMessage = SubscribeMessage | UnsubscribeMessage;
-
-interface StateUpdateMessage {
-    type: 'stateUpdate';
-    entityType: string;
-    entityId: number;
-    state: unknown;
-}
-
-interface ErrorMessage {
-    type: 'error';
-    message: string;
-}
-
-type ServerMessage = StateUpdateMessage | ErrorMessage;
-
-/**
  * Client connection information.
+ * 
+ * TODO should be in types.ts
  */
 interface ClientConnection {
     ws: WebSocket;
     clientId: string;
     userId: number | null;
     subscriptions: Set<string>; // Set of "draftType:entityId" strings (draftType is numeric)
+    topicSubscriptions: Set<string>; // Set of "topic:topicId" strings
 }
 
 /**
@@ -87,6 +60,7 @@ export class WebSocketServer {
     private nextClientId = 1;
     // Track how many clients are subscribed to each entity
     private entitySubscriptions: Map<string, Set<string>> = new Map(); // "draftType:entityId" -> Set of clientIds (draftType is numeric)
+    private topicSubscriptions: Map<string, Set<string>> = new Map(); // "topic:topicId" -> Set of clientIds
 
     constructor() {
         this.pubSub = new DraftStatePubSub();
@@ -158,7 +132,8 @@ export class WebSocketServer {
             ws,
             clientId,
             userId,
-            subscriptions: new Set()
+            subscriptions: new Set(),
+            topicSubscriptions: new Set(),
         };
 
         this.clients.set(clientId, connection);
@@ -168,8 +143,13 @@ export class WebSocketServer {
         // Handle incoming messages
         ws.on('message', (data: Buffer) => {
             try {
-                const message: ClientMessage = JSON.parse(data.toString());
-                this.handleClientMessage(clientId, message);
+                const raw = JSON.parse(data.toString()) as unknown;
+                const parsed = WebSocketClientMessageSchema.safeParse(raw);
+                if (!parsed.success) {
+                    this.sendError(ws, 'Invalid message format');
+                    return;
+                }
+                this.handleClientMessage(clientId, parsed.data);
             } catch (error) {
                 console.error(`Error parsing message from client ${clientId}:`, error);
                 this.sendError(ws, 'Invalid message format');
@@ -224,7 +204,7 @@ export class WebSocketServer {
      * @param clientId - The client ID
      * @param message - The message from the client
      */
-    private async handleClientMessage(clientId: string, message: ClientMessage): Promise<void> {
+    private async handleClientMessage(clientId: string, message: WebSocketClientMessage): Promise<void> {
         const connection = this.clients.get(clientId);
         if (!connection) {
             console.error(`Client ${clientId} not found`);
@@ -240,8 +220,99 @@ export class WebSocketServer {
                 await this.handleUnsubscribe(clientId, message.entityType, message.entityId);
                 break;
 
+            case 'subscribeTopic':
+                await this.handleSubscribeTopic(clientId, message.topic, message.topicId);
+                break;
+
+            case 'unsubscribeTopic':
+                await this.handleUnsubscribeTopic(clientId, message.topic, message.topicId);
+                break;
+
             default:
-                this.sendError(connection.ws, `Unknown message type: ${(message as { type: string }).type}`);
+                this.sendError(connection.ws, 'Unknown message type');
+        }
+    }
+
+    private buildTopicChannel(topic: 'characterResolved', topicId: number): string {
+        switch (topic) {
+            case 'characterResolved':
+                return `channel:character:resolved:${topicId}`;
+            default: {
+                const _exhaustive: never = topic;
+                return _exhaustive;
+            }
+        }
+    }
+
+    private async handleSubscribeTopic(clientId: string, topic: 'characterResolved', topicId: number): Promise<void> {
+        const connection = this.clients.get(clientId);
+        if (!connection) {
+            return;
+        }
+
+        const subscriptionKey = `${topic}:${topicId}`;
+        if (connection.topicSubscriptions.has(subscriptionKey)) {
+            return;
+        }
+
+        const channel = this.buildTopicChannel(topic, topicId);
+
+        try {
+            if (!this.topicSubscriptions.has(subscriptionKey)) {
+                this.topicSubscriptions.set(subscriptionKey, new Set());
+
+                await this.pubSub.subscribeChannel(channel, (payload) => {
+                    const clientIds = this.topicSubscriptions.get(subscriptionKey);
+                    if (!clientIds) {
+                        return;
+                    }
+
+                    for (const subscribedClientId of clientIds) {
+                        const subscribedConnection = this.clients.get(subscribedClientId);
+                        if (subscribedConnection) {
+                            this.sendTopicUpdate(subscribedConnection.ws, topic, topicId, payload);
+                        }
+                    }
+                });
+            }
+
+            this.topicSubscriptions.get(subscriptionKey)!.add(clientId);
+            connection.topicSubscriptions.add(subscriptionKey);
+            console.log(`Client ${clientId} subscribed to topic ${topic}:${topicId}`);
+        } catch (error) {
+            console.error(`Error subscribing client ${clientId} to topic ${topic}:${topicId}:`, error);
+            this.sendError(connection.ws, `Failed to subscribe to topic ${topic}:${topicId}`);
+        }
+    }
+
+    private async handleUnsubscribeTopic(clientId: string, topic: 'characterResolved', topicId: number): Promise<void> {
+        const connection = this.clients.get(clientId);
+        if (!connection) {
+            return;
+        }
+
+        const subscriptionKey = `${topic}:${topicId}`;
+        if (!connection.topicSubscriptions.has(subscriptionKey)) {
+            return;
+        }
+
+        const channel = this.buildTopicChannel(topic, topicId);
+
+        try {
+            const clientIds = this.topicSubscriptions.get(subscriptionKey);
+            if (clientIds) {
+                clientIds.delete(clientId);
+                if (clientIds.size === 0) {
+                    await this.pubSub.unsubscribeChannel(channel);
+                    this.topicSubscriptions.delete(subscriptionKey);
+                }
+            }
+
+            connection.topicSubscriptions.delete(subscriptionKey);
+            console.log(`Client ${clientId} unsubscribed from topic ${topic}:${topicId}`);
+        } catch (error) {
+            console.error(`Error unsubscribing client ${clientId} from topic ${topic}:${topicId}:`, error);
+            this.sendError(connection.ws, `Failed to unsubscribe from topic ${topic}:${topicId}`);
         }
     }
 
@@ -388,6 +459,29 @@ export class WebSocketServer {
             }
         }
 
+        // Unsubscribe from all topic subscriptions
+        for (const topicKey of connection.topicSubscriptions) {
+            const [topic, topicIdStr] = topicKey.split(':');
+            const topicId = parseInt(topicIdStr, 10);
+
+            if (Number.isNaN(topicId)) {
+                continue;
+            }
+
+            try {
+                const clientIds = this.topicSubscriptions.get(topicKey);
+                if (clientIds) {
+                    clientIds.delete(clientId);
+                    if (clientIds.size === 0) {
+                        await this.pubSub.unsubscribeChannel(this.buildTopicChannel(topic as 'characterResolved', topicId));
+                        this.topicSubscriptions.delete(topicKey);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error unsubscribing ${clientId} from topic ${topicKey}:`, error);
+            }
+        }
+
         this.clients.delete(clientId);
         console.log(`WebSocket client disconnected: ${clientId}`);
     }
@@ -401,7 +495,7 @@ export class WebSocketServer {
      * @param state - The updated state
      */
     private sendStateUpdate(ws: WebSocket, draftType: DraftType, entityId: number, state: unknown): void {
-        const message: StateUpdateMessage = {
+        const message: WebSocketServerMessage = {
             type: 'stateUpdate',
             entityType: String(draftType), // Send as string for frontend compatibility
             entityId,
@@ -420,13 +514,26 @@ export class WebSocketServer {
      * @param message - The error message
      */
     private sendError(ws: WebSocket, message: string): void {
-        const errorMessage: ErrorMessage = {
+        const errorMessage: WebSocketServerMessage = {
             type: 'error',
             message
         };
 
         if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify(errorMessage));
+        }
+    }
+
+    private sendTopicUpdate(ws: WebSocket, topic: 'characterResolved', topicId: number, payload: unknown): void {
+        const message: WebSocketServerMessage = {
+            type: 'topicUpdate',
+            topic,
+            topicId,
+            payload,
+        };
+
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(message));
         }
     }
 
@@ -442,7 +549,7 @@ export class WebSocketServer {
     async broadcastStateUpdate<T>(draftType: DraftType, entityId: number, state: T): Promise<void> {
         const subscriptionKey = `${draftType}:${entityId}`;
 
-        for (const [clientId, connection] of this.clients.entries()) {
+        for (const [_clientId, connection] of this.clients.entries()) {
             if (connection.subscriptions.has(subscriptionKey)) {
                 this.sendStateUpdate(connection.ws, draftType, entityId, state);
             }

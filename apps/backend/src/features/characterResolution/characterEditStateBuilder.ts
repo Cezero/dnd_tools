@@ -1,7 +1,5 @@
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { CharacterEditState, CharacterWithAllDetailsResponse } from '@shared/schema';
 import { EditionId } from '@shared/static-data';
-
-import type { CharacterEditState } from './types';
 
 /**
  * Builds a CharacterEditState from character data.
@@ -27,6 +25,7 @@ export function buildCharacterEditState(
 ): CharacterEditState {
     return {
         characterId: character.id,
+        name: character.name,
         abilityScores: character.abilityScores?.map(as => ({
             abilityId: as.abilityId,
             value: as.value

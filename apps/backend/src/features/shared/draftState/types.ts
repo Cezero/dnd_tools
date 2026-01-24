@@ -48,7 +48,12 @@ export interface DraftConfig<TState = unknown> {
      * draft id (may be newly created for new drafts).
      */
     saveService: {
-        saveSessionToMySQL(id: number, state: TState | Record<string, unknown>, userId: number): Promise<number>;
+        saveSessionToMySQL(
+            id: number,
+            state: TState | Record<string, unknown>,
+            userId: number,
+            context?: unknown
+        ): Promise<number>;
     };
 
     /**
@@ -63,13 +68,18 @@ export interface DraftConfig<TState = unknown> {
      *
      * Called when the client requests `startEditing` with `id = 0` and the backend mints a new negative draft id.
      */
-    getInitialCreateState: (draftId: number, userId: number) => Promise<TState>;
+    getInitialCreateState: (draftId: number, userId: number, context?: unknown) => Promise<TState>;
 
     /**
      * Optional callback that is called after state updates.
      *
      * For character, this triggers resolution and WebSocket publish.
      */
-    onStateUpdate?: (id: number, state: TState, userId: number) => Promise<void>;
+    onStateUpdate?: (
+        id: number,
+        state: TState,
+        userId: number,
+        update: { path: string; action: number; context?: unknown }
+    ) => Promise<void>;
 }
 

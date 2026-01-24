@@ -251,6 +251,7 @@ export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
  */
 export const CharacterEditStateSchema = z.object({
     characterId: z.number().int(),
+    name: commonValidations.name(),
     abilityScores: z.array(z.object({
         abilityId: commonValidations.positiveInt('Ability ID'),
         value: z.number().int(),

@@ -20,6 +20,8 @@ The character resolution system is a centralized backend service that handles al
 - Frontend Hook: `apps/frontend/src/features/character/useCharacterResolution.ts`
 - Draft state services: `apps/backend/src/features/shared/draftState/`
 - Resolved results cache: `apps/backend/src/features/characterResolution/characterResolvedResultsService.ts`
+- Resolved projection publisher: `apps/backend/src/features/characterResolution/characterResolutionProjectionService.ts`
+- WebSocket topic protocol: `packages/shared/schema/src/websocket.ts`
 
 ## 🏗️ **Core Components**
 
@@ -50,7 +52,47 @@ Character editing integrates with the shared draft system:
 - Mutations use **path-based updates** (`PUT /drafts/update-value`) implemented by `StateUpdateService`.
 - Saving uses the draft registry (`draftRegistry.ts`) to choose validation and persistence behavior per `DraftType`.
 
-Character resolution is a separate concern from draft storage: when character state changes, the backend can compute a `ResolvedCharacterResult` and publish/cache it (see `draftRegistry.ts` and `characterResolvedResultsService.ts`).
+Character resolution is a separate concern from draft storage: when character state changes, the backend can compute a `ResolvedCharacterResult` and publish/cache it.
+
+**Current approach (projection + publish-on-change)**:
+- Draft updates (Character + Advancement) trigger a debounced resolution pass.
+- The backend hashes the resulting `ResolvedCharacterResult` and **only publishes** when the hash changes.
+- Resolved results are cached in Redis via `CharacterResolvedResultsService`.
+- Resolved results are published over a dedicated WebSocket topic (`characterResolved`) so clients can subscribe without subscribing to the underlying drafts.
+
+See:
+- `apps/backend/src/features/characterResolution/characterResolutionProjectionService.ts`
+- [WebSocket State Updates](../application-overview/websocket-state-updates.md#topic-update)
+
+**Effective advancements (future retraining support)**:
+The database schema allows multiple `CharacterAdvancement` rows per `(characterId, level)` via a `version` field. Resolution should use the **effective** advancement per level (highest version) when duplicates exist. Retraining workflows are intentionally out-of-scope for now; implement them as append-only “new version” rows and update the effective selection logic as needed.
+
+### **Character vs. Advancement drafts**
+
+The project treats the following as first-class draft types:
+
+- `DraftType.Character`: Base character fields (race, ability scores, equipment, etc.)
+- `DraftType.Advancement`: Level-specific decisions (class(es), skills, feats, feature choices, spells-known)
+
+**Mutability rule (normal workflow)**:
+- If the character has only a **level 1** advancement: both the Character and the level 1 Advancement are editable.
+- Once a **level 2+** advancement exists: the base Character and all lower-level advancements are treated as immutable in normal workflows; only the current (highest-level) advancement remains editable.
+
+### **Create and level-up workflows (high level)**
+
+- **Create**:
+  - Frontend starts drafts with `id=0` for both `DraftType.Character` and `DraftType.Advancement`.
+  - Backend mints temporary negative IDs (draft-only) for these sessions.
+  - Users may discard these drafts without persisting partial database rows.
+
+- **Level-up**:
+  - Frontend starts an `Advancement` draft with `id=0` and a context `{ characterId, level: maxLevel + 1, mode: 'level-up' }`.
+  - Backend mints a temporary negative advancement draft ID and publishes resolved updates based on the draft.
+
+### **TODO: Retraining and polymorph**
+
+- **Retraining (append-only)**: should be implemented by creating a new `(characterId, level, version)` row and updating the “effective advancement” selection to pick the highest version for that level. This requires explicit UI and permission rules; it is not part of the normal workflow.
+- **Polymorph / reincarnate (append-only base character changes)**: should be modeled as an append-only “base character revision” system with rollback support. This is out of scope for the current workflow; design should avoid assuming base character fields are always immutable.
 
 ### **ChoiceResolver**
 

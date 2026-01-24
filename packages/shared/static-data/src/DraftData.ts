@@ -23,6 +23,7 @@ export const DraftType = {
     Race: 2,
     Feature: 3,
     Character: 4,
+    Advancement: 5,
 } as const;
 
 export type DraftType = typeof DraftType[keyof typeof DraftType];
@@ -66,6 +67,7 @@ export const DRAFT_TYPE_MAP: BaseMap<CoreComponent> = {
     [DraftType.Race]: { id: DraftType.Race, name: 'Race' },
     [DraftType.Feature]: { id: DraftType.Feature, name: 'Feature' },
     [DraftType.Character]: { id: DraftType.Character, name: 'Character' },
+    [DraftType.Advancement]: { id: DraftType.Advancement, name: 'Advancement' },
 };
 
 /**
@@ -83,6 +85,7 @@ export const DRAFT_TYPE_NAME_TO_ID_MAP: Record<string, DraftType> = {
     'race': DraftType.Race,
     'feature': DraftType.Feature,
     'character': DraftType.Character,
+    'advancement': DraftType.Advancement,
 };
 
 /**
@@ -94,6 +97,7 @@ export const DRAFT_TYPE_ID_TO_NAME_MAP: Record<DraftType, string> = {
     [DraftType.Race]: 'race',
     [DraftType.Feature]: 'feature',
     [DraftType.Character]: 'character',
+    [DraftType.Advancement]: 'advancement',
 };
 
 /**
