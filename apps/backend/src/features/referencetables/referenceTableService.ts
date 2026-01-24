@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     ReferenceTableDataResponse,
     ReferenceTableSlugParamRequest,
@@ -10,8 +10,6 @@ import {
 } from '@shared/schema';
 
 import { ReferenceTableService } from './types';
-
-const prisma = new PrismaClient();
 
 /**
  * Reference Table Service

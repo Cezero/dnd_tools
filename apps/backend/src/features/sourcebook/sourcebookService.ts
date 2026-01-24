@@ -1,11 +1,9 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     SourceBookCacheResponse,
 } from '@shared/schema';
 
 import type { SourceBookService } from './types';
-
-const prisma = new PrismaClient();
 
 /**
  * Source Book Service

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type {
     CharacterFeatureUses,
     UpdateMoneyRequest,
@@ -13,8 +13,6 @@ import type {
 } from '@shared/schema';
 import { SpellSlotType, USES_FREQUENCY_ENUM } from '@shared/static-data';
 
-
-const prisma = new PrismaClient();
 
 /**
  * Service for managing character detail operations.

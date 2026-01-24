@@ -450,6 +450,44 @@ export class WebSocketServer {
     }
 
     /**
+     * Returns a read-only snapshot of current client subscriptions.
+     *
+     * This is used by admin monitoring endpoints to show live WebSocket subscription state
+     * without exposing raw sockets or internal mutable structures.
+     */
+    getSubscriptionsSnapshot(): Array<{ clientId: string; userId: number | null; subscriptions: Array<{ draftType: DraftType; id: number }> }> {
+        const snapshot: Array<{ clientId: string; userId: number | null; subscriptions: Array<{ draftType: DraftType; id: number }> }> = [];
+
+        for (const connection of this.clients.values()) {
+            const subscriptions: Array<{ draftType: DraftType; id: number }> = [];
+
+            for (const subscriptionKey of connection.subscriptions) {
+                const [draftTypeStr, entityIdStr] = subscriptionKey.split(':');
+                const draftType = parseInt(draftTypeStr, 10) as DraftType;
+                const entityId = parseInt(entityIdStr, 10);
+
+                if (Number.isNaN(draftType) || Number.isNaN(entityId)) {
+                    continue;
+                }
+
+                if (!Object.values(DraftType).includes(draftType)) {
+                    continue;
+                }
+
+                subscriptions.push({ draftType, id: entityId });
+            }
+
+            snapshot.push({
+                clientId: connection.clientId,
+                userId: connection.userId,
+                subscriptions
+            });
+        }
+
+        return snapshot;
+    }
+
+    /**
      * Closes the WebSocket server and cleans up resources.
      */
     async close(): Promise<void> {

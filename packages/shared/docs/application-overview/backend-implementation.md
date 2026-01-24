@@ -138,15 +138,16 @@ The backend provides utility functions for common transformations:
 **Database Layer** (Prisma Client):
 - **Purpose**: Data persistence and retrieval
 - **Responsibilities**: Database queries, relationship management, transactions
-- **Pattern**: Prisma ORM with type-safe queries
+- **Pattern**: Prisma ORM with type-safe queries, using a shared process-level client
 - **Integration**: Direct database access
+- **Implementation**: Import the shared client from `apps/backend/src/lib/prisma.ts` to avoid creating many `PrismaClient` instances
 
 **Session Storage Layer** (Redis):
-- **Purpose**: High-performance in-memory session storage
-- **Responsibilities**: Session state persistence, expiration management
-- **Pattern**: Redis with JSON serialization and TTL-based expiration
-- **Integration**: Separate from main database for session-specific data
-- **Use Cases**: Temporary editing sessions, state that survives restarts
+- **Purpose**: High-performance in-memory state storage
+- **Responsibilities**: Draft state persistence, lock management, real-time publish/subscribe
+- **Pattern**: Redis with JSON serialization and per-key TTL
+- **Integration**: Separate from main database for draft/session-specific state
+- **Use Cases**: Draft editing state, real-time resolution updates, user session metadata
 
 **Benefits**:
 - **Separation of Concerns**: Clear boundaries between layers

@@ -18,7 +18,8 @@ The character resolution system is a centralized backend service that handles al
 - Backend Services: `apps/backend/src/features/characterResolution/`
 - Frontend API Client: `apps/frontend/src/services/api/CharacterResolutionApi.ts`
 - Frontend Hook: `apps/frontend/src/features/character/useCharacterResolution.ts`
-- Session Service: `apps/backend/src/features/shared/session/GenericSessionService.ts`
+- Draft state services: `apps/backend/src/features/shared/draftState/`
+- Resolved results cache: `apps/backend/src/features/characterResolution/characterResolvedResultsService.ts`
 
 ## 🏗️ **Core Components**
 
@@ -41,34 +42,15 @@ Main service orchestrating the complete feature resolution process.
 
 **Source File**: `apps/backend/src/features/characterResolution/characterResolutionService.ts`
 
-### **CharacterSessionService**
+### **Draft state integration**
 
-Service for managing character editing sessions in Redis.
+Character editing integrates with the shared draft system:
 
-**Purpose**: Provides persistent session storage using Redis. Sessions survive backend restarts and automatically expire after inactivity via Redis TTL.
+- Draft state is stored in Redis via `DraftStateService`.
+- Mutations use **path-based updates** (`PUT /drafts/update-value`) implemented by `StateUpdateService`.
+- Saving uses the draft registry (`draftRegistry.ts`) to choose validation and persistence behavior per `DraftType`.
 
-**Key Features**:
-- Automatic cleanup of expired sessions (every 5 minutes)
-- Session state persistence (character edits, resolved features)
-- Per-user, per-character session isolation
-- WAL mode for concurrent access
-
-**Key Methods**:
-- `getSession()` - Retrieves active session by character ID and user ID
-- `getSessionById()` - Retrieves session by unique session ID
-- `createSession()` - Creates new editing session
-- `updateSession()` - Updates session with new state
-- `deleteSession()` - Deletes session by session key
-- `deleteSessionById()` - Deletes session by session ID
-- `cleanupExpiredSessions()` - Removes expired sessions
-
-**Session Storage**:
-- Database: Redis
-- Key Pattern: `session:character:{characterId}:{userId}`
-- Storage: JSON serialization with Redis TTL
-- Expiration: Configurable via `SESSION_EXPIRATION_MINUTES` (default: 30 minutes)
-
-**Source File**: `apps/backend/src/features/characterResolution/characterSessionService.ts`
+Character resolution is a separate concern from draft storage: when character state changes, the backend can compute a `ResolvedCharacterResult` and publish/cache it (see `draftRegistry.ts` and `characterResolvedResultsService.ts`).
 
 ### **ChoiceResolver**
 
@@ -142,37 +124,21 @@ Processes features granted by other features, enabling multi-level cascading res
 
 ## 💾 **Session Storage**
 
-The session storage uses Redis (not Prisma). Sessions are stored as JSON strings with Redis TTL for automatic expiration.
+Character draft state and resolved results are stored in Redis (not Prisma) using two distinct keys:
 
-### **Redis Session Storage**
-
-Stores character editing session state in Redis.
-
-**Key Pattern**: `session:character:{characterId}:{userId}`
-
-**Data Structure**:
-- `id` (string) - Unique session identifier (UUID)
-- `characterId` (number) - Reference to character
-- `userId` (number) - Reference to user
-- `sessionKey` (string) - Composite key: `characterId:userId`
-- `characterState` (object) - CharacterEditState (JSON serialized)
-- `resolvedResult` (object) - ResolvedCharacterResult (JSON serialized)
-- `createdAt` (number) - Unix timestamp (milliseconds)
-- `updatedAt` (number) - Unix timestamp (milliseconds)
-- `expiresAt` (number) - Unix timestamp (milliseconds)
+- **Draft state**: `state:{DraftType.Character}:{characterId}` (managed by `DraftStateService`)
+- **Resolved results**: `state:character:{characterId}:resolved` (managed by `CharacterResolvedResultsService`)
 
 **Storage Features**:
-- **TTL-Based Expiration**: Redis TTL automatically expires sessions
-- **JSON Serialization**: Session data stored as JSON strings
+- **TTL-Based Expiration**: Draft state uses a long TTL and should be explicitly deleted when no longer needed
+- **JSON Serialization**: State is stored as JSON strings
 - **High Performance**: In-memory Redis storage for fast access
-- **Automatic Cleanup**: Redis automatically removes expired sessions
+- **Automatic Cleanup**: Redis removes keys when TTL expires
 
 **Redis Configuration**:
 - Connection: Configured via `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` environment variables
-- TTL: Configurable via `SESSION_EXPIRATION_MINUTES` (default: 30 minutes)
+- TTL: Draft TTL is managed by the backend draft services
 - Initialization: Automatic on first access
-
-**Source File**: `apps/backend/src/features/shared/session/GenericSessionService.ts`
 
 ## 🔌 **API Endpoints**
 
@@ -312,14 +278,14 @@ Cancel/delete a session.
 Spell add/remove operations (`addSpellKnown`/`removeSpellKnown`) integrate with the resolution session system to maintain consistency between spell state and resolved features.
 
 **Backend Integration**:
-- `characterService.addSpellKnown()` and `characterService.removeSpellKnown()` check for active resolution sessions
+- `characterService.addSpellKnown()` and `characterService.removeSpellKnown()` integrate with the resolved-character session state when it exists
 - If a session exists, these methods:
   - Rebuild the complete `CharacterEditState` from the updated character (including new/removed spells)
   - Re-resolve character features with the updated character state
   - Update the session with the new resolved result
   - Include the updated `ResolvedCharacterResult` in the response
-- If no session exists, the methods still perform validation but do not update session state
-- The resolved progressions from the session (or on-demand resolution) are used for validation:
+- **Free-grant** spellbook operations (`isFreeGrant: true`) require an active resolved-character session (HTTP 409 otherwise).
+- The resolved progressions from the active session are used for validation:
   - Free grant quantity limits for spellbook classes
   - Spell level validation (max castable at advancement level)
   - 0th level spell grant detection

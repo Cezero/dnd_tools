@@ -16,6 +16,9 @@ import {
     UpdateFeaturesRequest,
     GetFeaturesResponse,
     GetFeatureListResponse,
+    GetOrphanedFeaturesResponse,
+    DeleteOrphanedFeaturesRequest,
+    DeleteOrphanedFeaturesResponse,
     CloneClassFeaturesRequest,
     ForkFeatureRequest,
     ForkFeatureResponse,
@@ -202,3 +205,28 @@ export async function ForkFeatureForClass(req: ValidatedBodyT<ForkFeatureRequest
     );
     res.status(200).json({ forkedFeatureId });
 } 
+
+/**
+ * Lists orphaned features for manual admin review and deletion.
+ *
+ * This supports the intentionally manual orphan-cleanup workflow described in
+ * `featureSystemService.cleanupOrphanedFeatures`.
+ */
+export async function GetOrphanedFeatures(req: ValidatedNoInput<GetOrphanedFeaturesResponse>, res: Response, _next: NextFunction) {
+    const result = await featureSystemService.getOrphanedFeatures();
+    res.status(200).json(result);
+}
+
+/**
+ * Deletes selected orphaned features.
+ *
+ * Only features that are still orphaned at delete time are removed; non-orphan IDs are ignored.
+ */
+export async function DeleteOrphanedFeatures(
+    req: ValidatedBodyT<DeleteOrphanedFeaturesRequest, DeleteOrphanedFeaturesResponse>,
+    res: Response,
+    _next: NextFunction
+) {
+    const result = await featureSystemService.deleteOrphanedFeatures(req.body.featureIds);
+    res.status(200).json(result);
+}

@@ -6,4 +6,4 @@ export { UpdateStateValue } from './stateUpdateController';
 export { parseEntityPath } from '../utils';
 export type { ParsedEntityPath } from '../utils';
 export { getDraftConfig, isValidDraftType, getRegisteredDraftTypes } from './draftRegistry';
-export type { DraftConfig } from './draftRegistry';
+export type { DraftConfig } from './types';

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type {
     MonsterIdParamRequest,
     UpdateMonsterRequest,
@@ -10,8 +10,6 @@ import type {
 } from '@shared/schema';
 
 import type { MonsterService } from './types';
-
-const prisma = new PrismaClient();
 
 // Helper function to recursively traverse baseMonsterId chain
 // Returns hierarchy in order: most base first, variant last

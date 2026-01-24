@@ -2,9 +2,6 @@ import { createClient, createCluster, type RedisClientType, type RedisClusterTyp
 
 import { DraftType } from '@shared/static-data';
 
-
-import { getRedisClient } from '../session/redisClient';
-
 /**
  * Service for managing Redis pub/sub operations for draft state updates.
  * 

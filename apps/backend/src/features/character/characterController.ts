@@ -1,7 +1,6 @@
-import { Response, NextFunction } from 'express';
+import { NextFunction, Response } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
-import { PrismaClient } from '@shared/prisma-client';
+import { ValidatedBodyT, ValidatedNoInput, ValidatedParamsBodyT, ValidatedParamsT } from '@/util/validated-types';
 import {
     CharacterIdParamRequest,
     AdvancementIdParamRequest,
@@ -36,6 +35,7 @@ import {
     ReorderAttackDefinitionsRequest,
     // NEW: Spell selection types
     CharacterSpellSelectionResponse,
+    FeatureWithRelations,
     AddSpellKnownRequest,
     RemoveSpellKnownRequest,
     CharacterSpellSelectionParamRequest,
@@ -52,19 +52,16 @@ import {
     SyncSpellsKnownParamRequest,
     SpellCastParamRequest,
     GetAvailableFeatsResponse,
-    FeatInQueryResponse,
 } from '@shared/schema';
-
 
 import { characterService } from './characterService';
 import { AvailableFeatService } from '../characterResolution/availableFeatService';
 import { CharacterResolutionService } from '../characterResolution/characterResolutionService';
+import { CharacterResolvedResultsService } from '../characterResolution/characterResolvedResultsService';
 import { classService } from '../class/classService';
 import { featService } from '../feat/featService';
 import { raceService } from '../race/raceService';
 import { resolveCharacterToResult } from '../shared/draftState/draftRegistry';
-
-const prisma = new PrismaClient();
 
 // Character methods
 export async function GetAllCharacters(req: ValidatedNoInput<GetAllCharactersResponse>, res: Response, _next: NextFunction) {
@@ -396,15 +393,42 @@ export async function GetCharacterSpellSelection(req: ValidatedParamsT<Character
 
 export async function AddSpellKnown(req: ValidatedBodyT<AddSpellKnownRequest>, res: Response, _next: NextFunction) {
     try {
-        // TODO: Fetch resolved features if needed for spellbook class validation
-        // For now, pass undefined - frontend should provide resolved features for free grant validation
+        /**
+         * Free-grant spellbook operations require an active character resolution session.
+         *
+         * Rationale:
+         * - Free-grant quotas and spellbook rules depend on `resolvedProgressions`.
+         * - We intentionally avoid re-resolving here to prevent redundant, expensive resolution work.
+         *
+         * Contract:
+         * - If `isFreeGrant === true` and there is no active resolved-character state, we return 409.
+         * - The caller should start viewing/editing the character (which initializes resolved state),
+         *   then retry.
+         */
+        const isFreeGrant = req.body.isFreeGrant ?? false;
+
+        let resolvedProgressions: FeatureWithRelations[] | undefined;
+        if (isFreeGrant) {
+            const resolvedResultsService = new CharacterResolvedResultsService();
+            const resolvedResults = await resolvedResultsService.getResolvedResults(req.body.characterId);
+            if (!resolvedResults?.resolvedProgressions) {
+                res.status(409).json({
+                    error:
+                        'Free-grant spellbook operations require an active character resolution session. ' +
+                        'Start viewing/editing the character to initialize resolved state, then retry.',
+                });
+                return;
+            }
+            resolvedProgressions = resolvedResults.resolvedProgressions;
+        }
+
         const result = await characterService.addSpellKnown(
             req.body.characterId,
             req.body.classId,
             req.body.spellId,
             req.body.advancementId,
-            req.body.isFreeGrant ?? false,
-            undefined // resolvedProgressions - should be fetched if isFreeGrant is true
+            isFreeGrant,
+            resolvedProgressions
         );
         res.json(result);
     } catch (error) {

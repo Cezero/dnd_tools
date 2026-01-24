@@ -1,13 +1,11 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import { AuthServiceResult, JwtPayload, LoginUserRequest, RegisterUserRequest, AuthUser } from '@shared/schema';
 
 import type { AuthService } from './types';
 import { config } from '../../config';
-
-const prisma = new PrismaClient();
 
 // Helper function to transform user data for JWT (minimal authentication data only)
 function transformUserForJwt(user: AuthUser): Omit<JwtPayload, 'iat' | 'exp'> {

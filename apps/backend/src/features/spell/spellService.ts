@@ -1,9 +1,7 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type { SpellIdParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse, ClassSpellListEntry, SpellCacheResponse, Spell } from '@shared/schema';
 
 import type { SpellService } from './types';
-
-const prisma = new PrismaClient();
 
 export const spellService: SpellService = {
     async getAllSpells(): Promise<GetAllSpellsResponse> {

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     DomainIdParamRequest,
     CreateDomainRequest,
@@ -14,8 +14,6 @@ import { FeatureSourceType } from '@shared/static-data';
 
 import type { DomainService } from './types';
 import { featureSystemService } from '../featureSystem/featureSystemService';
-
-const prisma = new PrismaClient();
 
 export const domainService: DomainService = {
     async getAllDomains(): Promise<GetAllDomainsResponse> {

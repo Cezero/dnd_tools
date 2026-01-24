@@ -4,6 +4,8 @@ import express, { Request, Response, RequestHandler } from 'express';
 import { config } from './config';
 import { closeRedisClient } from './features/shared/session/redisClient';
 import { WebSocketServer } from './features/shared/websocket/WebSocketServer';
+import { setWebSocketServerInstance } from './features/shared/websocket/webSocketServerRegistry';
+import { disconnectPrisma } from './lib/prisma';
 import { errorHandler } from './middleware/errorMiddleware';
 import { RequireAuthExcept } from './middleware/requireAuthExcept';
 import { routes } from './routes';
@@ -28,11 +30,13 @@ const server = app.listen(config.port, () => console.log(`Backend listening on p
 // Initialize WebSocket server
 const wsServer = new WebSocketServer();
 wsServer.initialize(server);
+setWebSocketServerInstance(wsServer);
 
 // Graceful shutdown
 const shutdown = async () => {
     console.log('Shutting down gracefully...');
     await wsServer.close();
+    await disconnectPrisma();
     await closeRedisClient();
     server.close(() => {
         console.log('Server closed');

@@ -2,10 +2,10 @@
 
 ## Overview
 
-The session and state management system provides a generic, type-safe architecture for managing editing sessions across multiple entity types (Character, Class, Race). This system eliminates code duplication while maintaining type safety and system-specific functionality.
+The session and state management system provides a generic architecture for managing **draft editing** across multiple entity types (Character, Class, Race, Feature). Drafts are stored in Redis, protected by per-draft locks, and persisted to MySQL on save.
 
 **Source Files**:
-- Backend: `apps/backend/src/features/shared/session/`
+- Backend: `apps/backend/src/features/shared/draftState/`
 - Frontend: `apps/frontend/src/lib/hooks/`
 
 ## Architecture
@@ -15,26 +15,27 @@ The system follows a layered architecture with clear separation between generic 
 ```mermaid
 graph TB
     subgraph Frontend["Frontend Layer"]
-        EditComponent[Edit Component<br/>CharacterEdit/ClassEdit/RaceEdit]
-        EditStateHook[useGenericEditState<br/>State Management]
-        ResolutionHook[useGenericResolution<br/>Session Management]
-        SyncUtils[useStateSync<br/>State Synchronization]
+        EditComponent[EditComponent]
+        EditStateHook[useGenericEditState]
+        ResolutionHook[useGenericResolution]
+        SyncUtils[useStateSync]
     end
     
     subgraph API["API Layer"]
-        ResolutionApi[Resolution API<br/>Character/Class/Race]
+        DraftApi[DraftApi]
     end
     
     subgraph Backend["Backend Layer"]
-        SessionController[GenericSessionController<br/>Request Handlers]
-        SessionService[GenericSessionService<br/>Session Storage]
-        UpdateApplier[GenericUpdateApplier<br/>State Updates]
-        SaveService[SaveService<br/>MySQL Persistence]
+        DraftController[DraftController]
+        DraftLockService[DraftLockService]
+        DraftStateService[DraftStateService]
+        StateUpdateService[StateUpdateService]
+        DraftRegistry[DraftRegistry]
     end
     
     subgraph Database["Database Layer"]
-        Redis[(Redis<br/>Session Storage<br/>with TTL)]
-        MySQL[(MySQL<br/>Entity Storage)]
+        Redis[(Redis)]
+        MySQL[(MySQL)]
     end
     
     EditComponent --> EditStateHook
@@ -42,19 +43,14 @@ graph TB
     EditComponent --> SyncUtils
     EditStateHook --> ResolutionHook
     SyncUtils --> ResolutionHook
-    ResolutionHook --> ResolutionApi
-    ResolutionApi --> SessionController
-    SessionController --> SessionService
-    SessionController --> UpdateApplier
-    SessionController --> SaveService
-    SessionService --> Redis
-    SaveService --> MySQL
-    
-    style EditComponent fill:#e1f5ff
-    style ResolutionHook fill:#fff4e1
-    style SessionService fill:#ffe1f5
-    style Redis fill:#e1ffe1
-    style MySQL fill:#e1ffe1
+    ResolutionHook --> DraftApi
+    DraftApi --> DraftController
+    DraftController --> DraftLockService
+    DraftController --> DraftStateService
+    DraftController --> StateUpdateService
+    DraftController --> DraftRegistry
+    DraftStateService --> Redis
+    DraftRegistry --> MySQL
 ```
 
 ## Core Concepts
@@ -83,16 +79,16 @@ stateDiagram-v2
     Cancelled --> [*]: Complete
     
     note right of Active
-        Session state stored in Redis
-        Updates applied via UpdateApplier
+        Draft state stored in Redis
+        Updates applied via path-based updates
         State synced to frontend
         Automatic expiration via TTL
     end note
     
     note right of Saving
-        Session state transformed
+        Draft state transformed
         Saved to MySQL
-        Session deleted from Redis
+        Draft deleted from Redis
     end note
 ```
 
@@ -108,9 +104,8 @@ sequenceDiagram
     participant SyncUtils
     participant ResolutionHook
     participant API
-    participant SessionController
-    participant SessionService
-    participant UpdateApplier
+    participant DraftController
+    participant DraftStateService
     
     User->>EditComponent: Change field value
     EditComponent->>EditStateHook: updateState({ type: 'SET_NAME', payload: { name: 'New Name' } })
@@ -122,125 +117,40 @@ sequenceDiagram
     SyncUtils->>SyncUtils: Build update operation
     SyncUtils->>ResolutionHook: applyUpdate(update)
     
-    ResolutionHook->>API: applyUpdate(entityId, sessionId, update)
-    API->>SessionController: ApplyUpdate handler
-    SessionController->>SessionService: getSessionById(sessionId)
-    SessionService-->>SessionController: Session data
-    SessionController->>UpdateApplier: applyUpdateToState(state, update)
-    UpdateApplier-->>SessionController: Updated state
-    SessionController->>SessionService: updateSession(sessionKey, updatedState)
-    SessionService-->>SessionController: Success
-    SessionController-->>API: { state: updatedState }
+    ResolutionHook->>API: updateDraftValue(draftType, id, path, value)
+    API->>DraftController: UpdateDraftValue handler
+    DraftController->>DraftStateService: getState(draftType, id)
+    DraftStateService-->>DraftController: Draft state
+    DraftController->>DraftStateService: setState(draftType, id, updatedState)
+    DraftStateService-->>DraftController: Success
+    DraftController-->>API: { success: true }
     API-->>ResolutionHook: Updated state
     ResolutionHook->>ResolutionHook: Update local state
     ResolutionHook-->>EditComponent: State synchronized
 ```
 
-### Generic Type System
+### Draft type system
 
-The system uses TypeScript generics to provide type safety while sharing code:
+The system is unified around `DraftType` (shared enum) and a small set of generic draft operations:
 
-```mermaid
-classDiagram
-    class GenericSessionService~TEntityId, TState~ {
-        +getSession(entityId, userId) Session
-        +createSession(entityId, userId, state) Promise~Session~
-        +updateSession(sessionKey, state) Promise~void~
-        +deleteSession(sessionKey) Promise~void~
-        -config: SessionConfig
-        -db: Database
-    }
-    
-    class SessionConfig~TEntityId, TState~ {
-        +entityType: 'class' | 'race' | 'character'
-        +buildSessionKey(entityId, userId) string
-    }
-    
-    class Session~TEntityId, TState~ {
-        +id: string
-        +entityId: TEntityId
-        +userId: number
-        +sessionKey: string
-        +state: TState
-        +createdAt: Date
-        +updatedAt: Date
-        +expiresAt: Date
-    }
-    
-    class ClassSessionService {
-        +getSession(classId, userId) ClassSession
-    }
-    
-    class RaceSessionService {
-        +getSession(raceId, userId) RaceSession
-    }
-    
-    class CharacterSessionService {
-        +getSession(characterId, userId) CharacterSession
-    }
-    
-    GenericSessionService~number, ClassEditState~ <|-- ClassSessionService
-    GenericSessionService~number, RaceEditState~ <|-- RaceSessionService
-    GenericSessionService~number, CharacterEditState~ <|-- CharacterSessionService
-    GenericSessionService --> SessionConfig
-    GenericSessionService --> Session
-```
+- **Start editing**: acquire lock and load/initialize draft state
+- **Update value**: apply a path-based change to draft JSON
+- **Save**: validate draft state and persist to MySQL via a draft-type specific save service
+- **Cancel**: release lock and stop editing (draft state may remain cached for a period)
+
+The backend selects the correct validation and persistence strategy via the draft registry:
+
+- `apps/backend/src/features/shared/draftState/draftRegistry.ts`
 
 ## Usage Patterns
 
 ### Backend Usage
 
-#### Creating a Session Service
+#### Draft routes and controllers
 
-```typescript
-import { GenericSessionService } from '@/features/shared/session';
-import { getClassSessionDatabase } from './sessionDatabase';
-import type { ClassEditState } from './types';
+All draft operations go through the shared draft routes in `apps/backend/src/features/shared/draftState/draftRoutes.ts`.
 
-const classSessionService = new GenericSessionService<number, ClassEditState>({
-    entityType: 'class',
-    buildSessionKey: (classId, userId) => `${classId}:${userId}`,
-    db: getUnifiedSessionDatabase()
-});
-```
-
-#### Creating an Update Applier Config
-
-```typescript
-import type { UpdateApplierConfig } from '@/features/shared/session';
-import type { ClassEditState, ClassUpdate } from './types';
-
-export const classUpdateApplierConfig: UpdateApplierConfig<ClassEditState, ClassUpdate> = {
-    applyFieldUpdate: (state, field, value) => ({ ...state, [field]: value }),
-    isFieldUpdate: (update) => update.type === 'UPDATE_CLASS_FIELD',
-    extractFieldUpdate: (update) => 
-        update.type === 'UPDATE_CLASS_FIELD' 
-            ? { field: update.payload.field, value: update.payload.value }
-            : null,
-    // ... other strategies
-};
-```
-
-#### Using Generic Controller
-
-```typescript
-import { initializeSession, getSessionState, applyUpdate, saveSession, cancelSession } from '@/features/shared/session';
-
-const config: SessionControllerConfig<number, ClassEditState, ClassUpdate, DnDClass> = {
-    entityService: { getById: classService.getClassById },
-    sessionService: classSessionService,
-    buildInitialState: (cls) => ({ /* build state from class */ }),
-    updateApplierConfig: classUpdateApplierConfig,
-    saveService: { saveSessionToMySQL: classSaveService.saveSessionToMySQL },
-    getEntityIdFromParams: (params) => parseInt(params.classId),
-    getSessionIdFromParams: (params) => params.sessionId
-};
-
-// In route handler
-export async function InitializeClassSession(req, res, next) {
-    await initializeSession(req, res, next, config);
-}
-```
+Draft persistence to MySQL is handled by the draft registry (`draftRegistry.ts`), which maps draft types to per-entity save services.
 
 ### Frontend Usage
 
@@ -286,9 +196,11 @@ useFieldsSync(
     resolution.applyUpdate,
     {
         getEntityId: () => state.classId,
-        buildUpdate: (field, value) => ({ 
-            type: 'UPDATE_CLASS_FIELD', 
-            payload: { field, value } 
+        buildUpdate: (field, value) => ({
+            draftType: DraftType.Class,
+            id: state.classId,
+            path: field,
+            value
         }),
         shouldSync: (prev, curr) => true,
         fields: ['name', 'abbreviation', 'description']
@@ -298,86 +210,42 @@ useFieldsSync(
 
 ## Database Schema
 
-### Redis Session Storage
+### Redis draft storage
 
-All entity types (class, race, character) use Redis for session storage with a consistent key pattern structure. Sessions are stored as JSON strings with automatic expiration via Redis TTL.
+All draft types store draft JSON in Redis using a simple key scheme implemented by `DraftStateService`:
 
-**Key Patterns**:
-- By session key: `session:{entityType}:{sessionKey}` (e.g., `session:class:1:100`)
-- By session ID: `session:{entityType}:id:{sessionId}` (e.g., `session:class:id:550e8400-e29b-41d4-a716-446655440000`)
-- Index: `session:{entityType}:index:{sessionKey}` → `{sessionId}` (for reverse lookup)
-
-**Data Structure**:
-Sessions are stored as JSON strings with the following structure:
-```json
-{
-    "id": "uuid-v4",
-    "entityId": 123,
-    "userId": 456,
-    "sessionKey": "123:456",
-    "state": { /* entity-specific state */ },
-    "createdAt": 1234567890,
-    "updatedAt": 1234567890,
-    "expiresAt": 1234567890
-}
-```
-
-For character sessions, the structure also includes `resolvedResult`:
-```json
-{
-    "id": "uuid-v4",
-    "characterId": 123,
-    "userId": 456,
-    "sessionKey": "123:456",
-    "characterState": { /* character edit state */ },
-    "resolvedResult": { /* resolved character result */ },
-    "createdAt": 1234567890,
-    "updatedAt": 1234567890,
-    "expiresAt": 1234567890
-}
-```
+- **Draft state key**: `state:{draftType}:{id}`
+- **Pub/sub channel**: `channel:state:{draftType}:{id}`
 
 **Key Features**:
 - **Redis Storage**: High-performance in-memory storage
-- **Automatic Expiration**: Redis TTL automatically removes expired sessions (no manual cleanup needed)
-- **Entity Type Discriminator**: Key prefixes (`session:class:`, `session:race:`, `session:character:`) organize sessions by entity type
-- **Multiple Lookups**: Sessions can be retrieved by session key or session ID
-- **TTL Management**: Sessions expire after configurable TTL (default: 30 minutes), extended on each update
+- **Draft Type Discriminator**: DraftType numeric value is embedded in the key
+- **Real-time propagation**: state updates can be published to watchers via Redis pub/sub
+- **TTL Management**: draft state uses a long TTL and should be explicitly deleted when no longer needed
 
 **Benefits**:
 - High-performance in-memory storage
-- Automatic expiration via Redis TTL (no cleanup intervals needed)
 - Scalable across multiple backend instances
-- Easy to add new entity types (just use new key prefix)
-- Consistent structure across all entity types
+- Easy to add new draft types (register DraftType + draftRegistry entry)
 
 **Configuration**:
 Redis connection is configured via environment variables:
 - `REDIS_HOST` (default: localhost)
 - `REDIS_PORT` (default: 6379)
 - `REDIS_PASSWORD` (optional, if Redis is password-protected)
-- `SESSION_EXPIRATION_MINUTES` (default: 30)
 
 ## Migration Guide
 
 ### Backend Migration Steps
 
-1. **Create Update Applier Config**:
-   - Create `{entity}UpdateApplierConfig.ts` with strategy functions
-   - Export config object
-
-2. **Update Session Service**:
-   - Replace service implementation with wrapper around `GenericSessionService`
-   - Provide entity-specific configuration
-
-3. **Update Controller**:
-   - Create `SessionControllerConfig` with entity-specific dependencies
-   - Replace controller functions with calls to generic controller functions
-   - Add response transformation if needed (for different response field names)
-
-4. **Update Update Applier**:
-   - Replace implementation with call to `genericApplyUpdateToState`
-   - Pass entity-specific config
+1. **Register draft type**:
+   - Add a `DraftType` entry (shared enum) and register it in `draftRegistry.ts`.
+2. **Add validation schema**:
+   - Use a schema from `@shared/schema` to validate/normalize draft state.
+3. **Add a save service**:
+   - Implement draft → request transformation and persistence to MySQL.
+4. **Use path-based updates**:
+   - Use `UpdateDraftValue` (`PUT /drafts/update-value`) for incremental changes.
 
 ### Frontend Migration Steps
 
@@ -394,9 +262,7 @@ Redis connection is configured via environment variables:
 
 ### Backend
 
-- [Generic Session Service](../application-overview/session-state-management-backend.md#generic-session-service)
-- [Generic Session Controller](../application-overview/session-state-management-backend.md#generic-session-controller)
-- [Generic Update Applier](../application-overview/session-state-management-backend.md#generic-update-applier)
+- [Draft state backend](../application-overview/session-state-management-backend.md)
 
 ### Frontend
 

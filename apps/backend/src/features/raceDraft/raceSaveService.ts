@@ -1,15 +1,10 @@
-import { ZodError } from 'zod';
-
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type { CreateRaceRequest, RaceDraftState, UpdateRaceRequest } from '@shared/schema';
 import { CreateRaceSchema, RaceDraftStateSchema, UpdateRaceSchema } from '@shared/schema';
 
 import { featureSystemService } from '../featureSystem/featureSystemService';
 import { raceService } from '../race/raceService';
-import { mapZodErrorsToFieldPaths, ValidationErrorWithPaths } from '../shared/utils';
-
-const prisma = new PrismaClient();
-
+import { parseDraftState } from '../shared/draftState/draftSaveUtils';
 
 /**
  * Transforms race session state to MySQL update request format.
@@ -73,18 +68,7 @@ export class RaceSaveService {
      * @returns The updated race
      */
     async saveSessionToMySQL(raceId: number, raceState: RaceDraftState | Record<string, unknown>, _userId: number): Promise<number> {
-        // Validate and coerce flexible state to RaceDraftState
-        let validatedState: RaceDraftState;
-        try {
-            validatedState = RaceDraftStateSchema.parse(raceState);
-        } catch (error) {
-            if (error instanceof ZodError) {
-                // Map Zod errors to field paths for frontend error display
-                const validationErrors = mapZodErrorsToFieldPaths(error);
-                throw new ValidationErrorWithPaths(validationErrors);
-            }
-            throw error;
-        }
+        const validatedState = parseDraftState(RaceDraftStateSchema.parse, raceState);
 
         // New drafts use negative IDs.
         if (raceId < 0) {

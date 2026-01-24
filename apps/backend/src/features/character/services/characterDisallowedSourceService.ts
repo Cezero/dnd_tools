@@ -1,11 +1,10 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type {
     CreateCharacterDisallowedSourceRequest,
     CharacterDisallowedSource,
     UpdateResponse,
 } from '@shared/schema';
 
-const prisma = new PrismaClient();
 
 /**
  * Service for managing character disallowed sources.

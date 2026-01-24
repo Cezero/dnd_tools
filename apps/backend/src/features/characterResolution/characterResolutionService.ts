@@ -1,12 +1,14 @@
 import type { FeatureWithRelations, CharacterWithAllDetailsResponse, DnDClass, FeatInQueryResponse, FeatureEntity, PendingChoice, Race } from '@shared/schema';
-import { EditionId } from '@shared/static-data';
+import { EditionId, EntityAppliesToType, EntityType } from '@shared/static-data';
 
+import { AvailableFeatService } from './availableFeatService';
 import { CascadingResolver } from './cascadingResolver';
 import { ChoiceResolver } from './choiceResolver';
 import { FeatureEntityHandlers } from './featureEntityHandlers';
 import { GestaltClassService } from './gestaltClassService';
-import type { ResolutionContext, ResolutionResult } from './types';
+import type { ResolutionContext, ResolutionResult, UserChoices } from './types';
 import { companionService } from '../companion/companionService';
+import { featService } from '../feat/featService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 
 /**
@@ -28,9 +30,9 @@ export class CharacterResolutionService {
      * Executes resolution in phases:
      * 1. Base features (race and class)
      * 2. Gestalt merging (if applicable)
-     * 3. Pending choice identification
-     * 4. User choice resolution
-     * 5. Granted feature resolution (cascading)
+     * 3. User choice resolution (derived from persisted CharacterFeatureChoice rows if not provided)
+     * 4. Granted feature resolution (cascading)
+     * 5. Pending choice identification (final stage; prerequisite-aware)
      * 6. Final compilation
      * 
      * **Spell Operation Integration**:
@@ -67,16 +69,14 @@ export class CharacterResolutionService {
             await resolution.resolveGestaltMerging();
         }
 
-        // Phase 3: Identify pending choices
-        await resolution.identifyPendingChoices();
+        // Phase 3: Resolve user choices (from context or persisted CharacterFeatureChoice rows)
+        await resolution.resolveEffectiveUserChoices();
 
-        // Phase 4: Resolve user choices (if provided)
-        if (context.userChoices) {
-            await resolution.resolveUserChoices(context.userChoices);
-        }
-
-        // Phase 5: Resolve granted features from choices
+        // Phase 4: Resolve granted features from choices
         await resolution.resolveGrantedFeatures();
+
+        // Phase 5: Identify pending choices (final stage; prerequisite-aware)
+        await resolution.identifyPendingChoices();
 
         // Phase 6: Final feature compilation
         return resolution.compileFinalFeatures();
@@ -155,25 +155,11 @@ class FeatureResolution {
         const [primaryFeatures, secondaryFeatures] = await Promise.all([
             featureSystemService.getFeaturesByClassId(
                 primaryClassId,
-                this.context.userChoices ? Object.entries(this.context.userChoices).flatMap(([featureId, entityIds]) =>
-                    entityIds.map((entityId: number) => ({
-                        featureId: parseInt(featureId, 10),
-                        featureEntityId: entityId,
-                        appliesToId: null,
-                        appliesToSubId: null
-                    }))
-                ) : undefined
+                this.buildCharacterFeatureChoices()
             ),
             featureSystemService.getFeaturesByClassId(
                 secondaryClassId,
-                this.context.userChoices ? Object.entries(this.context.userChoices).flatMap(([featureId, entityIds]) =>
-                    entityIds.map((entityId: number) => ({
-                        featureId: parseInt(featureId, 10),
-                        featureEntityId: entityId,
-                        appliesToId: null,
-                        appliesToSubId: null
-                    }))
-                ) : undefined
+                this.buildCharacterFeatureChoices()
             )
         ]);
 
@@ -223,18 +209,63 @@ class FeatureResolution {
                 featureEntityId: choice.featureEntityId
             }));
 
-        // Get all feats for choice options (if needed)
-        // This would need to be passed in or fetched
-        const allFeats: FeatInQueryResponse[] = []; // TODO: Fetch from featService if needed
+        const hasGeneralFeatChoice = this.resolvedProgressions.some((feature) =>
+            (feature.entities ?? []).some(
+                (entity) =>
+                    entity.type === EntityType.Choice &&
+                    entity.appliesTo === EntityAppliesToType.Feat &&
+                    (entity.appliesToId === null || entity.appliesToId === undefined)
+            )
+        );
+
+        let qualifiedFeats: FeatInQueryResponse[] | undefined;
+        if (hasGeneralFeatChoice && this.character.editionId) {
+            const editionIdsToQuery: number[] = [this.character.editionId];
+            if (this.character.editionId === EditionId.DND_3E || this.character.editionId === EditionId.DND_3_5E) {
+                editionIdsToQuery.push(EditionId.DND_3x);
+            }
+
+            const allFeatsResponse = await featService.getAllFeats();
+            const featsForEdition = allFeatsResponse.results.filter(
+                (feat) => feat.isVisible === true && editionIdsToQuery.includes(feat.editionId)
+            );
+
+            qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
+                this.character,
+                this.resolvedProgressions,
+                this.context.effectiveClassDetails ?? this.context.classDetails ?? null,
+                this.context.raceDetails ?? null,
+                featsForEdition
+            );
+        }
 
         this.pendingChoices = await ChoiceResolver.identifyPendingChoices(
             this.resolvedProgressions,
             this.character.editionId ?? undefined,
             existingChoices,
-            allFeats,
+            qualifiedFeats,
             this.targetLevel,
             classLevels.size > 0 ? classLevels : undefined
         );
+    }
+
+    /**
+     * Resolve user choices so cascading grants and pending-choice generation have accurate inputs.
+     *
+     * If `context.userChoices` is not provided, we derive it from persisted `CharacterFeatureChoice`
+     * rows by mapping each choice's feature/entity pair to the entity's `appliesTo` type.
+     */
+    async resolveEffectiveUserChoices(): Promise<void> {
+        if (!this.context.userChoices) {
+            const derivedChoices = this.deriveUserChoicesFromCharacterFeatureChoices();
+            if (derivedChoices) {
+                this.context.userChoices = derivedChoices;
+            }
+        }
+
+        if (this.context.userChoices) {
+            await this.resolveUserChoices(this.context.userChoices);
+        }
     }
 
     /**
@@ -319,6 +350,115 @@ class FeatureResolution {
     }
 
     // Private helper methods
+    /**
+     * Convert `ResolutionContext.userChoices` into the optional `characterFeatureChoices`
+     * argument expected by `featureSystemService`.
+     *
+     * Note: the current integration treats the `userChoices` map keys/values as IDs used
+     * to influence feature retrieval. This helper centralizes the mapping so it stays
+     * consistent across race/class/gestalt feature fetches.
+     */
+    private buildCharacterFeatureChoices():
+        | Array<{ featureId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+        | undefined {
+        const featureChoices = this.character.advancements?.flatMap((adv) => adv.featureChoices ?? []) ?? [];
+        if (featureChoices.length === 0) {
+            return undefined;
+        }
+
+        return featureChoices.map((choice) => ({
+            featureId: choice.featureId,
+            featureEntityId: choice.featureEntityId,
+            appliesToId: choice.appliesToId ?? null,
+            appliesToSubId: choice.appliesToSubId ?? null,
+        }));
+    }
+
+    private deriveUserChoicesFromCharacterFeatureChoices(): UserChoices | undefined {
+        const derivedChoices: UserChoices = {};
+
+        if (!this.character.advancements) {
+            return undefined;
+        }
+
+        for (const adv of this.character.advancements) {
+            if (!adv.featureChoices) {
+                continue;
+            }
+
+            for (const choice of adv.featureChoices) {
+                if (choice.appliesToId === null || choice.appliesToId === undefined) {
+                    continue;
+                }
+
+                for (const feature of this.resolvedProgressions) {
+                    if (feature.id !== choice.featureId || !feature.entities) {
+                        continue;
+                    }
+
+                    const entity = feature.entities.find((e) => e.id === choice.featureEntityId);
+                    if (!entity) {
+                        continue;
+                    }
+
+                    const appliesToType = entity.appliesTo;
+                    if (!derivedChoices[appliesToType]) {
+                        derivedChoices[appliesToType] = [];
+                    }
+
+                    if (!derivedChoices[appliesToType].includes(choice.appliesToId)) {
+                        derivedChoices[appliesToType].push(choice.appliesToId);
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return Object.keys(derivedChoices).length > 0 ? derivedChoices : undefined;
+    }
+
+    /**
+     * Add progressions to `resolvedProgressions`, applying level filtering and
+     * optionally de-duplicating by progression id. Entity processing is performed
+     * consistently for every included progression.
+     */
+    private addApplicableProgressions(
+        progressions: FeatureWithRelations[],
+        options?: { dedupeById?: boolean }
+    ): void {
+        const applicableProgressions = progressions.filter(
+            (feature: FeatureWithRelations) => feature.level <= this.targetLevel
+        );
+
+        for (const feature of applicableProgressions) {
+            if (options?.dedupeById) {
+                const existingProgression = this.resolvedProgressions.find(p => p.id === feature.id);
+                if (existingProgression) {
+                    continue;
+                }
+            }
+
+            this.processProgressionEntities(feature);
+            this.resolvedProgressions.push(feature);
+        }
+    }
+
+    /**
+     * Process all entities within a progression to collect warnings/errors and
+     * perform any entity-side effects required by resolution.
+     */
+    private processProgressionEntities(feature: FeatureWithRelations): void {
+        if (!feature.entities) {
+            return;
+        }
+
+        for (const entity of feature.entities) {
+            const result = FeatureEntityHandlers.processFeatureEntity(entity, feature);
+            this.processEntityResult(result, feature);
+        }
+    }
+
     private async resolveRacialFeatures(): Promise<void> {
         if (!this.context.raceDetails) {
             return;
@@ -333,35 +473,14 @@ class FeatureResolution {
 
         const racialProgressions = await featureSystemService.getFeaturesByRaceId(
             raceId,
-            this.context.userChoices ? Object.entries(this.context.userChoices).flatMap(([featureId, entityIds]) =>
-                entityIds.map((entityId: number) => ({
-                    featureId: parseInt(featureId, 10),
-                    featureEntityId: entityId,
-                    appliesToId: null,
-                    appliesToSubId: null
-                }))
-            ) : undefined
+            this.buildCharacterFeatureChoices()
         );
 
         if (!racialProgressions || racialProgressions.length === 0) {
             return;
         }
 
-        // Filter features to only include those at or below the target level
-        const applicableProgressions = racialProgressions.filter(
-            (feature: FeatureWithRelations) => feature.level <= this.targetLevel
-        );
-
-        // Process each applicable racial feature
-        for (const feature of applicableProgressions) {
-            if (feature.entities) {
-                for (const entity of feature.entities) {
-                    const result = FeatureEntityHandlers.processFeatureEntity(entity, feature);
-                    this.processEntityResult(result, feature);
-                }
-            }
-            this.resolvedProgressions.push(feature);
-        }
+        this.addApplicableProgressions(racialProgressions);
     }
 
     private async resolveClassFeatures(classDetails: DnDClass): Promise<void> {
@@ -378,35 +497,14 @@ class FeatureResolution {
 
         const classProgressions = await featureSystemService.getFeaturesByClassId(
             classId,
-            this.context.userChoices ? Object.entries(this.context.userChoices).flatMap(([featureId, entityIds]) =>
-                entityIds.map((entityId: number) => ({
-                    featureId: parseInt(featureId, 10),
-                    featureEntityId: entityId,
-                    appliesToId: null,
-                    appliesToSubId: null
-                }))
-            ) : undefined
+            this.buildCharacterFeatureChoices()
         );
 
         if (!classProgressions || classProgressions.length === 0) {
             return;
         }
 
-        // Filter features to only include those at or below the target level
-        const applicableProgressions = classProgressions.filter(
-            (feature: FeatureWithRelations) => feature.level <= this.targetLevel
-        );
-
-        // Process each applicable class feature
-        for (const feature of applicableProgressions) {
-            if (feature.entities) {
-                for (const entity of feature.entities) {
-                    const result = FeatureEntityHandlers.processFeatureEntity(entity, feature);
-                    this.processEntityResult(result, feature);
-                }
-            }
-            this.resolvedProgressions.push(feature);
-        }
+        this.addApplicableProgressions(classProgressions);
     }
 
     /**
@@ -435,27 +533,7 @@ class FeatureResolution {
             allEditionProgressions.push(...features);
         }
 
-        // Filter features to only include those at or below the target level
-        const applicableProgressions = allEditionProgressions.filter(
-            feature => feature.level <= this.targetLevel
-        );
-
-        // Process each edition feature
-        for (const feature of applicableProgressions) {
-            // Check if this feature already exists to avoid duplicates
-            const existingProgression = this.resolvedProgressions.find(p => p.id === feature.id);
-            if (existingProgression) {
-                continue;
-            }
-
-            if (feature.entities) {
-                for (const entity of feature.entities) {
-                    const result = FeatureEntityHandlers.processFeatureEntity(entity, feature);
-                    this.processEntityResult(result, feature);
-                }
-            }
-            this.resolvedProgressions.push(feature);
-        }
+        this.addApplicableProgressions(allEditionProgressions, { dedupeById: true });
     }
 
     /**
@@ -486,27 +564,7 @@ class FeatureResolution {
         // Get all feat features for the selected feats
         const featProgressions = await featureSystemService.getFeaturesByFeatIds(Array.from(featIds));
 
-        // Filter features to only include those at or below the target level
-        const applicableProgressions = featProgressions.filter(
-            feature => feature.level <= this.targetLevel
-        );
-
-        // Process each applicable feat feature
-        for (const feature of applicableProgressions) {
-            // Check if this feature already exists to avoid duplicates
-            const existingProgression = this.resolvedProgressions.find(p => p.id === feature.id);
-            if (existingProgression) {
-                continue;
-            }
-
-            if (feature.entities) {
-                for (const entity of feature.entities) {
-                    const result = FeatureEntityHandlers.processFeatureEntity(entity, feature);
-                    this.processEntityResult(result, feature);
-                }
-            }
-            this.resolvedProgressions.push(feature);
-        }
+        this.addApplicableProgressions(featProgressions, { dedupeById: true });
     }
 
     /**
@@ -539,28 +597,7 @@ class FeatureResolution {
         // Get all companion features for the selected companions
         for (const companionId of companionIds) {
             const companionProgressions = await featureSystemService.getFeaturesByCompanionId(companionId);
-
-            // Filter features to only include those at or below the target level
-            const applicableProgressions = companionProgressions.filter(
-                feature => feature.level <= this.targetLevel
-            );
-
-            // Process each applicable companion feature
-            for (const feature of applicableProgressions) {
-                // Check if this feature already exists to avoid duplicates
-                const existingProgression = this.resolvedProgressions.find(p => p.id === feature.id);
-                if (existingProgression) {
-                    continue;
-                }
-
-                if (feature.entities) {
-                    for (const entity of feature.entities) {
-                        const result = FeatureEntityHandlers.processFeatureEntity(entity, feature);
-                        this.processEntityResult(result, feature);
-                    }
-                }
-                this.resolvedProgressions.push(feature);
-            }
+            this.addApplicableProgressions(companionProgressions, { dedupeById: true });
         }
     }
 
@@ -580,13 +617,3 @@ class FeatureResolution {
         // The FeatureWithRelations already has source attribution (sourceType, classId, raceId, etc.)
     }
 }
-
-
-
-
-
-
-
-
-
-

@@ -1,7 +1,7 @@
 import { Response } from 'express';
 
+import { prisma } from '@/lib/prisma';
 import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
-import { PrismaClient } from '@shared/prisma-client';
 import {
     CompanionIdParamRequest,
     CreateCompanionRequest,
@@ -15,8 +15,6 @@ import {
 } from '@shared/schema';
 
 import { companionService } from './companionService.js';
-
-const prisma = new PrismaClient();
 
 /**
  * Fetches all companions from the database.

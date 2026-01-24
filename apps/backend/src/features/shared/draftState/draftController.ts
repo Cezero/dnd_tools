@@ -1,5 +1,4 @@
 import type { Response, NextFunction } from 'express';
-import { z } from 'zod';
 
 import { ValidatedBodyT } from '@/util/validated-types';
 import type {
@@ -10,13 +9,13 @@ import type {
     DraftSaveResponse,
     CancelEditingResponse,
 } from '@shared/schema';
-import { DraftRefRequestSchema, UpdateStateValueSchema } from '@shared/schema';
 import { DraftType } from '@shared/static-data';
 
 import { DraftLockService } from './DraftLockService';
 import { getDraftConfig, isValidDraftType } from './draftRegistry';
 import { DraftStateService } from './DraftStateService';
 import { StateUpdateService } from './StateUpdateService';
+import { isZodErrorLike } from './zodErrorUtils';
 import { UserSessionService } from '../session/UserSessionService';
 import { ValidationErrorWithPaths } from '../utils';
 
@@ -349,12 +348,11 @@ export async function SaveDraftState(
         try {
             validatedState = draftConfig.editStateSchema.parse(entityStateRaw);
         } catch (error) {
-            if (error instanceof z.ZodError) {
-                // Map Zod errors to field paths for frontend error display
-                const validationErrors = error.issues.map(err => ({
-                    path: err.path.join('.'),
-                    message: err.message,
-                    code: err.code,
+            if (isZodErrorLike(error)) {
+                const validationErrors = error.issues.map((issue) => ({
+                    path: issue.path.map((segment) => String(segment)).join('.'),
+                    message: issue.message,
+                    code: issue.code,
                 }));
                 res.status(400).json({
                     success: false as const,

@@ -10,6 +10,7 @@ import {
     FeatureQuerySchema,
     CloneClassFeaturesRequestSchema,
     ForkFeatureRequestSchema,
+    DeleteOrphanedFeaturesRequestSchema,
 } from '@shared/schema';
 
 import {
@@ -28,6 +29,8 @@ import {
     CloneClassFeatures,
     ForkFeatureForClass,
     GetFeatureLockStatus,
+    GetOrphanedFeatures,
+    DeleteOrphanedFeatures,
 } from './featureSystemController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -59,5 +62,9 @@ post('/features/bulk', requireAdmin, { body: CreateFeatureRequestSchema }, Creat
 // Clone and Fork Routes (for variant class creation)
 post('/clone-class-features', requireAdmin, { body: CloneClassFeaturesRequestSchema }, CloneClassFeatures);
 post('/fork-feature', requireAdmin, { body: ForkFeatureRequestSchema }, ForkFeatureForClass);
+
+// Orphaned feature cleanup (admin-only manual workflow)
+get('/orphaned', requireAdmin, {}, GetOrphanedFeatures);
+deleteRoute('/orphaned', requireAdmin, { body: DeleteOrphanedFeaturesRequestSchema }, DeleteOrphanedFeatures);
 
 export { FeatureSystemRouter }; 

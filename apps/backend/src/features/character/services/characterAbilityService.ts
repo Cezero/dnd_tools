@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type {
     CreateCharacterAbilityScoreRequest,
     UpdateCharacterAbilityScoreRequest,
@@ -6,8 +6,6 @@ import type {
     CreateResponse,
     UpdateResponse,
 } from '@shared/schema';
-
-const prisma = new PrismaClient();
 
 /**
  * Service for managing character ability scores.

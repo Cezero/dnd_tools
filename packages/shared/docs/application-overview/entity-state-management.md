@@ -14,9 +14,9 @@ The entity state management system provides a decoupled architecture for managin
 - **Context-aware Locking**: Long-lived locks for admin editing, message ordering for game sessions
 
 **Source Files**:
-- `apps/backend/src/features/shared/entityState/EntityStateService.ts`
-- `apps/backend/src/features/shared/entityState/EntityLockService.ts`
-- `apps/backend/src/features/shared/entityState/EntityStatePubSub.ts`
+- `apps/backend/src/features/shared/draftState/DraftStateService.ts`
+- `apps/backend/src/features/shared/draftState/DraftLockService.ts`
+- `apps/backend/src/features/shared/draftState/DraftStatePubSub.ts`
 - `apps/backend/src/features/shared/session/UserSessionService.ts`
 
 ## 🏗️ **Architecture**
@@ -26,13 +26,19 @@ The entity state management system provides a decoupled architecture for managin
 Entity states are stored in Redis with a consistent key pattern:
 
 ```
-state:{entityType}:{entityId}
+state:{draftType}:{id}
 ```
 
 **Examples**:
-- `state:class:1` - State for class with ID 1
-- `state:feature:5` - State for feature with ID 5
-- `state:character:10` - State for character with ID 10
+- `state:1:1` - State for class (DraftType.Class=1) with ID 1
+- `state:3:5` - State for feature (DraftType.Feature=3) with ID 5
+- `state:4:10` - State for character (DraftType.Character=4) with ID 10
+
+State updates also write a metadata key:
+
+```
+stateMeta:{draftType}:{id} -> { "lastUpdated": "<ISO timestamp>" }
+```
 
 **State Structure**: The state contains the full entity data (e.g., `FeatureWithRelations` for features, `ClassEditState` for classes).
 
@@ -53,7 +59,13 @@ session:user:{userId}
 Entity locks prevent concurrent editing:
 
 ```
-lock:{entityType}:{entityId} -> userId
+lock:{draftType}:{id} -> userId
+```
+
+Locks also have a metadata key:
+
+```
+lockMeta:{draftType}:{id} -> { "lockedAt": "<ISO timestamp>" }
 ```
 
 **Lock Types**:

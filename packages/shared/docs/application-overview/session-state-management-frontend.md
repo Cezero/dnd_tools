@@ -109,8 +109,6 @@ interface ResolutionHookResult<TState, TUpdate> {
 ### Usage Example
 
 ```typescript
-import { ClassUpdateType } from '@shared/static-data';
-
 const resolution = useGenericResolution(classId, {
     initializeSession: ClassResolutionApi.initializeSession,
     getSessionState: ClassResolutionApi.getSessionState,
@@ -120,9 +118,11 @@ const resolution = useGenericResolution(classId, {
 });
 
 // Apply update
-await resolution.applyUpdate({ 
-    type: ClassUpdateType.UpdateClassField, 
-    payload: { field: 'name', value: 'New Name' } 
+await resolution.applyUpdate({
+    draftType: DraftType.Class,
+    id: classId,
+    path: 'name',
+    value: 'New Name'
 });
 
 // Save session
@@ -251,17 +251,17 @@ Syncs individual field changes to backend session.
 
 **Usage**:
 ```typescript
-import { ClassUpdateType } from '@shared/static-data';
-
 useFieldSync(
     state.name,
     resolution.sessionId,
     resolution.applyUpdate,
     {
         getEntityId: () => state.classId,
-        buildUpdate: (field, value) => ({ 
-            type: ClassUpdateType.UpdateClassField, 
-            payload: { field, value } 
+        buildUpdate: (field, value) => ({
+            draftType: DraftType.Class,
+            id: state.classId,
+            path: field,
+            value
         }),
         shouldSync: (prev, curr) => prev !== curr
     }
@@ -292,9 +292,11 @@ useFieldSync(
  *   resolution.applyUpdate,
  *   {
  *     getEntityId: () => state.classId,
- *     buildUpdate: (field, value) => ({ 
- *       type: ClassUpdateType.UpdateClassField, 
- *       payload: { field, value } 
+ *     buildUpdate: (field, value) => ({
+ *       draftType: DraftType.Class,
+ *       id: state.classId,
+ *       path: field,
+ *       value
  *     }),
  *     shouldSync: (prev, curr) => prev !== curr
  *   }
@@ -314,17 +316,17 @@ Syncs multiple field changes efficiently.
 
 **Usage**:
 ```typescript
-import { ClassUpdateType } from '@shared/static-data';
-
 useFieldsSync(
     state,
     resolution.sessionId,
     resolution.applyUpdate,
     {
         getEntityId: () => state.classId,
-        buildUpdate: (field, value) => ({ 
-            type: ClassUpdateType.UpdateClassField, 
-            payload: { field, value } 
+        buildUpdate: (field, value) => ({
+            draftType: DraftType.Class,
+            id: state.classId,
+            path: field,
+            value
         }),
         shouldSync: (prev, curr) => true,
         fields: ['name', 'abbreviation', 'description']
@@ -355,9 +357,11 @@ useFieldsSync(
  *   resolution.applyUpdate,
  *   {
  *     getEntityId: () => state.classId,
- *     buildUpdate: (field, value) => ({ 
- *       type: ClassUpdateType.UpdateClassField, 
- *       payload: { field, value } 
+ *     buildUpdate: (field, value) => ({
+ *       draftType: DraftType.Class,
+ *       id: state.classId,
+ *       path: field,
+ *       value
  *     }),
  *     shouldSync: (prev, curr) => true,
  *     fields: ['name', 'abbreviation', 'description']

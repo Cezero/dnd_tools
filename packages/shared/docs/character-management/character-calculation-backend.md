@@ -317,18 +317,7 @@ The calculation service integrates with the database through Prisma ORM:
 
 Interface for analog skill calculation results:
 
-```typescript
-export interface AnalogSkillCalculation {
-    skillId: number;
-    skillName: string;
-    abilityId: number;
-    abilityName: string;
-    classLevels: number;
-    abilityModifier: number;
-    total: number;
-    grantedByClasses: string[];
-}
-```
+**Type Definition Source**: `apps/backend/src/features/characterCalculation/types.ts` (re-exported from the service layer).
 
 **Fields**:
 - `skillId`: Database ID of the analog skill
@@ -344,12 +333,7 @@ export interface AnalogSkillCalculation {
 
 Interface for all calculated character statistics:
 
-```typescript
-export interface CharacterCalculatedStats {
-    analogSkills: AnalogSkillCalculation[];
-    // Additional calculated stats can be added here
-}
-```
+**Type Definition Source**: `apps/backend/src/features/characterCalculation/types.ts`.
 
 **Extension Point**: Additional calculated statistics can be added to this interface as needed.
 

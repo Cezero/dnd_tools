@@ -1,14 +1,10 @@
-import { ZodError } from 'zod';
-
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type { ClassDraftState, CreateClassRequest, UpdateClassRequest } from '@shared/schema';
 import { ClassDraftStateSchema, CreateClassSchema, UpdateClassSchema } from '@shared/schema';
 
 import { classService } from '../class/classService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
-import { mapZodErrorsToFieldPaths, ValidationErrorWithPaths } from '../shared/utils';
-
-const prisma = new PrismaClient();
+import { parseDraftState } from '../shared/draftState/draftSaveUtils';
 
 /**
  * Transforms class session state to MySQL update request format.
@@ -131,18 +127,7 @@ export class ClassSaveService {
      * @throws ValidationErrorWithPaths if state validation fails
      */
     async saveSessionToMySQL(classId: number, classState: ClassDraftState | Record<string, unknown>, _userId: number): Promise<number> {
-        // Validate and coerce flexible state to ClassDraftState
-        let validatedState: ClassDraftState;
-        try {
-            validatedState = ClassDraftStateSchema.parse(classState);
-        } catch (error) {
-            if (error instanceof ZodError) {
-                // Map Zod errors to field paths for frontend error display
-                const validationErrors = mapZodErrorsToFieldPaths(error);
-                throw new ValidationErrorWithPaths(validationErrors);
-            }
-            throw error;
-        }
+        const validatedState = parseDraftState(ClassDraftStateSchema.parse, classState);
 
         // New drafts use negative IDs.
         if (classId < 0) {

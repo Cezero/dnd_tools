@@ -18,6 +18,10 @@ export default function FeatureList() {
         navigate('/features/new/edit', { state: { fromListParams: location.search } });
     };
 
+    const handleOrphanedFeaturesClick = (): void => {
+        navigate('/features/orphaned');
+    };
+
     const dataFetcher = useCallback(async () => {
         return await FeatureQueryHooks.getFeatures({});
     }, []);
@@ -34,6 +38,12 @@ export default function FeatureList() {
             </p>
             {isAdmin && (
                 <div className="mb-4 flex justify-end">
+                    <button
+                        onClick={handleOrphanedFeaturesClick}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded mr-2"
+                    >
+                        Orphaned Cleanup
+                    </button>
                     <button
                         onClick={handleNewFeatureClick}
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"

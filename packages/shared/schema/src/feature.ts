@@ -327,6 +327,34 @@ export const GetFeaturesResponseSchema = z.array(FeatureResponseSchema);
 // Response schema for feature list endpoint
 export const GetFeatureListResponseSchema = z.array(FeatureListSchema);
 
+/**
+ * Orphaned features are Feature rows that are no longer referenced by any progression source
+ * (class, race, feat, domain, etc.). They are intentionally surfaced via an admin-only review
+ * workflow rather than being auto-deleted.
+ *
+ * This is a lightweight list item intended for admin review UIs.
+ */
+export const OrphanedFeatureListItemSchema = z.object({
+    id: commonValidations.positiveInt('Feature ID'),
+    name: commonValidations.name(),
+    editionId: z.number().int().nullable(),
+    level: z.number().int().min(1).max(20),
+    sourceType: z.enum(FeatureSourceType),
+});
+
+export const GetOrphanedFeaturesResponseSchema = QueryResponseSchema.extend({
+    results: z.array(OrphanedFeatureListItemSchema),
+});
+
+export const DeleteOrphanedFeaturesRequestSchema = z.object({
+    featureIds: z.array(commonValidations.positiveInt('Feature ID')).min(1, 'At least one feature ID is required'),
+});
+
+export const DeleteOrphanedFeaturesResponseSchema = z.object({
+    deletedCount: z.number().int().min(0),
+    deletedFeatureIds: z.array(commonValidations.positiveInt('Feature ID')),
+});
+
 // Schema for creating features in frontend forms (allows featureId to be 0 for new features)
 // Uses request schema which omits classes/races
 export const CreateFeatureFormSchema = CreateFeatureRequestSchema.extend({
@@ -346,6 +374,10 @@ export type GetAllFeaturesResponse = z.infer<typeof GetAllFeaturesResponseSchema
 export type CreateFeatureBasicRequest = z.infer<typeof CreateFeatureSchema>;
 export type UpdateFeatureBasicRequest = z.infer<typeof UpdateFeatureBasicSchema>;
 export type GetFeatureResponse = z.infer<typeof GetFeatureResponseSchema>;
+export type OrphanedFeatureListItem = z.infer<typeof OrphanedFeatureListItemSchema>;
+export type GetOrphanedFeaturesResponse = z.infer<typeof GetOrphanedFeaturesResponseSchema>;
+export type DeleteOrphanedFeaturesRequest = z.infer<typeof DeleteOrphanedFeaturesRequestSchema>;
+export type DeleteOrphanedFeaturesResponse = z.infer<typeof DeleteOrphanedFeaturesResponseSchema>;
 export type FeatureIdParam = z.input<typeof FeatureIdParamSchema>;
 export type FeaturePrerequisite = z.infer<typeof FeaturePrerequisiteSchema>;
 export type FeatureWithRelations = z.infer<typeof FeatureWithRelationsSchema>;

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     CompanionIdParamRequest,
     CreateCompanionRequest,
@@ -15,8 +15,6 @@ import {
 
 import type { CompanionService } from './types';
 import { featureSystemService } from '../featureSystem/featureSystemService';
-
-const prisma = new PrismaClient();
 
 /**
  * Companion Service

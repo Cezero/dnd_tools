@@ -148,6 +148,28 @@ export const CharacterFeatureChoiceSchema = z.object({
     linkedChoiceGroupId: z.string().nullable().optional(),
 });
 
+/**
+ * Draft-safe variant of CharacterFeatureChoice.
+ *
+ * Draft state may include unsaved choices with temporary IDs (0/negative) and may use
+ * placeholder advancement IDs during editing.
+ *
+ * This schema is specifically intended for draft/edit state (not persisted rows).
+ */
+export const CharacterFeatureChoiceDraftSchema = z.object({
+    id: z.number().int(),
+    characterId: z.number().int(),
+    featureId: z.number().int(),
+    advancementId: z.number().int(),
+    featureEntityId: z.number().int(),
+    appliesToId: z.number().int(),
+    appliesToSubId: z.number().int().nullable(),
+    choiceIndex: z.number().int().nullable(),
+    choiceGroupId: z.string().nullable().optional(),
+    choiceData: z.any().nullable().optional(),
+    linkedChoiceGroupId: z.string().nullable().optional(),
+});
+
 // Request/response schemas for character feature choices (defined early to avoid forward reference)
 export const CreateCharacterFeatureChoiceSchema = CharacterFeatureChoiceSchema.omit({ id: true });
 export const UpdateCharacterFeatureChoiceSchema = CharacterFeatureChoiceSchema.partial().omit({ id: true });
@@ -218,6 +240,40 @@ export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
     characterLanguages: z.array(CharacterLanguageMapSchema).optional(),
     characterItems: z.array(CharacterItemSchema).optional(),
     attackDefinitions: z.array(CharacterAttackDefinitionSchema).optional(),
+});
+
+/**
+ * Character edit state used by the draft editing system.
+ *
+ * This is distinct from `CharacterWithAllDetailsSchema`:
+ * - It is optimized for incremental UI editing and draft persistence
+ * - It may contain draft-only IDs (e.g., negative ids)
+ */
+export const CharacterEditStateSchema = z.object({
+    characterId: z.number().int(),
+    abilityScores: z.array(z.object({
+        abilityId: commonValidations.positiveInt('Ability ID'),
+        value: z.number().int(),
+    })),
+    skillRanks: z.array(z.object({
+        skillId: commonValidations.positiveInt('Skill ID'),
+        skillSubId: z.number().int().nullable(),
+        customSubtype: z.string().max(100, 'Custom subtype must be less than 100 characters').nullable(),
+        pointsSpent: commonValidations.nonNegativeInt('Points spent'),
+    })),
+    raceId: z.number().int().nullable(),
+    classId: z.number().int().nullable(),
+    secondaryClassId: z.number().int().nullable(),
+    level: z.number().int().min(1, 'Level must be at least 1'),
+    editionId: z.number().int(),
+    isGestalt: z.boolean(),
+    allowVariantClasses: z.boolean(),
+    ignoreLevelAdjustment: z.boolean(),
+    featureChoices: z.array(CharacterFeatureChoiceDraftSchema),
+    selectedFeats: z.array(z.number().int()),
+    disallowedSources: z.array(z.object({
+        sourceBookId: commonValidations.positiveInt('Source book ID'),
+    })),
 });
 
 export const GetAllCharactersResponseSchema = QueryResponseSchema.extend({
@@ -472,8 +528,11 @@ export type CharacterSpellSelectionParamRequest = z.infer<typeof CharacterSpellS
 
 // Character feature choice types
 export type CharacterFeatureChoice = z.infer<typeof CharacterFeatureChoiceSchema>;
+export type CharacterFeatureChoiceDraft = z.infer<typeof CharacterFeatureChoiceDraftSchema>;
 export type CreateCharacterFeatureChoiceRequest = z.infer<typeof CreateCharacterFeatureChoiceSchema>;
 export type UpdateCharacterFeatureChoiceRequest = z.infer<typeof UpdateCharacterFeatureChoiceSchema>;
+
+export type CharacterEditState = z.infer<typeof CharacterEditStateSchema>;
 
 export type CreateCharacterAbilityScoreRequest = z.infer<typeof CreateCharacterAbilityScoreSchema>;
 export type UpdateCharacterAbilityScoreRequest = z.infer<typeof UpdateCharacterAbilityScoreSchema>;

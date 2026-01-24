@@ -10,6 +10,8 @@ import type {
     CreateFeatureRequest,
     FeatureWithRelations,
     GetFeatureListResponse,
+    GetOrphanedFeaturesResponse,
+    DeleteOrphanedFeaturesResponse,
     FeatureCacheResponse,
 } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
@@ -53,4 +55,6 @@ export interface FeatureSystemService {
     syncClassFeatures(classId: number, featureIds: number[], tx: Prisma.TransactionClient): Promise<number[]>;
     syncRaceFeatures(raceId: number, featureIds: number[], tx: Prisma.TransactionClient): Promise<number[]>;
     cleanupOrphanedFeatures(orphanedFeatureIds: number[]): Promise<void>;
+    getOrphanedFeatures(): Promise<GetOrphanedFeaturesResponse>;
+    deleteOrphanedFeatures(featureIds: number[]): Promise<DeleteOrphanedFeaturesResponse>;
 } 

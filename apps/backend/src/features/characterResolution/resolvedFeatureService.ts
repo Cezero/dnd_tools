@@ -1,8 +1,6 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type { FeatureWithRelations, FeatureEntity, CharacterWithAllDetailsResponse, FormulaCalculationParams } from '@shared/schema';
 import { EntityType, EntityAppliesToType, FORMULA_MAP, FormulaId, FeatureSourceType, SavingThrowId } from '@shared/static-data';
-
-const prisma = new PrismaClient();
 
 /**
  * Backend service for extracting resolved feature data

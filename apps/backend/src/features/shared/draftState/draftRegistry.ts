@@ -1,63 +1,33 @@
-import { z } from 'zod';
-
-import { ClassDraftStateSchema, FeatureDraftStateSchema, RaceDraftStateSchema } from '@shared/schema';
-import type { ClassDraftState, FeatureDraftState, RaceDraftState, ResolvedCharacterResult, DnDClass, Race } from '@shared/schema';
+import {
+    CharacterEditStateSchema,
+    ClassDraftStateSchema,
+    FeatureDraftStateSchema,
+    RaceDraftStateSchema,
+    type CharacterEditState,
+    type ClassDraftState,
+    type FeatureDraftState,
+    type RaceDraftState,
+    type ResolvedCharacterResult,
+} from '@shared/schema';
 import { DraftType, FeatureSourceType } from '@shared/static-data';
 
 import { DraftStatePubSub } from './DraftStatePubSub';
+import type { DraftConfig } from './types';
 import { characterService } from '../../character/characterService';
+import { CharacterSaveService } from '../../characterDraft/characterSaveService';
 import { AvailableFeatService } from '../../characterResolution/availableFeatService';
 import { buildCharacterEditState } from '../../characterResolution/characterEditStateBuilder';
 import { calculateSpellSelection, filterInvalidAppliesToEntities } from '../../characterResolution/characterResolutionController';
 import { CharacterResolutionService } from '../../characterResolution/characterResolutionService';
 import { GestaltMechanicsResolver } from '../../characterResolution/gestaltMechanicsResolver';
 import { ResolvedFeatureService } from '../../characterResolution/resolvedFeatureService';
-import type { CharacterEditState } from '../../characterResolution/types';
 import { classService } from '../../class/classService';
-import { ClassSaveService } from '../../classResolution/classSaveService';
+import { ClassSaveService } from '../../classDraft/classSaveService';
 import { featService } from '../../feat/featService';
 import { FeatureStateService } from '../../featureSystem/featureStateService';
 import { featureSystemService, featureSystemService as _featureSystemService } from '../../featureSystem/featureSystemService';
 import { raceService } from '../../race/raceService';
-import { RaceSaveService } from '../../raceResolution/raceSaveService';
-
-/**
- * Draft configuration interface for the draft registry.
- * Maps draft types to their schemas, save services, and initialization logic.
- */
-export interface DraftConfig<TState = unknown> {
-    /**
-     * Zod schema for validating edit state.
-     */
-    editStateSchema: z.ZodSchema<TState>;
-
-    /**
-     * Save service that handles persisting state to the database.
-     * Must have a saveSessionToMySQL method that takes (id: number, state: TState, userId: number) and returns Promise<number>.
-     * Returns the draft ID (may be newly created for new drafts).
-     */
-    saveService: {
-        saveSessionToMySQL(id: number, state: TState | Record<string, unknown>, userId: number): Promise<number>;
-    };
-
-    /**
-     * Function that builds initial draft state from database record.
-     * Accepts id, fetches record using existing service, and returns initial draft state.
-     */
-    getInitialState: (id: number) => Promise<TState>;
-
-    /**
-     * Function that builds initial draft state for new draft instances.
-     * Called when the client requests `startEditing` with `id = 0` and the backend mints a new negative draft id.
-     */
-    getInitialCreateState: (draftId: number, userId: number) => Promise<TState>;
-
-    /**
-     * Optional callback that is called after state updates.
-     * For character, this triggers resolution and WebSocket publish.
-     */
-    onStateUpdate?: (id: number, state: TState, userId: number) => Promise<void>;
-}
+import { RaceSaveService } from '../../raceDraft/raceSaveService';
 
 /**
  * Draft type registry mapping draft type enum values to their configurations.
@@ -365,17 +335,24 @@ async function triggerCharacterResolution(characterId: number, state: unknown, _
 
 // Character save service placeholder
 class CharacterSaveServiceAdapter {
-    async saveSessionToMySQL(characterId: number, _state: unknown, _userId: number): Promise<number> {
-        // TODO: Implement character save service
-        // For now, just return the characterId
-        console.warn('Character save service not yet implemented - returning characterId without saving');
-        return characterId;
+    private characterSaveService: CharacterSaveService;
+
+    constructor() {
+        this.characterSaveService = new CharacterSaveService();
+    }
+
+    async saveSessionToMySQL(characterId: number, state: unknown, userId: number): Promise<number> {
+        return await this.characterSaveService.saveSessionToMySQL(
+            characterId,
+            state as Record<string, unknown>,
+            userId
+        );
     }
 }
 
 // Register character configuration
 draftRegistry.set(DraftType.Character, {
-    editStateSchema: z.any() as z.ZodSchema<CharacterEditState>, // TODO: Create CharacterEditStateSchema
+    editStateSchema: CharacterEditStateSchema,
     saveService: new CharacterSaveServiceAdapter(),
     getInitialState: buildCharacterInitialState,
     getInitialCreateState: async () => {

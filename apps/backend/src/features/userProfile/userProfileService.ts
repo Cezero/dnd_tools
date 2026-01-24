@@ -1,20 +1,11 @@
 import jwt from 'jsonwebtoken';
 
 import { config } from '@/config';
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import { UserProfileResponse, UserProfileUpdateResponse, UpdateUserProfileRequest } from '@shared/schema';
 
+import type { UserProfileService } from './types';
 import { DiceBoxService } from '../diceBox/diceBoxService';
-
-const prisma = new PrismaClient();
-
-// No transformation needed - Prisma user object directly matches UserProfile schema
-
-export interface UserProfileService {
-    getUserProfile: (userId: number) => Promise<UserProfileResponse | null>;
-    updateUserProfile: (userId: number, data: UpdateUserProfileRequest) => Promise<UserProfileUpdateResponse>;
-    verifyToken: (token: string) => Promise<{ success: boolean; userId?: number; error?: string }>;
-}
 
 export const userProfileService: UserProfileService = {
     async getUserProfile(userId: number): Promise<UserProfileResponse | null> {

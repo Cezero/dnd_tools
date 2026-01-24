@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type {
     CharacterIdParamRequest,
     Character,
@@ -11,9 +11,6 @@ import type {
     UpdateResponse,
 } from '@shared/schema';
 import { EditionId, SpellSlotType } from '@shared/static-data';
-
-
-const prisma = new PrismaClient();
 
 /**
  * Helper function to calculate class/level string from advancements.

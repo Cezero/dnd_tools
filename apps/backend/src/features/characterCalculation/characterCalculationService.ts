@@ -1,24 +1,8 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type { CharacterWithAllDetailsResponse } from '@shared/schema';
 import { EntityAppliesToType, ABILITY_MAP } from '@shared/static-data';
 
-const prisma = new PrismaClient();
-
-export interface AnalogSkillCalculation {
-    skillId: number;
-    skillName: string;
-    abilityId: number;
-    abilityName: string;
-    classLevels: number;
-    abilityModifier: number;
-    total: number;
-    grantedByClasses: string[];
-}
-
-export interface CharacterCalculatedStats {
-    analogSkills: AnalogSkillCalculation[];
-    // Add other calculated stats as needed
-}
+import type { AnalogSkillCalculation, CharacterCalculatedStats } from './types';
 
 export const characterCalculationService = {
     /**

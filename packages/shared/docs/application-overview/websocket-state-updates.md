@@ -103,6 +103,14 @@ The frontend WebSocket client implements exponential backoff reconnection with a
 
 The backend efficiently manages multiple clients subscribing to the same entity by maintaining only one Redis subscription per entity and broadcasting to all subscribed clients.
 
+## 🧰 **Admin monitoring integration**
+
+Admin monitoring can query a read-only snapshot of live WebSocket subscriptions:
+
+- `apps/backend/src/features/shared/websocket/WebSocketServer.ts` (`getSubscriptionsSnapshot`)
+- `apps/backend/src/features/shared/websocket/webSocketServerRegistry.ts` (register/get instance)
+- `apps/backend/src/features/shared/session/AdminSessionMonitoringService.ts` (`getAllWebSocketSubscriptions`)
+
 ## 🎯 **React Hook Integration**
 
 The `useEntityStateSubscription` hook provides React integration with automatic subscription management.

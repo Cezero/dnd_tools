@@ -12,10 +12,12 @@ import type { RedisSessionClient } from '../session/types';
  * - **Game sessions**: Short-lived locks (seconds) or message ordering for Character updates
  * 
  * **Redis Key Pattern**: `lock:{draftType}:{id}` → `userId`
+ * **Redis Meta Key Pattern**: `lockMeta:{draftType}:{id}` → JSON `{ lockedAt: <ISO string> }`
  * 
  * Examples:
  * - `lock:1:1` → `123` (user 123 is editing class (DraftType.Class=1) 1 draft)
  * - `lock:3:5` → `456` (user 456 is editing feature (DraftType.Feature=3) 5 draft)
+ * - `lockMeta:3:5` → `{ "lockedAt": "2026-01-24T12:34:56.789Z" }`
  * 
  * **Lock Lifecycle**:
  * 1. Lock acquired when user starts editing (via `acquireLock`)
@@ -80,6 +82,13 @@ export class DraftLockService {
     }
 
     /**
+     * Builds Redis key for lock metadata (e.g., lockedAt timestamps).
+     */
+    private buildLockMetaKey(draftType: DraftType, id: number): string {
+        return `lockMeta:${draftType}:${id}`;
+    }
+
+    /**
      * Acquires a lock for an entity.
      * 
      * If the entity is already locked by another user, returns false.
@@ -108,6 +117,7 @@ export class DraftLockService {
         ttl?: number
     ): Promise<boolean> {
         const key = this.buildLockKey(draftType, id);
+        const metaKey = this.buildLockMetaKey(draftType, id);
         const ttlSeconds = ttl ?? this.DEFAULT_ADMIN_TTL_SECONDS;
         
         try {
@@ -120,6 +130,18 @@ export class DraftLockService {
                 // If locked by same user, refresh the lock
                 if (lockedByUserId === userId) {
                     await this.redis.setEx(key, ttlSeconds, existingLock);
+                    const existingMeta = await this.redis.get(metaKey);
+                    if (existingMeta) {
+                        // Preserve original lockedAt, but refresh TTL
+                        await this.redis.setEx(metaKey, ttlSeconds, existingMeta);
+                    } else {
+                        // Meta missing: create it on refresh
+                        await this.redis.setEx(
+                            metaKey,
+                            ttlSeconds,
+                            JSON.stringify({ lockedAt: new Date().toISOString() })
+                        );
+                    }
                     return true;
                 }
                 
@@ -129,6 +151,11 @@ export class DraftLockService {
             
             // No existing lock, acquire it
             await this.redis.setEx(key, ttlSeconds, userId.toString());
+            await this.redis.setEx(
+                metaKey,
+                ttlSeconds,
+                JSON.stringify({ lockedAt: new Date().toISOString() })
+            );
             return true;
         } catch (error) {
             console.error(`Error acquiring lock for ${draftType}:${id}:`, error);
@@ -154,6 +181,7 @@ export class DraftLockService {
      */
     async releaseLock(draftType: DraftType, id: number, userId: number): Promise<void> {
         const key = this.buildLockKey(draftType, id);
+        const metaKey = this.buildLockMetaKey(draftType, id);
         
         try {
             // Check if lock exists and is held by this user
@@ -165,6 +193,7 @@ export class DraftLockService {
                 // Only release if held by this user
                 if (lockedByUserId === userId) {
                     await this.redis.del(key);
+                    await this.redis.del(metaKey);
                 } else {
                     throw new Error(`Lock is held by user ${lockedByUserId}, not ${userId}`);
                 }
@@ -247,6 +276,7 @@ export class DraftLockService {
         requestingUserId: number
     ): Promise<void> {
         const key = this.buildLockKey(draftType, id);
+        const metaKey = this.buildLockMetaKey(draftType, id);
         
         try {
             const existingLock = await this.redis.get(key);
@@ -261,6 +291,7 @@ export class DraftLockService {
                 );
                 
                 await this.redis.del(key);
+                await this.redis.del(metaKey);
             } else {
                 // No lock exists, that's fine
                 console.log(

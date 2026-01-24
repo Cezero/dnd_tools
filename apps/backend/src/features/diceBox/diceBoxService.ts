@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client/client';
+import { prisma } from '@/lib/prisma';
 import type {
     DiceBoxAdminConfig,
     CreateDiceBoxAdminConfigRequest,
@@ -6,8 +6,6 @@ import type {
     GetAllDiceConfigsResponse,
     UserDiceConfig
 } from '@shared/schema';
-
-const prisma = new PrismaClient();
 
 export class DiceBoxService {
     // Get all available admin dice configurations for user selection

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type {
     CreateCharacterAttackDefinitionRequest,
     UpdateCharacterAttackDefinitionRequest,
@@ -8,8 +8,6 @@ import type {
 } from '@shared/schema';
 import { ARMOR_CATEGORY_ENUM } from '@shared/static-data';
 
-
-const prisma = new PrismaClient();
 
 /**
  * Service for managing character attack definitions.

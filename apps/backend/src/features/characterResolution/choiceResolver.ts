@@ -1,13 +1,10 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type { FeatureWithRelations, FeatureEntity, FeatInQueryResponse, PendingChoice } from '@shared/schema';
 import { EntityType, EntityAppliesToType, FeatureFeatChoiceFilter, FeatureSourceType, CompanionType } from '@shared/static-data';
 
 import { FeatureEntityHandlers, type EntityProcessingResult } from './featureEntityHandlers';
 import { domainService } from '../domain/domainService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
-
-const prisma = new PrismaClient();
-
 
 /**
  * Backend service for resolving character choices.

@@ -345,14 +345,7 @@ export { AuthRouter };
 
 The UserProfileService provides profile management and configuration handling.
 
-**Service Interface**:
-```typescript
-export interface UserProfileService {
-    getUserProfile: (userId: number) => Promise<UserProfileResponse | null>;
-    updateUserProfile: (userId: number, data: UpdateUserProfileRequest) => Promise<UserProfileUpdateResponse>;
-    verifyToken: (token: string) => Promise<{ success: boolean; userId?: number; error?: string }>;
-}
-```
+**Service Interface Source**: `apps/backend/src/features/userProfile/types.ts` (`UserProfileService`).
 
 **Core Methods**:
 

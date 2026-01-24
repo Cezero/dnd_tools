@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     GetAllRacesResponse,
     Race,
@@ -8,16 +8,11 @@ import {
     CreateResponse,
     UpdateResponse,
     RaceCacheResponse,
-    CreateFeatureRequest,
 } from '@shared/schema';
-import { FeatureSourceType } from '@shared/static-data';
 
 import type { RaceService } from './types';
 import { extractRaceMechanicsFromProgressions } from '../../utils/raceMechanicsExtractor';
 import { featureSystemService } from '../featureSystem/featureSystemService';
-import type { FeatureContext } from '../featureSystem/types';
-
-const prisma = new PrismaClient();
 
 export const raceService: RaceService = {
     async getAllRaces(): Promise<GetAllRacesResponse> {

@@ -1,6 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 /**
  * Service for managing skill subtypes (Craft and Knowledge subtypes)

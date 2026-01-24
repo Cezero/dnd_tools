@@ -25,7 +25,7 @@ The `AdminSessionMonitoringService` provides methods to:
 - Query all user sessions from Redis
 - Query all entity states from Redis
 - Query all entity locks from Redis
-- Query all WebSocket subscriptions (when integrated)
+- Query all WebSocket subscriptions
 
 ### **Backend Controller**
 
@@ -64,8 +64,8 @@ AdminSessionMonitoringRouter.use(requireAdmin);
 interface AdminSessionInfo {
     userId: number;
     userName: string;
-    viewing: EntityRef[];
-    editing: EntityRef[];
+    viewing: DraftRef[];
+    editing: DraftRef[];
     sessionKey: string;
 }
 ```
@@ -81,8 +81,8 @@ interface AdminSessionInfo {
 
 ```typescript
 interface EntityStateInfo {
-    entityType: string;
-    entityId: number;
+    draftType: number;
+    id: number;
     hasState: boolean;
     lastUpdated: Date | null;
 }
@@ -98,8 +98,8 @@ interface EntityStateInfo {
 
 ```typescript
 interface EntityLockInfo {
-    entityType: string;
-    entityId: number;
+    draftType: number;
+    id: number;
     lockedBy: number;
     lockedByUserName: string | null;
     lockedAt: Date | null;
@@ -120,7 +120,7 @@ interface WebSocketSubscriptionInfo {
     clientId: string;
     userId: number | null;
     userName: string | null;
-    subscriptions: EntityRef[];
+    subscriptions: DraftRef[];
 }
 ```
 
@@ -184,11 +184,11 @@ for (const key of sessionKeys) {
 // Get all state keys
 const stateKeys = await redis.keys('state:*');
 
-// Parse entity type and ID from key
+// Parse draftType and id from key (DraftType is numeric)
 for (const key of stateKeys) {
-    const match = key.match(/^state:([^:]+):(\d+)$/);
-    const [, entityType, entityId] = match;
-    // ... process state
+    const match = key.match(/^state:(\d+):(\d+)$/);
+    const [, draftType, id] = match;
+    // ... process state + stateMeta
 }
 ```
 
@@ -198,14 +198,38 @@ for (const key of stateKeys) {
 // Get all lock keys
 const lockKeys = await redis.keys('lock:*');
 
-// Parse entity type and ID from key
+// Parse draftType and id from key (DraftType is numeric)
 for (const key of lockKeys) {
-    const match = key.match(/^lock:([^:]+):(\d+)$/);
-    const [, entityType, entityId] = match;
+    const match = key.match(/^lock:(\d+):(\d+)$/);
+    const [, draftType, id] = match;
     const lockedBy = await redis.get(key);
-    // ... process lock
+    // ... process lock + lockMeta
 }
 ```
+
+## 🕒 **State/Lock timestamps (metadata keys)**
+
+Admin monitoring surfaces timestamps via small Redis metadata keys written alongside state/lock keys:
+
+- **Draft state**:
+  - `state:{draftType}:{id}` → JSON draft state
+  - `stateMeta:{draftType}:{id}` → `{ "lastUpdated": "<ISO timestamp>" }`
+- **Draft lock**:
+  - `lock:{draftType}:{id}` → `userId`
+  - `lockMeta:{draftType}:{id}` → `{ "lockedAt": "<ISO timestamp>" }`
+
+These are written by:
+
+- `apps/backend/src/features/shared/draftState/DraftStateService.ts` (`setState`)
+- `apps/backend/src/features/shared/draftState/DraftLockService.ts` (`acquireLock` refresh / create)
+
+## 📡 **WebSocket subscription reporting**
+
+WebSocket subscription reporting is powered by a read-only snapshot API on the running WebSocket server:
+
+- `apps/backend/src/features/shared/websocket/WebSocketServer.ts` (`getSubscriptionsSnapshot`)
+- `apps/backend/src/features/shared/websocket/webSocketServerRegistry.ts` (register/get instance)
+- `apps/backend/src/index.ts` (registers instance at startup)
 
 ## 🎯 **Frontend Integration**
 
@@ -230,4 +254,5 @@ The admin monitoring page is accessible at `/admin/session-monitoring`:
 ## 🔍 **Related Documentation**
 
 - [Entity State Management](./entity-state-management.md) - Entity state management system
+- [Entity Locking](./entity-locking.md) - Draft lock keying and TTL behavior
 - [WebSocket State Updates](./websocket-state-updates.md) - WebSocket implementation details

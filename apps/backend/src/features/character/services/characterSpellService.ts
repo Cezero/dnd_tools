@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import type {
     CreateSpellPreparationRequest,
     UpdateSpellPreparationRequest,
@@ -14,7 +14,6 @@ import type {
 } from '@shared/schema';
 import { DraftType, EntityAppliesToType, EntityType, SpellSlotType } from '@shared/static-data';
 
-
 import { characterCrudService } from './characterCrudService';
 import { AvailableFeatService } from '../../characterResolution/availableFeatService';
 import { buildCharacterEditState } from '../../characterResolution/characterEditStateBuilder';
@@ -28,8 +27,6 @@ import { featureSystemService } from '../../featureSystem/featureSystemService';
 import { raceService } from '../../race/raceService';
 import { DraftStateService } from '../../shared/draftState/DraftStateService';
 import { spellService } from '../../spell';
-
-const prisma = new PrismaClient();
 
 /**
  * Service for managing character spell operations.
@@ -711,90 +708,11 @@ export const characterSpellService = {
                 }
             }
 
-            // Fetch resolved features if not provided and not available from state
             if (!effectiveResolvedProgressionsForValidation) {
-                // Load race and class details for resolution
-                const raceDetails = characterForValidation.raceId ? await raceService.getRaceById({ id: characterForValidation.raceId }) : null;
-                const classDetails = classId ? await classService.getClassById({ id: classId }) : null;
-
-                // Find secondary class if this is a gestalt advancement
-                const advancementForResolution = characterForValidation.advancements?.find(adv => adv.id === advancementId);
-                const secondaryClassDetails = advancementForResolution?.secondaryClassId
-                    ? await classService.getClassById({ id: advancementForResolution.secondaryClassId })
-                    : null;
-
-                // Build initial context without user choices for first pass
-                const initialContext: ResolutionContext = {
-                    character: characterForValidation,
-                    targetLevel: advancement.level,
-                    advancement: advancementForResolution,
-                    raceDetails,
-                    classDetails: classDetails ?? null,
-                    secondaryClassDetails: secondaryClassDetails ?? null,
-                    isGestalt: !!secondaryClassDetails,
-                    userChoices: undefined,
-                    includePendingChoices: false,
-                    resolveCascading: false,
-                    maxResolutionDepth: 10,
-                };
-
-                // First pass: Resolve base features to get features
-                const firstPassResult = await CharacterResolutionService.resolveCharacterFeatures(
-                    characterForValidation,
-                    advancement.level,
-                    initialContext
+                throw new Error(
+                    'Free-grant spellbook operations require an active character resolution session. ' +
+                    'Start viewing/editing the character to initialize resolved state, then retry.'
                 );
-
-                // Extract user choices from character feature choices
-                const userChoices: UserChoices = {};
-                if (characterForValidation.advancements) {
-                    for (const adv of characterForValidation.advancements) {
-                        if (adv.featureChoices) {
-                            for (const choice of adv.featureChoices) {
-                                // Find the entity in resolved features to get appliesTo type
-                                for (const feature of firstPassResult.resolvedProgressions) {
-                                    if (feature.id === choice.featureId && feature.entities) {
-                                        const entity = feature.entities.find(e => e.id === choice.featureEntityId);
-                                        if (entity && choice.appliesToId) {
-                                            const appliesToType = entity.appliesTo;
-                                            if (!userChoices[appliesToType]) {
-                                                userChoices[appliesToType] = [];
-                                            }
-                                            if (!userChoices[appliesToType].includes(choice.appliesToId)) {
-                                                userChoices[appliesToType].push(choice.appliesToId);
-                                            }
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Second pass: Resolve with user choices included
-                const finalContext: ResolutionContext = {
-                    character: characterForValidation,
-                    targetLevel: advancement.level,
-                    advancement: advancementForResolution,
-                    raceDetails,
-                    classDetails: classDetails ?? null,
-                    secondaryClassDetails: secondaryClassDetails ?? null,
-                    isGestalt: !!secondaryClassDetails,
-                    userChoices: Object.keys(userChoices).length > 0 ? userChoices : undefined,
-                    includePendingChoices: false,
-                    resolveCascading: true,
-                    maxResolutionDepth: 10,
-                };
-
-                // Resolve character features with user choices
-                const resolutionResult = await CharacterResolutionService.resolveCharacterFeatures(
-                    characterForValidation,
-                    advancement.level,
-                    finalContext
-                );
-
-                effectiveResolvedProgressionsForValidation = resolutionResult.resolvedProgressions;
             }
 
             // Calculate available free spells for this advancement level

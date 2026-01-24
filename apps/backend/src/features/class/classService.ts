@@ -27,7 +27,7 @@
  * @see classRoutes for API endpoint definitions
  */
 
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     GetAllClassesResponse,
     GetAllClassesQuery,
@@ -39,17 +39,12 @@ import {
     CreateSpellcastingProgressionRequest,
     CreateSpellcastingSlotRequest,
     ClassCacheResponse,
-    CreateFeatureRequest,
-    UpdateFeature,
 } from '@shared/schema';
 import { FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
 import { buildEditionWhereClause } from '@shared/utils';
 
 import type { ClassService } from './types';
 import { featureSystemService } from '../featureSystem/featureSystemService';
-import type { FeatureContext } from '../featureSystem/types';
-
-const prisma = new PrismaClient();
 
 /**
  * Detects if an ID is a temporary frontend ID (created with Date.now() + Math.random())

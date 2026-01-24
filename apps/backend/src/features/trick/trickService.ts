@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     TrickIdParamRequest,
     CreateTrickRequest,
@@ -10,8 +10,6 @@ import {
 } from '@shared/schema';
 
 import type { TrickService } from './types';
-
-const prisma = new PrismaClient();
 
 /**
  * Trick Service

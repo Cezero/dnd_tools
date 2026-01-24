@@ -1,9 +1,7 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import { CreateResponse, CreateSkillRequest, GetSkillResponse, SkillIdParamRequest, UpdateResponse, UpdateSkillRequest, GetAllSkillsResponse, SkillCacheResponse } from '@shared/schema';
 
 import type { SkillService } from './types';
-
-const prisma = new PrismaClient();
 
 export const skillService: SkillService = {
     async getAllSkills(): Promise<GetAllSkillsResponse> {

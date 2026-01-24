@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     FeatIdParamRequest,
     CreateFeatRequest,
@@ -17,9 +17,6 @@ import {
 import type { FeatService } from './types';
 import { featureSystemService } from '../featureSystem/index';
 import type { FeatureContext } from '../featureSystem/types';
-
-
-const prisma = new PrismaClient();
 
 export const featService: FeatService = {
     async getAllFeats(): Promise<GetAllFeatsResponse> {

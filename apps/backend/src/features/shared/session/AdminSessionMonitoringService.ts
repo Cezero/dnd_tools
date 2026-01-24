@@ -8,6 +8,7 @@ import { UserSessionService, type UserSession } from './UserSessionService';
 import { userProfileService } from '../../userProfile/userProfileService';
 import { DraftLockService } from '../draftState/DraftLockService';
 import { DraftStateService } from '../draftState/DraftStateService';
+import { getWebSocketServerInstance } from '../websocket/webSocketServerRegistry';
 
 /**
  * Admin session information for monitoring.
@@ -207,13 +208,27 @@ export class AdminSessionMonitoringService {
                 const stateValue = await this.redis.get(key);
                 const hasState = stateValue !== null;
 
-                // TODO: Extract lastUpdated from state if available
-                // For now, we can't easily get lastUpdated without parsing the state
+                const metaValue = await this.redis.get(`stateMeta:${draftType}:${id}`);
+                let lastUpdated: Date | null = null;
+                if (metaValue) {
+                    try {
+                        const parsed = JSON.parse(metaValue) as { lastUpdated?: string };
+                        if (parsed.lastUpdated) {
+                            const parsedDate = new Date(parsed.lastUpdated);
+                            if (!Number.isNaN(parsedDate.getTime())) {
+                                lastUpdated = parsedDate;
+                            }
+                        }
+                    } catch {
+                        // Ignore malformed metadata values; admin monitoring should be resilient.
+                    }
+                }
+
                 states.push({
                     draftType,
                     id,
                     hasState,
-                    lastUpdated: null // TODO: Extract from state if available
+                    lastUpdated
                 });
             }
 
@@ -276,12 +291,28 @@ export class AdminSessionMonitoringService {
                 // Get user name
                 const lockedByUserName = await this.getUserName(lockedBy);
 
+                const metaValue = await this.redis.get(`lockMeta:${draftType}:${id}`);
+                let lockedAt: Date | null = null;
+                if (metaValue) {
+                    try {
+                        const parsed = JSON.parse(metaValue) as { lockedAt?: string };
+                        if (parsed.lockedAt) {
+                            const parsedDate = new Date(parsed.lockedAt);
+                            if (!Number.isNaN(parsedDate.getTime())) {
+                                lockedAt = parsedDate;
+                            }
+                        }
+                    } catch {
+                        // Ignore malformed metadata values; admin monitoring should be resilient.
+                    }
+                }
+
                 locks.push({
                     draftType,
                     id,
                     lockedBy,
                     lockedByUserName: lockedByUserName || `User ${lockedBy}`,
-                    lockedAt: null // TODO: Extract from lock metadata if available
+                    lockedAt
                 });
             }
 
@@ -308,9 +339,24 @@ export class AdminSessionMonitoringService {
      * ```
      */
     async getAllWebSocketSubscriptions(): Promise<WebSocketSubscriptionInfo[]> {
-        // TODO: Integrate with WebSocketServer to get actual subscription data
-        // For now, return empty array
-        // This will need to be implemented when WebSocketServer is integrated
-        return [];
+        const wsServer = getWebSocketServerInstance();
+        if (!wsServer) {
+            return [];
+        }
+
+        const snapshot = wsServer.getSubscriptionsSnapshot();
+        const results: WebSocketSubscriptionInfo[] = [];
+
+        for (const item of snapshot) {
+            const userName = item.userId ? await this.getUserName(item.userId) : null;
+            results.push({
+                clientId: item.clientId,
+                userId: item.userId,
+                userName,
+                subscriptions: item.subscriptions,
+            });
+        }
+
+        return results;
     }
 }

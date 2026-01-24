@@ -7,6 +7,7 @@ import { Feature } from '@shared/schema';
 import { FilterType } from '@shared/static-data';
 
 import FeatureList from './FeatureList';
+import OrphanedFeaturesPage from './OrphanedFeaturesPage';
 
 export const FEATURE_COLUMNS: ColumnDef<Feature>[] = [
     {
@@ -55,6 +56,7 @@ export const FEATURE_COLUMNS: ColumnDef<Feature>[] = [
 
 export const routes: RouteConfig[] = [
     { path: 'features', component: FeatureList, exact: true, requireAuth: true, requireAdmin: true, routeType: 'list' },
+    { path: 'features/orphaned', component: OrphanedFeaturesPage, exact: true, requireAuth: true, requireAdmin: true, routeType: 'list' },
     { path: 'features/:id/edit', component: FeatureEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
     { path: 'features/:id', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
 ];

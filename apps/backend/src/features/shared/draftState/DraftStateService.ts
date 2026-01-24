@@ -13,11 +13,13 @@ import type { RedisSessionClient } from '../session/types';
  * updated, changes propagate to all viewing sessions via Redis pub/sub.
  * 
  * **Redis Key Pattern**: `state:{draftType}:{id}`
+ * **Redis Meta Key Pattern**: `stateMeta:{draftType}:{id}`
  * 
  * Examples:
  * - `state:1:1` - Draft state for class (DraftType.Class=1) with ID 1
  * - `state:3:5` - Draft state for feature (DraftType.Feature=3) with ID 5
  * - `state:4:10` - Draft state for character (DraftType.Character=4) with ID 10
+ * - `stateMeta:4:10` - Metadata for character draft state (includes lastUpdated)
  * 
  * **Draft Lifecycle**:
  * 1. Draft created when editing session is initialized
@@ -65,6 +67,13 @@ export class DraftStateService {
      */
     private buildStateKey(draftType: DraftType, id: number): string {
         return `state:${draftType}:${id}`;
+    }
+
+    /**
+     * Builds Redis key for draft state metadata (e.g., lastUpdated timestamps).
+     */
+    private buildStateMetaKey(draftType: DraftType, id: number): string {
+        return `stateMeta:${draftType}:${id}`;
     }
 
     /**
@@ -129,6 +138,7 @@ export class DraftStateService {
      */
     async setState<T>(draftType: DraftType, id: number, state: T, options?: { publish?: boolean }): Promise<void> {
         const key = this.buildStateKey(draftType, id);
+        const metaKey = this.buildStateMetaKey(draftType, id);
         const shouldPublish = options?.publish !== false; // Default to true for backward compatibility
         
         try {
@@ -139,6 +149,11 @@ export class DraftStateService {
             // should be explicitly deleted when no longer needed
             const oneYearInSeconds = 365 * 24 * 60 * 60;
             await this.redis.setEx(key, oneYearInSeconds, serialized);
+            await this.redis.setEx(
+                metaKey,
+                oneYearInSeconds,
+                JSON.stringify({ lastUpdated: new Date().toISOString() })
+            );
             
             // Publish state update to pub/sub channel (if enabled)
             if (shouldPublish) {
@@ -170,9 +185,11 @@ export class DraftStateService {
      */
     async deleteState(draftType: DraftType, id: number): Promise<void> {
         const key = this.buildStateKey(draftType, id);
+        const metaKey = this.buildStateMetaKey(draftType, id);
         
         try {
             await this.redis.del(key);
+            await this.redis.del(metaKey);
         } catch (error) {
             console.error(`Error deleting draft state for ${draftType}:${id}:`, error);
             throw new Error(`Failed to delete entity state: ${error instanceof Error ? error.message : 'Unknown error'}`);

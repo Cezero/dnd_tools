@@ -1,4 +1,4 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     DeityIdParamRequest,
     CreateDeityRequest,
@@ -12,8 +12,6 @@ import {
 } from '@shared/schema';
 
 import type { DeityService, ValidationResult } from './types';
-
-const prisma = new PrismaClient();
 
 export const deityService: DeityService = {
     async getAllDeities(): Promise<GetAllDeitiesResponse> {

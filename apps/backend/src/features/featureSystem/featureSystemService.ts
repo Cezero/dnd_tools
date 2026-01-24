@@ -1,8 +1,8 @@
-import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@shared/prisma-client';
 import {
     GetAllFeaturesResponse,
     CreateFeatureBasicRequest,
-    UpdateFeatureBasicRequest,
     UpdateFeature,
     FeatureIdParamRequest,
     GetFeatureResponse,
@@ -15,14 +15,13 @@ import {
     CreateFeatureEntityConditionRequest,
     CreateFeatureConditionRequest,
     FeatureCacheResponse,
+    GetOrphanedFeaturesResponse,
+    DeleteOrphanedFeaturesResponse,
 } from '@shared/schema';
 import { EntityAppliesToType, FeatureSourceType, FeatureEntityConditionType, EntityType, FeatureBonusType } from '@shared/static-data';
 
 import type { FeatureSystemService, FeatureContext } from './types';
 import { transformFormulaParamsForDatabaseCreate, transformFormulaParamsFromDatabase } from '../../utils/formulaParamTransformers';
-
-
-const prisma = new PrismaClient();
 
 /**
  * Helper function to create related entities for a feature
@@ -1065,6 +1064,80 @@ export const featureSystemService: FeatureSystemService = {
         }, {
             timeout: 60000 // 60 seconds timeout for large cleanup operations
         });
+    },
+
+    /**
+     * Lists orphaned features for manual admin review.
+     *
+     * Orphaned features are Feature rows that have no owning progression source:
+     * - no FeatureClassMap links
+     * - no FeatureRaceMap links
+     * - no domain/feat/companion/edition foreign keys
+     *
+     * Note: this does not attempt to infer intent; it simply surfaces candidates for review.
+     */
+    async getOrphanedFeatures(): Promise<GetOrphanedFeaturesResponse> {
+        const orphaned = await prisma.feature.findMany({
+            where: {
+                domainId: null,
+                featId: null,
+                companionId: null,
+                editionId: null,
+                classes: { none: {} },
+                races: { none: {} },
+            },
+            select: {
+                id: true,
+                name: true,
+                editionId: true,
+                level: true,
+                sourceType: true,
+            },
+            orderBy: { id: 'asc' },
+        });
+
+        return {
+            total: orphaned.length,
+            results: orphaned.map((f) => ({
+                id: f.id,
+                name: f.name,
+                editionId: f.editionId,
+                level: f.level,
+                sourceType: f.sourceType as FeatureSourceType,
+            })),
+        };
+    },
+
+    /**
+     * Deletes orphaned features selected by an administrator.
+     *
+     * Only features that are still orphaned at delete time are removed; non-orphan IDs are ignored.
+     */
+    async deleteOrphanedFeatures(featureIds: number[]): Promise<DeleteOrphanedFeaturesResponse> {
+        if (featureIds.length === 0) {
+            return { deletedCount: 0, deletedFeatureIds: [] };
+        }
+
+        const orphaned = await prisma.feature.findMany({
+            where: {
+                id: { in: featureIds },
+                domainId: null,
+                featId: null,
+                companionId: null,
+                editionId: null,
+                classes: { none: {} },
+                races: { none: {} },
+            },
+            select: { id: true }
+        });
+
+        const orphanedIds = orphaned.map((f) => f.id);
+        await this.cleanupOrphanedFeatures(orphanedIds);
+
+        return {
+            deletedCount: orphanedIds.length,
+            deletedFeatureIds: orphanedIds,
+        };
     },
 
     /**

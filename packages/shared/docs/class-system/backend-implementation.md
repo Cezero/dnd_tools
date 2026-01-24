@@ -142,135 +142,48 @@ The class system controllers follow the shared [Controller Layer Pattern](../app
 
 ## 🗄️ **Entity State Management**
 
-The class system uses **user sessions with entity state management** for editing classes, following the shared [Entity State Management Architecture](../application-overview/entity-state-management.md). This architecture separates user session tracking from entity state storage.
+The class system uses the shared **draft state** infrastructure for editing, following the shared [Session and State Management](../application-overview/session-state-management.md). Draft state is stored in Redis, guarded by per-draft locks, and persisted to MySQL on save.
 
 ### **Overview**
 
-The entity state management system provides:
-- **User Sessions**: Single session per user tracking viewing/editing entities
-- **Entity States**: Independent state storage in Redis (`state:class:{classId}`)
-- **Entity Locks**: Separate lock management (`lock:class:{classId} -> userId`)
-- **Real-time Updates**: Redis pub/sub for propagating state changes
-- **Save Transformation**: Transforms Redis state → MySQL on save
+Editing a class provides:
 
-### **Architecture Components**
+- **Draft lock**: `apps/backend/src/features/shared/draftState/DraftLockService.ts`
+- **Draft state**: `apps/backend/src/features/shared/draftState/DraftStateService.ts`
+- **Path-based updates**: `apps/backend/src/features/shared/draftState/StateUpdateService.ts`
+- **Draft endpoints**: `apps/backend/src/features/shared/draftState/draftRoutes.ts`
+- **Persistence**: `apps/backend/src/features/shared/draftState/draftRegistry.ts` + `apps/backend/src/features/classDraft/classSaveService.ts`
 
-**UserSessionService**: Manages user sessions tracking viewing/editing entities
-- **Source File**: `src/features/shared/session/UserSessionService.ts`
-- **Storage**: Redis key `session:user:{userId}` with `viewing` and `editing` arrays
-- **Purpose**: Single source of truth for what entities a user is viewing/editing
+### **Draft endpoints (shared)**
 
-**EntityStateService**: Manages independent entity states in Redis
-- **Source File**: `src/features/shared/entityState/EntityStateService.ts`
-- **Storage**: Redis key `state:class:{classId}` with class edit state
-- **Purpose**: Shared state storage accessible by all viewing users
-- **Pub/Sub**: Automatically publishes updates when state changes
+Classes are edited via the shared draft endpoints (all require auth) implemented in `apps/backend/src/features/shared/draftState/draftRoutes.ts`:
 
-**EntityLockService**: Manages per-entity locks for editing
-- **Source File**: `src/features/shared/entityState/EntityLockService.ts`
-- **Storage**: Redis key `lock:class:{classId} -> userId`
-- **Purpose**: Prevents concurrent editing conflicts
+- `POST /drafts/start-editing`
+- `PUT /drafts/update-value`
+- `POST /drafts/save`
+- `POST /drafts/cancel`
 
-### **ClassResolutionController**
+For class drafts, the frontend sends `draftType = DraftType.Class` and `id = classId` (or `id = 0` to start a new draft and receive a negative draft id).
 
-Controller for managing class editing using user sessions and entity state.
-
-**Purpose**: Handles HTTP requests for class editing lifecycle and state updates.
-
-**Source File**: `src/features/classResolution/classResolutionController.ts`
-
-**API Endpoints**:
-
-**POST /api/classes/:classId/start-editing** - Start editing a class
-- **Purpose**: Acquires lock, adds to user's editing list, initializes/loads state
-- **Authentication**: User authentication required
-- **Response**: `{ classState: ClassEditState }`
-- **Business Logic**: 
-  1. Acquires lock via `EntityLockService.acquireLock('class', classId, userId)`
-  2. Adds to user session via `UserSessionService.setEditingEntity(userId, 'class', classId)`
-  3. Gets or initializes state via `EntityStateService.getState('class', classId)`
-  4. Returns state (no sessionId)
-
-**GET /api/classes/:classId/state** - Get current class state
-- **Purpose**: Retrieves current class state from Redis
-- **Authentication**: User authentication required
-- **Response**: `{ classState: ClassEditState }`
-- **Business Logic**: Loads state from Redis via `EntityStateService.getState()`
-
-**PUT /api/classes/:classId/update** - Apply update
-- **Purpose**: Applies action-based update to class state
-- **Authentication**: User authentication required
-- **Body**: `{ update: ClassUpdate }` (discriminated union of update actions)
-- **Response**: `{ classState: ClassEditState }`
-- **Business Logic**: 
-  1. Verifies lock via `EntityLockService.checkLock('class', classId)`
-  2. Applies update via `GenericUpdateApplier.applyUpdateToState()`
-  3. Updates state via `EntityStateService.setState()` (auto-publishes)
-
-**POST /api/classes/:classId/save** - Save class state to database
-- **Purpose**: Transforms Redis state → MySQL and saves class
-- **Authentication**: Admin authentication required
-- **Response**: `{ class: ClassSummary }`
-- **Business Logic**: 
-  1. Verifies lock
-  2. Uses `ClassSaveService` to transform and persist state
-  3. Releases lock via `EntityLockService.releaseLock()`
-  4. Removes from editing via `UserSessionService.clearEditingEntity()`
-
-**POST /api/classes/:classId/cancel** - Cancel editing
-- **Purpose**: Releases lock and removes from editing list without saving
-- **Authentication**: User authentication required
-- **Response**: `{ success: boolean }`
-- **Business Logic**: 
-  1. Releases lock via `EntityLockService.releaseLock()`
-  2. Removes from editing via `UserSessionService.clearEditingEntity()`
-  3. State remains in Redis (may be viewed by other users)
-
-### **Update Actions**
-
-The system uses action-based updates (discriminated union) for state modifications:
-
-**Update Types**:
-- `UPDATE_CLASS_FIELD`: Update individual class field (name, abbreviation, etc.)
-- `ADD_PROGRESSION`: Add new feature progression to session
-- `UPDATE_PROGRESSION`: Update existing feature progression
-- `REMOVE_PROGRESSION`: Remove feature progression from session
-- `SET_SPELLCASTING_PROGRESSION`: Update spellcasting progression
-- `SET_SPELLS_KNOWN_PROGRESSION`: Update spells known progression
-
-**Source File**: `src/features/classResolution/types.ts`
-
-### **ClassUpdateApplier**
-
-Service for applying action-based updates to session state.
-
-**Purpose**: Immutably applies updates to session state based on action type.
-
-**Source File**: `src/features/classResolution/classUpdateApplier.ts`
-
-**Key Features**:
-- **Immutable Updates**: All updates create new state objects
-- **Type Safety**: Discriminated union ensures type-safe updates
-- **Validation**: Validates updates before applying
-- **ID Management**: Handles temporary ID generation for new entities
+Updates are **path-based** (dot notation), so the backend can update deeply nested JSON without defining entity-specific action unions.
 
 ### **ClassSaveService**
 
-Service for transforming Redis session state → MySQL.
+Service for transforming Redis draft state → MySQL.
 
-**Purpose**: Transforms session state to MySQL format and persists class data.
+**Purpose**: Transforms draft state to MySQL format and persists class data.
 
-**Source File**: `src/features/classResolution/classSaveService.ts`
+**Source File**: `apps/backend/src/features/classDraft/classSaveService.ts`
 
 **Transform Process**:
-1. **Load Session**: Load session state from Redis
+1. **Load Draft State**: Load draft state from Redis
 2. **Transform State**: Convert `ClassEditState` to `UpdateClassRequest`
 3. **Handle Features**: 
    - Features are managed independently via the feature state system
    - Only featureIds are sent to `classService.updateClass`
    - Class service only syncs FeatureClassMap links (no feature manipulation)
 4. **Persist Class**: Save class to MySQL via `classService.updateClass`
-5. **Cleanup**: Delete session from Redis
+5. **Cleanup**: Delete draft state from Redis (done by the draft controller after save)
 
 **Note**: Features are no longer created/updated by the class service. Features must be saved via the feature state system before class update. The class service only manages FeatureClassMap relationship links.
 
@@ -281,17 +194,16 @@ Service for transforming Redis session state → MySQL.
 - **Transaction Safety**: All operations in single transaction
 
 **Source Files**:
-- Entity State Service: `src/features/shared/entityState/EntityStateService.ts`
-- Entity Lock Service: `src/features/shared/entityState/EntityLockService.ts`
-- User Session Service: `src/features/shared/session/UserSessionService.ts`
-- Resolution Controller: `src/features/classResolution/classResolutionController.ts`
-- Update Applier: `src/features/classResolution/classUpdateApplier.ts`
-- Save Service: `src/features/classResolution/classSaveService.ts`
-- Types: `src/features/classResolution/types.ts`, `packages/shared/schema/src/class.ts`
+- Draft lock service: `apps/backend/src/features/shared/draftState/DraftLockService.ts`
+- Draft state service: `apps/backend/src/features/shared/draftState/DraftStateService.ts`
+- Draft controller/routes: `apps/backend/src/features/shared/draftState/draftController.ts`, `apps/backend/src/features/shared/draftState/draftRoutes.ts`
+- Draft registry: `apps/backend/src/features/shared/draftState/draftRegistry.ts`
+- Save service: `apps/backend/src/features/classDraft/classSaveService.ts`
+- Validation schema/types: `packages/shared/schema/src/class.ts`
 
 **Related Documentation**: 
 - [Frontend State-Based Pattern](frontend-components.md#state-based-pattern-architecture) - Frontend implementation
-- [Entity State Management Architecture](../application-overview/entity-state-management.md) - Architecture overview
+- [Session and State Management](../application-overview/session-state-management.md) - Architecture overview
 
 ## 🔗 **Routes Layer**
 

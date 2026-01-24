@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { prisma } from '@/lib/prisma';
 import {
     ItemIdParamRequest,
     CreateItemRequest,
@@ -11,8 +11,6 @@ import {
 } from '@shared/schema';
 
 import type { ItemService } from './types';
-
-const prisma = new PrismaClient();
 
 export const itemService: ItemService = {
     async getAllItems(): Promise<GetAllItemsResponse> {

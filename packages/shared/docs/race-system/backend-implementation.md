@@ -132,133 +132,48 @@ The race system controllers follow the shared [Controller Layer Pattern](../appl
 
 ## 🗄️ **Entity State Management**
 
-The race system uses **user sessions with entity state management** for editing races, following the shared [Entity State Management Architecture](../application-overview/entity-state-management.md). This architecture separates user session tracking from entity state storage.
+The race system uses the shared **draft state** infrastructure for editing, following the shared [Session and State Management](../application-overview/session-state-management.md). Draft state is stored in Redis, guarded by per-draft locks, and persisted to MySQL on save.
 
 ### **Overview**
 
-The entity state management system provides:
-- **User Sessions**: Single session per user tracking viewing/editing entities
-- **Entity States**: Independent state storage in Redis (`state:race:{raceId}`)
-- **Entity Locks**: Separate lock management (`lock:race:{raceId} -> userId`)
-- **Real-time Updates**: Redis pub/sub for propagating state changes
-- **Save Transformation**: Transforms Redis state → MySQL on save
+Editing a race provides:
 
-### **Architecture Components**
+- **Draft lock**: `apps/backend/src/features/shared/draftState/DraftLockService.ts`
+- **Draft state**: `apps/backend/src/features/shared/draftState/DraftStateService.ts`
+- **Path-based updates**: `apps/backend/src/features/shared/draftState/StateUpdateService.ts`
+- **Draft endpoints**: `apps/backend/src/features/shared/draftState/draftRoutes.ts`
+- **Persistence**: `apps/backend/src/features/shared/draftState/draftRegistry.ts` + `apps/backend/src/features/raceDraft/raceSaveService.ts`
 
-**UserSessionService**: Manages user sessions tracking viewing/editing entities
-- **Source File**: `src/features/shared/session/UserSessionService.ts`
-- **Storage**: Redis key `session:user:{userId}` with `viewing` and `editing` arrays
-- **Purpose**: Single source of truth for what entities a user is viewing/editing
+### **Draft endpoints (shared)**
 
-**EntityStateService**: Manages independent entity states in Redis
-- **Source File**: `src/features/shared/entityState/EntityStateService.ts`
-- **Storage**: Redis key `state:race:{raceId}` with race edit state
-- **Purpose**: Shared state storage accessible by all viewing users
-- **Pub/Sub**: Automatically publishes updates when state changes
+Races are edited via the shared draft endpoints (all require auth) implemented in `apps/backend/src/features/shared/draftState/draftRoutes.ts`:
 
-**EntityLockService**: Manages per-entity locks for editing
-- **Source File**: `src/features/shared/entityState/EntityLockService.ts`
-- **Storage**: Redis key `lock:race:{raceId} -> userId`
-- **Purpose**: Prevents concurrent editing conflicts
+- `POST /drafts/start-editing`
+- `PUT /drafts/update-value`
+- `POST /drafts/save`
+- `POST /drafts/cancel`
 
-### **RaceResolutionController**
+For race drafts, the frontend sends `draftType = DraftType.Race` and `id = raceId` (or `id = 0` to start a new draft and receive a negative draft id).
 
-Controller for managing race editing using user sessions and entity state.
-
-**Purpose**: Handles HTTP requests for race editing lifecycle and state updates.
-
-**Source File**: `src/features/raceResolution/raceResolutionController.ts`
-
-**API Endpoints**:
-
-**POST /api/races/:raceId/start-editing** - Start editing a race
-- **Purpose**: Acquires lock, adds to user's editing list, initializes/loads state
-- **Authentication**: User authentication required
-- **Response**: `{ raceState: RaceEditState }`
-- **Business Logic**: 
-  1. Acquires lock via `EntityLockService.acquireLock('race', raceId, userId)`
-  2. Adds to user session via `UserSessionService.setEditingEntity(userId, 'race', raceId)`
-  3. Gets or initializes state via `EntityStateService.getState('race', raceId)`
-  4. Returns state (no sessionId)
-
-**GET /api/races/:raceId/state** - Get current race state
-- **Purpose**: Retrieves current race state from Redis
-- **Authentication**: User authentication required
-- **Response**: `{ raceState: RaceEditState }`
-- **Business Logic**: Loads state from Redis via `EntityStateService.getState()`
-
-**PUT /api/races/:raceId/update** - Apply update
-- **Purpose**: Applies action-based update to race state
-- **Authentication**: User authentication required
-- **Body**: `{ update: RaceUpdate }` (discriminated union of update actions)
-- **Response**: `{ raceState: RaceEditState }`
-- **Business Logic**: 
-  1. Verifies lock via `EntityLockService.checkLock('race', raceId)`
-  2. Applies update via `GenericUpdateApplier.applyUpdateToState()`
-  3. Updates state via `EntityStateService.setState()` (auto-publishes)
-
-**POST /api/races/:raceId/save** - Save race state to database
-- **Purpose**: Transforms Redis state → MySQL and saves race
-- **Authentication**: Admin authentication required
-- **Response**: `{ race: RaceSummary }`
-- **Business Logic**: 
-  1. Verifies lock
-  2. Uses `RaceSaveService` to transform and persist state
-  3. Releases lock via `EntityLockService.releaseLock()`
-  4. Removes from editing via `UserSessionService.clearEditingEntity()`
-
-**POST /api/races/:raceId/cancel** - Cancel editing
-- **Purpose**: Releases lock and removes from editing list without saving
-- **Authentication**: User authentication required
-- **Response**: `{ success: boolean }`
-- **Business Logic**: 
-  1. Releases lock via `EntityLockService.releaseLock()`
-  2. Removes from editing via `UserSessionService.clearEditingEntity()`
-  3. State remains in Redis (may be viewed by other users)
-
-### **Update Actions**
-
-The system uses action-based updates (discriminated union) for state modifications:
-
-**Update Types**:
-- `UPDATE_RACE_FIELD`: Update individual race field (name, editionId, etc.)
-- `ADD_PROGRESSION`: Add new feature progression to session
-- `UPDATE_PROGRESSION`: Update existing feature progression
-- `REMOVE_PROGRESSION`: Remove feature progression from session
-
-**Source File**: `src/features/raceResolution/types.ts`
-
-### **RaceUpdateApplier**
-
-Service for applying action-based updates to session state.
-
-**Purpose**: Immutably applies updates to session state based on action type.
-
-**Source File**: `src/features/raceResolution/raceUpdateApplier.ts`
-
-**Key Features**:
-- **Immutable Updates**: All updates create new state objects
-- **Type Safety**: Discriminated union ensures type-safe updates
-- **Validation**: Validates updates before applying
-- **ID Management**: Handles temporary ID generation for new entities
+Updates are **path-based** (dot notation), so the backend can update deeply nested JSON without defining entity-specific action unions.
 
 ### **RaceSaveService**
 
-Service for transforming Redis session state → MySQL.
+Service for transforming Redis draft state → MySQL.
 
-**Purpose**: Transforms session state to MySQL format and persists race data.
+**Purpose**: Transforms draft state to MySQL format and persists race data.
 
-**Source File**: `src/features/raceResolution/raceSaveService.ts`
+**Source File**: `apps/backend/src/features/raceDraft/raceSaveService.ts`
 
 **Transform Process**:
-1. **Load Session**: Load session state from Redis
+1. **Load Draft State**: Load draft state from Redis
 2. **Transform State**: Convert `RaceEditState` to `UpdateRaceRequest`
 3. **Handle Features**: 
    - Features are managed independently via the feature state system
    - Only featureIds are sent to `raceService.updateRace`
    - Race service only syncs FeatureRaceMap links (no feature manipulation)
 4. **Persist Race**: Save race to MySQL via `raceService.updateRace`
-5. **Cleanup**: Delete session from Redis
+5. **Cleanup**: Delete draft state from Redis (done by the draft controller after save)
 
 **Note**: Features are no longer created/updated by the race service. Features must be saved via the feature state system before race update. The race service only manages FeatureRaceMap relationship links.
 
@@ -269,17 +184,16 @@ Service for transforming Redis session state → MySQL.
 - **Transaction Safety**: All operations in single transaction
 
 **Source Files**:
-- Entity State Service: `src/features/shared/entityState/EntityStateService.ts`
-- Entity Lock Service: `src/features/shared/entityState/EntityLockService.ts`
-- User Session Service: `src/features/shared/session/UserSessionService.ts`
-- Resolution Controller: `src/features/raceResolution/raceResolutionController.ts`
-- Update Applier: `src/features/raceResolution/raceUpdateApplier.ts`
-- Save Service: `src/features/raceResolution/raceSaveService.ts`
-- Types: `src/features/raceResolution/types.ts`, `packages/shared/schema/src/race.ts`
+- Draft lock service: `apps/backend/src/features/shared/draftState/DraftLockService.ts`
+- Draft state service: `apps/backend/src/features/shared/draftState/DraftStateService.ts`
+- Draft controller/routes: `apps/backend/src/features/shared/draftState/draftController.ts`, `apps/backend/src/features/shared/draftState/draftRoutes.ts`
+- Draft registry: `apps/backend/src/features/shared/draftState/draftRegistry.ts`
+- Save service: `apps/backend/src/features/raceDraft/raceSaveService.ts`
+- Validation schema/types: `packages/shared/schema/src/race.ts`
 
 **Related Documentation**: 
 - [Frontend State-Based Pattern](frontend-components.md#state-based-pattern-architecture) - Frontend implementation
-- [Class System Entity State Management](../class-system/backend-implementation.md#entity-state-management) - Reference implementation
+- [Session and State Management](../application-overview/session-state-management.md) - Architecture overview
 
 ## 🔗 **Routes Layer**
 
@@ -325,7 +239,7 @@ The race system integrates with the feature system through link table management
 - The race service extracts featureIds and syncs FeatureRaceMap links using `syncRaceFeatures`
 - Features are never manipulated by the race service - they are managed separately
 
-**Orphaned Features**: Orphaned features (features with no class/race/feat/domain/companion links) are NOT automatically deleted. An admin UI should be created to review and manually delete orphaned features.
+**Orphaned Features**: Orphaned features (features with no class/race/feat/domain/companion links) are NOT automatically deleted. Administrators can review and delete them via the orphaned-features cleanup UI (`/features/orphaned`) which calls `GET/DELETE /api/features/orphaned`.
 
 **Related Documentation**: [Feature System Backend Implementation](../feature-system/backend-implementation.md)
 
