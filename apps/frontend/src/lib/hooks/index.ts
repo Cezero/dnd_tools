@@ -1,6 +1,7 @@
 export { useGenericResolution } from './useGenericResolution';
 export { useGenericEditState } from './useGenericEditState';
 export { useDebounce } from './useDebounce';
+export { useDraftSync } from './useDraftSync';
 export { useZodValidation } from './useZodValidation';
 export { createResolutionHook } from './createResolutionHook';
 export type { ResolutionApi, ResolutionHookResult } from './types';

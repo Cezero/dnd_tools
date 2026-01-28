@@ -499,7 +499,9 @@ export class ResolvedFeatureService {
         targetLevel: number
     ): Record<string, number> {
         const resolvedValues: Record<string, number> = {};
-        const isGestalt = character.isGestalt || character.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
+        const isGestalt =
+            (character.config?.isGestalt ?? false) ||
+            !!character.advancements?.some((adv) => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
 
         // Calculate class levels for multiclass summing
         const classLevels = new Map<number, number>();

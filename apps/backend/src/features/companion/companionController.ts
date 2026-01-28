@@ -110,7 +110,7 @@ export async function CreateCharacterCompanion(req: ValidatedBodyT<CreateCharact
     }
 
     // Verify that the character belongs to the authenticated user
-    const character = await prisma.userCharacter.findUnique({
+    const character = await prisma.character.findUnique({
         where: { id: req.body.characterId },
         select: { userId: true }
     });

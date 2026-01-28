@@ -842,8 +842,6 @@ export interface TabComponentProps {
     sharedData: {
         allFeats: FeatWithFeatureInfo[];
         isLoadingFeats: boolean;
-        featsMap: Map<number, FeatWithFeatureInfo>;
-        isLoadingFullFeats: boolean;
         primaryClass: DnDClass | null;
         secondaryClass: DnDClass | null;
         race: Race | null;

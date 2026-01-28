@@ -14,7 +14,6 @@ import {
     LANGUAGE_MAP,
     GetAbilityModifier,
     AbilityId,
-    EntityAppliesToType
 } from '@shared/static-data';
 
 import type { AgeTableEntry, HeightWeightEntry } from './types';

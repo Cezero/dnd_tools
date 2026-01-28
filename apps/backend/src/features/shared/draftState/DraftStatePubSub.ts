@@ -219,10 +219,14 @@ export class DraftStatePubSub {
         }
 
         try {
-            if (!this.subscriptions.has(channel)) {
+            const isNewSubscription = !this.subscriptions.has(channel);
+            if (isNewSubscription) {
                 this.subscriptions.set(channel, new Set());
-                await this.subscriber.subscribe(channel, (_message: string, _channelName: string) => {
-                    // Message handling is done via the shared 'message' event handler.
+                // In Redis v4, subscribe() requires a callback function that receives (message, channelName)
+                // We'll use this callback to handle messages directly, which is more reliable than the event handler
+                await this.subscriber.subscribe(channel, (message: string, channelName: string) => {
+                    // Handle the message directly via the callback
+                    this.handleMessage(channelName, message);
                 });
             }
 
@@ -299,10 +303,11 @@ export class DraftStatePubSub {
                 this.subscriptions.set(channel, new Set());
 
                 // Subscribe to channel if this is the first callback
-                // Redis v4 subscribe requires channel and listener callback
-                // The listener receives (message, channel) arguments
-                await this.subscriber.subscribe(channel, (_message: string, _channelName: string) => {
-                    // Message handling is done via the shared 'message' event handler.
+                // In Redis v4, subscribe() requires a callback function that receives (message, channelName)
+                // We'll use this callback to handle messages directly
+                await this.subscriber.subscribe(channel, (message: string, channelName: string) => {
+                    // Handle the message directly via the callback
+                    this.handleMessage(channelName, message);
                 });
             }
 

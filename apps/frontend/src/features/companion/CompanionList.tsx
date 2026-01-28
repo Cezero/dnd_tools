@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { useCompanionColumns } from '@/features/companion/CompanionColumns';
 import { CompanionWithRelations } from '@shared/schema';
 
@@ -47,7 +46,7 @@ export function CompanionList(): React.JSX.Element {
                 dataFetcher={dataFetcher}
                 itemDesc="companion"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => CompanionQueryHooks.deleteCompanion(id))}
+                deleteServiceFunction={(id) => CompanionQueryHooks.deleteCompanion(Number(id))}
             />
         </div>
     );

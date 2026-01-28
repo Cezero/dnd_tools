@@ -29,7 +29,11 @@ export class GestaltMechanicsResolver {
         resolvedProgressions: FeatureWithRelations[],
         resolvedFormulaValues: Record<string, number>
     ): Record<string, number> {
-        if (!character.isGestalt && !character.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)) {
+        const isGestalt =
+            (character.config?.isGestalt ?? false) ||
+            !!character.advancements?.some((adv) => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
+
+        if (!isGestalt) {
             // Not a gestalt character, return unchanged
             return resolvedFormulaValues;
         }

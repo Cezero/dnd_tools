@@ -461,7 +461,40 @@ export function applyDraftActionAtPath(
                             return { updated: result, id: tempId };
                         }
 
+                        // Character drafts: create fully shaped stubs for FeatureEntity-style nested collections.
+                        if (options.draftType === DraftType.Character && segment === 'attackDefinitions' && keyField === 'id') {
+                            (target as unknown[]).push({
+                                id: tempId,
+                                characterId: options.draftId,
+                                attackSlot: null,
+                                mainHandCharacterItemId: null,
+                                offHandCharacterItemId: null,
+                            });
+                            return { updated: result, id: tempId };
+                        }
+
                         (target as unknown[]).push({ [keyField]: tempId });
+                        return { updated: result, id: tempId };
+                    }
+
+                    // CharacterItem drafts: use scalar baseItemId passed via value to create a new item.
+                    if (
+                        options.draftType === DraftType.Character &&
+                        segment === 'characterItems' &&
+                        typeof value === 'number' &&
+                        Number.isInteger(value) &&
+                        value > 0
+                    ) {
+                        const keyField = resolveSelectorKeyField(segment);
+                        const tempId = createNextTempId(target as unknown[], keyField);
+                        (target as unknown[]).push({
+                            id: tempId,
+                            characterId: options.draftId,
+                            baseItemId: value,
+                            name: 'New Item',
+                            quantity: 1,
+                            location: null,
+                        });
                         return { updated: result, id: tempId };
                     }
 

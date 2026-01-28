@@ -33,6 +33,9 @@ export const CurrencyId = {
     Silver: 2,
     Gold: 3,
     Platinum: 4,
+    Gem: 5,
+    ArtObject: 6,
+    Other: 8
 } as const;
 
 export type CurrencyId = typeof CurrencyId[keyof typeof CurrencyId];
@@ -42,6 +45,9 @@ export const CURRENCY: CurrencyMap = {
     [CurrencyId.Silver]: { id: CurrencyId.Silver, name: 'Silver', abbreviation: 'sp', gpValue: .1 },
     [CurrencyId.Gold]: { id: CurrencyId.Gold, name: 'Gold', abbreviation: 'gp', gpValue: 1 },
     [CurrencyId.Platinum]: { id: CurrencyId.Platinum, name: 'Platinum', abbreviation: 'pp', gpValue: 10 },
+    [CurrencyId.Gem]: { id: CurrencyId.Gem, name: 'Gem', abbreviation: 'gem', gpValue: 0 },
+    [CurrencyId.ArtObject]: { id: CurrencyId.ArtObject, name: 'Art Object', abbreviation: 'art', gpValue: 0 },
+    [CurrencyId.Other]: { id: CurrencyId.Other, name: 'Other', abbreviation: 'other', gpValue: 0 },
 }
 
 export const CURRENCY_LIST = Object.values(CURRENCY);

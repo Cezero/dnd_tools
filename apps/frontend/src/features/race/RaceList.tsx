@@ -5,7 +5,6 @@ import { useAuthAuto } from '@/components/auth';
 import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
 import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { GenericList } from '@/components/generic-list';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { RaceSummary, Feature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
@@ -64,7 +63,7 @@ export function RaceList(): React.JSX.Element {
                 dataFetcher={racesDataFetcher}
                 itemDesc="race"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction((id: number) => RaceQueryHooks.deleteRace(id))}
+                deleteServiceFunction={(id) => RaceQueryHooks.deleteRace(Number(id))}
             />
 
             {isAdmin && (

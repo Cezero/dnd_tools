@@ -92,14 +92,29 @@ export async function GetCharacterById(req: ValidatedParamsT<CharacterIdParamReq
 }
 
 export async function GetCharacterWithAllDetails(req: ValidatedParamsT<CharacterIdParamRequest, CharacterWithAllDetailsResponse>, res: Response, _next: NextFunction) {
-    const character = await characterService.getCharacterWithAllDetails(req.params);
-
-    if (!character) {
-        res.status(404).json({ error: 'Character not found' });
+    const userId = req.user?.id;
+    if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
         return;
     }
 
-    res.json(character);
+    try {
+        const character = await characterService.getCharacterWithAllDetails(req.params, userId);
+
+        if (!character) {
+            res.status(404).json({ error: 'Character not found' });
+            return;
+        }
+
+        res.json(character);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load character';
+        if (message.includes('locked by another user')) {
+            res.status(409).json({ error: message });
+            return;
+        }
+        res.status(500).json({ error: message });
+    }
 }
 
 /**

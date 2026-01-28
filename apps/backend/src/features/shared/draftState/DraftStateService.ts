@@ -3,6 +3,7 @@ import { DraftType } from '@shared/static-data';
 import { DraftStatePubSub } from './DraftStatePubSub';
 import { getRedisClient } from '../session/redisClient';
 import type { RedisSessionClient } from '../session/types';
+import { UserSessionService } from '../session/UserSessionService';
 
 
 /**
@@ -52,10 +53,17 @@ import type { RedisSessionClient } from '../session/types';
 export class DraftStateService {
     private redis: RedisSessionClient;
     private pubSub: DraftStatePubSub;
+    private userSessionService: UserSessionService;
+    /**
+     * TTL for draft states (30 minutes in seconds).
+     * Matches session and lock TTL to ensure drafts expire when sessions/locks expire.
+     */
+    private readonly DRAFT_TTL_SECONDS = 30 * 60; // 30 minutes
 
     constructor() {
         this.redis = getRedisClient();
         this.pubSub = new DraftStatePubSub();
+        this.userSessionService = new UserSessionService();
     }
 
     /**
@@ -94,12 +102,20 @@ export class DraftStateService {
      */
     async getState<T>(draftType: DraftType, id: number): Promise<T | null> {
         const key = this.buildStateKey(draftType, id);
+        const metaKey = this.buildStateMetaKey(draftType, id);
         
         try {
             const value = await this.redis.get(key);
             
             if (!value) {
                 return null;
+            }
+            
+            // Refresh TTL on read (touch) to keep draft alive while actively used
+            await this.redis.expire(key, this.DRAFT_TTL_SECONDS);
+            const metaValue = await this.redis.get(metaKey);
+            if (metaValue) {
+                await this.redis.expire(metaKey, this.DRAFT_TTL_SECONDS);
             }
             
             return JSON.parse(value) as T;
@@ -144,14 +160,12 @@ export class DraftStateService {
         try {
             const serialized = JSON.stringify(state);
             
-            // Store state with no expiration (persists until deleted)
-            // Using a very long TTL (1 year) as a safety measure, but states
-            // should be explicitly deleted when no longer needed
-            const oneYearInSeconds = 365 * 24 * 60 * 60;
-            await this.redis.setEx(key, oneYearInSeconds, serialized);
+            // Store state with TTL matching session/lock TTL (30 minutes)
+            // TTL is refreshed on read (getState) to keep drafts alive while actively used
+            await this.redis.setEx(key, this.DRAFT_TTL_SECONDS, serialized);
             await this.redis.setEx(
                 metaKey,
-                oneYearInSeconds,
+                this.DRAFT_TTL_SECONDS,
                 JSON.stringify({ lastUpdated: new Date().toISOString() })
             );
             
@@ -174,6 +188,10 @@ export class DraftStateService {
     /**
      * Deletes entity state from Redis.
      * 
+     * Also cleans up session references to the deleted draft from all user sessions.
+     * This ensures that users don't have stale session entries claiming they're
+     * editing/viewing a draft that no longer exists.
+     * 
      * @param draftType - The draft type (numeric enum value)
      * @param id - The draft ID
      * @throws Error if Redis operation fails
@@ -188,8 +206,18 @@ export class DraftStateService {
         const metaKey = this.buildStateMetaKey(draftType, id);
         
         try {
+            // Delete the draft state and metadata
             await this.redis.del(key);
             await this.redis.del(metaKey);
+            
+            // Clean up session references to this draft
+            // This is best-effort - if it fails, we still want the draft deleted
+            try {
+                await this.userSessionService.removeDraftFromAllSessions(draftType, id);
+            } catch (sessionError) {
+                // Log but don't fail - the draft is already deleted
+                console.error(`Error cleaning up session references for draft ${draftType}:${id}:`, sessionError);
+            }
         } catch (error) {
             console.error(`Error deleting draft state for ${draftType}:${id}:`, error);
             throw new Error(`Failed to delete entity state: ${error instanceof Error ? error.message : 'Unknown error'}`);

@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { DEITY_COLUMNS } from '@/features/deity/DeityColumns';
 import { DeityQueryHooks } from '@/services/query/DeityQueryHooks';
 import { DeityInQueryResponse } from '@shared/schema';
@@ -46,7 +45,7 @@ export function DeityList(): React.JSX.Element {
                 dataFetcher={dataFetcher}
                 itemDesc="deity"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => DeityQueryHooks.deleteDeity(id))}
+                deleteServiceFunction={(id) => DeityQueryHooks.deleteDeity(Number(id))}
             />
         </div>
     );

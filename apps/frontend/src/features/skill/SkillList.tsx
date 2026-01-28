@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { SKILL_COLUMNS } from '@/features/skill/SkillColumns';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import { Skill } from '@shared/schema';
@@ -46,7 +45,7 @@ export function SkillList(): React.JSX.Element {
                 dataFetcher={dataFetcher}
                 itemDesc="skill"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => SkillQueryHooks.deleteSkill(id))}
+                deleteServiceFunction={(id) => SkillQueryHooks.deleteSkill(Number(id))}
             />
         </div>
     );

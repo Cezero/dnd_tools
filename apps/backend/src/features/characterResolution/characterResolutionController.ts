@@ -93,7 +93,8 @@ export async function calculateSpellSelection(
             const spellData = await characterService.getAvailableSpellsForClass(
                 characterId,
                 classId,
-                resolvedProgressions
+                resolvedProgressions,
+                characterId < 1 ? character : undefined
             );
 
             // Only include if the class has spells or is a spellcasting class

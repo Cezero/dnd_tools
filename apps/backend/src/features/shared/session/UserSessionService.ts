@@ -109,6 +109,9 @@ export class UserSessionService {
                 return null;
             }
             
+            // Refresh TTL on read (touch) to keep session alive while actively used
+            await this.redis.expire(key, this.SESSION_TTL_SECONDS);
+            
             const parsed = JSON.parse(value) as Omit<UserSession, 'createdAt' | 'updatedAt'> & {
                 createdAt: string;
                 updatedAt: string;
@@ -327,5 +330,90 @@ export class UserSessionService {
             editing: updatedEditing,
             updatedAt: new Date()
         });
+    }
+
+    /**
+     * Removes a draft from all user sessions that reference it.
+     * 
+     * This method scans all user sessions and removes the specified draft
+     * from both viewing and editing lists. Used when a draft is deleted
+     * to clean up stale session references.
+     * 
+     * **Performance Note**: This method scans all user sessions, which can be
+     * expensive with many active users. Consider optimizing with a reverse
+     * index if this becomes a performance bottleneck.
+     * 
+     * @param draftType - The draft type
+     * @param id - The draft ID
+     * @throws Error if Redis operation fails
+     * 
+     * @example
+     * ```typescript
+     * // Clean up all session references to a deleted draft
+     * await userSessionService.removeDraftFromAllSessions(DraftType.Character, 123);
+     * ```
+     */
+    async removeDraftFromAllSessions(draftType: DraftType, id: number): Promise<void> {
+        try {
+            // Find all user session keys
+            const sessionKeys = await this.redis.keys('session:user:*');
+            
+            // Process each session
+            const cleanupPromises = sessionKeys.map(async (key) => {
+                try {
+                    // Extract userId from key (format: session:user:{userId})
+                    const userIdMatch = key.match(/^session:user:(\d+)$/);
+                    if (!userIdMatch) {
+                        return; // Skip invalid keys
+                    }
+                    
+                    const userId = parseInt(userIdMatch[1], 10);
+                    if (Number.isNaN(userId)) {
+                        return; // Skip invalid user IDs
+                    }
+                    
+                    const session = await this.getUserSession(userId);
+                    if (!session) {
+                        return; // Session doesn't exist or expired
+                    }
+                    
+                    // Check if session references this draft
+                    const hasInViewing = session.viewing.some(
+                        e => e.draftType === draftType && e.id === id
+                    );
+                    const hasInEditing = session.editing.some(
+                        e => e.draftType === draftType && e.id === id
+                    );
+                    
+                    if (!hasInViewing && !hasInEditing) {
+                        return; // Session doesn't reference this draft
+                    }
+                    
+                    // Remove from viewing and editing lists
+                    const updatedViewing = session.viewing.filter(
+                        e => !(e.draftType === draftType && e.id === id)
+                    );
+                    const updatedEditing = session.editing.filter(
+                        e => !(e.draftType === draftType && e.id === id)
+                    );
+                    
+                    // Update session if it changed
+                    await this.setUserSession(userId, {
+                        ...session,
+                        viewing: updatedViewing,
+                        editing: updatedEditing,
+                        updatedAt: new Date()
+                    });
+                } catch (error) {
+                    // Log but don't fail - best effort cleanup
+                    console.error(`Error cleaning up draft ${draftType}:${id} from session ${key}:`, error);
+                }
+            });
+            
+            await Promise.all(cleanupPromises);
+        } catch (error) {
+            console.error(`Error removing draft ${draftType}:${id} from all sessions:`, error);
+            throw new Error(`Failed to remove draft from all sessions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
 }

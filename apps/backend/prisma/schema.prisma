@@ -415,7 +415,7 @@ model Race {
   description String? @db.Text
 
   sourceBookInfo            RaceSourceMap[]
-  userCharacter             UserCharacter[]
+  characters                Character[]
   sharedFeatures            FeatureRaceMap[] // Many-to-many relationship for reusable features
   deityRaces                DeityRaceMap[]
 }
@@ -569,7 +569,7 @@ model CharacterItem {
   characterId Int
   baseItemId  Int
 
-  character UserCharacter @relation(fields: [characterId], references: [id])
+  character Character @relation(fields: [characterId], references: [id])
   baseItem  Item          @relation(fields: [baseItemId], references: [id])
 
   characterItemProperties CharacterItemProperty[]
@@ -592,7 +592,7 @@ model CharacterAttackDefinition {
   mainHandCharacterItemId Int? // CharacterItem ID for main hand weapon (nullable)
   offHandCharacterItemId  Int? // CharacterItem ID for off-hand weapon (nullable, only for dual wield)
 
-  character    UserCharacter  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  character    Character      @relation(fields: [characterId], references: [id], onDelete: Cascade)
   mainHandItem CharacterItem? @relation("MainHandAttacks", fields: [mainHandCharacterItemId], references: [id], onDelete: SetNull)
   offHandItem  CharacterItem? @relation("OffHandAttacks", fields: [offHandCharacterItemId], references: [id], onDelete: SetNull)
 
@@ -692,10 +692,10 @@ model ReferenceTableCell {
 }
 
 // =================
-// User Characters
+// Characters
 // =================
 
-model UserCharacter {
+model Character {
   id          Int     @id @default(autoincrement())
   userId      Int
   name        String
@@ -711,23 +711,11 @@ model UserCharacter {
   gender      String?
   notes       String? @db.Text
 
-  // NEW: Character configuration metadata
-  editionId             Int
-  allowVariantClasses   Boolean @default(false) // Allow class variants
-  isGestalt             Boolean @default(false) // Gestalt multiclassing
-  ignoreLevelAdjustment Boolean @default(false) // Ignore LA for XP calculation
+  editionId Int
 
-  // Money fields
-  platinum Int @default(0)
-  gold     Int @default(0)
-  silver   Int @default(0)
-  copper   Int @default(0)
-
-  // Current advancement pointer (fast lookup)
-  // NOTE: authoritative pointer; retraining revisions are handled separately (TODO).
-  currentAdvancementId Int?
-
-  abilityScores      UserCharacterAbilityScore[]
+  abilityScores      CharacterAbilityScore[]
+  config             CharacterConfig?
+  wealth             CharacterWealth[]
   characterItems     CharacterItem[]
   attackDefinitions  CharacterAttackDefinition[]
   companions         CharacterCompanion[]
@@ -741,26 +729,49 @@ model UserCharacter {
   deity Deity? @relation(fields: [deityId], references: [id])
   user  User   @relation(fields: [userId], references: [id])
 
-  currentAdvancement CharacterAdvancement? @relation("CurrentAdvancement", fields: [currentAdvancementId], references: [id], onDelete: SetNull)
+  @@map("UserCharacter")
 }
 
-model UserCharacterAbilityScore {
+model CharacterConfig {
+  characterId           Int     @id
+  allowVariantClasses   Boolean @default(false) // Allow class variants
+  isGestalt             Boolean @default(false) // Gestalt multiclassing
+  ignoreLevelAdjustment Boolean @default(false) // Ignore LA for XP calculation
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+model CharacterWealth {
+  id          Int     @id @default(autoincrement())
+  characterId Int
+  currencyId  Int
+  quantity    Int
+  value       Int?
+  description String? @db.VarChar(255)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
+}
+
+model CharacterAbilityScore {
   id          Int @id @default(autoincrement())
   characterId Int
   abilityId   Int
   value       Int
 
-  character UserCharacter @relation(fields: [characterId], references: [id])
+  character Character @relation(fields: [characterId], references: [id])
+
+  @@map("UserCharacterAbilityScore")
 }
 
 model CharacterLanguageMap {
-  id          Int @id @default(autoincrement())
   characterId Int
   languageId  Int
 
-  character UserCharacter @relation(fields: [characterId], references: [id])
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 
-  @@unique([characterId, languageId])
+  @@id([characterId, languageId])
 }
 
 model CharacterAdvancement {
@@ -775,7 +786,7 @@ model CharacterAdvancement {
   notes            String?  @db.Text
   createdAt        DateTime @default(now())
 
-  character      UserCharacter @relation(fields: [characterId], references: [id])
+  character      Character     @relation(fields: [characterId], references: [id])
   class          Class         @relation(fields: [classId], references: [id])
   secondaryClass Class?        @relation("SecondaryClass", fields: [secondaryClassId], references: [id])
 
@@ -783,8 +794,6 @@ model CharacterAdvancement {
   feats          AdvancementFeat[]
   spellsKnown    AdvancementSpell[]
   featureChoices CharacterFeatureChoice[]
-
-  currentForCharacters UserCharacter[] @relation("CurrentAdvancement")
 
   @@unique([characterId, level, version])
 }
@@ -856,7 +865,7 @@ model CharacterSpellPreparation {
   slotType    Int  @default(0) // Type of spell slot (0=NORMAL, 1=BONUS, 2=DOMAIN)
   featId      Int? // Metamagic feat applied (if any)
 
-  character UserCharacter @relation(fields: [characterId], references: [id])
+  character Character @relation(fields: [characterId], references: [id])
   class     Class         @relation(fields: [classId], references: [id])
   spell     Spell         @relation(fields: [spellId], references: [id])
   feat      Feat?         @relation(fields: [featId], references: [id])
@@ -873,7 +882,7 @@ model CharacterFeatureUses {
   maxUses         Int
   frequency       Int // USES_FREQUENCY_ENUM (PER_DAY, PER_WEEK, PER_LEVEL, PER_ENCOUNTER)
 
-  character     UserCharacter @relation(fields: [characterId], references: [id])
+  character     Character @relation(fields: [characterId], references: [id])
   feature       Feature      @relation(fields: [featureId], references: [id])
   featureEntity FeatureEntity @relation(fields: [featureEntityId], references: [id])
 
@@ -897,7 +906,7 @@ model User {
 
   diceConfigBase Int?
 
-  characters          UserCharacter[]
+  characters          Character[]
   diceConfigOverrides UserDiceConfigOverride[] // NEW: One-to-many relationship
 
   // NEW: Relation to base config
@@ -996,7 +1005,7 @@ model Deity {
   pantheonId  Int?
 
   domains        DeityDomain[]
-  characters     UserCharacter[]
+  characters     Character[]
   sourceBookInfo DeitySourceMap[]
   deityClasses   DeityClassMap[]
   deityRaces     DeityRaceMap[]
@@ -1078,7 +1087,7 @@ model CharacterDisallowedSource {
   characterId  Int
   sourceBookId Int
 
-  character  UserCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  character  Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
   sourceBook SourceBook    @relation(fields: [sourceBookId], references: [id])
 
   @@unique([characterId, sourceBookId])
@@ -1388,7 +1397,7 @@ model CharacterCompanion {
   hitPoints     Int? // Current/max hit points (defaults to Monster.averageHP, can be rolled)
   wounds        Int  @default(0) // Current damage taken (for combat tracking)
 
-  character UserCharacter             @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  character Character                 @relation(fields: [characterId], references: [id], onDelete: Cascade)
   monster   Monster                   @relation(fields: [monsterId], references: [id])
   companion Companion?                @relation(fields: [companionId], references: [id])
   tricks    CharacterCompanionTrick[]

@@ -58,6 +58,13 @@ export const CharacterResolutionApi = {
      * ```
      */
     startEditing: async (characterId: number): Promise<StartEditingResponse> => {
+        // Draft-only create uses `DraftApi.startEditing(DraftType.Character, 0)` which mints a negative id
+        // and already acquires the lock/session for that draft. Avoid a redundant API call when the caller
+        // later initializes the character resolution hook with the minted negative id.
+        if (characterId < 0) {
+            return { success: true, draftType: DraftType.Character, id: characterId };
+        }
+
         return DraftApi.startEditing(DraftType.Character, characterId);
     },
 

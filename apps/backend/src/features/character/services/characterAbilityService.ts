@@ -15,7 +15,7 @@ import type {
  */
 export const characterAbilityService = {
     async createCharacterAbilityScore(data: CreateCharacterAbilityScoreRequest): Promise<CreateResponse> {
-        const result = await prisma.userCharacterAbilityScore.create({
+        const result = await prisma.characterAbilityScore.create({
             data,
         });
 
@@ -23,7 +23,7 @@ export const characterAbilityService = {
     },
 
     async updateCharacterAbilityScore(id: number, data: UpdateCharacterAbilityScoreRequest): Promise<UpdateResponse> {
-        await prisma.userCharacterAbilityScore.update({
+        await prisma.characterAbilityScore.update({
             where: { id },
             data,
         });
@@ -32,7 +32,7 @@ export const characterAbilityService = {
     },
 
     async deleteCharacterAbilityScore(id: number): Promise<UpdateResponse> {
-        await prisma.userCharacterAbilityScore.delete({
+        await prisma.characterAbilityScore.delete({
             where: { id },
         });
 
@@ -43,7 +43,7 @@ export const characterAbilityService = {
         // Use a transaction to ensure all operations succeed or fail together
         await prisma.$transaction(async (tx) => {
             // Get existing ability scores for this character
-            const existingScores = await tx.userCharacterAbilityScore.findMany({
+            const existingScores = await tx.characterAbilityScore.findMany({
                 where: { characterId: data.characterId },
             });
 
@@ -56,14 +56,14 @@ export const characterAbilityService = {
                 if (existing) {
                     // Update existing score if value changed
                     if (existing.value !== abilityScore.value) {
-                        await tx.userCharacterAbilityScore.update({
+                        await tx.characterAbilityScore.update({
                             where: { id: existing.id },
                             data: { value: abilityScore.value },
                         });
                     }
                 } else {
                     // Create new score
-                    await tx.userCharacterAbilityScore.create({
+                    await tx.characterAbilityScore.create({
                         data: {
                             characterId: data.characterId,
                             abilityId: abilityScore.abilityId,
@@ -78,7 +78,7 @@ export const characterAbilityService = {
             const toDelete = existingScores.filter(score => !requestedAbilityIds.has(score.abilityId));
 
             if (toDelete.length > 0) {
-                await tx.userCharacterAbilityScore.deleteMany({
+                await tx.characterAbilityScore.deleteMany({
                     where: {
                         id: { in: toDelete.map(score => score.id) },
                     },
@@ -90,7 +90,7 @@ export const characterAbilityService = {
     },
 
     async getCharacterAbilityScores(characterId: number): Promise<CharacterAbilityScoreResponse[]> {
-        const abilities = await prisma.userCharacterAbilityScore.findMany({
+        const abilities = await prisma.characterAbilityScore.findMany({
             where: { characterId },
         });
 

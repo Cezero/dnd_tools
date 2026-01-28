@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { FEAT_COLUMNS } from '@/features/feat/FeatColumns';
 import { FeatWithFeatureInfo } from '@shared/schema';
 
@@ -46,7 +45,7 @@ export function FeatList(): React.JSX.Element {
                 dataFetcher={dataFetcher}
                 itemDesc="feat"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => FeatQueryHooks.deleteFeat(id))}
+                deleteServiceFunction={(id) => FeatQueryHooks.deleteFeat(Number(id))}
             />
         </div>
     );

@@ -17,7 +17,7 @@ import { displayStrategyFactory } from '@/lib/formatters';
 import type { DisplayContext } from '@/lib/formatters/types';
 import { useCacheFunctions } from '@/services/cache/CacheFunctions';
 import type { DnDClass, Race, ItemWithDetails, RaceCacheEntry } from '@shared/schema';
-import { DisplayType } from '@shared/static-data';
+import { CurrencyId, DisplayType } from '@shared/static-data';
 
 import { CharacterDetailQueryHooks } from './CharacterDetailQueryHooks';
 import { generateCharacterPdf } from './characterPdfService';
@@ -111,14 +111,17 @@ export function CharacterDetail(): React.JSX.Element {
         });
 
         // Initialize money
+        const wealth = characterData.wealth ?? [];
+        const getCoin = (currencyId: number): number =>
+            wealth.find((w) => w.currencyId === currencyId && w.value === null && w.description === null)?.quantity ?? 0;
         updateState({
             type: CharacterDetailStateUpdateType.SET_MONEY,
             payload: {
                 money: {
-                    platinum: characterData.platinum || 0,
-                    gold: characterData.gold || 0,
-                    silver: characterData.silver || 0,
-                    copper: characterData.copper || 0,
+                    platinum: getCoin(CurrencyId.Platinum),
+                    gold: getCoin(CurrencyId.Gold),
+                    silver: getCoin(CurrencyId.Silver),
+                    copper: getCoin(CurrencyId.Copper),
                 }
             }
         });

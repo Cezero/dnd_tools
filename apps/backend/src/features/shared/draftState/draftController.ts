@@ -33,6 +33,12 @@ async function validateAdvancementStartEditingRequest(args: {
     const { context, entityId } = args;
 
     if (entityId !== 0) {
+        // Draft-only advancement IDs are negative. These are stored only in Redis.
+        // Allow start-editing for them; the StartDraftEditing handler will ensure a state exists.
+        if (entityId < 0) {
+            return;
+        }
+
         const advancement = await prisma.characterAdvancement.findUnique({
             where: { id: entityId },
             select: { characterId: true },
@@ -42,22 +48,20 @@ async function validateAdvancementStartEditingRequest(args: {
             throw new Error(`Advancement ${entityId} not found`);
         }
 
-        const character = await prisma.userCharacter.findUnique({
+        const character = await prisma.character.findUnique({
             where: { id: advancement.characterId },
-            select: { currentAdvancementId: true },
+            select: { id: true },
         });
 
         if (!character) {
             throw new Error(`Character ${advancement.characterId} not found`);
         }
 
-        const allowedId =
-            character.currentAdvancementId ??
-            (await prisma.characterAdvancement.findFirst({
-                where: { characterId: advancement.characterId },
-                orderBy: [{ level: 'desc' }, { version: 'desc' }],
-                select: { id: true },
-            }))?.id;
+        const allowedId = (await prisma.characterAdvancement.findFirst({
+            where: { characterId: advancement.characterId },
+            orderBy: [{ level: 'desc' }, { version: 'desc' }],
+            select: { id: true },
+        }))?.id;
 
         if (!allowedId) {
             throw new Error(`Character ${advancement.characterId} has no advancements`);
@@ -96,7 +100,7 @@ async function validateAdvancementStartEditingRequest(args: {
             throw new Error('Level-up advancement drafts require a persisted characterId');
         }
 
-        const characterExists = await prisma.userCharacter.findUnique({
+        const characterExists = await prisma.character.findUnique({
             where: { id: characterId },
             select: { id: true },
         });
@@ -268,6 +272,14 @@ export async function StartDraftEditing(
             // Get or initialize draft state
             let entityState = await stateService.getState(draftType, entityId);
             if (!entityState) {
+                // Draft-only (negative) IDs must already exist in Redis; do not initialize them from DB.
+                if (entityId < 0) {
+                    await lockService.releaseLock(draftType, entityId, userId);
+                    await userSessionService.clearEditingEntity(userId, draftType, entityId);
+                    res.status(404).json({ error: `Draft type ${draftType} state not found` });
+                    return;
+                }
+
                 // Initialize from database using draft config's getInitialState
                 const initialState = await draftConfig.getInitialState(entityId);
                 await stateService.setState(draftType, entityId, initialState);

@@ -1,0 +1,9 @@
+TODO
+
+Features need to be re-organized.
+
+there shouldn't be a "shared" feature. The features within it should be moved up a level to be features
+in their own right, similar to featureSystem (which is a shared feature)
+
+xxxDraft and xxxResolution "features" should be co-located and combined with their base xxxx feature.
+ie: race, raceDraft, raceResolution should all just be in 'race'

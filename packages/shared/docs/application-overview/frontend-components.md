@@ -67,6 +67,10 @@ The GenericList component is a comprehensive, reusable list component that provi
 - **Performance**: Optimized rendering with virtual scrolling capabilities
 - **Extensibility**: Custom cell renderers and filter functions
 
+**Delete integration**:
+- `deleteServiceFunction` is invoked as `deleteServiceFunction(idOrSlug)` (string | number).
+- Prefer passing a direct function (no adapters), e.g. `deleteServiceFunction={(id) => MyQueryHooks.deleteThing(Number(id))}`.
+
 **Detailed Documentation**:
 For comprehensive documentation on GenericList configuration, usage patterns, and advanced features, see [GenericList Component Documentation](generic-list.md).
 

@@ -19,21 +19,23 @@ import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
+import { useDebounce } from '@/lib/hooks/useDebounce';
+import { useDraftSync } from '@/lib/hooks/useDraftSync';
 import { LanguageService } from '@/lib/LanguageService';
 import { hasNoMaxRanks } from '@/lib/skill-utils';
 import { DraftApi } from '@/services/api/EntityApi';
-import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatWithFeatureInfo, ItemWithDetails, FeatureWithRelations, ValidationError } from '@shared/schema';
-import { DraftType, EditionId, DisplayType, EntityType, EntityAppliesToType } from '@shared/static-data';
+import { UserSessionApi } from '@/services/api/UserSessionApi';
+import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatWithFeatureInfo, ItemWithDetails, FeatureWithRelations } from '@shared/schema';
+import { CurrencyId, DraftAction as DraftActionEnum, DraftType, EditionId, DisplayType, EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
 import { CharacterQueryHooks } from './CharacterQueryHooks';
-import { useAdvancementDraft } from './useAdvancementDraft';
-
-type ErrorWithValidationErrors = Error & {
-    validationErrors?: ValidationError[];
-};
 import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab, SpellSelectionTab } from './tabs';
+import { useAdvancementDraft } from './useAdvancementDraft';
 import { useCharacterResolution } from './useCharacterResolution';
+import { createStableDraftRowId } from './utils/draftKeyUtils';
+
+let pendingCreateRoutePromise: Promise<void> | null = null;
 
 /**
  * Main character editing component with tab-based interface.
@@ -49,9 +51,9 @@ import { useCharacterResolution } from './useCharacterResolution';
  * 3. **Resolution session updates**: Backend resolution session is updated, and resolved data
  *    flows back to tabs via `resolvedData` prop
  * 
- * **Note**: `spellsKnown` uses a different pattern (state → useEffect → API + refreshState) similar
- * to `spellPreparations` in CharacterDetail, using lodash/isEqual for comparison and sending the
- * full array to a backend sync endpoint.
+ * **Note**: nested collections are synced via scalar-only draft updates:
+ * - add/remove elements via `DraftAction.Add` / `DraftAction.Remove`
+ * - update fields via `...byId.<id>.<field>` paths
  * 
  * **Benefits of this pattern**:
  * - Centralized sync logic: All sync happens in CharacterEdit, easier to maintain
@@ -63,10 +65,10 @@ import { useCharacterResolution } from './useCharacterResolution';
  * **useEffect Hooks**:
  * - Class changes: Watches `state.classId` and `state.secondaryClassId`
  * - Race changes: Watches `state.raceId`
- * - Level changes: Watches `state.level`
  * - Skill ranks: Watches `state.skillRanks` array
  * - Feature choices: Watches `state.featureChoices` array
- * - Spells known: Watches `state.spellsKnown` array (uses lodash/isEqual for comparison, same pattern as spellPreparations in CharacterDetail)
+ * - Spells known: Watches `state.spellsKnown` array
+ * - Feats: Watches `state.selectedFeats` + `state.featSubIds`
  * 
  * **Why refs are used**: Refs track previous values to avoid syncing on initial mount and
  * to detect actual changes vs. initial state loading.
@@ -116,8 +118,6 @@ export function CharacterEdit(): React.JSX.Element {
     // Shared data for all tabs - feats, classes, race
     const [allFeats, setAllFeats] = useState<FeatWithFeatureInfo[]>([]);
     const [isLoadingFeats, setIsLoadingFeats] = useState(false);
-    const [featsMap, setFeatsMap] = useState<Map<number, FeatWithFeatureInfo>>(new Map());
-    const [isLoadingFullFeats, setIsLoadingFullFeats] = useState(false);
 
     // Initialize from user preferences
     useEffect(() => {
@@ -135,23 +135,68 @@ export function CharacterEdit(): React.JSX.Element {
     const [raceDetailsData, setRaceDetailsData] = useState<(Race & { features?: FeatureWithRelations[] }) | null>(null);
     const [classDetailsData, setClassDetailsData] = useState<(DnDClass & { features?: FeatureWithRelations[] }) | null>(null);
     const [secondaryClassDetailsData, setSecondaryClassDetailsData] = useState<(DnDClass & { features?: FeatureWithRelations[] }) | null>(null);
-
-    // Calculate class levels from characterData for filtering feat choices by class level
-    const classLevels = useMemo(() => {
-        if (!characterData?.advancements) return new Map<number, number>();
-        const levels = new Map<number, number>();
-        for (const advancement of characterData.advancements) {
-            const currentLevel = levels.get(advancement.classId) ?? 0;
-            levels.set(advancement.classId, currentLevel + 1);
-            if (advancement.secondaryClassId) {
-                const secondaryLevel = levels.get(advancement.secondaryClassId) ?? 0;
-                levels.set(advancement.secondaryClassId, secondaryLevel + 1);
-            }
-        }
-        return levels;
-    }, [characterData?.advancements]);
-
     const [advancementDraftStartContext, setAdvancementDraftStartContext] = useState<unknown>(undefined);
+
+    /**
+     * Draft-backed create route bootstrap.
+     *
+     * The `/characters/new/create` route is only a launcher. It either:
+     * - resumes an existing draft-only character edit session (negative id) and navigates to `/characters/:id/edit`, or
+     * - mints fresh Character+Advancement drafts and navigates to `/characters/:id/edit`.
+     *
+     * This makes refresh/reload durable because the “real” edit URL contains the draft id.
+     */
+    useEffect(() => {
+        const run = async (): Promise<void> => {
+            if (!user || !isCreateMode) {
+                return;
+            }
+
+            // Dedupe under React StrictMode double-mount in dev.
+            if (pendingCreateRoutePromise) {
+                await pendingCreateRoutePromise;
+                return;
+            }
+
+            pendingCreateRoutePromise = (async () => {
+                const session = await UserSessionApi.getMySession();
+                const existingDraftCharacterId = session.editing.find(
+                    (ref) => ref.draftType === DraftType.Character && typeof ref.id === 'number' && ref.id < 0
+                )?.id;
+
+                if (typeof existingDraftCharacterId === 'number' && existingDraftCharacterId < 0) {
+                    navigate(`/characters/${existingDraftCharacterId}/edit`, { replace: true, state: location.state });
+                    return;
+                }
+
+                const startCharacter = await DraftApi.startEditing(DraftType.Character, 0);
+                if (!startCharacter.success || typeof startCharacter.id !== 'number') {
+                    throw new Error('Failed to start character draft for create');
+                }
+
+                const draftCharacterId = startCharacter.id;
+
+                const startAdvancement = await DraftApi.startEditing(DraftType.Advancement, 0, {
+                    characterId: draftCharacterId,
+                    level: 1,
+                    mode: 'create',
+                });
+                if (!startAdvancement.success || typeof startAdvancement.id !== 'number') {
+                    throw new Error('Failed to start advancement draft for create');
+                }
+
+                navigate(`/characters/${draftCharacterId}/edit`, { replace: true, state: location.state });
+            })().finally(() => {
+                pendingCreateRoutePromise = null;
+            });
+
+            await pendingCreateRoutePromise;
+        };
+
+        run().catch((error) => {
+            console.error('Failed to bootstrap character create drafts:', error);
+        });
+    }, [isCreateMode, location.state, navigate, user]);
 
     // Character draft session (for mutable base character fields) + resolved-character topic subscription
     const characterDraft = useCharacterResolution(state.characterId || null);
@@ -203,35 +248,6 @@ export function CharacterEdit(): React.JSX.Element {
         startLevelUpDraft();
     }, [characterData, isLevelUpFromView, startLevelUpDraft, state.characterId, state.currentAdvancementId, state.level]);
 
-    // Draft-only create workflow: mint a temporary negative character id and a level-1 advancement draft.
-    useEffect(() => {
-        const startCreateDrafts = async (): Promise<void> => {
-            if (!user || !isCreateMode) {
-                return;
-            }
-            if (state.characterId !== null) {
-                return;
-            }
-
-            const start = await DraftApi.startEditing(DraftType.Character, 0);
-            if (!start.success || typeof start.id !== 'number') {
-                throw new Error('Failed to start character draft for create');
-            }
-
-            const draftCharacterId = start.id;
-            updateState({ type: CharacterEditStateUpdateType.SET_CHARACTER_ID, payload: { characterId: draftCharacterId } });
-            updateState({ type: CharacterEditStateUpdateType.SET_LEVEL, payload: { level: 1 } });
-            updateState({ type: CharacterEditStateUpdateType.SET_EDITION, payload: { editionId: EditionId.DND_3_5E } });
-
-            setAdvancementDraftStartContext({ characterId: draftCharacterId, level: 1, mode: 'create' });
-            updateState({ type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID, payload: { currentAdvancementId: 0 } });
-        };
-
-        startCreateDrafts().catch((error) => {
-            console.error('Failed to start create drafts:', error);
-        });
-    }, [isCreateMode, state.characterId, updateState, user]);
-
     // Compute derived data from resolved character result
     const resolvedData = useMemo(() => {
         if (!characterDraft.resolvedCharacter) {
@@ -275,42 +291,223 @@ export function CharacterEdit(): React.JSX.Element {
     }, [characterDraft.resolvedCharacter]);
 
     const isResolving = characterDraft.isLoading;
-    const resolutionError = characterDraft.error;
 
     // Track previous values to avoid unnecessary updates and infinite loops
-    const prevClassIdRef = useRef<number | null>(null);
-    const prevSecondaryClassIdRef = useRef<number | null>(null);
-    const prevRaceIdRef = useRef<number | null>(null);
-    const prevLevelRef = useRef<number | null>(null);
-    const prevNameRef = useRef<string | null>(null);
-    const prevAbilityScoresRef = useRef<string>('');
-    const prevDisallowedSourcesRef = useRef<string>('');
-    const prevSkillRanksRef = useRef<string>('');
-    const prevFeatureChoicesRef = useRef<string>('');
+    // Note: Simple scalar and nullable scalar fields now use useDraftSync hook which manages refs internally
+    const prevCharacterLanguagesRef = useRef<Array<{ languageId: number }> | null>(null);
+    const hasInitializedLanguagesSyncRef = useRef(false);
+    const prevAbilityScoresRef = useRef<Array<{ abilityId: number; value: number }> | null>(null);
+    const prevDisallowedSourcesRef = useRef<typeof state.disallowedSources | null>(null);
+    const prevSkillRanksRef = useRef<typeof state.skillRanks | null>(null);
+    const prevFeatureChoicesRef = useRef<typeof state.featureChoices | null>(null);
     const prevSpellsKnownRef = useRef<typeof state.spellsKnown | null>(null);
+    const prevSelectedFeatsRef = useRef<{ selectedFeats: number[]; featSubIds: Record<number, number | null> } | null>(null);
+
+    // Debounced values for text fields
+    const debouncedName = useDebounce(state.name, 500);
+    const debouncedEyes = useDebounce(state.eyes, 500);
+    const debouncedHair = useDebounce(state.hair, 500);
+    const debouncedGender = useDebounce(state.gender, 500);
+    const debouncedWeight = useDebounce(state.weight, 500);
+    const debouncedNotes = useDebounce(state.notes, 500);
+    const debouncedAge = useDebounce(state.age, 300);
+    const debouncedHeight = useDebounce(state.height, 300);
+
+    // Note: useDraftSync hook manages its own initialization refs internally
+    // Reset initialization flag for languages sync when characterId changes
+    useEffect(() => {
+        hasInitializedLanguagesSyncRef.current = false;
+    }, [state.characterId]);
 
     /**
-     * Sync character name to character draft.
+     * Sync character name to character draft (debounced).
      *
      * Name is required for draft-based create/save.
      */
+    useDraftSync({
+        value: debouncedName,
+        draft: characterDraft,
+        path: 'name',
+        characterId: state.characterId,
+        debounceMs: 0, // Already debounced
+        errorMessage: 'Failed to sync name to character draft',
+    });
+
+    /**
+     * Sync alignment to character draft (immediate - select field).
+     */
+    useDraftSync({
+        value: state.alignmentId,
+        draft: characterDraft,
+        path: 'alignmentId',
+        characterId: state.characterId,
+        errorMessage: 'Failed to sync alignmentId to character draft',
+    });
+
+    /**
+     * Sync age to character draft (debounced).
+     */
+    useDraftSync({
+        value: debouncedAge,
+        draft: characterDraft,
+        path: 'age',
+        characterId: state.characterId,
+        debounceMs: 0, // Already debounced
+        errorMessage: 'Failed to sync age to character draft',
+    });
+
+    /**
+     * Sync height to character draft (debounced).
+     */
+    useDraftSync({
+        value: debouncedHeight,
+        draft: characterDraft,
+        path: 'height',
+        characterId: state.characterId,
+        debounceMs: 0, // Already debounced
+        errorMessage: 'Failed to sync height to character draft',
+    });
+
+    /**
+     * Sync weight to character draft (debounced).
+     */
+    useDraftSync({
+        value: debouncedWeight,
+        draft: characterDraft,
+        path: 'weight',
+        characterId: state.characterId,
+        debounceMs: 0, // Already debounced
+        errorMessage: 'Failed to sync weight to character draft',
+    });
+
+    /**
+     * Sync eyes to character draft (debounced).
+     */
+    useDraftSync({
+        value: debouncedEyes,
+        draft: characterDraft,
+        path: 'eyes',
+        characterId: state.characterId,
+        debounceMs: 0, // Already debounced
+        errorMessage: 'Failed to sync eyes to character draft',
+    });
+
+    /**
+     * Sync hair to character draft (debounced).
+     */
+    useDraftSync({
+        value: debouncedHair,
+        draft: characterDraft,
+        path: 'hair',
+        characterId: state.characterId,
+        debounceMs: 0, // Already debounced
+        errorMessage: 'Failed to sync hair to character draft',
+    });
+
+    /**
+     * Sync gender to character draft (debounced).
+     */
+    useDraftSync({
+        value: debouncedGender,
+        draft: characterDraft,
+        path: 'gender',
+        characterId: state.characterId,
+        debounceMs: 0, // Already debounced
+        errorMessage: 'Failed to sync gender to character draft',
+    });
+
+    /**
+     * Sync notes to character draft (debounced).
+     */
+    useDraftSync({
+        value: debouncedNotes,
+        draft: characterDraft,
+        path: 'notes',
+        characterId: state.characterId,
+        debounceMs: 0, // Already debounced
+        errorMessage: 'Failed to sync notes to character draft',
+    });
+
+    /**
+     * Sync character languages to character draft.
+     *
+     * Combines automatic languages (from features), selected bonus languages, and skill-based languages
+     * into the characterLanguages array in the draft.
+     */
     useEffect(() => {
-        if (!state.characterId || state.characterId === 0) {
+        if (!state.characterId) {
             return;
         }
 
-        if (prevNameRef.current === null) {
-            prevNameRef.current = state.name;
-            return;
+        // Calculate all languages
+        const allLanguages: number[] = [];
+
+        // Add automatic languages from resolved features
+        if (resolvedData.features && resolvedData.features.length > 0) {
+            const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.features);
+            allLanguages.push(...automaticLanguages);
         }
 
-        if (state.name !== prevNameRef.current) {
-            characterDraft.updateValue('name', state.name).catch((error) => {
-                console.error('Failed to sync name to character draft:', error);
-            });
-            prevNameRef.current = state.name;
+        // Add selected bonus languages
+        allLanguages.push(...state.selectedBonusLanguages);
+
+        // Add skill-based languages from skill ranks (skills with no max rank limit, e.g., Speak Language)
+        const skillBasedLanguages = state.skillRanks
+            .filter(skill => hasNoMaxRanks(skill.skillId))
+            .map(skill => {
+                if (skill.skillSubId !== null && skill.skillSubId !== undefined) {
+                    return skill.skillSubId;
+                }
+                if (skill.customSubtype) {
+                    const parsed = parseInt(skill.customSubtype, 10);
+                    return isNaN(parsed) ? null : parsed;
+                }
+                return null;
+            })
+            .filter((id): id is number => id !== null);
+        allLanguages.push(...skillBasedLanguages);
+
+        // Remove duplicates and sort for stable comparison
+        const uniqueLanguages = Array.from(new Set(allLanguages)).sort((a, b) => a - b);
+        const currentLanguages = uniqueLanguages.map(languageId => ({ languageId }));
+
+        // Initialize ref on first run - set to empty array so all languages are detected as "new"
+        if (!hasInitializedLanguagesSyncRef.current) {
+            hasInitializedLanguagesSyncRef.current = true;
+            prevCharacterLanguagesRef.current = [];
         }
-    }, [characterDraft.updateValue, state.characterId, state.name]);
+
+        // Check if languages changed (compare the full array since automatic/skill-based can change too)
+        if (!isEqual(prevCharacterLanguagesRef.current, currentLanguages)) {
+            // Scalar-only updates: diff by languageId.
+            const prev = new Set<number>(
+                (prevCharacterLanguagesRef.current || []).map((lang) => lang.languageId)
+            );
+            const next = new Set<number>(currentLanguages.map((lang) => lang.languageId));
+
+            // Add new languages
+            for (const languageId of next) {
+                if (!prev.has(languageId)) {
+                    characterDraft
+                        .updateValue(`characterLanguages.byId.${languageId}.languageId`, languageId)
+                        .catch((error) => {
+                            console.error('Failed to add character language to character draft:', error);
+                        });
+                }
+            }
+            // Remove languages that are no longer present
+            for (const languageId of prev) {
+                if (!next.has(languageId)) {
+                    characterDraft
+                        .updateValue(`characterLanguages.byId.${languageId}`, null, DraftActionEnum.Remove)
+                        .catch((error) => {
+                            console.error('Failed to remove character language from character draft:', error);
+                        });
+                }
+            }
+        }
+        prevCharacterLanguagesRef.current = currentLanguages;
+    }, [characterDraft.updateValue, state.characterId, state.selectedBonusLanguages, state.skillRanks, resolvedData.features]);
 
     /**
      * Sync ability scores to character draft.
@@ -322,19 +519,21 @@ export function CharacterEdit(): React.JSX.Element {
             return;
         }
 
-        const current = JSON.stringify(state.abilityScores.map((a) => ({ abilityId: a.abilityId, value: a.value })));
-        if (prevAbilityScoresRef.current === '') {
+        const current = state.abilityScores.map((a) => ({ abilityId: a.abilityId, value: a.value }));
+        if (prevAbilityScoresRef.current === null) {
             prevAbilityScoresRef.current = current;
             return;
         }
 
-        if (current !== prevAbilityScoresRef.current) {
-            characterDraft.updateValue(
-                'abilityScores',
-                state.abilityScores.map((a) => ({ abilityId: a.abilityId, value: a.value }))
-            ).catch((error) => {
-                console.error('Failed to sync abilityScores to character draft:', error);
-            });
+        if (!isEqual(prevAbilityScoresRef.current, current)) {
+            // Scalar-only updates: upsert by abilityId selector and update value.
+            for (const abilityScore of state.abilityScores) {
+                characterDraft
+                    .updateValue(`abilityScores.byId.${abilityScore.abilityId}.value`, abilityScore.value)
+                    .catch((error) => {
+                        console.error('Failed to sync abilityScore to character draft:', error);
+                    });
+            }
             prevAbilityScoresRef.current = current;
         }
     }, [characterDraft.updateValue, state.abilityScores, state.characterId]);
@@ -347,16 +546,37 @@ export function CharacterEdit(): React.JSX.Element {
             return;
         }
 
-        const current = JSON.stringify(state.disallowedSources);
-        if (prevDisallowedSourcesRef.current === '') {
+        const current = state.disallowedSources;
+        if (prevDisallowedSourcesRef.current === null) {
             prevDisallowedSourcesRef.current = current;
             return;
         }
 
-        if (current !== prevDisallowedSourcesRef.current) {
-            characterDraft.updateValue('disallowedSources', state.disallowedSources).catch((error) => {
-                console.error('Failed to sync disallowedSources to character draft:', error);
-            });
+        if (!isEqual(prevDisallowedSourcesRef.current, current)) {
+            // Scalar-only updates: diff by sourceBookId.
+            const prev = new Set<number>(
+                prevDisallowedSourcesRef.current.map((s) => s.sourceBookId)
+            );
+            const next = new Set<number>(state.disallowedSources.map((s) => s.sourceBookId));
+
+            for (const sourceBookId of next) {
+                if (!prev.has(sourceBookId)) {
+                    characterDraft
+                        .updateValue(`disallowedSources.byId.${sourceBookId}.sourceBookId`, sourceBookId)
+                        .catch((error) => {
+                            console.error('Failed to add disallowed source to character draft:', error);
+                        });
+                }
+            }
+            for (const sourceBookId of prev) {
+                if (!next.has(sourceBookId)) {
+                    characterDraft
+                        .updateValue(`disallowedSources.byId.${sourceBookId}`, null, DraftActionEnum.Remove)
+                        .catch((error) => {
+                            console.error('Failed to remove disallowed source from character draft:', error);
+                        });
+                }
+            }
             prevDisallowedSourcesRef.current = current;
         }
     }, [characterDraft.updateValue, state.disallowedSources, state.characterId]);
@@ -370,39 +590,25 @@ export function CharacterEdit(): React.JSX.Element {
      * 
      * @see CharacterEdit component JSDoc for overall sync pattern documentation
      */
-    useEffect(() => {
-        // Only sync if session is initialized and we have a character ID
-        if (!state.characterId || !advancementDraft.draftId) {
-            return;
-        }
+    useDraftSync({
+        value: state.classId,
+        draft: advancementDraft,
+        path: 'classId',
+        characterId: state.characterId,
+        draftId: advancementDraft.draftId,
+        useBooleanInitRef: true, // Use boolean ref instead of null sentinel
+        errorMessage: 'Failed to sync class change to resolution session',
+    });
 
-        // Initialize refs on first session availability (don't send update on initial sync)
-        if (prevClassIdRef.current === null) {
-            prevClassIdRef.current = state.classId;
-            prevSecondaryClassIdRef.current = state.secondaryClassId;
-            return;
-        }
-
-        // Check if primary class changed
-        if (state.classId !== prevClassIdRef.current) {
-            // Class actually changed
-            if (state.classId) {
-                advancementDraft.updateValue('classId', state.classId).catch(error => {
-                    console.error('Failed to sync class change to resolution session:', error);
-                });
-            }
-        }
-        prevClassIdRef.current = state.classId;
-
-        // Check if secondary class changed
-        if (state.secondaryClassId !== prevSecondaryClassIdRef.current) {
-            // Secondary class actually changed (including clearing it by setting to null)
-            advancementDraft.updateValue('secondaryClassId', state.secondaryClassId).catch(error => {
-                console.error('Failed to sync secondary class change to resolution session:', error);
-            });
-        }
-        prevSecondaryClassIdRef.current = state.secondaryClassId;
-    }, [state.characterId, state.classId, state.secondaryClassId, advancementDraft.draftId, advancementDraft.updateValue]);
+    useDraftSync({
+        value: state.secondaryClassId,
+        draft: advancementDraft,
+        path: 'secondaryClassId',
+        characterId: state.characterId,
+        draftId: advancementDraft.draftId,
+        useBooleanInitRef: true, // Use boolean ref instead of null sentinel
+        errorMessage: 'Failed to sync secondary class change to resolution session',
+    });
 
     /**
      * Sync race changes to resolution session.
@@ -413,60 +619,14 @@ export function CharacterEdit(): React.JSX.Element {
      * 
      * @see CharacterEdit component JSDoc for overall sync pattern documentation
      */
-    useEffect(() => {
-        // Only sync if session is initialized and we have a character ID
-        if (!state.characterId) {
-            return;
-        }
-
-        // Initialize ref on first session availability (don't send update on initial sync)
-        if (prevRaceIdRef.current === null) {
-            prevRaceIdRef.current = state.raceId;
-            return;
-        }
-
-        // Check if race changed
-        if (state.raceId !== prevRaceIdRef.current) {
-            // Race actually changed
-            if (state.raceId) {
-                characterDraft.updateValue('raceId', state.raceId).catch(error => {
-                    console.error('Failed to sync race change to resolution session:', error);
-                });
-            }
-        }
-        prevRaceIdRef.current = state.raceId;
-    }, [state.characterId, state.raceId, characterDraft.updateValue]);
-
-    /**
-     * Sync level changes to resolution session.
-     * 
-     * Automatically syncs level changes to the resolution session.
-     * Watches `state.level` for changes.
-     * Uses updateValue for path-based field updates.
-     * 
-     * @see CharacterEdit component JSDoc for overall sync pattern documentation
-     */
-    useEffect(() => {
-        // Only sync if session is initialized and we have a character ID
-        if (!state.characterId) {
-            return;
-        }
-
-        // Initialize ref on first session availability (don't send update on initial sync)
-        if (prevLevelRef.current === null) {
-            prevLevelRef.current = state.level;
-            return;
-        }
-
-        // Check if level changed
-        if (state.level !== prevLevelRef.current) {
-            // Level actually changed
-            characterDraft.updateValue('level', state.level).catch(error => {
-                console.error('Failed to sync level change to resolution session:', error);
-            });
-        }
-        prevLevelRef.current = state.level;
-    }, [state.characterId, state.level, characterDraft.updateValue]);
+    useDraftSync({
+        value: state.raceId,
+        draft: characterDraft,
+        path: 'raceId',
+        characterId: state.characterId,
+        useBooleanInitRef: true, // Use boolean ref instead of null sentinel
+        errorMessage: 'Failed to sync race change to resolution session',
+    });
 
     /**
      * Sync skill rank changes to resolution session.
@@ -492,30 +652,46 @@ export function CharacterEdit(): React.JSX.Element {
             return;
         }
 
-        // Serialize current skill ranks for comparison
-        const currentSkillRanksStr = JSON.stringify(state.skillRanks);
-
         // Initialize ref on first session availability (don't send update on initial sync)
-        if (prevSkillRanksRef.current === '') {
-            prevSkillRanksRef.current = currentSkillRanksStr;
+        if (prevSkillRanksRef.current === null) {
+            prevSkillRanksRef.current = state.skillRanks;
             return;
         }
 
-        // Check if skill ranks changed
-        if (currentSkillRanksStr !== prevSkillRanksRef.current) {
-            // Skill ranks actually changed - sync entire array to resolution session
-            // Backend handles diffing and updates
-            const skillsDraft = state.skillRanks.map((sr) => ({
-                skillId: sr.skillId,
-                skillSubId: sr.skillSubId ?? null,
-                pointsSpent: sr.pointsSpent,
-                customSubtype: sr.customSubtype ?? null,
-            }));
-            advancementDraft.updateValue('skills', skillsDraft).catch(error => {
-                console.error('Failed to sync skill ranks to resolution session:', error);
-            });
+        // Check if skill ranks changed; apply scalar-only diffs to advancement draft.
+        if (!isEqual(prevSkillRanksRef.current, state.skillRanks)) {
+            const prev: SkillRank[] = prevSkillRanksRef.current;
+
+            const prevIds = new Set<number>(
+                prev.map((sr) =>
+                    createStableDraftRowId(`skill:${sr.skillId}:${sr.skillSubId ?? 0}:${sr.customSubtype ?? ''}`)
+                )
+            );
+            const nextIds = new Set<number>(
+                state.skillRanks.map((sr) =>
+                    createStableDraftRowId(`skill:${sr.skillId}:${sr.skillSubId ?? 0}:${sr.customSubtype ?? ''}`)
+                )
+            );
+
+            for (const sr of state.skillRanks) {
+                const rowId = createStableDraftRowId(`skill:${sr.skillId}:${sr.skillSubId ?? 0}:${sr.customSubtype ?? ''}`);
+                advancementDraft.updateValue(`skills.byId.${rowId}.skillId`, sr.skillId).catch(() => undefined);
+                advancementDraft.updateValue(`skills.byId.${rowId}.skillSubId`, sr.skillSubId ?? null).catch(() => undefined);
+                advancementDraft.updateValue(`skills.byId.${rowId}.customSubtype`, sr.customSubtype ?? null).catch(() => undefined);
+                advancementDraft.updateValue(`skills.byId.${rowId}.pointsSpent`, sr.pointsSpent).catch((error) => {
+                    console.error('Failed to sync skill rank to advancement draft:', error);
+                });
+            }
+
+            for (const rowId of prevIds) {
+                if (!nextIds.has(rowId)) {
+                    advancementDraft.updateValue(`skills.byId.${rowId}`, null, DraftActionEnum.Remove).catch((error) => {
+                        console.error('Failed to remove skill rank from advancement draft:', error);
+                    });
+                }
+            }
         }
-        prevSkillRanksRef.current = currentSkillRanksStr;
+        prevSkillRanksRef.current = state.skillRanks;
     }, [state.characterId, state.skillRanks, advancementDraft.draftId, advancementDraft.updateValue]);
 
     /**
@@ -542,24 +718,45 @@ export function CharacterEdit(): React.JSX.Element {
             return;
         }
 
-        // Serialize current feature choices for comparison
-        const currentFeatureChoicesStr = JSON.stringify(state.featureChoices);
-
         // Initialize ref on first session availability (don't send update on initial sync)
-        if (prevFeatureChoicesRef.current === '') {
-            prevFeatureChoicesRef.current = currentFeatureChoicesStr;
+        if (prevFeatureChoicesRef.current === null) {
+            prevFeatureChoicesRef.current = state.featureChoices;
             return;
         }
 
-        // Check if feature choices changed
-        if (currentFeatureChoicesStr !== prevFeatureChoicesRef.current) {
-            // Feature choices actually changed - sync entire array to resolution session
-            // Backend handles diffing and updates
-            advancementDraft.updateValue('featureChoices', state.featureChoices).catch(error => {
-                console.error('Failed to sync feature choices to resolution session:', error);
-            });
+        // Check if feature choices changed; apply scalar-only diffs to advancement draft.
+        if (!isEqual(prevFeatureChoicesRef.current, state.featureChoices)) {
+            const prev = prevFeatureChoicesRef.current;
+
+            const prevIds = new Set<number>(
+                prev.map((c) => createStableDraftRowId(`choice:${c.featureId}:${c.featureEntityId}`))
+            );
+            const nextIds = new Set<number>(
+                state.featureChoices.map((c) => createStableDraftRowId(`choice:${c.featureId}:${c.featureEntityId}`))
+            );
+
+            for (const c of state.featureChoices) {
+                const rowId = createStableDraftRowId(`choice:${c.featureId}:${c.featureEntityId}`);
+                advancementDraft.updateValue(`featureChoices.byId.${rowId}.characterId`, state.characterId ?? 0).catch(() => undefined);
+                advancementDraft.updateValue(`featureChoices.byId.${rowId}.advancementId`, advancementDraft.draftId ?? 0).catch(() => undefined);
+                advancementDraft.updateValue(`featureChoices.byId.${rowId}.featureId`, c.featureId).catch(() => undefined);
+                advancementDraft.updateValue(`featureChoices.byId.${rowId}.featureEntityId`, c.featureEntityId).catch(() => undefined);
+                advancementDraft.updateValue(`featureChoices.byId.${rowId}.appliesToId`, c.appliesToId).catch(() => undefined);
+                advancementDraft.updateValue(`featureChoices.byId.${rowId}.appliesToSubId`, c.appliesToSubId ?? null).catch(() => undefined);
+                advancementDraft.updateValue(`featureChoices.byId.${rowId}.choiceIndex`, c.choiceIndex ?? null).catch((error) => {
+                    console.error('Failed to sync feature choice to advancement draft:', error);
+                });
+            }
+
+            for (const rowId of prevIds) {
+                if (!nextIds.has(rowId)) {
+                    advancementDraft.updateValue(`featureChoices.byId.${rowId}`, null, DraftActionEnum.Remove).catch((error) => {
+                        console.error('Failed to remove feature choice from advancement draft:', error);
+                    });
+                }
+            }
         }
-        prevFeatureChoicesRef.current = currentFeatureChoicesStr;
+        prevFeatureChoicesRef.current = state.featureChoices;
     }, [state.characterId, state.featureChoices, advancementDraft.draftId, advancementDraft.updateValue]);
 
     /**
@@ -579,7 +776,7 @@ export function CharacterEdit(): React.JSX.Element {
      * @see CharacterEdit component JSDoc for overall sync pattern documentation
      */
     useEffect(() => {
-        if (!state.characterId || !state.currentAdvancementId || !characterDraft.resolvedCharacter) {
+        if (!state.characterId || !advancementDraft.draftId) {
             return;
         }
 
@@ -589,75 +786,107 @@ export function CharacterEdit(): React.JSX.Element {
         }
 
         if (!isEqual(state.spellsKnown, prevSpellsKnownRef.current)) {
-            CharacterQueryHooks.syncSpellsKnown(
-                state.characterId,
-                state.currentAdvancementId,
-                { spellsKnown: state.spellsKnown }
-            )
-                .then(() => {
-                    queryClient.invalidateQueries({
-                        queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(state.characterId!),
-                    });
-                })
-                .catch(error => {
-                    console.error('Failed to sync spellsKnown to backend:', error);
+            const prev = prevSpellsKnownRef.current;
+
+            const prevIds = new Set<number>(
+                prev.map((s) => createStableDraftRowId(`spell:${s.spellId}:${s.isFreeGrant ? 1 : 0}`))
+            );
+            const nextIds = new Set<number>(
+                state.spellsKnown.map((s) => createStableDraftRowId(`spell:${s.spellId}:${s.isFreeGrant ? 1 : 0}`))
+            );
+
+            for (const s of state.spellsKnown) {
+                const rowId = createStableDraftRowId(`spell:${s.spellId}:${s.isFreeGrant ? 1 : 0}`);
+                advancementDraft.updateValue(`spellsKnown.byId.${rowId}.spellId`, s.spellId).catch(() => undefined);
+                advancementDraft.updateValue(`spellsKnown.byId.${rowId}.isFreeGrant`, s.isFreeGrant === true).catch((error) => {
+                    console.error('Failed to sync spellsKnown to advancement draft:', error);
                 });
+            }
+
+            for (const rowId of prevIds) {
+                if (!nextIds.has(rowId)) {
+                    advancementDraft.updateValue(`spellsKnown.byId.${rowId}`, null, DraftActionEnum.Remove).catch((error) => {
+                        console.error('Failed to remove spell from advancement draft:', error);
+                    });
+                }
+            }
+
             prevSpellsKnownRef.current = state.spellsKnown;
         }
-    }, [state.characterId, state.currentAdvancementId, state.spellsKnown, characterDraft.resolvedCharacter, queryClient]);
+    }, [advancementDraft.draftId, advancementDraft.updateValue, state.characterId, state.spellsKnown]);
 
-    // Handle skill rank update - sync to backend resolution API
-    const handleSkillRankUpdate = useCallback(async (skillId: number, skillSubId: number | null, customSubtype: string | null, pointsSpent: number) => {
+    useEffect(() => {
         if (!state.characterId || !advancementDraft.draftId) {
-            console.warn('Cannot update skill rank: session not initialized');
             return;
         }
 
-        try {
-            // Find existing skill rank or create new one
+        const current = {
+            selectedFeats: state.selectedFeats,
+            featSubIds: state.featSubIds,
+        };
+
+        if (prevSelectedFeatsRef.current === null) {
+            prevSelectedFeatsRef.current = current;
+            return;
+        }
+
+        if (!isEqual(prevSelectedFeatsRef.current, current)) {
+            const prevParsed = prevSelectedFeatsRef.current;
+
+            const prevIds = new Set<number>(
+                prevParsed.selectedFeats.map((featId) =>
+                    createStableDraftRowId(`feat:${featId}:${prevParsed.featSubIds[featId] ?? 0}`)
+                )
+            );
+            const nextIds = new Set<number>(
+                state.selectedFeats.map((featId) =>
+                    createStableDraftRowId(`feat:${featId}:${state.featSubIds[featId] ?? 0}`)
+                )
+            );
+
+            for (const featId of state.selectedFeats) {
+                const featSubId = state.featSubIds[featId] ?? null;
+                const rowId = createStableDraftRowId(`feat:${featId}:${featSubId ?? 0}`);
+                advancementDraft.updateValue(`feats.byId.${rowId}.featId`, featId).catch(() => undefined);
+                advancementDraft.updateValue(`feats.byId.${rowId}.featSubId`, featSubId).catch((error) => {
+                    console.error('Failed to sync feat to advancement draft:', error);
+                });
+            }
+
+            for (const rowId of prevIds) {
+                if (!nextIds.has(rowId)) {
+                    advancementDraft.updateValue(`feats.byId.${rowId}`, null, DraftActionEnum.Remove).catch((error) => {
+                        console.error('Failed to remove feat from advancement draft:', error);
+                    });
+                }
+            }
+
+            prevSelectedFeatsRef.current = current;
+        }
+    }, [advancementDraft.draftId, advancementDraft.updateValue, state.characterId, state.featSubIds, state.selectedFeats]);
+
+    // Handle skill rank update - sync to backend resolution API
+    const handleSkillRankUpdate = useCallback(
+        async (skillId: number, skillSubId: number | null, customSubtype: string | null, pointsSpent: number) => {
+            // Update state only; the useEffect sync handles draft updates with scalar-only paths.
             const existingIndex = state.skillRanks.findIndex(
-                sr => sr.skillId === skillId &&
-                    sr.skillSubId === skillSubId &&
-                    sr.customSubtype === customSubtype
+                (sr) => sr.skillId === skillId && sr.skillSubId === skillSubId && sr.customSubtype === customSubtype
             );
 
             const updatedSkillRanks = [...state.skillRanks];
             if (existingIndex >= 0) {
-                // Update existing skill rank
-                updatedSkillRanks[existingIndex] = {
-                    skillId,
-                    skillSubId,
-                    customSubtype,
-                    pointsSpent
-                };
+                updatedSkillRanks[existingIndex] = { skillId, skillSubId, customSubtype, pointsSpent };
             } else {
-                // Add new skill rank
-                updatedSkillRanks.push({
-                    skillId,
-                    skillSubId,
-                    customSubtype,
-                    pointsSpent
-                });
+                updatedSkillRanks.push({ skillId, skillSubId, customSubtype, pointsSpent });
             }
 
-            // Update state first
             updateState({
                 type: CharacterEditStateUpdateType.SET_SKILL_RANKS,
-                payload: { skillRanks: updatedSkillRanks }
+                payload: { skillRanks: updatedSkillRanks },
             });
-
-            // Sync to backend using the advancement draft
-            const skillsDraft = updatedSkillRanks.map((sr) => ({
-                skillId: sr.skillId,
-                skillSubId: sr.skillSubId ?? null,
-                pointsSpent: sr.pointsSpent,
-                customSubtype: sr.customSubtype ?? null,
-            }));
-            await advancementDraft.updateValue('skills', skillsDraft);
-        } catch (error) {
-            console.error('Failed to apply skill rank update:', error);
-        }
-    }, [advancementDraft.draftId, advancementDraft.updateValue, state.characterId, state.skillRanks, updateState]);
+        },
+        [state.skillRanks, updateState]
+    );
 
     // Trigger feature resolution (no-op since useCharacterResolution handles it automatically)
     const triggerFeatureResolution = useCallback(async () => {
@@ -675,11 +904,11 @@ export function CharacterEdit(): React.JSX.Element {
     // TODO: Add domain queries back when we implement domain choice handling
     // For now, we'll skip domain queries to avoid the 404 errors
 
-    // Fetch all feats on component mount (shared across tabs)
+    // Fetch all feats (with benefits and prereqs) on component mount
     // Use TanStack Query to leverage caching and prevent infinite loops
     useEffect(() => {
         let isMounted = true;
-        const fetchAllFeats = async () => {
+        const fetchFeats = async () => {
             try {
                 setIsLoadingFeats(true);
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
@@ -689,7 +918,7 @@ export function CharacterEdit(): React.JSX.Element {
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
-                // getFeats returns GetAllFeatsWithFeatureInfoResponse which has results: Feat[]
+                // getFeats returns GetAllFeatsWithFeatureInfoResponse which has results: FeatWithFeatureInfo[]
                 if (isMounted && featResponse?.results) {
                     setAllFeats(featResponse.results);
                 } else if (isMounted) {
@@ -706,48 +935,7 @@ export function CharacterEdit(): React.JSX.Element {
                 }
             }
         };
-        fetchAllFeats();
-        return () => {
-            isMounted = false;
-        };
-    }, [queryClient]);
-
-    // Fetch all full feats (with benefits and prereqs) on component mount
-    // Use TanStack Query to leverage caching
-    useEffect(() => {
-        let isMounted = true;
-        const fetchFullFeats = async () => {
-            try {
-                setIsLoadingFullFeats(true);
-                // Use queryClient.fetchQuery to leverage TanStack Query cache
-                const featResponse = await queryClient.fetchQuery({
-                    queryKey: FeatQueryHooks.getFeatsQueryKey(),
-                    queryFn: FeatQueryHooks.getFeatsQueryFn,
-                    staleTime: 5 * 60 * 1000, // 5 minutes
-                    gcTime: 10 * 60 * 1000, // 10 minutes
-                });
-                // getFeats returns GetAllFeatsWithFeatureInfoResponse which has results: FeatWithFeatureInfo[]
-                if (isMounted && featResponse?.results) {
-                    const map = new Map<number, FeatWithFeatureInfo>();
-                    for (const feat of featResponse.results) {
-                        map.set(feat.id, feat);
-                    }
-                    setFeatsMap(map);
-                } else if (isMounted) {
-                    setFeatsMap(new Map());
-                }
-            } catch (error) {
-                console.error('Failed to fetch full feats:', error);
-                if (isMounted) {
-                    setFeatsMap(new Map());
-                }
-            } finally {
-                if (isMounted) {
-                    setIsLoadingFullFeats(false);
-                }
-            }
-        };
-        fetchFullFeats();
+        fetchFeats();
         return () => {
             isMounted = false;
         };
@@ -911,22 +1099,35 @@ export function CharacterEdit(): React.JSX.Element {
                 if (character.editionId) {
                     updateState({ type: CharacterEditStateUpdateType.SET_EDITION, payload: { editionId: character.editionId } });
                 }
-                updateState({ type: CharacterEditStateUpdateType.SET_ALLOW_VARIANT_CLASSES, payload: { allowVariantClasses: character.allowVariantClasses } });
-                updateState({ type: CharacterEditStateUpdateType.SET_IS_GESTALT, payload: { isGestalt: character.isGestalt } });
-                updateState({ type: CharacterEditStateUpdateType.SET_IGNORE_LEVEL_ADJUSTMENT, payload: { ignoreLevelAdjustment: character.ignoreLevelAdjustment } });
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_ALLOW_VARIANT_CLASSES,
+                    payload: { allowVariantClasses: character.config?.allowVariantClasses ?? false },
+                });
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_IS_GESTALT,
+                    payload: { isGestalt: character.config?.isGestalt ?? false },
+                });
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_IGNORE_LEVEL_ADJUSTMENT,
+                    payload: { ignoreLevelAdjustment: character.config?.ignoreLevelAdjustment ?? false },
+                });
 
                 // Load ability scores
                 updateState({ type: CharacterEditStateUpdateType.SET_ABILITY_SCORES, payload: { abilityScores: character.abilityScores } });
 
                 // Load money
+                const wealth = character.wealth ?? [];
+                const getCoin = (currencyId: number): number =>
+                    wealth.find((w) => w.currencyId === currencyId && w.value === null && w.description === null)
+                        ?.quantity ?? 0;
                 updateState({
                     type: CharacterEditStateUpdateType.SET_MONEY,
                     payload: {
                         money: {
-                            platinum: character.platinum ?? 0,
-                            gold: character.gold ?? 0,
-                            silver: character.silver ?? 0,
-                            copper: character.copper ?? 0,
+                            platinum: getCoin(CurrencyId.Platinum),
+                            gold: getCoin(CurrencyId.Gold),
+                            silver: getCoin(CurrencyId.Silver),
+                            copper: getCoin(CurrencyId.Copper),
                         },
                     },
                 });
@@ -966,10 +1167,14 @@ export function CharacterEdit(): React.JSX.Element {
                 // Load advancement data if it exists
                 if (advancement) {
                     updateState({ type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID, payload: { currentAdvancementId: advancement.id } });
-                    updateState({ type: CharacterEditStateUpdateType.SET_CLASS, payload: { classId: advancement.classId } });
-                    if (advancement.secondaryClassId) {
-                        updateState({ type: CharacterEditStateUpdateType.SET_SECONDARY_CLASS, payload: { secondaryClassId: advancement.secondaryClassId } });
-                    }
+                    updateState({
+                        type: CharacterEditStateUpdateType.SET_CLASS,
+                        payload: { classId: advancement.classId > 0 ? advancement.classId : null },
+                    });
+                    updateState({
+                        type: CharacterEditStateUpdateType.SET_SECONDARY_CLASS,
+                        payload: { secondaryClassId: (advancement.secondaryClassId ?? 0) > 0 ? advancement.secondaryClassId : null },
+                    });
 
                     // Load skill ranks
                     const skillRanks: SkillRank[] = advancement.skills.map(skill => ({
@@ -1458,9 +1663,11 @@ export function CharacterEdit(): React.JSX.Element {
 
             const classIds = new Set<number>();
             for (const advancement of characterData.advancements) {
-                classIds.add(advancement.classId);
-                if (advancement.secondaryClassId) {
-                    classIds.add(advancement.secondaryClassId);
+                if (advancement.classId > 0) {
+                    classIds.add(advancement.classId);
+                }
+                if ((advancement.secondaryClassId ?? 0) > 0) {
+                    classIds.add(advancement.secondaryClassId as number);
                 }
             }
 
@@ -1706,8 +1913,6 @@ export function CharacterEdit(): React.JSX.Element {
         sharedData: {
             allFeats,
             isLoadingFeats,
-            featsMap,
-            isLoadingFullFeats,
             primaryClass: primaryClassData,
             secondaryClass: secondaryClassData,
             race: raceData,

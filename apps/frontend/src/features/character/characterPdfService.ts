@@ -15,7 +15,7 @@ import { hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes
 import { getRaceNameFromCache, getClassNameFromCache, getSkillSummaryById, formatSourceFromObject } from '@/services/cache';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureWithRelations, CharacterItem, Spell } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, CurrencyId, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 import { CharacterQueryHooks } from './CharacterQueryHooks';
@@ -3044,11 +3044,14 @@ export async function generateCharacterPdf(
     const moneyTableY = moneyY + 18;
     const moneyRowHeight = 10;
     const moneyLabels = ['PP', 'GP', 'SP', 'CP', 'Art', 'Gems', 'Other (gp)'];
+    const wealth = character.wealth ?? [];
+    const getCoin = (currencyId: number): number =>
+        wealth.find((w) => w.currencyId === currencyId && w.value === null && w.description === null)?.quantity ?? 0;
     const moneyValues = [
-        character.platinum?.toString() || '0',
-        character.gold?.toString() || '0',
-        character.silver?.toString() || '0',
-        character.copper?.toString() || '0',
+        getCoin(CurrencyId.Platinum).toString(),
+        getCoin(CurrencyId.Gold).toString(),
+        getCoin(CurrencyId.Silver).toString(),
+        getCoin(CurrencyId.Copper).toString(),
         '',
         '',
         '',

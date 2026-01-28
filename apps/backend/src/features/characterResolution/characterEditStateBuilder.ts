@@ -9,8 +9,6 @@ import { EditionId } from '@shared/static-data';
  * duplication and provides a single source of truth for state construction.
  * 
  * @param character - Character data with all details including advancements
- * @param targetLevel - The target level for the character edit state
- * @param isGestalt - Whether the character is a gestalt character
  * @returns Complete CharacterEditState object with all fields properly extracted
  * 
  * @example
@@ -19,37 +17,33 @@ import { EditionId } from '@shared/static-data';
  * ```
  */
 export function buildCharacterEditState(
-    character: CharacterWithAllDetailsResponse,
-    targetLevel: number,
-    isGestalt: boolean
+    character: CharacterWithAllDetailsResponse
 ): CharacterEditState {
     return {
         characterId: character.id,
         name: character.name,
-        abilityScores: character.abilityScores?.map(as => ({
-            abilityId: as.abilityId,
-            value: as.value
-        })) || [],
-        skillRanks: character.advancements?.flatMap(adv =>
-            adv.skills?.map(sr => ({
-                skillId: sr.skillId,
-                skillSubId: sr.skillSubId,
-                customSubtype: sr.customSubtype,
-                pointsSpent: sr.pointsSpent
-            })) || []
-        ) || [],
         raceId: character.raceId,
-        classId: character.advancements?.[0]?.classId || null,
-        secondaryClassId: character.advancements?.[0]?.secondaryClassId || null,
-        level: targetLevel,
         editionId: character.editionId || EditionId.DND_3_5E,
-        isGestalt,
-        allowVariantClasses: character.allowVariantClasses || false,
-        ignoreLevelAdjustment: character.ignoreLevelAdjustment || false,
-        featureChoices: character.advancements?.flatMap(adv => adv.featureChoices || []) || [],
-        selectedFeats: character.advancements?.flatMap(adv => adv.feats?.map(f => f.featId) || []) || [],
-        disallowedSources: character.disallowedSources?.map(ds => ({
-            sourceBookId: ds.sourceBookId
-        })) || []
+        alignmentId: character.alignmentId ?? null,
+        deityId: character.deityId ?? null,
+        age: character.age ?? null,
+        height: character.height ?? null,
+        weight: character.weight ?? null,
+        eyes: character.eyes ?? null,
+        hair: character.hair ?? null,
+        gender: character.gender ?? null,
+        notes: character.notes ?? null,
+
+        allowVariantClasses: character.config?.allowVariantClasses ?? false,
+        isGestalt: character.config?.isGestalt ?? false,
+        ignoreLevelAdjustment: character.config?.ignoreLevelAdjustment ?? false,
+
+        abilityScores: character.abilityScores?.map((a) => ({ abilityId: a.abilityId, value: a.value })) ?? [],
+        disallowedSources: character.disallowedSources?.map((ds) => ({ sourceBookId: ds.sourceBookId })) ?? [],
+
+        wealth: character.wealth ?? [],
+        characterItems: character.characterItems ?? [],
+        attackDefinitions: character.attackDefinitions ?? [],
+        characterLanguages: character.characterLanguages ?? [],
     };
 }

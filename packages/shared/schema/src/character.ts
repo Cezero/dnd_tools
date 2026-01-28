@@ -1,12 +1,21 @@
 import { z } from 'zod';
 import { EntityAppliesToType } from '@shared/static-data';
-import { AbilityId, SpellSlotType } from '@shared/static-data';
+import { AbilityId, AlignmentId, CurrencyId, SpellSlotType } from '@shared/static-data';
 import { QueryResponseSchema } from './query.js';
 import { numericParam, commonValidations } from './common.js';
 import { FeatureWithRelationsSchema } from './feature.js';
 import { FeatInQueryResponseSchema } from './feat.js';
 import { CharacterSpellSelectionEntrySchema } from './spell.js';
 import { ValidationErrorResponseSchema } from './validation.js';
+
+/**
+ * Draft-compatible ID schemas.
+ *
+ * Draft-backed endpoints may return negative IDs during create/edit sessions.
+ * We keep request schemas strict (e.g. `BaseCharacterSchema`), but allow response
+ * schemas to accept draft-only IDs and draft placeholder values (e.g. `classId = 0`).
+ */
+const DraftIdSchema = z.number().int();
 
 export const CharacterIdParamSchema = z.object({
     id: numericParam(),
@@ -49,7 +58,7 @@ export const BaseCharacterSchema = z.object({
     userId: commonValidations.positiveInt('User ID'),
     name: commonValidations.name(),
     raceId: commonValidations.positiveInt('Race ID'),
-    alignmentId: z.union([commonValidations.positiveInt('Alignment ID'), z.null()]),
+    alignmentId: z.enum(AlignmentId).nullable(),
     deityId: commonValidations.positiveInt('Deity ID').nullable(),
     age: commonValidations.nonNegativeInt('Age', 1000).nullable(),
     height: z.number().int().min(1, 'Height must be a positive integer').max(1000, 'Height must be less than 1000').nullable(),
@@ -59,21 +68,26 @@ export const BaseCharacterSchema = z.object({
     gender: z.string().max(20, 'Gender must be less than 20 characters').nullable(),
     notes: commonValidations.description(10000).nullable(),
 
-    // NEW: Character configuration fields
+    // Edition is stored on the character row; defaulting is handled by the service layer.
     editionId: commonValidations.positiveInt('Edition ID').nullable(),
-    allowVariantClasses: z.boolean().default(false),
-    isGestalt: z.boolean().default(false),
-    ignoreLevelAdjustment: z.boolean().default(false),
-
-    // Money fields
-    platinum: commonValidations.nonNegativeInt('Platinum').default(0),
-    gold: commonValidations.nonNegativeInt('Gold').default(0),
-    silver: commonValidations.nonNegativeInt('Silver').default(0),
-    copper: commonValidations.nonNegativeInt('Copper').default(0),
 });
 
-export const CharacterSchema = BaseCharacterSchema.extend({
-    id: commonValidations.positiveInt('Character ID'),
+/**
+ * Response schema for characters.
+ *
+ * Note: This is intentionally more permissive than `BaseCharacterSchema` to support
+ * draft-backed character create/edit flows where:
+ * - `id` may be negative
+ * - `name` may be empty until saved
+ * - `raceId` may be null until selected
+ */
+const BaseCharacterResponseSchema = BaseCharacterSchema.extend({
+    name: z.string().max(100, 'Name must be less than 100 characters').trim(),
+    raceId: DraftIdSchema.nullable(),
+});
+
+export const CharacterSchema = BaseCharacterResponseSchema.extend({
+    id: DraftIdSchema,
     xp: commonValidations.nonNegativeInt('XP').default(0),
 });
 
@@ -87,28 +101,47 @@ export const CharacterWithRaceSchema = CharacterSchema.extend({
 
 // Character ability score schema
 export const CharacterAbilityScoreSchema = z.object({
-    id: commonValidations.positiveInt('Ability score ID'),
-    characterId: commonValidations.positiveInt('Character ID'),
+    id: DraftIdSchema,
+    characterId: DraftIdSchema,
     abilityId: commonValidations.positiveInt('Ability ID'),
     value: z.number().int().min(1, 'Ability score value must be a positive integer').max(50, 'Ability score value must be less than 50'),
 });
 
+export const CharacterConfigSchema = z.object({
+    characterId: DraftIdSchema,
+    allowVariantClasses: z.boolean().default(false),
+    isGestalt: z.boolean().default(false),
+    ignoreLevelAdjustment: z.boolean().default(false),
+});
+
+export const CharacterWealthSchema = z.object({
+    id: DraftIdSchema,
+    characterId: DraftIdSchema,
+    currencyId: z.enum(CurrencyId),
+    quantity: commonValidations.nonNegativeInt('Quantity', 1_000_000_000),
+    /** Used only for gpValue==0 currencies (Gems/ArtObjects/Other); expressed in gold pieces. */
+    value: commonValidations.nonNegativeInt('Value (gp)', 1_000_000_000).nullable(),
+    description: z.string().max(255, 'Description must be less than 255 characters').nullable(),
+});
+
 // Character advancement schemas
 export const CharacterAdvancementSchema = z.object({
-    id: commonValidations.positiveInt('Advancement ID'),
-    characterId: commonValidations.positiveInt('Character ID'),
+    id: DraftIdSchema,
+    characterId: DraftIdSchema,
     level: z.number().int().min(1, 'Level must be a positive integer').max(100, 'Level must be less than 100'),
     version: z.number().int().min(1, 'Version must be a positive integer'),
-    classId: commonValidations.positiveInt('Class ID'),
+    // Draft create/edit uses `0` as an “unselected” placeholder.
+    classId: commonValidations.nonNegativeInt('Class ID'),
     secondaryClassId: commonValidations.positiveInt('Secondary class ID').nullable(),
-    hitPoints: z.number().int().min(1, 'Hit points must be a positive integer'),
+    // Draft create/edit may start at 0 until calculated/rolled.
+    hitPoints: commonValidations.nonNegativeInt('Hit points'),
     abilityId: commonValidations.positiveInt('Ability ID').nullable(),
     notes: z.string().max(1000, 'Notes must be less than 1000 characters').nullable(),
     createdAt: z.coerce.date(), // Accepts both Date objects and ISO date strings
 });
 
 export const AdvancementSkillSchema = z.object({
-    advancementId: commonValidations.positiveInt('Advancement ID'),
+    advancementId: DraftIdSchema,
     skillId: commonValidations.positiveInt('Skill ID'),
     skillSubId: z.union([commonValidations.positiveInt('Skill subtype ID'), z.null()]),
     pointsSpent: commonValidations.nonNegativeInt('Points spent'),
@@ -119,7 +152,7 @@ export const AdvancementSkillSchema = z.object({
 export const CreateAdvancementSkillSchema = AdvancementSkillSchema.omit({ advancementId: true });
 
 export const AdvancementFeatSchema = z.object({
-    advancementId: commonValidations.positiveInt('Advancement ID'),
+    advancementId: DraftIdSchema,
     featId: commonValidations.positiveInt('Feat ID'),
     featSubId: commonValidations.positiveInt('Feat sub ID').nullable().optional(),
 });
@@ -128,17 +161,17 @@ export const AdvancementFeatSchema = z.object({
 export const CreateAdvancementFeatSchema = AdvancementFeatSchema.omit({ advancementId: true });
 
 export const AdvancementSpellSchema = z.object({
-    advancementId: commonValidations.positiveInt('Advancement ID'),
+    advancementId: DraftIdSchema,
     spellId: commonValidations.positiveInt('Spell ID'),
     isFreeGrant: z.boolean().default(false),
 });
 
 // Character feature choice schema
 export const CharacterFeatureChoiceSchema = z.object({
-    id: commonValidations.positiveInt('Character feature choice ID'),
-    characterId: commonValidations.positiveInt('Character ID'),
+    id: DraftIdSchema,
+    characterId: DraftIdSchema,
     featureId: commonValidations.positiveInt('Feature ID'),
-    advancementId: commonValidations.positiveInt('Advancement ID'),
+    advancementId: DraftIdSchema,
     featureEntityId: commonValidations.positiveInt('Feature entity ID'),
     appliesToId: commonValidations.positiveInt('Applies to ID'),
     appliesToSubId: z.number().int().nullable(),
@@ -179,49 +212,50 @@ export const CharacterAdvancementWithDetailsSchema = CharacterAdvancementSchema.
     skills: z.array(AdvancementSkillSchema),
     feats: z.array(AdvancementFeatSchema),
     spellsKnown: z.array(AdvancementSpellSchema),
+    // Feature choices may be draft-only (0/negative IDs).
     featureChoices: z.array(CharacterFeatureChoiceSchema),
 });
 
 // Character disallowed source schemas
 export const CharacterDisallowedSourceSchema = z.object({
-    id: commonValidations.positiveInt('Disallowed source ID'),
-    characterId: commonValidations.positiveInt('Character ID'),
+    id: DraftIdSchema,
+    characterId: DraftIdSchema,
     sourceBookId: commonValidations.positiveInt('Source book ID'),
 });
 
 // Character language map schemas
 export const CharacterLanguageMapSchema = z.object({
-    id: commonValidations.positiveInt('Character language map ID'),
-    characterId: commonValidations.positiveInt('Character ID'),
+    characterId: DraftIdSchema,
     languageId: commonValidations.positiveInt('Language ID'),
 });
 
 // Request/response schemas for character language map
-export const CreateCharacterLanguageMapSchema = CharacterLanguageMapSchema.omit({ id: true });
+export const CreateCharacterLanguageMapSchema = CharacterLanguageMapSchema;
 
 // Character item schemas (defined before CharacterWithAllDetailsSchema to avoid forward reference)
 export const CharacterItemSchema = z.object({
-    id: commonValidations.positiveInt('Character item ID'),
-    name: commonValidations.name(),
-    quantity: z.number().int().min(1, 'Quantity must be at least 1').nullable(),
+    id: DraftIdSchema,
+    name: z.string().max(100, 'Name must be less than 100 characters').trim(),
+    quantity: commonValidations.nonNegativeInt('Quantity', 1_000_000_000).nullable(),
     location: commonValidations.nonNegativeInt('Location', 15).nullable(),
-    characterId: commonValidations.positiveInt('Character ID'),
-    baseItemId: commonValidations.positiveInt('Base item ID'),
+    characterId: DraftIdSchema,
+    // Draft create/edit may use `0` until an item is selected.
+    baseItemId: commonValidations.nonNegativeInt('Base item ID'),
 });
 
 // Character attack definition schemas (defined before CharacterWithAllDetailsSchema to avoid forward reference)
 export const CharacterAttackDefinitionSchema = z.object({
-    id: commonValidations.positiveInt('Attack definition ID'),
-    characterId: commonValidations.positiveInt('Character ID'),
+    id: DraftIdSchema,
+    characterId: DraftIdSchema,
     attackSlot: z.number().int().min(1).max(7).nullable(),
-    mainHandCharacterItemId: commonValidations.positiveInt('Main hand character item ID').nullable(),
-    offHandCharacterItemId: commonValidations.positiveInt('Off hand character item ID').nullable(),
+    mainHandCharacterItemId: DraftIdSchema.nullable(),
+    offHandCharacterItemId: DraftIdSchema.nullable(),
 });
 
 // Spell preparation schemas
 export const CharacterSpellPreparationSchema = z.object({
-    id: commonValidations.positiveInt('Spell preparation ID'),
-    characterId: commonValidations.positiveInt('Character ID'),
+    id: DraftIdSchema,
+    characterId: DraftIdSchema,
     classId: commonValidations.positiveInt('Class ID'),
     spellId: commonValidations.positiveInt('Spell ID'),
     spellLevel: commonValidations.nonNegativeInt('Spell level', 20),
@@ -236,10 +270,41 @@ export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
     abilityScores: z.array(CharacterAbilityScoreSchema),
     advancements: z.array(CharacterAdvancementWithDetailsSchema),
     preparedSpells: z.array(CharacterSpellPreparationSchema),
+    config: CharacterConfigSchema.optional().nullable(),
+    wealth: z.array(CharacterWealthSchema).optional(),
     disallowedSources: z.array(CharacterDisallowedSourceSchema),
     characterLanguages: z.array(CharacterLanguageMapSchema).optional(),
     characterItems: z.array(CharacterItemSchema).optional(),
     attackDefinitions: z.array(CharacterAttackDefinitionSchema).optional(),
+});
+
+/**
+ * Draft-safe variants of nested character collections.
+ *
+ * These allow draft-only IDs (0/negative) and draft-only parent `characterId` values (negative).
+ */
+export const CharacterItemDraftSchema = CharacterItemSchema.omit({
+    id: true,
+    characterId: true,
+}).extend({
+    id: z.number().int(),
+    characterId: z.number().int(),
+});
+
+export const CharacterAttackDefinitionDraftSchema = CharacterAttackDefinitionSchema.omit({
+    id: true,
+    characterId: true,
+    mainHandCharacterItemId: true,
+    offHandCharacterItemId: true,
+}).extend({
+    id: z.number().int(),
+    characterId: z.number().int(),
+    mainHandCharacterItemId: z.number().int().nullable(),
+    offHandCharacterItemId: z.number().int().nullable(),
+});
+
+export const CharacterLanguageDraftSchema = z.object({
+    languageId: commonValidations.positiveInt('Language ID'),
 });
 
 /**
@@ -249,32 +314,46 @@ export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
  * - It is optimized for incremental UI editing and draft persistence
  * - It may contain draft-only IDs (e.g., negative ids)
  */
-export const CharacterEditStateSchema = z.object({
+export const CharacterEditStateSchema = BaseCharacterSchema.omit({
+    userId: true,
+    raceId: true,
+    editionId: true,
+}).extend({
+    // Draft IDs may be negative while creating.
     characterId: z.number().int(),
-    name: commonValidations.name(),
+    // During editing/creation, race may not be selected yet.
+    raceId: z.number().int().nullable(),
+    // Edition is required for resolution and downstream lookups.
+    editionId: z.number().int(),
+    // Character-core ability scores (part of character, not advancements).
     abilityScores: z.array(z.object({
         abilityId: commonValidations.positiveInt('Ability ID'),
         value: z.number().int(),
     })),
-    skillRanks: z.array(z.object({
-        skillId: commonValidations.positiveInt('Skill ID'),
-        skillSubId: z.number().int().nullable(),
-        customSubtype: z.string().max(100, 'Custom subtype must be less than 100 characters').nullable(),
-        pointsSpent: commonValidations.nonNegativeInt('Points spent'),
-    })),
-    raceId: z.number().int().nullable(),
-    classId: z.number().int().nullable(),
-    secondaryClassId: z.number().int().nullable(),
-    level: z.number().int().min(1, 'Level must be at least 1'),
-    editionId: z.number().int(),
-    isGestalt: z.boolean(),
+    // Character configuration fields that affect resolution behavior.
     allowVariantClasses: z.boolean(),
+    isGestalt: z.boolean(),
     ignoreLevelAdjustment: z.boolean(),
-    featureChoices: z.array(CharacterFeatureChoiceDraftSchema),
-    selectedFeats: z.array(z.number().int()),
+    // Character wealth entries (coins and valuables).
+    wealth: z.array(
+        CharacterWealthSchema.omit({ id: true, characterId: true }).extend({
+            id: z.number().int(),
+            characterId: z.number().int(),
+        })
+    ).optional(),
+    // Disallowed sources are character-core config (not part of advancements).
     disallowedSources: z.array(z.object({
         sourceBookId: commonValidations.positiveInt('Source book ID'),
     })),
+    /**
+     * Equipment / attacks / languages are intentionally part of the character draft state so the
+     * editor can persist them via the generic draft save flow (not ad-hoc endpoints).
+     *
+     * These are draft-safe shapes (IDs may be 0/negative during editing).
+     */
+    characterItems: z.array(CharacterItemDraftSchema).optional(),
+    attackDefinitions: z.array(CharacterAttackDefinitionDraftSchema).optional(),
+    characterLanguages: z.array(CharacterLanguageDraftSchema).optional(),
 });
 
 export const GetAllCharactersResponseSchema = QueryResponseSchema.extend({
@@ -417,10 +496,7 @@ export const UpdateFeatureUsesRequestSchema = z.object({
 });
 
 export const UpdateMoneyRequestSchema = z.object({
-    platinum: z.number().int().optional(),
-    gold: z.number().int().optional(),
-    silver: z.number().int().optional(),
-    copper: z.number().int().optional(),
+    // Deprecated: wealth is now modeled via CharacterWealth.
 });
 
 export const AddItemRequestSchema = CreateCharacterItemSchema.omit({ characterId: true });

@@ -49,7 +49,7 @@ The base schema for character validation, defining all required and optional fie
 - **`userId`**: Required positive integer for user ownership
 - **`name`**: Required string, 1-100 characters, trimmed for display
 - **`raceId`**: Required positive integer for race reference
-- **`alignmentId`**: Required positive integer for alignment reference
+- **`alignmentId`**: Enum-backed integer (`z.enum(AlignmentId).nullable()`) referencing `@AlignmentId` (static-data, not a DB FK)
 - **`age`**: Optional integer, 0-1000 for character age
 - **`height`**: Optional integer, 1-1000 for character height
 - **`weight`**: Optional integer, 1-10000 for character weight
@@ -189,6 +189,41 @@ Schema for character advancement with all related data.
 **Source File**: `shared/schema/src/character.ts` (CharacterAdvancementWithDetailsSchema definition)
 
 ## 🔧 **Character Ability Score Schemas**
+## 🔧 **Character configuration + wealth**
+
+### **CharacterConfigSchema**
+
+Character configuration flags that affect resolution behavior.
+
+- Stored as a 1:1 row with Character (`CharacterConfig.characterId`)
+- Fields: `allowVariantClasses`, `isGestalt`, `ignoreLevelAdjustment`
+
+Source: `packages/shared/schema/src/character.ts` (`CharacterConfigSchema`)
+
+### **CharacterWealthSchema**
+
+Represents both coinage and valuables.
+
+- Fields:
+  - `currencyId`: enum-backed int referencing `@CurrencyId`
+  - `quantity`: integer count
+  - `value` / `description`: optional fields for non-coin valuables depending on currency semantics
+
+Source: `packages/shared/schema/src/character.ts` (`CharacterWealthSchema`)
+
+## 🧩 **Draft edit state schemas**
+
+### **CharacterEditStateSchema**
+
+Draft-safe shape for editing **character-core** fields and collections (race, ability scores, config flags, wealth, items, attacks, languages, disallowed sources).
+
+Source: `packages/shared/schema/src/character.ts` (`CharacterEditStateSchema`)
+
+### **AdvancementEditStateSchema**
+
+Draft-safe shape for editing **advancement** decisions (class selection, skills, feats, spellsKnown, feature choices).
+
+Source: `packages/shared/schema/src/advancementDraft.ts` (`AdvancementEditStateSchema`)
 
 ### **CharacterAbilityScoreSchema**
 

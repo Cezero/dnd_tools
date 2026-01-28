@@ -31,32 +31,18 @@ export interface DataItem {
 }
 
 // Generic delete service function type
-export type DeleteServiceFunction = (id: number | string) => Promise<void>;
+export type DeleteServiceFunction = (id: number | string) => Promise<unknown>;
 
-// Utility functions to create delete service functions
-export const createDeleteServiceFunction = (
-    serviceMethod: (params: undefined, idParams: Record<string, number | string>) => Promise<unknown>,
-    idParamName: 'id' | 'slug' = 'id'
-): DeleteServiceFunction => {
-    return async (id: number | string) => {
-        const params = idParamName === 'id'
-            ? { [idParamName]: Number(id) }
-            : { [idParamName]: String(id) };
-        await serviceMethod(undefined, params);
-    };
-};
-
-export const createIdDeleteServiceFunction = (
-    serviceMethod: (params: undefined, idParams: { id: number }) => Promise<unknown>
-): DeleteServiceFunction => {
-    return createDeleteServiceFunction(serviceMethod, 'id');
-};
-
-export const createSlugDeleteServiceFunction = (
-    serviceMethod: (params: undefined, slugParams: { slug: string }) => Promise<unknown>
-): DeleteServiceFunction => {
-    return createDeleteServiceFunction(serviceMethod, 'slug');
-};
+/**
+ * Delete utilities
+ *
+ * `GenericList` already calls `deleteServiceFunction` with a resolved `id`/`slug` (string | number).
+ * Prefer passing a direct function like:
+ *
+ * - `(id) => MyQueryHooks.deleteThing(Number(id))`
+ *
+ * This avoids adapter layers that can accidentally drop path parameters.
+ */
 
 // Generic function types for actions
 export type DetailFunction<T> = (item: T) => void;

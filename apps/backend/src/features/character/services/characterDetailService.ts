@@ -11,7 +11,7 @@ import type {
     CreateResponse,
     UpdateResponse,
 } from '@shared/schema';
-import { SpellSlotType, USES_FREQUENCY_ENUM } from '@shared/static-data';
+import { CurrencyId, SpellSlotType, USES_FREQUENCY_ENUM } from '@shared/static-data';
 
 
 /**
@@ -109,30 +109,51 @@ export const characterDetailService = {
     },
 
     async updateMoney(characterId: number, money: UpdateMoneyRequest): Promise<UpdateResponse> {
-        const updateData: {
-            platinum?: number;
-            gold?: number;
-            silver?: number;
-            copper?: number;
-        } = {};
-
+        const updates: Array<{ currencyId: number; quantity: number }> = [];
         if (money.platinum !== undefined) {
-            updateData.platinum = money.platinum;
+            updates.push({ currencyId: CurrencyId.Platinum, quantity: money.platinum });
         }
         if (money.gold !== undefined) {
-            updateData.gold = money.gold;
+            updates.push({ currencyId: CurrencyId.Gold, quantity: money.gold });
         }
         if (money.silver !== undefined) {
-            updateData.silver = money.silver;
+            updates.push({ currencyId: CurrencyId.Silver, quantity: money.silver });
         }
         if (money.copper !== undefined) {
-            updateData.copper = money.copper;
+            updates.push({ currencyId: CurrencyId.Copper, quantity: money.copper });
         }
 
-        await prisma.userCharacter.update({
-            where: { id: characterId },
-            data: updateData,
+        await prisma.$transaction(async (tx) => {
+            for (const update of updates) {
+                const existing = await tx.characterWealth.findFirst({
+                    where: {
+                        characterId,
+                        currencyId: update.currencyId,
+                        value: null,
+                        description: null,
+                    },
+                    select: { id: true },
+                });
+
+                if (existing) {
+                    await tx.characterWealth.update({
+                        where: { id: existing.id },
+                        data: { quantity: update.quantity },
+                    });
+                } else {
+                    await tx.characterWealth.create({
+                        data: {
+                            characterId,
+                            currencyId: update.currencyId,
+                            quantity: update.quantity,
+                            value: null,
+                            description: null,
+                        },
+                    });
+                }
+            }
         });
+
         return { message: 'Money updated successfully' };
     },
 
@@ -177,7 +198,7 @@ export const characterDetailService = {
             updateData.notes = notes.notes;
         }
 
-        await prisma.userCharacter.update({
+        await prisma.character.update({
             where: { id: characterId },
             data: updateData,
         });

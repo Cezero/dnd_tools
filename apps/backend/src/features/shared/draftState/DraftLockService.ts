@@ -223,12 +223,20 @@ export class DraftLockService {
      */
     async checkLock(draftType: DraftType, id: number): Promise<number | null> {
         const key = this.buildLockKey(draftType, id);
+        const metaKey = this.buildLockMetaKey(draftType, id);
         
         try {
             const value = await this.redis.get(key);
             
             if (!value) {
                 return null;
+            }
+            
+            // Refresh TTL on read (touch) to keep lock alive while actively checked
+            await this.redis.expire(key, this.DEFAULT_ADMIN_TTL_SECONDS);
+            const metaValue = await this.redis.get(metaKey);
+            if (metaValue) {
+                await this.redis.expire(metaKey, this.DEFAULT_ADMIN_TTL_SECONDS);
             }
             
             // Parse the value and ensure it's a valid number

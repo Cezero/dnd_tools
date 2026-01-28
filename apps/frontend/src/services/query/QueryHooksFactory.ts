@@ -128,7 +128,12 @@ export function createQueryHooks<
 
         return useMutation({
             mutationFn: (data: { requestData?: unknown; pathParams?: unknown }) => {
-                return apiFunction(data.requestData as never, data.pathParams as never);
+                // If there's a requestSchema, call (requestData, params).
+                if (config.requestSchema) {
+                    return apiFunction(data.requestData as never, data.pathParams as never);
+                }
+                // Otherwise, params are the first (and only) argument.
+                return apiFunction(data.pathParams as never);
             },
             onSuccess: (_data, variables) => {
                 // Auto-invalidate related queries using the query key builder
@@ -206,7 +211,9 @@ export function createQueryHooks<
      * - Useful for imperative mutations in event handlers or async functions
      */
     const mutate = async (data: { requestData?: unknown; pathParams?: unknown }, queryClient?: QueryClient) => {
-        const result = await apiFunction(data.requestData as never, data.pathParams as never);
+        const result = config.requestSchema
+            ? await apiFunction(data.requestData as never, data.pathParams as never)
+            : await apiFunction(data.pathParams as never);
 
         // Auto-invalidate related queries using the query key builder if queryClient is provided
         if (queryClient) {

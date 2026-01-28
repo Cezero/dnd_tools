@@ -20,7 +20,7 @@ import { buildCharacterEditState } from '../../characterResolution/characterEdit
 import { CharacterResolutionService } from '../../characterResolution/characterResolutionService';
 import { CharacterResolvedResultsService } from '../../characterResolution/characterResolvedResultsService';
 import { ResolvedFeatureService } from '../../characterResolution/resolvedFeatureService';
-import type { CharacterEditState, ResolutionContext, UserChoices } from '../../characterResolution/types';
+import type { ResolutionContext, UserChoices } from '../../characterResolution/types';
 import { classService } from '../../class/classService';
 import { featService } from '../../feat/featService';
 import { featureSystemService } from '../../featureSystem/featureSystemService';
@@ -166,41 +166,53 @@ export const characterSpellService = {
     async getAvailableSpellsForClass(
         characterId: number,
         classId: number,
-        resolvedProgressions?: FeatureWithRelations[]
+        resolvedProgressions?: FeatureWithRelations[],
+        characterOverride?: CharacterWithAllDetailsResponse
     ): Promise<{
         spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean; isFreeGrant?: boolean }>;
         domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }>;
         availableFreeSpells?: number;
     }> {
-        // Get character
-        const character = await prisma.userCharacter.findUnique({
-            where: { id: characterId },
-            include: {
-                advancements: {
-                    include: {
-                        spellsKnown: {
-                            select: {
-                                spellId: true,
-                                isFreeGrant: true
-                            }
-                        }
-                    }
-                },
-                disallowedSources: {
-                    select: {
-                        sourceBookId: true
-                    }
-                },
-                abilityScores: {
-                    select: {
-                        abilityId: true,
-                        value: true
-                    }
-                }
-            }
-        });
+        /**
+         * Resolve available spell selection.
+         *
+         * This supports both persisted characters (positive IDs in MySQL) and draft-only characters
+         * (negative IDs in Redis) by allowing the caller to provide the effective character snapshot.
+         *
+         * When `characterId < 1`, callers must pass `characterOverride` because there is no DB row.
+         */
+        const persistedCharacter =
+            characterOverride ??
+            (characterId > 0
+                ? await prisma.character.findUnique({
+                      where: { id: characterId },
+                      include: {
+                          advancements: {
+                              include: {
+                                  spellsKnown: {
+                                      select: {
+                                          spellId: true,
+                                          isFreeGrant: true,
+                                      },
+                                  },
+                              },
+                          },
+                          disallowedSources: {
+                              select: {
+                                  sourceBookId: true,
+                              },
+                          },
+                          abilityScores: {
+                              select: {
+                                  abilityId: true,
+                                  value: true,
+                              },
+                          },
+                      },
+                  })
+                : null);
 
-        if (!character) {
+        if (!persistedCharacter) {
             throw new Error('Character not found');
         }
 
@@ -217,10 +229,10 @@ export const characterSpellService = {
             return { spells: [], domainSpells: [] };
         }
 
-        const characterLevel = character.advancements.length;
-        const disallowedSourceIds = character.disallowedSources.map(ds => ds.sourceBookId);
+        const characterLevel = persistedCharacter.advancements.length;
+        const disallowedSourceIds = persistedCharacter.disallowedSources.map((ds) => ds.sourceBookId);
         const knownSpellIds = new Set(
-            character.advancements.flatMap(adv => adv.spellsKnown.map(s => s.spellId))
+            persistedCharacter.advancements.flatMap((adv) => adv.spellsKnown.map((s) => s.spellId))
         );
 
         // Get character's domains for this class
@@ -231,7 +243,7 @@ export const characterSpellService = {
         if (domainIds.length > 0) {
             const domainSpellData = await spellService.getDomainSpells(domainIds, characterLevel, classId);
 
-            domainSpells = domainSpellData.map(ds => {
+            domainSpells = domainSpellData.map((ds) => {
                 // Filter by source restrictions
                 const spellSourceIds = ds.spell.sourceBookInfo?.map(sb => sb.sourceBookId) || [];
                 const isDisallowed = spellSourceIds.some(sid => disallowedSourceIds.includes(sid));
@@ -275,7 +287,8 @@ export const characterSpellService = {
 
             // Calculate available free spells for spellbook classes
             if (isSpellbookClass) {
-                const characterWithDetails = await characterCrudService.getCharacterWithAllDetails({ id: characterId });
+                const characterWithDetails =
+                    characterOverride ?? (await characterCrudService.getCharacterWithAllDetails({ id: characterId }));
                 if (characterWithDetails) {
                     availableFreeSpells = ResolvedFeatureService.getAvailableSpellbookSpells(
                         resolvedProgressions,
@@ -342,7 +355,7 @@ export const characterSpellService = {
 
         // Build map of spellId -> isFreeGrant for known spells
         const spellFreeGrantMap = new Map<number, boolean>();
-        for (const advancement of character.advancements) {
+        for (const advancement of persistedCharacter.advancements) {
             for (const spellKnown of advancement.spellsKnown) {
                 spellFreeGrantMap.set(spellKnown.spellId, spellKnown.isFreeGrant);
             }
@@ -351,42 +364,45 @@ export const characterSpellService = {
         if (classDetails.spellsKnown && !isSpellbookClass) {
             // For spellsKnown classes (Sorcerer, Bard, etc.), get spells from AdvancementSpell
             // This includes 0th level spells that players have selected
-            const knownSpells = await prisma.advancementSpell.findMany({
-                where: {
-                    advancement: {
-                        characterId,
-                        classId
-                    }
-                },
-                include: {
-                    spell: {
+            if (characterOverride) {
+                const spellIds = Array.from(
+                    new Set(
+                        persistedCharacter.advancements
+                            .filter((adv) => adv.classId === classId)
+                            .flatMap((adv) => adv.spellsKnown.map((sk) => sk.spellId))
+                    )
+                );
+
+                if (spellIds.length > 0) {
+                    const spellsFromDb = await prisma.spell.findMany({
+                        where: { id: { in: spellIds } },
                         include: {
                             levelMapping: {
                                 where: { classId },
                                 select: {
                                     classId: true,
-                                    level: true
-                                }
+                                    level: true,
+                                },
                             },
                             descriptorIds: {
                                 select: {
-                                    descriptorId: true
-                                }
+                                    descriptorId: true,
+                                },
                             },
                             schoolIds: {
                                 select: {
-                                    schoolId: true
-                                }
+                                    schoolId: true,
+                                },
                             },
                             subSchoolIds: {
                                 select: {
-                                    subSchoolId: true
-                                }
+                                    subSchoolId: true,
+                                },
                             },
                             componentIds: {
                                 select: {
-                                    componentId: true
-                                }
+                                    componentId: true,
+                                },
                             },
                             sourceBookInfo: {
                                 select: {
@@ -395,31 +411,108 @@ export const characterSpellService = {
                                     sourceBook: {
                                         select: {
                                             id: true,
-                                            abbreviation: true
-                                        }
-                                    }
-                                }
+                                            abbreviation: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    });
+
+                    spells = spellsFromDb
+                        .map((spell) => {
+                            const spellSourceIds = spell.sourceBookInfo?.map((sb) => sb.sourceBookId) || [];
+                            const isDisallowed = spellSourceIds.some((sid) => disallowedSourceIds.includes(sid));
+
+                            if (isDisallowed) {
+                                return null;
                             }
+
+                            const isFreeGrant = spellFreeGrantMap.get(spell.id) ?? false;
+                            return {
+                                spell,
+                                classSpellLevel: spell.levelMapping[0]?.level ?? null,
+                                isKnown: true,
+                                isFreeGrant,
+                            };
+                        })
+                        .filter((s): s is NonNullable<typeof s> => s !== null);
+                } else {
+                    spells = [];
+                }
+            } else {
+                const knownSpells = await prisma.advancementSpell.findMany({
+                    where: {
+                        advancement: {
+                            characterId,
+                            classId,
+                        },
+                    },
+                    include: {
+                        spell: {
+                            include: {
+                                levelMapping: {
+                                    where: { classId },
+                                    select: {
+                                        classId: true,
+                                        level: true,
+                                    },
+                                },
+                                descriptorIds: {
+                                    select: {
+                                        descriptorId: true,
+                                    },
+                                },
+                                schoolIds: {
+                                    select: {
+                                        schoolId: true,
+                                    },
+                                },
+                                subSchoolIds: {
+                                    select: {
+                                        subSchoolId: true,
+                                    },
+                                },
+                                componentIds: {
+                                    select: {
+                                        componentId: true,
+                                    },
+                                },
+                                sourceBookInfo: {
+                                    select: {
+                                        sourceBookId: true,
+                                        pageNumber: true,
+                                        sourceBook: {
+                                            select: {
+                                                id: true,
+                                                abbreviation: true,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+
+                spells = knownSpells
+                    .map((as) => {
+                        const spellSourceIds = as.spell.sourceBookInfo?.map((sb) => sb.sourceBookId) || [];
+                        const isDisallowed = spellSourceIds.some((sid) => disallowedSourceIds.includes(sid));
+
+                        if (isDisallowed) {
+                            return null;
                         }
-                    }
-                }
-            });
 
-            spells = knownSpells.map(as => {
-                const spellSourceIds = as.spell.sourceBookInfo?.map(sb => sb.sourceBookId) || [];
-                const isDisallowed = spellSourceIds.some(sid => disallowedSourceIds.includes(sid));
-
-                if (isDisallowed) {
-                    return null;
-                }
-
-                return {
-                    spell: as.spell,
-                    classSpellLevel: as.spell.levelMapping[0]?.level ?? null,
-                    isKnown: true,
-                    isFreeGrant: as.isFreeGrant
-                };
-            }).filter((s): s is NonNullable<typeof s> => s !== null);
+                        return {
+                            spell: as.spell,
+                            classSpellLevel: as.spell.levelMapping[0]?.level ?? null,
+                            isKnown: true,
+                            isFreeGrant: as.isFreeGrant,
+                        };
+                    })
+                    .filter((s): s is NonNullable<typeof s> => s !== null);
+            }
         } else if (isSpellbookClass) {
             // For spellbook classes, query all spells from SpellLevelMap
             // 0th level spells are marked as known if the grant feature exists
@@ -827,11 +920,7 @@ export const characterSpellService = {
             );
 
             // Rebuild CharacterEditState from updated character
-            const updatedCharacterState = buildCharacterEditState(
-                updatedCharacter,
-                advancement.level,
-                !!secondaryClassDetails
-            );
+            const updatedCharacterState = buildCharacterEditState(updatedCharacter);
 
             // Build ResolvedCharacterResult
             const classSkills = ResolvedFeatureService.getClassSkills(resolutionResult.resolvedProgressions);
@@ -885,7 +974,7 @@ export const characterSpellService = {
 
             // Update state and resolved results
             const stateService = new DraftStateService();
-            await stateService.setState(DraftType.Character, characterId, updatedCharacterState as CharacterEditState);
+            await stateService.setState(DraftType.Character, characterId, updatedCharacterState);
             await resolvedResultsService.setResolvedResults(characterId, resolvedCharacterResultForSession);
 
             resolvedCharacterResult = resolvedCharacterResultForSession;
@@ -1117,11 +1206,7 @@ export const characterSpellService = {
             );
 
             // Rebuild CharacterEditState from updated character
-            const updatedCharacterState = buildCharacterEditState(
-                updatedCharacter,
-                advancement.level,
-                !!secondaryClassDetails
-            );
+            const updatedCharacterState = buildCharacterEditState(updatedCharacter);
 
             // Build ResolvedCharacterResult
             const classSkills = ResolvedFeatureService.getClassSkills(resolutionResult.resolvedProgressions);
@@ -1175,7 +1260,7 @@ export const characterSpellService = {
 
             // Update state and resolved results
             const stateService = new DraftStateService();
-            await stateService.setState(DraftType.Character, characterId, updatedCharacterState as CharacterEditState);
+            await stateService.setState(DraftType.Character, characterId, updatedCharacterState);
             await resolvedResultsService.setResolvedResults(characterId, resolvedCharacterResultForSession);
 
             resolvedCharacterResult = resolvedCharacterResultForSession;

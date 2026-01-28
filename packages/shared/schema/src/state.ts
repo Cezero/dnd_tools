@@ -59,7 +59,7 @@ export const DraftRefRequestSchema = z.object({
      * Uses numeric enum for type safety and to avoid string comparisons.
      */
     draftType: z.enum(DraftType),
-    
+
     /**
      * The draft ID.
      * Use:
@@ -103,7 +103,7 @@ export const DraftRefQuerySchema = z.object({
         (val) => (typeof val === 'string' ? parseInt(val, 10) : val),
         z.enum(DraftType)
     ),
-    
+
     /**
      * The draft ID (as string for query params, will be parsed to number).
      */
@@ -135,7 +135,7 @@ export const DraftRefQueryOptionalSchema = z.object({
         (val) => (typeof val === 'string' ? parseInt(val, 10) : val),
         z.enum(DraftType).optional()
     ),
-    
+
     /**
      * The draft ID (as string for query params, will be parsed to number).
      */
@@ -167,7 +167,7 @@ export const DraftRefSchema = z.object({
      * Uses numeric enum for type safety and to avoid string comparisons.
      */
     draftType: z.enum(DraftType),
-    
+
     /**
      * The draft ID.
      */
@@ -252,12 +252,12 @@ export const DraftStateInfoSchema = z.object({
      * Uses numeric enum for type safety and to avoid string comparisons.
      */
     draftType: z.enum(DraftType),
-    
+
     /**
      * The draft ID.
      */
     id: z.number().int(),
-    
+
     hasState: z.boolean(),
     lastUpdated: z.string().datetime().nullable(), // ISO 8601 string, will be converted to Date on frontend
 });
@@ -275,12 +275,12 @@ export const DraftLockInfoSchema = z.object({
      * Uses numeric enum for type safety and to avoid string comparisons.
      */
     draftType: z.enum(DraftType),
-    
+
     /**
      * The draft ID.
      */
     id: z.number().int(),
-    
+
     lockedBy: z.number().int(),
     lockedByUserName: z.string().nullable(),
     lockedAt: z.string().datetime().nullable(), // ISO 8601 string, will be converted to Date on frontend
@@ -363,7 +363,7 @@ export const UpdateStateValueSchema = DraftRefRequestSchema.extend({
      * Supports nested objects and array indices.
      */
     path: z.string().min(1, 'Path is required'),
-    
+
     /**
      * The new value to set at the specified path.
      * Must be a scalar value.
@@ -416,6 +416,20 @@ export const StartEditingResponseSchema = DraftRefSchema.extend({
     success: z.boolean(),
 });
 export type StartEditingResponse = z.infer<typeof StartEditingResponseSchema>;
+
+/**
+ * Generic response schema for retrieving the current draft state from Redis.
+ *
+ * Notes:
+ * - `state` is intentionally `unknown` because the concrete shape depends on `draftType`.
+ * - Callers should validate/narrow the returned state based on `draftType` (e.g. using the
+ *   corresponding edit-state schemas in `@shared/schema`).
+ */
+export const GetDraftStateResponseSchema = DraftRefSchema.extend({
+    success: z.boolean(),
+    state: z.unknown().nullable(),
+});
+export type GetDraftStateResponse = z.infer<typeof GetDraftStateResponseSchema>;
 
 
 /**

@@ -12,7 +12,7 @@ import {
     type RaceDraftState,
     type ResolvedCharacterResult,
 } from '@shared/schema';
-import { DraftType, EditionId, FeatureSourceType } from '@shared/static-data';
+import { CurrencyId, DraftType, EditionId, FeatureSourceType } from '@shared/static-data';
 
 import type { DraftConfig } from './types';
 import { prisma } from '@/lib/prisma';
@@ -229,6 +229,18 @@ async function buildAdvancementInitialState(advancementId: number): Promise<Adva
         throw new Error(`Advancement ${advancementId} not found`);
     }
 
+    const hashToNegativeInt = (input: string): number => {
+        // Deterministic 32-bit FNV-1a, returned as negative int to avoid colliding with persisted IDs.
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < input.length; i += 1) {
+            hash ^= input.charCodeAt(i);
+            hash = Math.imul(hash, 0x01000193);
+        }
+        // Ensure non-zero and negative
+        const signed = hash | 0;
+        return signed === 0 ? -1 : -Math.abs(signed);
+    };
+
     return {
         advancementId: advancement.id,
         characterId: advancement.characterId,
@@ -240,21 +252,24 @@ async function buildAdvancementInitialState(advancementId: number): Promise<Adva
         abilityId: advancement.abilityId ?? null,
         notes: advancement.notes ?? null,
         skills: advancement.skills.map((s) => ({
+            id: hashToNegativeInt(`skill:${s.skillId}:${s.skillSubId ?? 0}:${s.customSubtype ?? ''}`),
             skillId: s.skillId,
             skillSubId: s.skillSubId ?? null,
             pointsSpent: s.pointsSpent,
             customSubtype: s.customSubtype ?? null,
         })),
         feats: advancement.feats.map((f) => ({
+            id: hashToNegativeInt(`feat:${f.featId}:${f.featSubId ?? 0}`),
             featId: f.featId,
             featSubId: f.featSubId ?? null,
         })),
         spellsKnown: advancement.spellsKnown.map((s) => ({
+            id: hashToNegativeInt(`spell:${s.spellId}:${s.isFreeGrant ? 1 : 0}`),
             spellId: s.spellId,
             isFreeGrant: s.isFreeGrant ?? false,
         })),
         featureChoices: advancement.featureChoices.map((c) => ({
-            id: c.id,
+            id: hashToNegativeInt(`choice:${c.featureId}:${c.featureEntityId}`),
             characterId: c.characterId,
             featureId: c.featureId,
             advancementId: c.advancementId,
@@ -311,9 +326,9 @@ draftRegistry.set(DraftType.Advancement, {
             featureChoices: [],
         };
     },
-    onStateUpdate: async (_id, state, _userId, _update) => {
-        characterResolutionProjectionService.scheduleFromAdvancementDraft(state as AdvancementEditState);
-    },
+            onStateUpdate: async (_id, state, userId, _update) => {
+                characterResolutionProjectionService.scheduleFromAdvancementDraft(state as AdvancementEditState, userId);
+            },
 });
 
 // Helper function to build initial character state
@@ -322,9 +337,7 @@ async function buildCharacterInitialState(characterId: number): Promise<Characte
     if (!character) {
         throw new Error(`Character ${characterId} not found`);
     }
-    const targetLevel = character.advancements?.length || 1;
-    const isGestalt = character.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0) || false;
-    return buildCharacterEditState(character, targetLevel, isGestalt);
+    return buildCharacterEditState(character);
 }
 
 type CharacterAdvancementWithDetails = NonNullable<CharacterWithAllDetailsResponse['advancements']>[number];
@@ -353,31 +366,85 @@ function selectEffectiveAdvancements(
     return Array.from(byLevel.values()).sort((a, b) => a.level - b.level);
 }
 
-/** Compute ResolvedCharacterResult from characterId and edit state. Used by triggerCharacterResolution and resolveCharacterToResult. */
-async function computeResolvedCharacterResult(characterId: number, characterState: CharacterEditState): Promise<ResolvedCharacterResult> {
+/** Compute ResolvedCharacterResult from characterId (read-only). */
+async function computeResolvedCharacterResult(
+    characterId: number,
+    characterState?: CharacterEditState
+): Promise<ResolvedCharacterResult> {
     const character = await characterService.getCharacterWithAllDetails({ id: characterId });
     if (!character) {
         throw new Error(`Character ${characterId} not found`);
     }
     const effectiveAdvancements = selectEffectiveAdvancements(character.advancements);
-    const effectiveCharacter = {
+    const effectiveCharacter: CharacterWithAllDetailsResponse = {
         ...character,
         advancements: effectiveAdvancements,
     };
 
-    const raceDetails = characterState.raceId ? await raceService.getRaceById({ id: characterState.raceId }) : null;
-    const classDetails = characterState.classId ? await classService.getClassById({ id: characterState.classId }) : null;
-    const secondaryClassDetails = characterState.secondaryClassId ? await classService.getClassById({ id: characterState.secondaryClassId }) : null;
+    const targetLevel =
+        effectiveAdvancements.length > 0 ? Math.max(...effectiveAdvancements.map((a) => a.level)) : 1;
+
+    const advancementForLevel = effectiveAdvancements.find((adv) => adv.level === targetLevel);
+
+    const resolvedRaceId = characterState?.raceId ?? effectiveCharacter.raceId;
+    const resolvedCharacter: CharacterWithAllDetailsResponse =
+        characterState
+            ? {
+                  ...effectiveCharacter,
+                  name: characterState.name,
+                  raceId: resolvedRaceId,
+                  editionId: characterState.editionId,
+                  alignmentId: characterState.alignmentId,
+                  deityId: characterState.deityId,
+                  age: characterState.age,
+                  height: characterState.height,
+                  weight: characterState.weight,
+                  eyes: characterState.eyes,
+                  hair: characterState.hair,
+                  gender: characterState.gender,
+                  notes: characterState.notes,
+                  abilityScores: characterState.abilityScores.map((a) => ({
+                      id: 0,
+                      characterId,
+                      abilityId: a.abilityId,
+                      value: a.value,
+                  })),
+                  disallowedSources: characterState.disallowedSources.map((ds) => ({
+                      id: 0,
+                      characterId,
+                      sourceBookId: ds.sourceBookId,
+                  })),
+                  config: {
+                      characterId,
+                      allowVariantClasses: characterState.allowVariantClasses,
+                      isGestalt: characterState.isGestalt,
+                      ignoreLevelAdjustment: characterState.ignoreLevelAdjustment,
+                  },
+                  wealth: characterState.wealth ?? effectiveCharacter.wealth,
+                  characterItems: characterState.characterItems ?? effectiveCharacter.characterItems,
+                  attackDefinitions: characterState.attackDefinitions ?? effectiveCharacter.attackDefinitions,
+                  characterLanguages:
+                      characterState.characterLanguages?.map((l) => ({ characterId, languageId: l.languageId })) ??
+                      effectiveCharacter.characterLanguages,
+              }
+            : effectiveCharacter;
+
+    const raceDetails = resolvedRaceId ? await raceService.getRaceById({ id: resolvedRaceId }) : null;
+    const classDetails = advancementForLevel?.classId ? await classService.getClassById({ id: advancementForLevel.classId }) : null;
+    const secondaryClassDetails =
+        advancementForLevel?.secondaryClassId ? await classService.getClassById({ id: advancementForLevel.secondaryClassId }) : null;
     const userChoices: Record<number, number[]> = {};
 
     const context = {
-        character: effectiveCharacter,
-        targetLevel: characterState.level,
-        advancement: effectiveAdvancements.find(adv => adv.level === characterState.level),
+        character: resolvedCharacter,
+        targetLevel,
+        advancement: advancementForLevel,
         raceDetails,
         classDetails,
         secondaryClassDetails,
-        isGestalt: characterState.isGestalt,
+        isGestalt:
+            (resolvedCharacter.config?.isGestalt ?? false) ||
+            !!advancementForLevel?.secondaryClassId,
         userChoices: Object.keys(userChoices).length > 0 ? userChoices : undefined,
         includePendingChoices: true,
         resolveCascading: true,
@@ -385,8 +452,8 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
     };
 
     const resolutionResult = await CharacterResolutionService.resolveCharacterFeatures(
-        effectiveCharacter,
-        characterState.level,
+        resolvedCharacter,
+        targetLevel,
         context
     );
 
@@ -408,7 +475,7 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
 
     const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
         resolutionResult.resolvedProgressions,
-        characterState.level,
+        targetLevel,
         classLevels
     );
     const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(
@@ -417,7 +484,7 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
 
     const allFeatsResponse = await featService.getAllFeats();
     const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
-        effectiveCharacter,
+        resolvedCharacter,
         resolutionResult.resolvedProgressions,
         classDetails,
         raceDetails,
@@ -426,7 +493,7 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
 
     const spellSelection = await calculateSpellSelection(
         characterId,
-        effectiveCharacter,
+        resolvedCharacter,
         resolutionResult.resolvedProgressions
     );
 
@@ -435,13 +502,16 @@ async function computeResolvedCharacterResult(characterId: number, characterStat
 
     let resolvedFormulaValues = ResolvedFeatureService.resolveFormulaValues(
         enrichedProgressions,
-        effectiveCharacter,
-        characterState.level
+        resolvedCharacter,
+        targetLevel
     );
 
-    if (characterState.isGestalt || effectiveAdvancements.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)) {
+    if (
+        (resolvedCharacter.config?.isGestalt ?? false) ||
+        effectiveAdvancements.some((adv) => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)
+    ) {
         resolvedFormulaValues = GestaltMechanicsResolver.resolveGestaltMechanics(
-            effectiveCharacter,
+            resolvedCharacter,
             enrichedProgressions,
             resolvedFormulaValues
         );
@@ -499,24 +569,64 @@ draftRegistry.set(DraftType.Character, {
         return {
             characterId: draftId,
             name: '',
-            abilityScores: [],
-            skillRanks: [],
             raceId: null,
-            classId: null,
-            secondaryClassId: null,
-            level: 1,
             editionId: EditionId.DND_3_5E,
+            alignmentId: null,
+            deityId: null,
+            age: null,
+            height: null,
+            weight: null,
+            eyes: null,
+            hair: null,
+            gender: null,
+            notes: null,
+            abilityScores: [],
             isGestalt: false,
             allowVariantClasses: false,
             ignoreLevelAdjustment: false,
-            featureChoices: [],
-            selectedFeats: [],
+            wealth: [
+                {
+                    id: CurrencyId.Platinum,
+                    characterId: draftId,
+                    currencyId: CurrencyId.Platinum,
+                    quantity: 0,
+                    value: null,
+                    description: null,
+                },
+                {
+                    id: CurrencyId.Gold,
+                    characterId: draftId,
+                    currencyId: CurrencyId.Gold,
+                    quantity: 0,
+                    value: null,
+                    description: null,
+                },
+                {
+                    id: CurrencyId.Silver,
+                    characterId: draftId,
+                    currencyId: CurrencyId.Silver,
+                    quantity: 0,
+                    value: null,
+                    description: null,
+                },
+                {
+                    id: CurrencyId.Copper,
+                    characterId: draftId,
+                    currencyId: CurrencyId.Copper,
+                    quantity: 0,
+                    value: null,
+                    description: null,
+                },
+            ],
             disallowedSources: [],
+            characterItems: [],
+            attackDefinitions: [],
+            characterLanguages: [],
         };
     },
-    onStateUpdate: async (id, state, _userId, _update) => {
-        characterResolutionProjectionService.scheduleFromCharacterDraft(id, state as CharacterEditState);
-    },
+            onStateUpdate: async (id, state, userId, _update) => {
+                characterResolutionProjectionService.scheduleFromCharacterDraft(id, state as CharacterEditState, userId);
+            },
 });
 
 /**

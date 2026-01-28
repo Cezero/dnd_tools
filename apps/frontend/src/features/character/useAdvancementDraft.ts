@@ -56,7 +56,16 @@ export function useAdvancementDraft(
 
     const api = useMemo(
         () => ({
-            startEditing: async (id: number) => DraftApi.startEditing(DraftType.Advancement, id, startEditingContext),
+            startEditing: async (id: number) => {
+                // Draft-only create uses `DraftApi.startEditing(DraftType.Advancement, 0, context)` which mints a negative id
+                // and already acquires the lock/session for that draft. Avoid a redundant API call when the caller later
+                // initializes this hook with the minted negative id.
+                if (id < 0) {
+                    return { success: true, draftType: DraftType.Advancement, id };
+                }
+
+                return DraftApi.startEditing(DraftType.Advancement, id, startEditingContext);
+            },
             fetchEntity: async (_id: number) => ({ state: null }),
             cancel: async (id: number) => {
                 await DraftApi.cancel(DraftType.Advancement, id);

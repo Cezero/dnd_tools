@@ -16,11 +16,11 @@ The character system provides comprehensive character creation, editing, and man
 
 ### CharacterEdit/CharacterDetail Pattern
 
-The character editing system uses a standardized state → useEffect → API + refreshState pattern:
+The character editing system uses a standardized **state → useEffect → draft update** pattern:
 
 1. **Tabs update state**: Tab components call `updateState()` to modify character state
-2. **Parent syncs automatically**: useEffect hooks in CharacterEdit/CharacterDetail watch state changes and automatically sync to backend
-3. **Tabs should NOT call backend APIs directly** for state management operations
+2. **Parent syncs automatically**: `CharacterEdit` watches state changes and applies **scalar-only** draft updates (`PUT /drafts/update-value`)
+3. **Tabs should NOT call backend APIs directly** for edit-mode draft synchronization
 
 **Benefits**:
 - Centralized sync logic: All sync happens in CharacterEdit/CharacterDetail, easier to maintain
@@ -32,29 +32,47 @@ The character editing system uses a standardized state → useEffect → API + r
 **useEffect Hooks**:
 - Class changes: Watches `state.classId` and `state.secondaryClassId`
 - Race changes: Watches `state.raceId`
-- Level changes: Watches `state.level`
 - Skill ranks: Watches `state.skillRanks` array
 - Feature choices: Watches `state.featureChoices` array
-- Spells known: Watches `state.spellsKnown` array (uses lodash/isEqual for comparison, same pattern as spellPreparations in CharacterDetail)
+- Feats: Watches `state.selectedFeats` and `state.featSubIds`
+- Spells known: Watches `state.spellsKnown`
 
 **Why refs are used**: Refs track previous values to avoid syncing on initial mount and to detect actual changes vs. initial state loading.
+
+**Important**: When the underlying state field is nullable (e.g. `raceId: number | null`), do **not** use `null` as an "uninitialized" sentinel for a previous-value ref. Use a separate boolean "hasInitialized" ref instead, otherwise the first user change from `null → value` will be swallowed.
+
+### Draft-only Character Creation (id = 0 → negative draft id)
+
+When creating a new character, the frontend uses the generic draft API to mint a **temporary negative** draft-only ID:
+
+- `POST /drafts/start-editing` with `{ draftType: DraftType.Character, id: 0 }` returns `{ id: <negative> }`
+- The UI adopts this negative `characterId` until the user saves
+- Subsequent character-resolution hook initialization with a negative id does **not** need to call `startEditing` again (the original mint call already acquired the draft lock/session)
+
+**Reload durability**:
+- The create route (`/characters/new/create`) is a launcher that redirects to `/characters/<draftId>/edit`.
+- The edit route (`/characters/:id/edit`) can accept **negative** ids and uses the same “load character → populate form” path.
+- Backend overload: `GET /characters/:id/details`
+  - `id > 0`: loads persisted character data from MySQL
+  - `id < 0`: loads draft state from Redis (requires lock ownership) and returns the same response shape (`CharacterWithAllDetailsResponse`)
 
 ### SpellSelectionTab Pattern
 
 SpellSelectionTab follows the standard state management pattern with one important architectural detail:
 
 - **Uses state management**: Calls `updateState()` with `SET_SPELLS_KNOWN` to modify `state.spellsKnown`
-- **CharacterEdit syncs**: useEffect in CharacterEdit watches `state.spellsKnown` and calls `CharacterQueryHooks.syncSpellsKnown()` automatically
+- **CharacterEdit syncs**: useEffect in `CharacterEdit` watches `state.spellsKnown` and updates the **Advancement draft** (`DraftType.Advancement`) using scalar-only paths
 - **Uses resolved character data**: Uses spell selection data from resolved character response (architecturally correct)
-- **Backend validation**: Spell level validation is handled by the backend in `syncSpellsKnown()`. The UI allows optimistic selection and the backend validates and rejects invalid spells.
+- **Backend validation**: Validation occurs when saving the draft; resolution still provides the authoritative spell selection list and constraints.
 
 ## Resolution Session Management
 
-Character resolution is managed through backend sessions that track the character's resolved state:
+Character resolution is managed through backend **projection publishing** that tracks the character’s resolved state:
 
-1. **Session Creation**: When a character is loaded for editing, a resolution session is created
-2. **Session Updates**: As the character is modified, the session is updated with new resolved data
-3. **Resolved Data**: The resolved character includes:
+1. **Draft updates**: Character/Advancement drafts are updated in Redis
+2. **Debounced resolution**: backend computes `ResolvedCharacterResult` from the effective character + effective advancements (plus draft overlays)
+3. **Publish-on-change**: the backend hashes results and publishes only when the resolved output changes
+4. **Resolved Data**: The resolved character includes:
    - Resolved feature progressions
    - Pending choices
    - Class skills and skill bonuses
@@ -76,9 +94,9 @@ All of this data is already part of the resolved character, making it the correc
 Spell operations follow the standard state management pattern:
 
 1. **Tab updates state**: SpellSelectionTab calls `updateState()` with `SET_SPELLS_KNOWN` to modify `state.spellsKnown`
-2. **CharacterEdit syncs**: useEffect in CharacterEdit watches `state.spellsKnown` and calls `CharacterQueryHooks.syncSpellsKnown()` automatically
-3. **Backend validates**: Backend validates spell level and other constraints in `syncSpellsKnown()`
-4. **Resolution refreshes**: After sync, resolution state is refreshed to get updated resolved data
+2. **CharacterEdit syncs**: useEffect in CharacterEdit watches `state.spellsKnown` and applies scalar-only updates to the `DraftType.Advancement` draft
+3. **Backend validates**: Validation happens at draft save time (Zod + domain logic)
+4. **Resolution updates**: Resolved character updates are pushed via `topicUpdate` (`topic: 'characterResolved'`)
 
 ### Spell Selection Data Source
 
@@ -94,13 +112,12 @@ Spell selection data comes from the resolved character response:
 
 ## Money/Currency System
 
-The money/currency system is frontend-only:
+The money/currency system is **persisted** and shared:
 
-- **Storage**: Backend stores money as separate fields (platinum, gold, silver, copper) in the database
-- **Frontend Utilities**: Frontend utilities (`moneyUtils.ts`) provide conversion and calculation functions for UI state management
-- **No Backend Sharing**: Money utilities are not shared with backend - they're purely for UI calculations
+- **Storage**: Backend stores money/valuables as `CharacterWealth` rows keyed by `currencyId` (@CurrencyId) with optional `value`/`description`
+- **Frontend Utilities**: Frontend utilities (`moneyUtils.ts`) are still used for UI calculations, but persistence is through `CharacterWealth`
 
-See [Money Utilities](./money-utilities.md) for detailed documentation.
+See `packages/shared/schema/src/character.ts` (`CharacterWealthSchema`) for the canonical shape.
 
 ## Spellcasting System Architecture
 
@@ -109,6 +126,7 @@ The spellcasting system uses a combination of backend APIs and frontend utilitie
 - **Backend APIs**: 
   - `syncSpellsKnown()` - Synchronizes spells known to backend (validates and updates database)
   - Spell selection data is calculated during resolution and included in resolved character response
+  - During **draft-only character creation** (negative `characterId`), spell selection is calculated from the effective draft snapshot (character + advancement drafts) rather than querying the `Character` row in MySQL.
 - **Frontend Utilities**: 
   - Display logic utilities (e.g., `hasZeroLevelSpellbookSpellsGrant()`) use resolved progressions from state
   - UI state management utilities (e.g., `getFreeSpellsUsed()`) read from state

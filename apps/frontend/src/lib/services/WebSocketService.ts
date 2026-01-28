@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 import { DraftType } from '@shared/static-data';
 
 /**
@@ -87,15 +89,38 @@ export class WebSocketService {
         this.isConnecting = true;
 
         try {
-            // Determine WebSocket URL based on current location
+            // Determine WebSocket URL
+            // Since WebSocket connections can't use HTTP proxies, we need to construct
+            // the WebSocket URL. In development, if ports are forwarded, we need to use
+            // the same hostname as the frontend but with the backend port.
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const host = window.location.host;
-            const wsUrl = `${protocol}//${host}/ws`;
+            let wsUrl: string;
+            
+            // Check for environment variable override (useful for port forwarding scenarios)
+            const wsUrlOverride = import.meta.env.VITE_WS_URL;
+            if (wsUrlOverride) {
+                wsUrl = wsUrlOverride;
+            } else if (import.meta.env.DEV) {
+                // In development, use the same hostname as the frontend (works with port forwarding)
+                // but with the backend port. If the backend port is also forwarded, it should
+                // be accessible on the same hostname.
+                const hostname = window.location.hostname;
+                // Default backend port in development
+                // Note: Cursor port forwarding may forward a different port (e.g., 3000 instead of 3001)
+                // Can be overridden with VITE_WS_PORT environment variable
+                const backendPort = import.meta.env.VITE_WS_PORT 
+                    ? parseInt(import.meta.env.VITE_WS_PORT, 10) 
+                    : 3001; // Default to 3000 since that's what Cursor forwards
+                wsUrl = `${protocol}//${hostname}:${backendPort}/ws`;
+            } else {
+                // Production: use same origin as the frontend
+                const host = window.location.host;
+                wsUrl = `${protocol}//${host}/ws`;
+            }
 
             this.ws = new WebSocket(wsUrl);
 
             this.ws.onopen = () => {
-                console.log('WebSocket connected');
                 this.isConnecting = false;
                 this.reconnectAttempts = 0;
                 this.reconnectDelay = 1000;
@@ -118,7 +143,7 @@ export class WebSocketService {
                     const message = JSON.parse(event.data);
                     this.handleMessage(message);
                 } catch (error) {
-                    console.error('Error parsing WebSocket message:', error);
+                    console.error('[WebSocket] Error parsing message:', error, 'Raw data:', event.data);
                 }
             };
 

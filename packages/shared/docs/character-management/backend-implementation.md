@@ -87,7 +87,7 @@ The central service for all character management operations, providing comprehen
 
 **deleteCharacter**: Deletes a character and all related data
 - **Parameters**: Character ID
-- **Business Logic**: Deletes character and all related data (cascades to relationships)
+- **Business Logic**: Deletes character and all related data. The service explicitly deletes dependent rows in a transaction for tables that do **not** use DB-level `onDelete: Cascade` (notably `CharacterItem`, `CharacterAbilityScore`, `CharacterAdvancement`, and their child tables).
 - **Returns**: Success message
 
 **Source File**: `src/features/character/characterService.ts`
@@ -185,9 +185,10 @@ Routes for in-game character interaction and tracking:
   - **Response**: `UpdateResponse`
   - **Controller**: `ResetAllUses`
 
-- **`POST /characters/:id/money`**: Update character money
+- **`POST /characters/:id/money`**: Update character money (coins)
   - **Parameters**: `id` (character ID)
-  - **Body**: `UpdateMoneyRequest` (platinum, gold, silver, copper)
+  - **Body**: `UpdateMoneyRequest` (platinum, gold, silver, copper) **(deprecated shape)**
+  - **Persistence**: Writes to `CharacterWealth` rows (not `Character.platinum/gold/silver/copper`)
   - **Response**: `UpdateResponse`
   - **Controller**: `UpdateMoney`
 

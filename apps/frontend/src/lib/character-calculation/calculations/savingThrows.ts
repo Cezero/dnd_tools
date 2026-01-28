@@ -57,7 +57,9 @@ export function getSavingThrow(
     const abilityMod = GetAbilityModifier(abilityTotalValue);
 
     // Check if character is gestalt
-    const isGestalt = character.isGestalt || character.advancements.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
+    const isGestalt =
+        (character.config?.isGestalt ?? false) ||
+        character.advancements.some((adv) => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
 
     // Map saveType to SavingThrowId
     let savingThrowId: SavingThrowId;

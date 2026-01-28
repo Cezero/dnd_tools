@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { ItemWithDetails } from '@shared/schema';
 
@@ -46,7 +45,7 @@ export function ItemList(): React.JSX.Element {
                 dataFetcher={dataFetcher}
                 itemDesc="item"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => ItemQueryHooks.deleteItem(id))}
+                deleteServiceFunction={(id) => ItemQueryHooks.deleteItem(Number(id))}
             />
         </div>
     );

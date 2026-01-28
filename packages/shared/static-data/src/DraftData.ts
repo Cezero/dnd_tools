@@ -55,6 +55,10 @@ export type DraftAction = typeof DraftAction[keyof typeof DraftAction];
  */
 export const DRAFT_ARRAY_SELECTOR_KEY_FIELD_MAP: Record<string, string> = {
     sourceBookInfo: 'sourceBookId',
+    // Character draft collections
+    abilityScores: 'abilityId',
+    characterLanguages: 'languageId',
+    disallowedSources: 'sourceBookId',
 };
 
 /**

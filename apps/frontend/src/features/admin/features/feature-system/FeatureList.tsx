@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { FeatureQueryHooks } from '@/components/feature-system/FeatureQueryHooks';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { Feature } from '@shared/schema';
 
 import { FEATURE_COLUMNS, routes } from './FeatureConfig';
@@ -58,7 +57,7 @@ export default function FeatureList() {
                 dataFetcher={dataFetcher}
                 itemDesc="feature"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => FeatureQueryHooks.deleteFeature(id))}
+                deleteServiceFunction={(id) => FeatureQueryHooks.deleteFeature(Number(id))}
             />
         </div>
     );

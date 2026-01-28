@@ -2,18 +2,7 @@ import type { FeatureWithRelations } from '@shared/schema';
 import { EntityAppliesToType, EntityType, FeatureSourceType, SavingThrowId, ProgressionType } from '@shared/static-data';
 
 import { getBABProgressionTypeFromFormula, getSaveProgressionTypeFromFormula } from './formulaToProgressionType';
-
-/**
- * Extracted class mechanics from feature features
- */
-export interface ClassMechanics {
-    hitDie: number | null;
-    skillPoints: number | null;
-    babProgression: ProgressionType | null;
-    fortProgression: ProgressionType | null;
-    refProgression: ProgressionType | null;
-    willProgression: ProgressionType | null;
-}
+import type { ClassMechanics } from './types';
 
 /**
  * Find entities by EntityType and EntityAppliesToType across class features.

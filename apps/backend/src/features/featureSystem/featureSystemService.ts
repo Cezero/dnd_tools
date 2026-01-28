@@ -137,6 +137,7 @@ async function updateFeatureEntities(
     }
 
     // Preserve CharacterFeatureChoice records by matching entity signatures
+    // TODO don't do this, just use the entity id
     type EntitySignature = string;
     const entitySignatureMap = new Map<EntitySignature, {
         oldEntityId: number;
@@ -265,6 +266,7 @@ async function updateFeatureEntities(
         }
 
         // Migrate CharacterFeatureChoice records by matching entity signature
+        // TODO don't do this, just use the entity id
         const newEntitySignature: EntitySignature = JSON.stringify({
             appliesTo: entityData.appliesTo,
             appliesToId: entityData.appliesToId ?? null,
@@ -402,7 +404,7 @@ export const featureSystemService: FeatureSystemService = {
             total: features.length,
             results: features.map(f => ({
                 ...f,
-                sourceType: f.sourceType as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
+                sourceType: f.sourceType as FeatureSourceType,
             })),
         };
     },

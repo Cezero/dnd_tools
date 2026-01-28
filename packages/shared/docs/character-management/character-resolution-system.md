@@ -4,7 +4,7 @@
 
 ## 📋 **Overview**
 
-The character resolution system is a centralized backend service that handles all character feature resolution logic. It processes base features (race, class), resolves user choices, handles cascading feature grants, and manages persistent editing sessions using Redis.
+The character resolution system is a centralized backend service that handles all character feature resolution logic. It processes base features (race, class), resolves user choices, handles cascading feature grants, and integrates with the draft system to publish resolved character updates.
 
 **Key Features**:
 - Centralized feature resolution logic on the backend
@@ -52,7 +52,7 @@ Character editing integrates with the shared draft system:
 - Mutations use **path-based updates** (`PUT /drafts/update-value`) implemented by `StateUpdateService`.
 - Saving uses the draft registry (`draftRegistry.ts`) to choose validation and persistence behavior per `DraftType`.
 
-Character resolution is a separate concern from draft storage: when character state changes, the backend can compute a `ResolvedCharacterResult` and publish/cache it.
+Character resolution is a separate concern from draft storage: when character or advancement draft state changes, the backend can compute a `ResolvedCharacterResult` and publish/cache it.
 
 **Current approach (projection + publish-on-change)**:
 - Draft updates (Character + Advancement) trigger a debounced resolution pass.
@@ -182,9 +182,35 @@ Character draft state and resolved results are stored in Redis (not Prisma) usin
 - TTL: Draft TTL is managed by the backend draft services
 - Initialization: Automatic on first access
 
-## 🔌 **API Endpoints**
+## 🔌 **APIs and update mechanisms**
 
-All endpoints are prefixed with `/api/characters/:characterId/resolution/`
+### **Draft-based editing (primary)**
+
+The primary editing workflow uses the generic draft API:
+
+- `POST /drafts/start-editing` (lock + create or resume draft session)
+- `PUT /drafts/update-value` (scalar-only path updates, plus `DraftAction.Add`/`Remove`)
+- `POST /drafts/save` (validate + persist)
+- `POST /drafts/cancel` (discard)
+
+Character resolution updates are pushed via WebSocket topic updates (see below), not returned inline on every draft update.
+
+### **Resolved character topic updates (primary)**
+
+Resolved output is published on change to:
+
+- Redis channel: `channel:character:resolved:{characterId}`
+- WebSocket topic: `topic: 'characterResolved'` + `topicId: characterId`
+
+See:
+- `apps/backend/src/features/characterResolution/characterResolutionProjectionService.ts`
+- `apps/backend/src/features/shared/websocket/WebSocketServer.ts`
+- `apps/frontend/src/lib/services/WebSocketService.ts`
+- `apps/frontend/src/lib/hooks/useTopicSubscription.ts`
+
+### **Legacy resolution session API (deprecated)**
+
+Some resolution session endpoints may still exist for older tooling and admin workflows. New character creation / editing flows should prefer draft-based editing + topic updates, and should not depend on per-update REST responses.
 
 ## 📋 **Validation Schemas**
 
@@ -214,7 +240,7 @@ The character resolution system uses Zod schemas for request and response valida
 
 **Related Documentation**: [Validation Schema Patterns](../application-overview/validation-schemas.md) for common validation patterns
 
-### **POST /session**
+### **POST /session** (deprecated)
 
 Initialize a new resolution session.
 
@@ -238,7 +264,7 @@ Initialize a new resolution session.
 
 **Source File**: `apps/backend/src/features/characterResolution/characterResolutionController.ts` (InitializeSession)
 
-### **GET /session**
+### **GET /session** (deprecated)
 
 Resume an existing resolution session or create a new one if none exists.
 
@@ -254,7 +280,7 @@ Resume an existing resolution session or create a new one if none exists.
 
 **Source File**: `apps/backend/src/features/characterResolution/characterResolutionController.ts` (ResumeSession)
 
-### **PATCH /session/:sessionId**
+### **PATCH /session/:sessionId** (deprecated)
 
 Apply an update to the resolution session.
 
@@ -277,7 +303,7 @@ Apply an update to the resolution session.
 
 **Source File**: `apps/backend/src/features/characterResolution/characterResolutionController.ts` (ApplyUpdate)
 
-### **GET /session/:sessionId**
+### **GET /session/:sessionId** (deprecated)
 
 Get current session state.
 
@@ -289,7 +315,7 @@ Get current session state.
 
 **Source File**: `apps/backend/src/features/characterResolution/characterResolutionController.ts` (GetCurrentState)
 
-### **POST /session/:sessionId/save**
+### **POST /session/:sessionId/save** (deprecated)
 
 Save session to character.
 
@@ -301,7 +327,7 @@ Save session to character.
 
 **Source File**: `apps/backend/src/features/characterResolution/characterResolutionController.ts` (SaveSession)
 
-### **DELETE /session/:sessionId**
+### **DELETE /session/:sessionId** (deprecated)
 
 Cancel/delete a session.
 
@@ -315,7 +341,7 @@ Cancel/delete a session.
 
 **Source File**: `apps/backend/src/features/characterResolution/characterResolutionRoutes.ts`
 
-### **Spell Operations Integration**
+### **Spell Operations Integration** (legacy notes)
 
 Spell add/remove operations (`addSpellKnown`/`removeSpellKnown`) integrate with the resolution session system to maintain consistency between spell state and resolved features.
 
@@ -448,18 +474,10 @@ The frontend uses the resolution API through:
 - Since `resumeSession` always returns a session (creates one if needed), the hook no longer needs to check for null or make a second API call to `initializeSession`
 - This simplifies the frontend code and reduces API calls from two to one when no session exists
 
-**State Synchronization Pattern**:
-- All tabs follow the standardized **state → useEffect → applyUpdate** pattern
-- Tabs update state via `updateState()` - CharacterEdit automatically syncs via useEffect hooks
-- Tabs should NOT call `resolution.applyUpdate()` directly
-- This pattern ensures consistency, maintainability, and automatic sync
-
-**Spell Operations Integration**:
-- `SpellSelectionTab` uses `resolution.refreshState()` after spell operations
-- Spell operations (`addSpellKnown`/`removeSpellKnown`) update the database directly
-- Backend automatically updates resolution session if one exists
-- Frontend refreshes resolution state separately using `refreshState()`
-- Response schemas do NOT include `resolvedCharacter` - follows standardized pattern
+**State Synchronization Pattern (draft-based)**:
+- Tabs update local state via `updateState()`
+- `CharacterEdit` syncs state changes to drafts via scalar-only `updateValue` calls
+- Resolved output is received via the `characterResolved` topic subscription
 
 **Source Files**:
 - `apps/frontend/src/services/api/CharacterResolutionApi.ts`
@@ -718,21 +736,12 @@ The `ResolutionContext` type contains all data needed for resolution:
 
 ### **Character Edit State**
 
-The `CharacterEditState` type represents the editable character state:
+The project uses **two** edit-state shapes:
 
-- `characterId` - Character identifier
-- `raceId` - Selected race
-- `classId` - Primary class
-- `secondaryClassId` - Secondary class (gestalt)
-- `isGestalt` - Whether gestalt multiclass
-- `level` - Character level
-- `abilityScores` - Array of ability scores
-- `skillRanks` - Array of skill ranks
-- `selectedFeats` - Array of selected feat IDs
-- `disallowedSources` - Array of disallowed feature sources
-- `featureChoices` - Array of made feature choices
-
-**Source File**: `apps/backend/src/features/characterResolution/types.ts`
+- `CharacterEditState` (draft): base character fields + character-core collections (ability scores, disallowed sources, wealth, equipment, attacks, languages)
+  - Source: `packages/shared/schema/src/character.ts` (`CharacterEditStateSchema`)
+- `AdvancementEditState` (draft): level-specific decisions (class(es), skills, feats, spellsKnown, featureChoices)
+  - Source: `packages/shared/schema/src/advancementDraft.ts` (`AdvancementEditStateSchema`)
 
 ### **Resolved Character Result**
 

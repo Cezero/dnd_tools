@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { DOMAIN_COLUMNS } from '@/features/domain/DomainColumns';
 import { DomainSummary } from '@shared/schema';
 
@@ -46,7 +45,7 @@ export function DomainList(): React.JSX.Element {
                 dataFetcher={dataFetcher}
                 itemDesc="domain"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => DomainQueryHooks.deleteDomain(id))}
+                deleteServiceFunction={(id) => DomainQueryHooks.deleteDomain(Number(id))}
             />
         </div>
     );

@@ -88,7 +88,9 @@ export function getCharacterBAB(
     }
 
     // Fallback: Check if character is gestalt
-    const isGestalt = character.isGestalt || character.advancements.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
+    const isGestalt =
+        (character.config?.isGestalt ?? false) ||
+        character.advancements.some((adv) => adv.secondaryClassId !== null && adv.secondaryClassId !== 0);
 
     if (isGestalt) {
         // For gestalt, backend has already filtered to include only the best BAB feature

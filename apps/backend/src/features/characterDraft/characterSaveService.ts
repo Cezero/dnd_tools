@@ -67,39 +67,83 @@ export class CharacterSaveService {
             }
 
             const createdCharacterId = await prisma.$transaction(async (tx) => {
-                const createdCharacter = await tx.userCharacter.create({
+                const createdCharacter = await tx.character.create({
                     data: {
                         userId,
                         name: validatedState.name,
                         raceId,
-                        alignmentId: null,
-                        deityId: null,
-                        age: null,
-                        height: null,
-                        weight: null,
-                        eyes: null,
-                        hair: null,
-                        gender: null,
-                        notes: null,
+                        alignmentId: validatedState.alignmentId ?? null,
+                        deityId: validatedState.deityId ?? null,
+                        age: validatedState.age ?? null,
+                        height: validatedState.height ?? null,
+                        weight: validatedState.weight ?? null,
+                        eyes: validatedState.eyes ?? null,
+                        hair: validatedState.hair ?? null,
+                        gender: validatedState.gender ?? null,
+                        notes: validatedState.notes ?? null,
                         editionId: validatedState.editionId,
-                        allowVariantClasses: validatedState.allowVariantClasses,
-                        isGestalt: validatedState.isGestalt,
-                        ignoreLevelAdjustment: validatedState.ignoreLevelAdjustment,
-                        platinum: 0,
-                        gold: 0,
-                        silver: 0,
-                        copper: 0,
+                        config: {
+                            create: {
+                                allowVariantClasses: validatedState.allowVariantClasses,
+                                isGestalt: validatedState.isGestalt,
+                                ignoreLevelAdjustment: validatedState.ignoreLevelAdjustment,
+                            },
+                        },
                     },
                     select: { id: true },
                 });
 
                 // Ability scores
                 if (validatedState.abilityScores.length > 0) {
-                    await tx.userCharacterAbilityScore.createMany({
+                    await tx.characterAbilityScore.createMany({
                         data: validatedState.abilityScores.map((a) => ({
                             characterId: createdCharacter.id,
                             abilityId: a.abilityId,
                             value: a.value,
+                        })),
+                    });
+                }
+
+                if (validatedState.wealth && validatedState.wealth.length > 0) {
+                    await tx.characterWealth.createMany({
+                        data: validatedState.wealth.map((w) => ({
+                            characterId: createdCharacter.id,
+                            currencyId: w.currencyId,
+                            quantity: w.quantity,
+                            value: w.value ?? null,
+                            description: w.description ?? null,
+                        })),
+                    });
+                }
+
+                if (validatedState.characterItems && validatedState.characterItems.length > 0) {
+                    await tx.characterItem.createMany({
+                        data: validatedState.characterItems.map((item) => ({
+                            characterId: createdCharacter.id,
+                            baseItemId: item.baseItemId,
+                            name: item.name,
+                            quantity: item.quantity,
+                            location: item.location ?? null,
+                        })),
+                    });
+                }
+
+                if (validatedState.attackDefinitions && validatedState.attackDefinitions.length > 0) {
+                    await tx.characterAttackDefinition.createMany({
+                        data: validatedState.attackDefinitions.map((attack) => ({
+                            characterId: createdCharacter.id,
+                            attackSlot: attack.attackSlot ?? null,
+                            mainHandCharacterItemId: attack.mainHandCharacterItemId ?? null,
+                            offHandCharacterItemId: attack.offHandCharacterItemId ?? null,
+                        })),
+                    });
+                }
+
+                if (validatedState.characterLanguages && validatedState.characterLanguages.length > 0) {
+                    await tx.characterLanguageMap.createMany({
+                        data: validatedState.characterLanguages.map((lang) => ({
+                            characterId: createdCharacter.id,
+                            languageId: lang.languageId,
                         })),
                     });
                 }
@@ -151,11 +195,6 @@ export class CharacterSaveService {
                     select: { id: true },
                 });
 
-                await tx.userCharacter.update({
-                    where: { id: createdCharacter.id },
-                    data: { currentAdvancementId: createdAdvancement.id },
-                });
-
                 return createdCharacter.id;
             });
 
@@ -163,7 +202,7 @@ export class CharacterSaveService {
         }
 
         await prisma.$transaction(async (tx) => {
-            const character = await tx.userCharacter.findUnique({
+            const character = await tx.character.findUnique({
                 where: { id: characterId },
                 select: { userId: true }
             });
@@ -175,20 +214,56 @@ export class CharacterSaveService {
                 throw new Error('Access denied');
             }
 
-            await tx.userCharacter.update({
+            await tx.character.update({
                 where: { id: characterId },
                 data: {
                     name: validatedState.name,
                     raceId,
                     editionId: validatedState.editionId,
-                    allowVariantClasses: validatedState.allowVariantClasses,
-                    ignoreLevelAdjustment: validatedState.ignoreLevelAdjustment,
-                    isGestalt: validatedState.isGestalt,
+                    alignmentId: validatedState.alignmentId ?? null,
+                    deityId: validatedState.deityId ?? null,
+                    age: validatedState.age ?? null,
+                    height: validatedState.height ?? null,
+                    weight: validatedState.weight ?? null,
+                    eyes: validatedState.eyes ?? null,
+                    hair: validatedState.hair ?? null,
+                    gender: validatedState.gender ?? null,
+                    notes: validatedState.notes ?? null,
                 }
             });
 
+            await tx.characterConfig.upsert({
+                where: { characterId },
+                create: {
+                    characterId,
+                    allowVariantClasses: validatedState.allowVariantClasses,
+                    isGestalt: validatedState.isGestalt,
+                    ignoreLevelAdjustment: validatedState.ignoreLevelAdjustment,
+                },
+                update: {
+                    allowVariantClasses: validatedState.allowVariantClasses,
+                    isGestalt: validatedState.isGestalt,
+                    ignoreLevelAdjustment: validatedState.ignoreLevelAdjustment,
+                },
+            });
+
+            if (validatedState.wealth) {
+                await tx.characterWealth.deleteMany({ where: { characterId } });
+                if (validatedState.wealth.length > 0) {
+                    await tx.characterWealth.createMany({
+                        data: validatedState.wealth.map((w) => ({
+                            characterId,
+                            currencyId: w.currencyId,
+                            quantity: w.quantity,
+                            value: w.value ?? null,
+                            description: w.description ?? null,
+                        })),
+                    });
+                }
+            }
+
             // Ability scores: upsert to match state
-            const existingScores = await tx.userCharacterAbilityScore.findMany({
+            const existingScores = await tx.characterAbilityScore.findMany({
                 where: { characterId }
             });
             const existingMap = new Map(existingScores.map((score) => [score.abilityId, score]));
@@ -198,13 +273,13 @@ export class CharacterSaveService {
                 const existing = existingMap.get(abilityScore.abilityId);
                 if (existing) {
                     if (existing.value !== abilityScore.value) {
-                        await tx.userCharacterAbilityScore.update({
+                        await tx.characterAbilityScore.update({
                             where: { id: existing.id },
                             data: { value: abilityScore.value },
                         });
                     }
                 } else {
-                    await tx.userCharacterAbilityScore.create({
+                    await tx.characterAbilityScore.create({
                         data: {
                             characterId,
                             abilityId: abilityScore.abilityId,
@@ -216,7 +291,7 @@ export class CharacterSaveService {
 
             const toDelete = existingScores.filter((score) => !requestedAbilityIds.has(score.abilityId));
             if (toDelete.length > 0) {
-                await tx.userCharacterAbilityScore.deleteMany({
+                await tx.characterAbilityScore.deleteMany({
                     where: { id: { in: toDelete.map((score) => score.id) } }
                 });
             }
@@ -233,6 +308,47 @@ export class CharacterSaveService {
                         sourceBookId
                     }))
                 });
+            }
+
+            if (validatedState.characterItems) {
+                await tx.characterItem.deleteMany({ where: { characterId } });
+                if (validatedState.characterItems.length > 0) {
+                    await tx.characterItem.createMany({
+                        data: validatedState.characterItems.map((item) => ({
+                            characterId,
+                            baseItemId: item.baseItemId,
+                            name: item.name,
+                            quantity: item.quantity,
+                            location: item.location ?? null,
+                        })),
+                    });
+                }
+            }
+
+            if (validatedState.attackDefinitions) {
+                await tx.characterAttackDefinition.deleteMany({ where: { characterId } });
+                if (validatedState.attackDefinitions.length > 0) {
+                    await tx.characterAttackDefinition.createMany({
+                        data: validatedState.attackDefinitions.map((attack) => ({
+                            characterId,
+                            attackSlot: attack.attackSlot ?? null,
+                            mainHandCharacterItemId: attack.mainHandCharacterItemId ?? null,
+                            offHandCharacterItemId: attack.offHandCharacterItemId ?? null,
+                        })),
+                    });
+                }
+            }
+
+            if (validatedState.characterLanguages) {
+                await tx.characterLanguageMap.deleteMany({ where: { characterId } });
+                if (validatedState.characterLanguages.length > 0) {
+                    await tx.characterLanguageMap.createMany({
+                        data: validatedState.characterLanguages.map((lang) => ({
+                            characterId,
+                            languageId: lang.languageId,
+                        })),
+                    });
+                }
             }
         });
 

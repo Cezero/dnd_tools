@@ -104,13 +104,7 @@ export class AdvancementSaveService {
                     });
                 }
 
-                // Ensure current pointer is set when updating level 1 characters created before the pointer existed.
-                await tx.userCharacter.update({
-                    where: { id: parsed.characterId },
-                    data: {
-                        currentAdvancementId: advancementDraftId,
-                    },
-                });
+                // Note: currentAdvancementId was removed from the schema; current advancement is computed.
             });
 
             return advancementDraftId;
@@ -149,11 +143,6 @@ export class AdvancementSaveService {
                             : undefined,
                 },
                 select: { id: true },
-            });
-
-            await tx.userCharacter.update({
-                where: { id: parsed.characterId },
-                data: { currentAdvancementId: created.id },
             });
 
             return created.id;

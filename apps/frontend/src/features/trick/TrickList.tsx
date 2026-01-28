@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { TRICK_COLUMNS } from '@/features/trick/TrickColumns';
 import { TrickQueryHooks } from '@/services/query/TrickQueryHooks';
 import { Trick } from '@shared/schema';
@@ -46,7 +45,7 @@ export function TrickList(): React.JSX.Element {
                 dataFetcher={dataFetcher}
                 itemDesc="trick"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => TrickQueryHooks.deleteTrick(id))}
+                deleteServiceFunction={(id) => TrickQueryHooks.deleteTrick(Number(id))}
             />
         </div>
     );

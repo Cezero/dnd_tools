@@ -15,13 +15,14 @@ import { featService } from '../feat/featService';
 import { raceService } from '../race/raceService';
 import { DraftStatePubSub } from '../shared/draftState/DraftStatePubSub';
 import { DraftStateService } from '../shared/draftState/DraftStateService';
+import { UserSessionService } from '../shared/session/UserSessionService';
 
 /* TODO this should be in types.ts
 */
 type PendingResolutionInput = {
     characterDraftState?: CharacterEditState;
     advancementDraftState?: AdvancementEditState;
-    targetLevel?: number;
+    userId?: number;
     timer?: ReturnType<typeof setTimeout>;
 };
 
@@ -123,19 +124,69 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
         advancements: selectEffectiveAdvancements(character.advancements),
     };
 
-    const raceDetails = characterState.raceId ? await raceService.getRaceById({ id: characterState.raceId }) : null;
-    const classDetails = characterState.classId ? await classService.getClassById({ id: characterState.classId }) : null;
-    const secondaryClassDetails = characterState.secondaryClassId ? await classService.getClassById({ id: characterState.secondaryClassId }) : null;
+    const resolvedRaceId = characterState.raceId ?? effectiveCharacter.raceId;
+    const resolvedCharacter: CharacterWithAllDetailsResponse = {
+        ...effectiveCharacter,
+        name: characterState.name,
+        raceId: resolvedRaceId,
+        editionId: characterState.editionId,
+        alignmentId: characterState.alignmentId ?? null,
+        deityId: characterState.deityId ?? null,
+        age: characterState.age ?? null,
+        height: characterState.height ?? null,
+        weight: characterState.weight ?? null,
+        eyes: characterState.eyes ?? null,
+        hair: characterState.hair ?? null,
+        gender: characterState.gender ?? null,
+        notes: characterState.notes ?? null,
+        config: {
+            characterId,
+            allowVariantClasses: characterState.allowVariantClasses,
+            isGestalt: characterState.isGestalt,
+            ignoreLevelAdjustment: characterState.ignoreLevelAdjustment,
+        },
+        abilityScores: characterState.abilityScores.map((a) => ({
+            id: 0,
+            characterId,
+            abilityId: a.abilityId,
+            value: a.value,
+        })),
+        disallowedSources: characterState.disallowedSources.map((ds) => ({
+            id: 0,
+            characterId,
+            sourceBookId: ds.sourceBookId,
+        })),
+        wealth: characterState.wealth ?? effectiveCharacter.wealth,
+        characterItems: characterState.characterItems ?? effectiveCharacter.characterItems,
+        attackDefinitions: characterState.attackDefinitions ?? effectiveCharacter.attackDefinitions,
+        characterLanguages:
+            characterState.characterLanguages?.map((l) => ({ characterId, languageId: l.languageId })) ??
+            effectiveCharacter.characterLanguages,
+    };
+
+    const targetLevel =
+        (resolvedCharacter.advancements?.length ?? 0) > 0
+            ? Math.max(...(resolvedCharacter.advancements ?? []).map((a) => a.level))
+            : 1;
+
+    const advancementForLevel = resolvedCharacter.advancements?.find((adv) => adv.level === targetLevel);
+
+    const raceDetails = resolvedRaceId ? await raceService.getRaceById({ id: resolvedRaceId }) : null;
+    const classDetails = advancementForLevel?.classId ? await classService.getClassById({ id: advancementForLevel.classId }) : null;
+    const secondaryClassDetails =
+        advancementForLevel?.secondaryClassId ? await classService.getClassById({ id: advancementForLevel.secondaryClassId }) : null;
     const userChoices: Record<number, number[]> = {};
 
     const context = {
-        character: effectiveCharacter,
-        targetLevel: characterState.level,
-        advancement: effectiveCharacter.advancements?.find(adv => adv.level === characterState.level),
+        character: resolvedCharacter,
+        targetLevel,
+        advancement: advancementForLevel,
         raceDetails,
         classDetails,
         secondaryClassDetails,
-        isGestalt: characterState.isGestalt,
+        isGestalt:
+            (resolvedCharacter.config?.isGestalt ?? false) ||
+            !!advancementForLevel?.secondaryClassId,
         userChoices: Object.keys(userChoices).length > 0 ? userChoices : undefined,
         includePendingChoices: true,
         resolveCascading: true,
@@ -143,8 +194,8 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
     };
 
     const resolutionResult = await CharacterResolutionService.resolveCharacterFeatures(
-        effectiveCharacter,
-        characterState.level,
+        resolvedCharacter,
+        targetLevel,
         context
     );
 
@@ -166,7 +217,7 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
 
     const availableFeatsCount = ResolvedFeatureService.getAvailableFeatsCount(
         resolutionResult.resolvedProgressions,
-        characterState.level,
+        targetLevel,
         classLevels
     );
     const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(
@@ -175,7 +226,7 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
 
     const allFeatsResponse = await featService.getAllFeats();
     const qualifiedFeats = await AvailableFeatService.getQualifiedFeats(
-        effectiveCharacter,
+        resolvedCharacter,
         resolutionResult.resolvedProgressions,
         classDetails,
         raceDetails,
@@ -184,7 +235,7 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
 
     const spellSelection = await calculateSpellSelection(
         characterId,
-        effectiveCharacter,
+        resolvedCharacter,
         resolutionResult.resolvedProgressions
     );
 
@@ -193,13 +244,16 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
 
     let resolvedFormulaValues = ResolvedFeatureService.resolveFormulaValues(
         enrichedProgressions,
-        effectiveCharacter,
-        characterState.level
+        resolvedCharacter,
+        targetLevel
     );
 
-    if (characterState.isGestalt || effectiveCharacter.advancements?.some(adv => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)) {
+    if (
+        (resolvedCharacter.config?.isGestalt ?? false) ||
+        resolvedCharacter.advancements?.some((adv) => adv.secondaryClassId !== null && adv.secondaryClassId !== 0)
+    ) {
         resolvedFormulaValues = GestaltMechanicsResolver.resolveGestaltMechanics(
-            effectiveCharacter,
+            resolvedCharacter,
             enrichedProgressions,
             resolvedFormulaValues
         );
@@ -238,7 +292,7 @@ async function computeFromAdvancementDraft(characterId: number, advancementDraft
             : null;
 
     const isGestalt =
-        effectiveCharacter.isGestalt ||
+        (effectiveCharacter.config?.isGestalt ?? false) ||
         (advancementDraftState.secondaryClassId !== null && advancementDraftState.secondaryClassId !== 0);
 
     const userChoices: Record<number, number[]> = {};
@@ -346,25 +400,25 @@ async function computeFromCreateDraft(
     const character = {
         id: characterDraftState.characterId,
         userId: 0,
-        name: '',
+        name: characterDraftState.name,
         raceId: characterDraftState.raceId ?? 0,
-        alignmentId: null,
-        deityId: null,
-        age: null,
-        height: null,
-        weight: null,
-        eyes: null,
-        hair: null,
-        gender: null,
-        notes: null,
+        alignmentId: characterDraftState.alignmentId ?? null,
+        deityId: characterDraftState.deityId ?? null,
+        age: characterDraftState.age ?? null,
+        height: characterDraftState.height ?? null,
+        weight: characterDraftState.weight ?? null,
+        eyes: characterDraftState.eyes ?? null,
+        hair: characterDraftState.hair ?? null,
+        gender: characterDraftState.gender ?? null,
+        notes: characterDraftState.notes ?? null,
         editionId: characterDraftState.editionId,
-        allowVariantClasses: characterDraftState.allowVariantClasses,
-        isGestalt: characterDraftState.isGestalt,
-        ignoreLevelAdjustment: characterDraftState.ignoreLevelAdjustment,
-        platinum: 0,
-        gold: 0,
-        silver: 0,
-        copper: 0,
+        config: {
+            characterId: characterDraftState.characterId,
+            allowVariantClasses: characterDraftState.allowVariantClasses,
+            isGestalt: characterDraftState.isGestalt,
+            ignoreLevelAdjustment: characterDraftState.ignoreLevelAdjustment,
+        },
+        wealth: characterDraftState.wealth ?? [],
         xp: 0,
         advancements: [
             {
@@ -405,19 +459,22 @@ async function computeFromCreateDraft(
         ],
         abilityScores: characterDraftState.abilityScores.map((a) => ({
             id: 0,
-            characterId: 0,
+            characterId: characterDraftState.characterId,
             abilityId: a.abilityId,
             value: a.value,
         })),
         preparedSpells: [],
         disallowedSources: characterDraftState.disallowedSources.map((d) => ({
             id: 0,
-            characterId: 0,
+            characterId: characterDraftState.characterId,
             sourceBookId: d.sourceBookId,
         })),
-        characterItems: [],
-        attackDefinitions: [],
-        characterLanguages: [],
+        characterItems: characterDraftState.characterItems ?? [],
+        attackDefinitions: characterDraftState.attackDefinitions ?? [],
+        characterLanguages: characterDraftState.characterLanguages?.map((l) => ({
+            characterId: characterDraftState.characterId,
+            languageId: l.languageId,
+        })) ?? [],
     } as unknown as CharacterWithAllDetailsResponse;
 
     const raceDetails = characterDraftState.raceId ? await raceService.getRaceById({ id: characterDraftState.raceId }) : null;
@@ -535,11 +592,19 @@ async function computeFromCreateDraft(
  *
  * Redis pub/sub channel:
  * - `channel:character:resolved:{characterId}`
+ * 
+ * **TODO: Resolution on Session Restore**:
+ * - When a user's session is restored (page refresh), drafts are loaded from Redis but
+ *   resolution is not automatically triggered. This means resolved character data won't be
+ *   available until the user makes a change that triggers onStateUpdate.
+ * - Consider triggering resolution when drafts are initially loaded from Redis during
+ *   session restore, or when GET /characters/:id/details is called for a draft-only character.
  */
 export class CharacterResolutionProjectionService {
     private pubSub = new DraftStatePubSub();
     private resolvedResultsService = new CharacterResolvedResultsService();
     private draftStateService = new DraftStateService();
+    private userSessionService = new UserSessionService();
     private pendingByCharacter = new Map<number, PendingResolutionInput>();
     private lastHashByCharacter = new Map<number, string>();
     private isInitialized = false;
@@ -552,24 +617,48 @@ export class CharacterResolutionProjectionService {
         this.isInitialized = true;
     }
 
-    scheduleFromCharacterDraft(characterId: number, characterDraftState: CharacterEditState): void {
+    scheduleFromCharacterDraft(characterId: number, characterDraftState: CharacterEditState, userId?: number): void {
         const pending = this.pendingByCharacter.get(characterId) ?? {};
         if (pending.timer) {
             clearTimeout(pending.timer);
         }
 
         pending.characterDraftState = characterDraftState;
-        pending.targetLevel = characterDraftState.level;
-        pending.timer = setTimeout(() => {
-            this.run(characterId).catch((error) => {
-                console.error(`Error projecting resolved character for ${characterId}:`, error);
-            });
-        }, RESOLUTION_DEBOUNCE_MS);
+        if (userId !== undefined) {
+            pending.userId = userId;
+        }
+        
+        // For draft-only characters, ensure we have both states before scheduling resolution
+        const scheduleResolution = () => {
+            pending.timer = setTimeout(() => {
+                this.run(characterId).catch((error) => {
+                    console.error(`Error projecting resolved character for ${characterId}:`, error);
+                });
+            }, RESOLUTION_DEBOUNCE_MS);
+        };
+        
+        if (characterId < 1 && !pending.advancementDraftState && pending.userId) {
+            // Try to load the linked advancement draft before scheduling
+            this.loadLinkedAdvancementDraft(characterId, pending.userId)
+                .then((advancementState) => {
+                    if (advancementState) {
+                        pending.advancementDraftState = advancementState;
+                    }
+                    scheduleResolution();
+                })
+                .catch((error) => {
+                    console.warn(`Failed to load linked advancement draft for character ${characterId}:`, error);
+                    // Schedule anyway - run() will try to load it again
+                    scheduleResolution();
+                });
+        } else {
+            scheduleResolution();
+        }
 
         this.pendingByCharacter.set(characterId, pending);
     }
 
-    scheduleFromAdvancementDraft(advancementDraftState: AdvancementEditState): void {
+    scheduleFromAdvancementDraft(advancementDraftState: AdvancementEditState, userId?: number): void {
         const characterId = advancementDraftState.characterId;
         const pending = this.pendingByCharacter.get(characterId) ?? {};
         if (pending.timer) {
@@ -577,14 +666,84 @@ export class CharacterResolutionProjectionService {
         }
 
         pending.advancementDraftState = advancementDraftState;
-        pending.targetLevel = advancementDraftState.level;
-        pending.timer = setTimeout(() => {
-            this.run(characterId).catch((error) => {
-                console.error(`Error projecting resolved character for ${characterId}:`, error);
-            });
-        }, RESOLUTION_DEBOUNCE_MS);
+        if (userId !== undefined) {
+            pending.userId = userId;
+        }
+        
+        // For draft-only characters, ensure we have both states before scheduling resolution
+        const scheduleResolution = () => {
+            pending.timer = setTimeout(() => {
+                this.run(characterId).catch((error) => {
+                    console.error(`Error projecting resolved character for ${characterId}:`, error);
+                });
+            }, RESOLUTION_DEBOUNCE_MS);
+        };
+        
+        if (characterId < 1 && !pending.characterDraftState) {
+            // Try to load the linked character draft before scheduling
+            this.draftStateService.getState<CharacterEditState>(DraftType.Character, characterId)
+                .then((characterState) => {
+                    if (characterState) {
+                        pending.characterDraftState = characterState;
+                    }
+                    scheduleResolution();
+                })
+                .catch((error) => {
+                    console.warn(`Failed to load linked character draft for character ${characterId}:`, error);
+                    // Schedule anyway - run() will try to load it again
+                    scheduleResolution();
+                });
+        } else {
+            scheduleResolution();
+        }
 
         this.pendingByCharacter.set(characterId, pending);
+    }
+    
+    /**
+     * Attempts to find and load the advancement draft linked to a draft-only character.
+     * 
+     * Uses the user's session to find advancement draft IDs, then loads their states from Redis
+     * and returns the one that matches the characterId.
+     * 
+     * @param characterId - The character draft ID (negative for draft-only)
+     * @param userId - The user ID who owns the drafts
+     * @returns The advancement draft state, or null if not found
+     */
+    private async loadLinkedAdvancementDraft(characterId: number, userId: number): Promise<AdvancementEditState | null> {
+        try {
+            // Get the user's session to find advancement drafts they're editing
+            const session = await this.userSessionService.getUserSession(userId);
+            if (!session) {
+                return null;
+            }
+
+            // Find all advancement drafts in the user's editing session (draft-only have negative IDs)
+            const advancementDraftRefs = session.editing.filter(
+                (ref) => ref.draftType === DraftType.Advancement && ref.id < 0
+            );
+
+            if (advancementDraftRefs.length === 0) {
+                return null;
+            }
+
+            // Try each advancement draft to find the one that matches this characterId
+            for (const advancementDraftRef of advancementDraftRefs) {
+                const advancementState = await this.draftStateService.getState<AdvancementEditState>(
+                    DraftType.Advancement,
+                    advancementDraftRef.id
+                );
+
+                if (advancementState && advancementState.characterId === characterId) {
+                    return advancementState;
+                }
+            }
+
+            return null;
+        } catch (error) {
+            console.error(`Error loading linked advancement draft for character ${characterId}:`, error);
+            return null;
+        }
     }
 
     private async run(characterId: number): Promise<void> {
@@ -605,11 +764,36 @@ export class CharacterResolutionProjectionService {
                 (await this.draftStateService.getState<CharacterEditState>(DraftType.Character, characterId)) ??
                 undefined;
 
-            if (!effectiveCharacterState || !advancementDraftState) {
+            // For draft-only characters, we need both states. Try to load the missing one from Redis.
+            let effectiveAdvancementDraftState = advancementDraftState;
+            if (!effectiveAdvancementDraftState && pending.userId) {
+                const loaded = await this.loadLinkedAdvancementDraft(characterId, pending.userId);
+                if (loaded) {
+                    effectiveAdvancementDraftState = loaded;
+                }
+            }
+
+            if (!effectiveCharacterState || !effectiveAdvancementDraftState) {
+                // If we still don't have both states, we can't resolve yet.
+                // This can happen if one draft hasn't been created yet or if the link can't be found.
+                console.log(
+                    `[Resolution] Cannot resolve draft-only character ${characterId}: ` +
+                    `characterState=${!!effectiveCharacterState}, advancementState=${!!effectiveAdvancementDraftState}, userId=${pending.userId}`
+                );
                 return;
             }
 
-            resolved = await computeFromCreateDraft(effectiveCharacterState, advancementDraftState);
+            // For draft-only characters, only resolve if a class has been selected
+            // (classId > 0). If classId is 0, the class hasn't been selected yet.
+            if (effectiveAdvancementDraftState.classId <= 0) {
+                console.log(
+                    `[Resolution] Skipping resolution for draft-only character ${characterId}: ` +
+                    `classId=${effectiveAdvancementDraftState.classId} (class not selected yet)`
+                );
+                return;
+            }
+
+            resolved = await computeFromCreateDraft(effectiveCharacterState, effectiveAdvancementDraftState);
         } else if (characterDraftState) {
             resolved = await computeFromCharacterDraft(characterId, characterDraftState);
         } else if (advancementDraftState) {

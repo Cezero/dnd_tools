@@ -4,13 +4,30 @@
 
 import type { Race, RaceSummary, DnDClass, CharacterAbilityScoreResponse, CharacterFeatureChoice, CharacterSpellSelectionEntry } from '@shared/schema';
 
+import type {
+    AbilityTabState,
+    AbilityTabUpdates,
+    AttackDefinition,
+    ChoiceTabState,
+    ClassTabState,
+    ClassTabUpdates,
+    DescriptionTabState,
+    DescriptionTabUpdates,
+    EquipmentTabState,
+    EquipmentTabUpdates,
+    FeatTabState,
+    FeatTabUpdates,
+    SkillTabState,
+    SkillTabUpdates,
+} from '../types';
+
 // ============================================================================
 // Abilities Race Tab Props
 // ============================================================================
 
 export interface AbilitiesRaceTabProps {
-    abilityState: import('../types').AbilityTabState;
-    onUpdate: (data: import('../types').AbilityTabUpdates) => void;
+    abilityState: AbilityTabState;
+    onUpdate: (data: AbilityTabUpdates) => void;
     races?: RaceSummary[];
     selectedRaceDetails?: Race | null;
 }
@@ -20,8 +37,8 @@ export interface AbilitiesRaceTabProps {
 // ============================================================================
 
 export interface ClassTabProps {
-    classState: import('../types').ClassTabState;
-    onUpdate: (updates: import('../types').ClassTabUpdates) => void;
+    classState: ClassTabState;
+    onUpdate: (updates: ClassTabUpdates) => void;
     selectedClassDetails?: DnDClass | null;
     onClassDetailsChange: (classDetails: DnDClass | null) => void;
     onSecondaryClassDetailsChange?: (classDetails: DnDClass | null) => void;
@@ -32,10 +49,10 @@ export interface ClassTabProps {
 // ============================================================================
 
 export interface SkillsTabProps {
-    skillState: import('../types').SkillTabState;
+    skillState: SkillTabState;
     abilityScores: CharacterAbilityScoreResponse[];
     level: number;
-    onUpdate: (updates: import('../types').SkillTabUpdates) => void;
+    onUpdate: (updates: SkillTabUpdates) => void;
     selectedRaceDetails?: Race | null;
     selectedClassDetails?: DnDClass | null;
 }
@@ -45,7 +62,7 @@ export interface SkillsTabProps {
 // ============================================================================
 
 export interface ChoicesTabProps {
-    choiceState: import('../types').ChoiceTabState;
+    choiceState: ChoiceTabState;
     onUpdate: (updates: { featureChoices: CharacterFeatureChoice[] }) => void;
     selectedRaceDetails?: Race | null;
     selectedClassDetails?: DnDClass | null;
@@ -58,8 +75,8 @@ export interface ChoicesTabProps {
 // ============================================================================
 
 export interface FeatsTabProps {
-    featState: import('../types').FeatTabState;
-    onUpdate: (updates: import('../types').FeatTabUpdates) => void;
+    featState: FeatTabState;
+    onUpdate: (updates: FeatTabUpdates) => void;
     races?: RaceSummary[];
     selectedRaceDetails?: Race | null;
     selectedClassDetails?: DnDClass | null;
@@ -70,8 +87,8 @@ export interface FeatsTabProps {
 // ============================================================================
 
 export interface DescriptionTabProps {
-    descriptionState: import('../types').DescriptionTabState;
-    onUpdate: (updates: import('../types').DescriptionTabUpdates) => void;
+    descriptionState: DescriptionTabState;
+    onUpdate: (updates: DescriptionTabUpdates) => void;
     races?: RaceSummary[];
     selectedRaceDetails?: Race | null;
 }
@@ -81,8 +98,8 @@ export interface DescriptionTabProps {
 // ============================================================================
 
 export interface EquipmentTabProps {
-    equipmentState: import('../types').EquipmentTabState;
-    onUpdate: (updates: import('../types').EquipmentTabUpdates) => void;
+    equipmentState: EquipmentTabState;
+    onUpdate: (updates: EquipmentTabUpdates) => void;
 }
 
 // ============================================================================
@@ -90,8 +107,8 @@ export interface EquipmentTabProps {
 // ============================================================================
 
 export interface ConfigurationTabProps {
-    classState: import('../types').ClassTabState;
-    onUpdate: (updates: import('../types').ClassTabUpdates) => void;
+    classState: ClassTabState;
+    onUpdate: (updates: ClassTabUpdates) => void;
 }
 
 // ============================================================================
@@ -140,7 +157,7 @@ export interface HeightWeightEntry {
  * Calculated attack display type for combat tab
  */
 export interface CalculatedAttackDisplay {
-    attackDefinition: import('../types').AttackDefinition;
+    attackDefinition: AttackDefinition;
     weaponName: string;
     totalAttackBonus: number | string; // Can be number or "X / Y nonlethal" string
     damage: string;

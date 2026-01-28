@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type {
+    AdvancementEditState,
+    CharacterEditState,
     CharacterIdParamRequest,
     Character,
     CreateCharacterRequest,
@@ -10,7 +12,21 @@ import type {
     CreateResponse,
     UpdateResponse,
 } from '@shared/schema';
-import { EditionId, SpellSlotType } from '@shared/static-data';
+import { AlignmentId, CurrencyId, DraftType, EditionId, SpellSlotType } from '@shared/static-data';
+import type { AlignmentId as AlignmentIdType } from '@shared/static-data'; // TODO don't import with a type alias
+import type { CurrencyId as CurrencyIdType } from '@shared/static-data'; // TODO don't import with a type alias
+
+import { characterResolutionProjectionService } from '../../characterResolution/characterResolutionProjectionService';
+import { DraftLockService } from '../../shared/draftState/DraftLockService';
+import { DraftStateService } from '../../shared/draftState/DraftStateService';
+import { UserSessionService } from '../../shared/session/UserSessionService';
+
+
+/**
+ * TODO
+ * Why does this file exist at all? in fact, why is there a "services" folder under character?
+ * that isn't how other features work.
+ */
 
 /**
  * Helper function to calculate class/level string from advancements.
@@ -49,6 +65,347 @@ function calculateClassLevelString(advancements: Array<{
     return parts.join('/');
 }
 
+function coerceAlignmentId(value: number | null): AlignmentIdType | null {
+    if (value === null) {
+        return null;
+    }
+    return (Object.values(AlignmentId) as number[]).includes(value) ? (value as AlignmentIdType) : null;
+}
+
+function coerceCurrencyId(value: number): CurrencyIdType {
+    return (Object.values(CurrencyId) as number[]).includes(value) ? (value as CurrencyIdType) : CurrencyId.Gold;
+}
+
+const draftLockService = new DraftLockService();
+const draftStateService = new DraftStateService();
+const userSessionService = new UserSessionService();
+
+interface DraftCharacterState {
+    characterId: number;
+    name?: unknown;
+    raceId?: unknown;
+    alignmentId?: unknown;
+    deityId?: unknown;
+    age?: unknown;
+    height?: unknown;
+    weight?: unknown;
+    eyes?: unknown;
+    hair?: unknown;
+    gender?: unknown;
+    notes?: unknown;
+    editionId?: unknown;
+    allowVariantClasses?: unknown;
+    isGestalt?: unknown;
+    ignoreLevelAdjustment?: unknown;
+    abilityScores?: unknown;
+    wealth?: unknown;
+    disallowedSources?: unknown;
+    characterLanguages?: unknown;
+    characterItems?: unknown;
+    attackDefinitions?: unknown;
+}
+
+interface DraftAdvancementState {
+    advancementId: number;
+    characterId: number;
+    level?: unknown;
+    version?: unknown;
+    classId?: unknown;
+    secondaryClassId?: unknown;
+    hitPoints?: unknown;
+    abilityId?: unknown;
+    notes?: unknown;
+    skills?: unknown;
+    feats?: unknown;
+    spellsKnown?: unknown;
+    featureChoices?: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+function asInt(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isInteger(value)) {
+        return value;
+    }
+    return null;
+}
+
+function asBool(value: unknown): boolean | null {
+    return typeof value === 'boolean' ? value : null;
+}
+
+function asStringOrNull(value: unknown): string | null {
+    return typeof value === 'string' ? value : null;
+}
+
+function asIntOrNull(value: unknown): number | null {
+    return value === null ? null : asInt(value);
+}
+
+function asArray(value: unknown): unknown[] {
+    return Array.isArray(value) ? value : [];
+}
+
+async function getDraftCharacterWithAllDetails(args: {
+    draftCharacterId: number;
+    userId: number;
+}): Promise<CharacterWithAllDetailsResponse | null> {
+    const { draftCharacterId, userId } = args;
+
+    // Enforce lock ownership for draft-only loads.
+    // Handle stale locks: if lock exists but session doesn't (or session doesn't have this draft in editing), clear it
+    const lockedBy = await draftLockService.checkLock(DraftType.Character, draftCharacterId);
+    if (lockedBy !== null && lockedBy !== userId) {
+        // Lock exists but is held by a different user - check if it's stale
+        const lockOwnerSession = await userSessionService.getUserSession(lockedBy);
+        const isStaleLock = !lockOwnerSession || 
+            !lockOwnerSession.editing.some(ref => ref.draftType === DraftType.Character && ref.id === draftCharacterId);
+        
+        if (isStaleLock) {
+            // Stale lock: session expired or doesn't reference this draft - clear it
+            await draftLockService.forceReleaseLock(DraftType.Character, draftCharacterId, userId);
+        } else {
+            // Lock is valid and held by another user
+            throw new Error(`Draft type ${DraftType.Character} is locked by another user`);
+        }
+    }
+
+    const rawCharacterState = await draftStateService.getState<unknown>(DraftType.Character, draftCharacterId);
+    if (!rawCharacterState || !isRecord(rawCharacterState)) {
+        return null;
+    }
+
+    const characterState = rawCharacterState as unknown as DraftCharacterState;
+
+    // Find the advancement draft in the user's editing session that belongs to this draft character.
+    const session = await userSessionService.getUserSession(userId);
+    const editing = session?.editing ?? [];
+
+    const advancementCandidates = editing.filter((ref) => ref.draftType === DraftType.Advancement && typeof ref.id === 'number');
+
+    let bestAdvancement: DraftAdvancementState | null = null;
+    for (const ref of advancementCandidates) {
+        const advId = ref.id;
+        const rawAdvState = await draftStateService.getState<unknown>(DraftType.Advancement, advId);
+        if (!rawAdvState || !isRecord(rawAdvState)) {
+            continue;
+        }
+        const adv = rawAdvState as unknown as DraftAdvancementState;
+        if (asInt((adv as unknown as { characterId?: unknown }).characterId) !== draftCharacterId) {
+            continue;
+        }
+
+        if (!bestAdvancement) {
+            bestAdvancement = adv;
+            continue;
+        }
+
+        const bestLevel = asInt((bestAdvancement as unknown as { level?: unknown }).level) ?? 0;
+        const nextLevel = asInt((adv as unknown as { level?: unknown }).level) ?? 0;
+        if (nextLevel !== bestLevel) {
+            if (nextLevel > bestLevel) {
+                bestAdvancement = adv;
+            }
+            continue;
+        }
+
+        const bestVersion = asInt((bestAdvancement as unknown as { version?: unknown }).version) ?? 0;
+        const nextVersion = asInt((adv as unknown as { version?: unknown }).version) ?? 0;
+        if (nextVersion >= bestVersion) {
+            bestAdvancement = adv;
+        }
+    }
+
+    const draftName = typeof characterState.name === 'string' ? characterState.name : '';
+    const raceId = asIntOrNull(characterState.raceId);
+
+    const editionId = asInt(characterState.editionId) ?? EditionId.DND_3_5E;
+    const allowVariantClasses = asBool(characterState.allowVariantClasses) ?? false;
+    const isGestalt = asBool(characterState.isGestalt) ?? false;
+    const ignoreLevelAdjustment = asBool(characterState.ignoreLevelAdjustment) ?? false;
+
+    const abilityScores = asArray(characterState.abilityScores)
+        .map((row): { id: number; characterId: number; abilityId: number; value: number } | null => {
+            if (!isRecord(row)) {
+                return null;
+            }
+            const abilityId = asInt(row.abilityId);
+            const value = asInt(row.value);
+            if (abilityId === null || value === null) {
+                return null;
+            }
+            return {
+                id: -Math.abs(abilityId),
+                characterId: draftCharacterId,
+                abilityId,
+                value,
+            };
+        })
+        .filter((x): x is { id: number; characterId: number; abilityId: number; value: number } => x !== null);
+
+    const wealth = asArray(characterState.wealth).filter(isRecord).map((w) => ({
+        id: asInt(w.id) ?? 0,
+        characterId: draftCharacterId,
+        currencyId: coerceCurrencyId(asInt(w.currencyId) ?? CurrencyId.Gold),
+        quantity: asInt(w.quantity) ?? 0,
+        value: asIntOrNull(w.value),
+        description: asStringOrNull(w.description),
+    }));
+
+    const disallowedSources = asArray(characterState.disallowedSources)
+        .map((row): { id: number; characterId: number; sourceBookId: number } | null => {
+            if (!isRecord(row)) {
+                return null;
+            }
+            const sourceBookId = asInt(row.sourceBookId);
+            if (sourceBookId === null) {
+                return null;
+            }
+            return {
+                id: -Math.abs(sourceBookId),
+                characterId: draftCharacterId,
+                sourceBookId,
+            };
+        })
+        .filter((x): x is { id: number; characterId: number; sourceBookId: number } => x !== null);
+
+    const characterLanguages = asArray(characterState.characterLanguages)
+        .map((row): { characterId: number; languageId: number } | null => {
+            if (!isRecord(row)) {
+                return null;
+            }
+            const languageId = asInt(row.languageId);
+            if (languageId === null) {
+                return null;
+            }
+            return { characterId: draftCharacterId, languageId };
+        })
+        .filter((x): x is { characterId: number; languageId: number } => x !== null);
+
+    const characterItems = asArray(characterState.characterItems).filter(isRecord).map((item) => ({
+        id: asInt(item.id) ?? 0,
+        name: typeof item.name === 'string' ? item.name : '',
+        quantity: asIntOrNull(item.quantity),
+        location: asIntOrNull(item.location),
+        characterId: draftCharacterId,
+        baseItemId: asInt(item.baseItemId) ?? 0,
+    }));
+
+    const attackDefinitions = asArray(characterState.attackDefinitions).filter(isRecord).map((def) => ({
+        id: asInt(def.id) ?? 0,
+        characterId: draftCharacterId,
+        attackSlot: asIntOrNull(def.attackSlot),
+        mainHandCharacterItemId: asIntOrNull(def.mainHandCharacterItemId),
+        offHandCharacterItemId: asIntOrNull(def.offHandCharacterItemId),
+    }));
+
+    const createdAt = new Date();
+
+    const advancements = bestAdvancement
+        ? [
+            {
+                id: asInt(bestAdvancement.advancementId) ?? 0,
+                characterId: draftCharacterId,
+                level: asInt(bestAdvancement.level) ?? 1,
+                version: asInt(bestAdvancement.version) ?? 1,
+                classId: asInt(bestAdvancement.classId) ?? 0,
+                secondaryClassId: asIntOrNull(bestAdvancement.secondaryClassId),
+                hitPoints: asInt(bestAdvancement.hitPoints) ?? 0,
+                abilityId: asIntOrNull(bestAdvancement.abilityId),
+                notes: asStringOrNull(bestAdvancement.notes),
+                createdAt,
+                skills: asArray(bestAdvancement.skills).filter(isRecord).map((s) => ({
+                    advancementId: asInt(bestAdvancement.advancementId) ?? 0,
+                    skillId: asInt(s.skillId) ?? 0,
+                    skillSubId: asIntOrNull(s.skillSubId),
+                    pointsSpent: asInt(s.pointsSpent) ?? 0,
+                    customSubtype: asStringOrNull(s.customSubtype),
+                })),
+                feats: asArray(bestAdvancement.feats).filter(isRecord).map((f) => ({
+                    advancementId: asInt(bestAdvancement.advancementId) ?? 0,
+                    featId: asInt(f.featId) ?? 0,
+                    featSubId: asIntOrNull(f.featSubId),
+                })),
+                spellsKnown: asArray(bestAdvancement.spellsKnown).filter(isRecord).map((sp) => ({
+                    advancementId: asInt(bestAdvancement.advancementId) ?? 0,
+                    spellId: asInt(sp.spellId) ?? 0,
+                    isFreeGrant: asBool(sp.isFreeGrant) ?? false,
+                })),
+                featureChoices: asArray(bestAdvancement.featureChoices).filter(isRecord).map((c) => ({
+                    id: asInt(c.id) ?? 0,
+                    characterId: draftCharacterId,
+                    featureId: asInt(c.featureId) ?? 0,
+                    advancementId: asInt(bestAdvancement.advancementId) ?? 0,
+                    featureEntityId: asInt(c.featureEntityId) ?? 0,
+                    appliesToId: asInt(c.appliesToId) ?? 0,
+                    appliesToSubId: asIntOrNull(c.appliesToSubId),
+                    choiceIndex: asIntOrNull(c.choiceIndex),
+                    choiceGroupId: asStringOrNull(c.choiceGroupId),
+                    choiceData: (c as Record<string, unknown>).choiceData ?? null,
+                    linkedChoiceGroupId: asStringOrNull(c.linkedChoiceGroupId),
+                })),
+            },
+        ]
+        : [];
+
+    const characterLevel = advancements.length > 0 ? (advancements[0]?.level ?? 0) : 0;
+
+    const result: CharacterWithAllDetailsResponse = {
+        id: draftCharacterId,
+        userId,
+        name: draftName,
+        raceId,
+        alignmentId: coerceAlignmentId(asIntOrNull(characterState.alignmentId)),
+        deityId: asIntOrNull(characterState.deityId),
+        xp: 0,
+        age: asIntOrNull(characterState.age),
+        height: asIntOrNull(characterState.height),
+        weight: asIntOrNull(characterState.weight),
+        eyes: asStringOrNull(characterState.eyes),
+        hair: asStringOrNull(characterState.hair),
+        gender: asStringOrNull(characterState.gender),
+        notes: asStringOrNull(characterState.notes),
+        editionId: editionId,
+        abilityScores,
+        advancements,
+        preparedSpells: [],
+        config: {
+            characterId: draftCharacterId,
+            allowVariantClasses,
+            isGestalt,
+            ignoreLevelAdjustment,
+        },
+        wealth,
+        disallowedSources,
+        characterLanguages,
+        characterItems,
+        attackDefinitions,
+        characterLevel,
+        classLevelString: '',
+    };
+
+    // Trigger resolution for draft-only characters when loading from draft
+    // This ensures resolved character data is available after page refresh/session restore
+    // Set advancement state first (if present), then character state, so both are available when resolution runs
+    if (draftCharacterId < 0) {
+        if (bestAdvancement) {
+            characterResolutionProjectionService.scheduleFromAdvancementDraft(
+                bestAdvancement as unknown as AdvancementEditState,
+                userId
+            );
+        }
+        characterResolutionProjectionService.scheduleFromCharacterDraft(
+            draftCharacterId,
+            characterState as unknown as CharacterEditState,
+            userId
+        );
+    }
+
+    return result;
+}
+
 /**
  * Service for basic character CRUD operations.
  * 
@@ -58,7 +415,7 @@ function calculateClassLevelString(advancements: Array<{
 export const characterCrudService = {
     async getAllCharacters(userId: number): Promise<GetAllCharactersResponse> {
         const [characters, total] = await Promise.all([
-            prisma.userCharacter.findMany({
+            prisma.character.findMany({
                 where: { userId },
                 include: {
                     advancements: {
@@ -81,7 +438,7 @@ export const characterCrudService = {
                 },
                 orderBy: { name: 'asc' },
             }),
-            prisma.userCharacter.count({
+            prisma.character.count({
                 where: { userId },
             }),
         ]);
@@ -106,6 +463,7 @@ export const characterCrudService = {
 
             return {
                 ...character,
+                alignmentId: coerceAlignmentId(character.alignmentId),
                 advancements: advancementsWithoutNested,
                 characterLevel,
                 classLevelString,
@@ -120,7 +478,7 @@ export const characterCrudService = {
 
     async getAllCharactersAdmin(): Promise<GetAllCharactersAdminResponse> {
         const [characters, total] = await Promise.all([
-            prisma.userCharacter.findMany({
+            prisma.character.findMany({
                 include: {
                     user: {
                         select: {
@@ -148,7 +506,7 @@ export const characterCrudService = {
                 },
                 orderBy: { name: 'asc' },
             }),
-            prisma.userCharacter.count(),
+            prisma.character.count(),
         ]);
 
         // Calculate class/level string and character level for each character
@@ -168,6 +526,7 @@ export const characterCrudService = {
 
             return {
                 ...characterBase,
+                alignmentId: coerceAlignmentId(characterBase.alignmentId),
                 characterLevel,
                 classLevelString,
             };
@@ -180,7 +539,7 @@ export const characterCrudService = {
     },
 
     async getCharacterById(query: CharacterIdParamRequest): Promise<Character | null> {
-        const character = await prisma.userCharacter.findUnique({
+        const character = await prisma.character.findUnique({
             where: { id: query.id },
             include: {
                 race: {
@@ -201,8 +560,15 @@ export const characterCrudService = {
         return character as Character;
     },
 
-    async getCharacterWithAllDetails(query: CharacterIdParamRequest): Promise<CharacterWithAllDetailsResponse | null> {
-        const character = await prisma.userCharacter.findUnique({
+    async getCharacterWithAllDetails(query: CharacterIdParamRequest, userId?: number): Promise<CharacterWithAllDetailsResponse | null> {
+        if (query.id < 0) {
+            if (typeof userId !== 'number') {
+                throw new Error('User not authenticated');
+            }
+            return await getDraftCharacterWithAllDetails({ draftCharacterId: query.id, userId });
+        }
+
+        const character = await prisma.character.findUnique({
             where: { id: query.id },
             include: {
                 advancements: {
@@ -227,6 +593,8 @@ export const characterCrudService = {
                     orderBy: { level: 'asc' },
                 },
                 abilityScores: true,
+                config: true,
+                wealth: true,
                 preparedSpells: true,
                 disallowedSources: true,
                 characterItems: true,
@@ -263,6 +631,8 @@ export const characterCrudService = {
 
         return {
             ...character,
+            alignmentId: coerceAlignmentId(character.alignmentId),
+            wealth: character.wealth.map((w) => ({ ...w, currencyId: coerceCurrencyId(w.currencyId) })),
             advancements: advancementsWithoutNested,
             preparedSpells,
             characterLevel,
@@ -271,10 +641,11 @@ export const characterCrudService = {
     },
 
     async createCharacter(data: CreateCharacterRequest): Promise<CreateResponse> {
-        const result = await prisma.userCharacter.create({
+        const result = await prisma.character.create({
             data: {
                 ...data,
                 editionId: data.editionId ?? EditionId.DND_3_5E, // Default to D&D 3.5 Edition if not provided
+                config: { create: {} },
             },
         });
 
@@ -294,7 +665,7 @@ export const characterCrudService = {
                 if (!characterData.userId || !characterData.name || !characterData.raceId) {
                     throw new Error('Missing required fields: userId, name, and raceId are required for character creation');
                 }
-                const character = await tx.userCharacter.create({
+                const character = await tx.character.create({
                     data: {
                         userId: characterData.userId,
                         name: characterData.name,
@@ -309,20 +680,14 @@ export const characterCrudService = {
                         gender: characterData.gender ?? null,
                         notes: characterData.notes ?? null,
                         editionId: characterData.editionId != null ? characterData.editionId : EditionId.DND_3_5E, // Default to D&D 3.5 Edition if not provided or null
-                        allowVariantClasses: characterData.allowVariantClasses ?? false,
-                        isGestalt: characterData.isGestalt ?? false,
-                        ignoreLevelAdjustment: characterData.ignoreLevelAdjustment ?? false,
-                        platinum: characterData.platinum ?? 0,
-                        gold: characterData.gold ?? 0,
-                        silver: characterData.silver ?? 0,
-                        copper: characterData.copper ?? 0,
+                        config: { create: {} },
                     },
                 });
                 finalCharacterId = character.id;
             } else {
                 // Update existing character - exclude userId as it shouldn't be updated
                 const { userId: _userId, ...updateData } = characterData;
-                await tx.userCharacter.update({
+                await tx.character.update({
                     where: { id: finalCharacterId },
                     data: updateData as typeof updateData & { editionId?: number },
                 });
@@ -331,7 +696,7 @@ export const characterCrudService = {
             // Handle ability scores if provided
             if (abilityScores !== undefined) {
                 // Get existing ability scores
-                const existingScores = await tx.userCharacterAbilityScore.findMany({
+                const existingScores = await tx.characterAbilityScore.findMany({
                     where: { characterId: finalCharacterId },
                 });
 
@@ -343,13 +708,13 @@ export const characterCrudService = {
                     const existing = existingMap.get(abilityScore.abilityId);
                     if (existing) {
                         if (existing.value !== abilityScore.value) {
-                            await tx.userCharacterAbilityScore.update({
+                            await tx.characterAbilityScore.update({
                                 where: { id: existing.id },
                                 data: { value: abilityScore.value },
                             });
                         }
                     } else {
-                        await tx.userCharacterAbilityScore.create({
+                        await tx.characterAbilityScore.create({
                             data: {
                                 characterId: finalCharacterId,
                                 abilityId: abilityScore.abilityId,
@@ -362,7 +727,7 @@ export const characterCrudService = {
                 // Delete scores that are no longer in the request
                 const toDelete = existingScores.filter(score => !requestedAbilityIds.has(score.abilityId));
                 if (toDelete.length > 0) {
-                    await tx.userCharacterAbilityScore.deleteMany({
+                    await tx.characterAbilityScore.deleteMany({
                         where: {
                             id: { in: toDelete.map(score => score.id) },
                         },
@@ -636,8 +1001,52 @@ export const characterCrudService = {
     },
 
     async deleteCharacter(query: CharacterIdParamRequest): Promise<UpdateResponse> {
-        await prisma.userCharacter.delete({
-            where: { id: query.id },
+        /**
+         * Delete a character and all dependent rows.
+         *
+         * Some character-owned tables do not use `onDelete: Cascade` in the DB schema
+         * (e.g. `CharacterItem`, `CharacterAbilityScore`, `CharacterAdvancement`, etc),
+         * so we must delete dependents explicitly before deleting the `Character` row.
+         */
+        await prisma.$transaction(async (tx) => {
+            // Advancement children (must be deleted before advancements)
+            await tx.characterFeatureChoice.deleteMany({
+                where: { advancement: { characterId: query.id } },
+            });
+            await tx.advancementSkill.deleteMany({
+                where: { advancement: { characterId: query.id } },
+            });
+            await tx.advancementFeat.deleteMany({
+                where: { advancement: { characterId: query.id } },
+            });
+            await tx.advancementSpell.deleteMany({
+                where: { advancement: { characterId: query.id } },
+            });
+
+            // Character-owned collections
+            await tx.characterSpellPreparation.deleteMany({ where: { characterId: query.id } });
+            await tx.characterFeatureUses.deleteMany({ where: { characterId: query.id } });
+            await tx.characterCompanion.deleteMany({ where: { characterId: query.id } });
+            await tx.characterDisallowedSource.deleteMany({ where: { characterId: query.id } });
+            await tx.characterLanguageMap.deleteMany({ where: { characterId: query.id } });
+            await tx.characterWealth.deleteMany({ where: { characterId: query.id } });
+
+            // Items must be deleted after item-properties and attack definitions
+            await tx.characterItemProperty.deleteMany({
+                where: { characterItem: { characterId: query.id } },
+            });
+            await tx.characterAttackDefinition.deleteMany({ where: { characterId: query.id } });
+            await tx.characterItem.deleteMany({ where: { characterId: query.id } });
+
+            // Core character sub-tables
+            await tx.characterAbilityScore.deleteMany({ where: { characterId: query.id } });
+            await tx.characterConfig.deleteMany({ where: { characterId: query.id } });
+
+            // Advancements (after children)
+            await tx.characterAdvancement.deleteMany({ where: { characterId: query.id } });
+
+            // Finally, the character row
+            await tx.character.delete({ where: { id: query.id } });
         });
 
         return { message: 'Character deleted successfully' };

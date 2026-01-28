@@ -47,7 +47,15 @@ export interface CharacterService {
     getAllCharacters: (userId: number) => Promise<GetAllCharactersResponse>;
     getAllCharactersAdmin: () => Promise<GetAllCharactersAdminResponse>;
     getCharacterById: (query: CharacterIdParamRequest) => Promise<Character | null>;
-    getCharacterWithAllDetails: (query: CharacterIdParamRequest) => Promise<CharacterWithAllDetailsResponse | null>;
+    /**
+     * Load full character details.
+     *
+     * Notes:
+     * - For persisted characters (`id > 0`), this loads from MySQL.
+     * - For draft-only characters (`id < 0`), this loads from Redis draft state and requires `userId`
+     *   so the backend can enforce lock ownership.
+     */
+    getCharacterWithAllDetails: (query: CharacterIdParamRequest, userId?: number) => Promise<CharacterWithAllDetailsResponse | null>;
     createCharacter: (data: CreateCharacterRequest) => Promise<CreateResponse>;
     saveCharacter: (characterId: number | null, data: SaveCharacterRequest) => Promise<CreateResponse | UpdateResponse>;
     deleteCharacter: (query: CharacterIdParamRequest) => Promise<UpdateResponse>;
@@ -98,7 +106,12 @@ export interface CharacterService {
 
     // NEW: Spell selection methods
     getCharacterDomains: (characterId: number, classId: number) => Promise<number[]>;
-    getAvailableSpellsForClass: (characterId: number, classId: number, resolvedProgressions?: FeatureWithRelations[]) => Promise<{
+    getAvailableSpellsForClass: (
+        characterId: number,
+        classId: number,
+        resolvedProgressions?: FeatureWithRelations[],
+        characterOverride?: CharacterWithAllDetailsResponse
+    ) => Promise<{
         spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean; isFreeGrant?: boolean }>;
         domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }>;
         availableFreeSpells?: number;
