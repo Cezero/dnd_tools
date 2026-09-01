@@ -1,4 +1,4 @@
-import { CreateFeatureRequest, UpdateFeature } from '@shared/schema';
+import { CreateFeatureRequest, FeatureWithRelations, UpdateFeature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
 export interface FeatureEditContext {
@@ -11,7 +11,8 @@ export interface FeatureEditContext {
 export interface FeatureEditFormProps {
     featureId?: number;
     isOpen?: boolean;
-    onClose?: () => void;
+    /** Called when the modal is closed. If the feature was edited but not saved, draftState is the current draft so the parent can update its view (e.g. ClassEdit's feature list). */
+    onClose?: (draftState?: FeatureWithRelations | null) => void;
     onSave?: (featureId: number) => void;
     onCancel?: () => void;
     mode?: 'modal' | 'embedded';

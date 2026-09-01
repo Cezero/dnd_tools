@@ -198,6 +198,56 @@ export function FormulaManager({
                             </div>
                         );
 
+                    case FormulaId.SPELL_SLOTS_TRIANGULAR:
+                    case FormulaId.SPELL_SLOTS_LINEAR:
+                        return (
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <ValidatedInput
+                                            field={`${entityKey}.${index}.formulaParams.formulaStartLevel`}
+                                            label="Formula Start Level (Optional)"
+                                            type="number"
+                                            min={1}
+                                            max={20}
+                                            placeholder="Class level this spell level is first gained"
+                                            componentExtraClassName="flex items-center gap-2"
+                                            nested
+                                        />
+                                    </div>
+                                    <div>
+                                        <ValidatedInput
+                                            field={`${entityKey}.${index}.formulaParams.baseValue`}
+                                            label="Starting Slots"
+                                            type="number"
+                                            min={0}
+                                            placeholder="e.g., 1"
+                                            componentExtraClassName="flex items-center gap-2"
+                                            nested
+                                        />
+                                    </div>
+                                    <div>
+                                        <ValidatedInput
+                                            field={`${entityKey}.${index}.formulaParams.maxValue`}
+                                            label="Max Slots (cap)"
+                                            type="number"
+                                            min={0}
+                                            placeholder="e.g., 4"
+                                            componentExtraClassName="flex items-center gap-2"
+                                            nested
+                                        />
+                                    </div>
+                                </div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    {formulaId === FormulaId.SPELL_SLOTS_TRIANGULAR
+                                        ? 'Triangular (Wizard/Cleric): slots grow 1, 2, 2, 3, 3, 3… up to the cap.'
+                                        : 'Linear (Sorcerer): slots = starting + (level − start level), capped.'}
+                                    {' '}
+                                    <strong>Starting Slots</strong> is the count when the progression begins; <strong>Max Slots</strong> is the cap.
+                                </div>
+                            </div>
+                        );
+
                     case FormulaId.CONDITIONAL_SCALING: {
                         const valuesRepresent = entity.formulaParams?.valuesRepresent;
                         const isAppliesToId = valuesRepresent === ConditionalScalingValueType.AppliesToId;

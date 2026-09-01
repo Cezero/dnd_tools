@@ -168,8 +168,9 @@ model FeatureEntity {
   type            Int
   value           Float? // Can be float for fractional scalingValues (e.g., 0.5, 0.75 for LEVEL_TIMES_VALUE)
   bonusType       Int?
-  displayInDetail Boolean @default(true)
-  filterType      Int?
+  displayInDetail      Boolean @default(true)
+  showFullProgression  Boolean @default(false)
+  filterType           Int?
 
   feature                Feature                  @relation(fields: [featureId], references: [id])
   conditions             FeatureEntityCondition[]
@@ -199,6 +200,9 @@ model FeatureFormulaParams {
 
   // Starting value for formulas that need a different starting value than the increment (e.g., EVERY_N_LEVELS)
   startingValue Int? // Starting value (defaults to entity.value if null)
+
+  // Max value / cap for formulas that have an upper bound (e.g., SPELL_SLOTS_TRIANGULAR, SPELL_SLOTS_LINEAR)
+  maxValue Int? // Cap (max slots); when null, spell-slot formulas fall back to entity.value for backward compatibility
 
   featureEntity FeatureEntity[]
 }

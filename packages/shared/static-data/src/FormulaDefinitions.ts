@@ -21,6 +21,9 @@ export const enum FormulaId {
     // NEW: Division-based formulas for BAB and saves
     LEVEL_DIVIDED_BY = 14,      // floor(level / divisor) (e.g., floor(level / 3) for Poor Save)
     LEVEL_DIVIDED_BY_PLUS_BASE = 15, // floor(level / divisor) + baseValue (e.g., floor(level / 2) + 2 for Good Save)
+    // NEW: Spell slot formulas
+    SPELL_SLOTS_TRIANGULAR = 16, // Wizard/Cleric-style slots: 1,2,2,3,3,3,4 with per-class-level start and cap
+    SPELL_SLOTS_LINEAR = 17,     // Sorcerer-style slots: linear growth with cap (3,4,5,6,...) from a start level
 }
 
 // ============================================================================
@@ -446,6 +449,71 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             return `floor(level / ${params.divisor}) + ${params.baseValue}`;
         },
         isCharacterDependent: false
+    },
+
+    [FormulaId.SPELL_SLOTS_TRIANGULAR]: {
+        id: FormulaId.SPELL_SLOTS_TRIANGULAR,
+        name: 'Spell Slots (Triangular)',
+        description: 'Wizard/Cleric-style spell slots that follow a triangular progression: 1, 2, 2, 3, 3, 3, 4, ... with a configurable cap. Uses formulaStartLevel (or feature.level) as the class level where this spell level is first gained, baseValue as startingSlots, and scalingValue as the cap.',
+        parameters: [
+            { name: 'level', description: 'Class level in the casting class', required: true },
+            { name: 'startLevel', description: 'Feature grant level (used as fallback if formulaStartLevel is not set)', required: true },
+            { name: 'baseValue', description: 'Starting number of slots when progression begins (startingSlots)', required: true },
+            { name: 'scalingValue', description: 'Maximum number of slots (cap)', required: true },
+        ],
+        calculate: (params) => {
+            const effectiveStartLevel = params.formulaStartLevel ?? params.startLevel;
+
+            // Before this spell level is gained, no slots
+            if (params.level < effectiveStartLevel) {
+                return null;
+            }
+
+            const startingSlots = params.baseValue;
+            const cap = params.scalingValue;
+
+            // n = levels since spell level was gained
+            const n = Math.max(0, params.level - effectiveStartLevel);
+
+            // Triangular index s: smallest s with s(s+1)/2 > n
+            // Closed form: floor((sqrt(8n + 1) - 1) / 2)
+            const triangularIndex = Math.floor((Math.sqrt(8 * n + 1) - 1) / 2);
+
+            const slots = startingSlots + triangularIndex;
+            return Math.min(cap, slots);
+        },
+        getDisplayString: (params) => {
+            const effectiveStartLevel = params.formulaStartLevel ?? params.startLevel;
+            return `min(cap=${params.scalingValue}, start=${params.baseValue} + triangular(level - ${effectiveStartLevel}))`;
+        },
+        isCharacterDependent: false,
+    },
+
+    [FormulaId.SPELL_SLOTS_LINEAR]: {
+        id: FormulaId.SPELL_SLOTS_LINEAR,
+        name: 'Spell Slots (Linear)',
+        description: 'Sorcerer-style spell slots that increase linearly from the level the spell level is gained: slots = baseValue + (level - effectiveStartLevel), capped at scalingValue. effectiveStartLevel is formulaStartLevel if set, otherwise feature.level.',
+        parameters: [
+            { name: 'level', description: 'Class level in the casting class', required: true },
+            { name: 'startLevel', description: 'Feature grant level (used as fallback if formulaStartLevel is not set)', required: true },
+            { name: 'baseValue', description: 'Base number of slots when progression begins', required: true },
+            { name: 'scalingValue', description: 'Maximum number of slots (cap)', required: true },
+        ],
+        calculate: (params) => {
+            const effectiveStartLevel = params.formulaStartLevel ?? params.startLevel;
+
+            if (params.level < effectiveStartLevel) {
+                return null;
+            }
+
+            const raw = params.baseValue + (params.level - effectiveStartLevel);
+            return Math.min(params.scalingValue, raw);
+        },
+        getDisplayString: (params) => {
+            const effectiveStartLevel = params.formulaStartLevel ?? params.startLevel;
+            return `min(cap=${params.scalingValue}, ${params.baseValue} + (level - ${effectiveStartLevel}))`;
+        },
+        isCharacterDependent: false,
     },
 
 };

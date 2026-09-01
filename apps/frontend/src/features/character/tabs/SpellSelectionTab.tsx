@@ -215,33 +215,22 @@ export function SpellSelectionTab({
         return counts;
     }, [state.spellsKnown, selectedClassId, spellData]);
 
-    // Get max spells per level from spellcasting feature
+    // Get max spells-known per level from resolved feature-based metadata
     const maxSpellsPerLevel = useMemo(() => {
-        if (!selectedClass?.spellcastingProgression) return new Map<number, number>();
+        const limits = classSpellSelection?.maxSpellsKnownByLevel;
+        if (!limits) {
+            return new Map<number, number>();
+        }
 
         const maxSpells = new Map<number, number>();
-        for (const feature of selectedClass.spellcastingProgression) {
-            if (feature.classLevel <= classLevel) {
-                for (const slot of feature.slots || []) {
-                    if (slot.spellLevel >= 0 && slot.spellLevel <= 9) {
-                        // For spellsKnown classes, check classSpellsKnown feature
-                        if (selectedClass.spellsKnown && selectedClass.spellsKnownProgression) {
-                            const knownProg = selectedClass.spellsKnownProgression.find(
-                                p => p.classLevel === feature.classLevel
-                            );
-                            if (knownProg?.slots) {
-                                const knownSlot = knownProg.slots.find(s => s.spellLevel === slot.spellLevel);
-                                if (knownSlot) {
-                                    maxSpells.set(slot.spellLevel, knownSlot.slotsPerDay);
-                                }
-                            }
-                        }
-                    }
-                }
+        for (const [levelKey, value] of Object.entries(limits)) {
+            const level = Number(levelKey);
+            if (!Number.isNaN(level)) {
+                maxSpells.set(level, value);
             }
         }
         return maxSpells;
-    }, [selectedClass, classLevel]);
+    }, [classSpellSelection?.maxSpellsKnownByLevel]);
 
     // Transform spell data for ScrollableCategorizedList
     // Note: Domain spells are excluded as they are handled in the Choices tab

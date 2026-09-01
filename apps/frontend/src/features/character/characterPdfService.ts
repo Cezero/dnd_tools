@@ -10,6 +10,7 @@ import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calcul
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { displayStrategyFactory, formatSpellSchool, formatSpellComponents } from '@/lib/formatters';
+import { formatSignedModifier } from '@/lib/formatters/modifier-utils';
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
 import { hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes, getSkillSubtypeName } from '@/lib/skill-utils';
 import { getRaceNameFromCache, getClassNameFromCache, getSkillSummaryById, formatSourceFromObject } from '@/services/cache';
@@ -160,7 +161,7 @@ export async function generateCharacterPdf(
 
     // Helper function to format ability modifier
     const formatModifier = (mod: number): string => {
-        return mod >= 0 ? `+${mod}` : `${mod}`;
+        return formatSignedModifier(mod);
     };
 
     // Helper functions to extract numeric values from formatted strings

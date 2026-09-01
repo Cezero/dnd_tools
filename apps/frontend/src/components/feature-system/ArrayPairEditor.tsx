@@ -1,7 +1,7 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
-import { ValidatedCustomSelect, ValidatedInput } from '@/components/forms';
+import { CustomSelect } from '@/components/forms';
 import { CoreComponent } from '@shared/static-data';
 
 interface ArrayPairEditorProps {
@@ -37,12 +37,66 @@ export function ArrayPairEditor({
     entityKey,
     index: _index
 }: ArrayPairEditorProps) {
-    // index is used in the ValidatedCustomSelect field prop below
-
+    // Remove a threshold/value pair at a given index
     const removePair = (index: number) => {
         const newThresholds = thresholds.filter((_, i) => i !== index);
         const newValues = values.filter((_, i) => i !== index);
         onThresholdsChange(newThresholds);
+        onValuesChange(newValues);
+    };
+
+    const handleThresholdChange = (index: number, raw: string) => {
+        // Empty string means "no value" for the placeholder row
+        if (raw === '') {
+            // For existing entries, clear the value; for the extra row, do nothing
+            if (index < thresholds.length) {
+                const newThresholds = [...thresholds];
+                newThresholds[index] = NaN as unknown as number;
+                onThresholdsChange(newThresholds);
+            }
+            return;
+        }
+
+        const numeric = Number(raw);
+        const newThresholds = [...thresholds];
+
+        if (index < newThresholds.length) {
+            newThresholds[index] = numeric;
+        } else {
+            newThresholds.push(numeric);
+        }
+
+        onThresholdsChange(newThresholds);
+    };
+
+    const handleValueChange = (index: number, raw: string | number | null) => {
+        const newValues = [...values];
+
+        if (valuesRepresent === 'appliesToId') {
+            // raw is a number | null from CustomSelect
+            if (raw === null) {
+                if (index < newValues.length) {
+                    newValues[index] = '';
+                }
+            } else if (index < newValues.length) {
+                newValues[index] = raw;
+            } else {
+                newValues.push(raw);
+            }
+        } else {
+            // raw is string from <input>
+            const str = raw as string;
+            if (str === '') {
+                if (index < newValues.length) {
+                    newValues[index] = '';
+                }
+            } else if (index < newValues.length) {
+                newValues[index] = str;
+            } else {
+                newValues.push(str);
+            }
+        }
+
         onValuesChange(newValues);
     };
 
@@ -67,56 +121,62 @@ export function ArrayPairEditor({
                     </div>
 
                     {/* Data rows */}
-                    {[...thresholds, 0].map((_, index) => (
-                        <div key={index} className={`grid gap-1.5 ${valuesRepresent === 'appliesToId' ? 'grid-cols-[36px_94px_10px]' : 'grid-cols-[36px_48px_10px]'}`}>
-                            <div>
-                                <ValidatedInput
-                                    field={`${entityKey}.${_index}.formulaParams.thresholds.${index}`}
-                                    label=""
-                                    type="number"
-                                    placeholder={thresholdPlaceholder}
-                                    min={thresholdMin}
-                                    max={thresholdMax}
-                                    componentExtraClassName={`flex items-center w-10 ${valuesRepresent === 'appliesToId' ? 'h-8' : 'h-6'}`}
-                                    inputExtraClassName="w-10 p-0 text-xs text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                    nested
-                                />
-                            </div>
-                            <div>
-                                {valuesRepresent === 'appliesToId' ? (
-                                    <ValidatedCustomSelect
-                                        field={`${entityKey}.${_index}.formulaParams.values.${index}`}
-                                        options={appliesToSelectOptions}
-                                        placeholder={valuePlaceholder}
-                                        componentExtraClassName="flex items-center w-26 h-8"
-                                        triggerExtraClassName="w-26 h-6 pl-1 pt-0 pb-0 text-xs"
-                                        nested
+                    {Array.from({ length: thresholds.length + 1 }).map((_, index) => {
+                        const thresholdValue = index < thresholds.length ? thresholds[index] : '';
+                        const hasPair = index < thresholds.length;
+                        const valueValue = hasPair ? values[index] ?? '' : '';
+
+                        return (
+                            <div
+                                key={index}
+                                className={`grid gap-1.5 ${valuesRepresent === 'appliesToId' ? 'grid-cols-[36px_94px_10px]' : 'grid-cols-[36px_48px_10px]'}`}
+                            >
+                                <div>
+                                    <input
+                                        type="number"
+                                        min={thresholdMin}
+                                        max={thresholdMax}
+                                        placeholder={thresholdPlaceholder}
+                                        value={thresholdValue ?? ''}
+                                        onChange={(e) => handleThresholdChange(index, e.target.value)}
+                                        className="w-10 p-0 text-xs text-center flex items-center justify-center border rounded-md dark:bg-gray-700 dark:border-gray-600 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                                     />
-                                ) : (
-                                    <ValidatedInput
-                                        field={`${entityKey}.${_index}.formulaParams.values.${index}`}
-                                        label=""
-                                        placeholder={valuePlaceholder}
-                                        componentExtraClassName="flex items-center w-10 h-6 text-center text-xs"
-                                        inputExtraClassName="w-10 p-0 text-xs text-center"
-                                        nested
-                                    />
-                                )}
+                                </div>
+                                <div>
+                                    {valuesRepresent === 'appliesToId' ? (
+                                        <CustomSelect
+                                            value={typeof valueValue === 'number' ? valueValue : null}
+                                            onValueChange={(val) => handleValueChange(index, val as number | null)}
+                                            options={appliesToSelectOptions}
+                                            placeholder={valuePlaceholder}
+                                            componentExtraClassName="flex items-center w-26 h-8"
+                                            triggerExtraClassName="w-26 h-6 pl-1 pt-0 pb-0 text-xs"
+                                        />
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            placeholder={valuePlaceholder}
+                                            value={valueValue as string | number | ''}
+                                            onChange={(e) => handleValueChange(index, e.target.value)}
+                                            className="w-10 p-0 text-xs text-center flex items-center justify-center border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                        />
+                                    )}
+                                </div>
+                                <div className="flex items-center justify-center">
+                                    {hasPair && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removePair(index)}
+                                            className="text-red-500 hover:text-red-700 p-1 transition-colors"
+                                            title="Remove pair"
+                                        >
+                                            <TrashIcon className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex items-center justify-center">
-                                {index < thresholds.length && (
-                                    <button
-                                        type="button"
-                                        onClick={() => removePair(index)}
-                                        className="text-red-500 hover:text-red-700 p-1 transition-colors"
-                                        title="Remove pair"
-                                    >
-                                        <TrashIcon className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 

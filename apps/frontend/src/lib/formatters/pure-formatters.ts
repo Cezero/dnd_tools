@@ -1013,10 +1013,11 @@ export class LevelAdjustmentFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
         const numValue = typeof value === 'string' ? parseFloat(value) : value;
-        if (numValue > 0) {
-            return `+${numValue}`;
+        if (typeof numValue !== 'number' || Number.isNaN(numValue)) {
+            return value !== null && value !== undefined ? String(value) : '';
         }
-        return numValue.toString();
+        // Use the shared formatterUtils helper to keep sign formatting DRY.
+        return formatSignedValue(numValue);
     }
 }
 
@@ -1049,15 +1050,25 @@ export class CastingTypeFormatter implements BaseFormatter {
 }
 
 /**
- * Formatter for Spellcasting Feature
- * Formats the feature ID from appliesToId
+ * Formatter for spellcasting progression (e.g. spell slots per level).
+ * Displays the slot/value count, or "—" when zero or absent.
  */
 export class SpellcastingProgressionFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
-        const progressionId = modifier.appliesToId;
-        if (progressionId !== null && progressionId !== undefined) {
-            return `Feature ${progressionId}`;
+    format(entity: CalculatedEntity, _context?: DisplayContext): string {
+        const raw = entity.calculatedValue ?? entity.value;
+        if (raw === null || raw === undefined || (typeof raw === 'number' && raw === 0)) {
+            return '—';
         }
-        return `Feature ID: ${progressionId || modifier.value}`;
+        return String(raw);
     }
+}
+
+/**
+ * Spell level label for table column headers (0 = "0", 1 = "1st", … 9 = "9th").
+ */
+export function formatSpellLevelForTable(spellLevel: number): string {
+    if (spellLevel === 0) {
+        return '0';
+    }
+    return ordinal(spellLevel);
 }

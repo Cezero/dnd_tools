@@ -1,0 +1,54 @@
+services:
+  redis-6379:
+    image: redis:7
+    container_name: redis-6379
+    user: "911:911"
+    network_mode: host
+    env_file:
+      - /srv/redis/.env
+    command:
+      - redis-server
+      - /etc/redis/redis.conf
+      - --port
+      - "6379"
+      - --cluster-announce-ip
+      - ${HOST_IP}
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --masterauth
+      - ${REDIS_PASSWORD}
+    volumes:
+      - /var/lib/redis/6379:/data
+      - ${DEPLOY_REDIS_CONF:-/srv/redis/redis.conf}:/etc/redis/redis.conf:ro
+    restart: always
+
+  redis-6380:
+    image: redis:7
+    container_name: redis-6380
+    user: "911:911"
+    network_mode: host
+    env_file:
+      - /srv/redis/.env
+    command:
+      - redis-server
+      - /etc/redis/redis.conf
+      - --port
+      - "6380"
+      - --cluster-announce-ip
+      - ${HOST_IP}
+      - --cluster-announce-port
+      - "6380"
+      - --cluster-announce-bus-port
+      - "16380"
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --masterauth
+      - ${REDIS_PASSWORD}
+    volumes:
+      - /var/lib/redis/6380:/data
+      - ${DEPLOY_REDIS_CONF:-/srv/redis/redis.conf}:/etc/redis/redis.conf:ro
+    restart: always

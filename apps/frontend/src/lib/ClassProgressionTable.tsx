@@ -5,7 +5,7 @@ import type { ProgressionRow } from '@/lib/types';
 function hasSpellsAtLevel(feature: ProgressionRow[], spellLevel: number, isSpellsKnown: boolean = false): boolean {
     return feature.some(row => {
         const spells = isSpellsKnown ? row.spellsKnown : row.spells;
-        return spells && spellLevel in spells && spells[spellLevel] > 0;
+        return spells && spellLevel in spells && spells[spellLevel] !== '0' && spells[spellLevel] !== '—';
     });
 }
 
@@ -19,7 +19,7 @@ function countSpellLevels(feature: ProgressionRow[], isSpellsKnown: boolean = fa
     return count;
 }
 
-function getMaxSpellLevel(spells: { [spellLevel: number]: number }): number {
+function getMaxSpellLevel(spells: { [spellLevel: number]: string }): number {
     // Get all spell levels that have slots
     const spellLevels = Object.keys(spells).map(Number);
     return spellLevels.length > 0 ? Math.max(...spellLevels) : 0;
@@ -143,13 +143,13 @@ export function ClassProgressionTable({ feature, className = '' }: ClassProgress
                                 {row.bab}
                             </td>
                             <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
-                                +{row.fort}
+                                {row.fort}
                             </td>
                             <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
-                                +{row.ref}
+                                {row.ref}
                             </td>
                             <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
-                                +{row.will}
+                                {row.will}
                             </td>
                             {hasSpells && (
                                 <>

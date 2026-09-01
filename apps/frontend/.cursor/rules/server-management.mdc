@@ -5,6 +5,7 @@ alwaysApply: true
 
 - Do not attempt to run development servers, production servers, or any other server processes
 - Do not use `npm run dev`, `npm start`, `pnpm dev`. `pnpm run dev`, or similar commands
-- Do not use `pnpm run build` or similar build commands
-- If server functionality is needed, ask the user to run the appropriate command themselves
+- Do not use `pnpm run build` or similar build commands (including `@shared/schema`; ask the user to rebuild)
+- If the user asks to deploy the app, run `deploy/docker/scripts/deploy-app.sh` from the repo root (see docker-deploy.mdc). That is the only allowed production start path.
+- If other server functionality is needed, ask the user to run the command themselves
 - Focus on code analysis, file editing, and development tasks that don't require running servers

@@ -1671,6 +1671,7 @@ export const featureSystemService: FeatureSystemService = {
                         bonusType: entity.bonusType as FeatureBonusType | null,
                         groupingId: entity.groupingId,
                         displayInDetail: entity.displayInDetail,
+                        showFullProgression: entity.showFullProgression,
                         filterType: entity.filterType,
                         conditions: (entity.conditions || []).map((cond): CreateFeatureEntityConditionRequest => ({
                             conditionType: cond.conditionType as typeof FeatureEntityConditionType[keyof typeof FeatureEntityConditionType],
@@ -1757,6 +1758,7 @@ export const featureSystemService: FeatureSystemService = {
                 bonusType: entity.bonusType as FeatureBonusType | null,
                 groupingId: entity.groupingId,
                 displayInDetail: entity.displayInDetail,
+                showFullProgression: entity.showFullProgression,
                 filterType: entity.filterType,
                 conditions: entity.conditions?.map((cond: { conditionType: number; conditionValue: number }): CreateFeatureEntityConditionRequest => ({
                     conditionType: cond.conditionType as typeof FeatureEntityConditionType[keyof typeof FeatureEntityConditionType],

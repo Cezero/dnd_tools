@@ -5,7 +5,6 @@ import type {
 } from '@shared/schema';
 import {
     CalculationMethodType,
-    EntityType,
     FORMULA_MAP,
     ConditionalScalingValueType,
     FormulaId
@@ -93,7 +92,8 @@ export class ValueGenerationPhase {
             level: feature.level,
             progressionLevel: feature.level,
             characterLevel: context?.currentLevel,
-            character: context?.character
+            character: context?.character,
+            includeNonTransitionLevels: context?.includeNonTransitionLevels
         };
 
         // Use registry to get feature generator and formula calculator
@@ -168,7 +168,12 @@ export class ValueGenerationPhase {
                         source: 'Formula',
                         value: singleValue as number,
                         type: CalculationMethodType.formula,
-                        description: `Formula calculation at level ${level}`
+                        description: `Formula calculation at level ${level}`,
+                        // Preserve entity identity so downstream consumers can
+                        // reason about what this value represents using only
+                        // breakdown metadata (no direct entity access).
+                        sourceType: formulaEntity.appliesTo,
+                        sourceId: formulaEntity.appliesToId ?? undefined
                     }]
                 };
             }
@@ -324,6 +329,7 @@ export class ValueGenerationPhase {
 
         // Single loop: build array of [level, value] tuples for non-null values
         const changingValues: Array<[number, number]> = [];
+        const includeAllLevels = calculationContext?.includeNonTransitionLevels === true;
 
         for (let level = progressionLevel; level <= this.MAX_CHARACTER_LEVEL; level++) {
             // Pass entityValue and displayContext to buildFormulaParams - it will use this value or default to 1
@@ -332,9 +338,14 @@ export class ValueGenerationPhase {
 
             // Only include non-null values
             if (value !== null) {
-                // Only add if value changed from previous value
-                if (changingValues.length === 0 || value !== changingValues[changingValues.length - 1][1]) {
+                if (includeAllLevels) {
+                    // Include every level with a non-null value, even if it matches the previous level
                     changingValues.push([level, value]);
+                } else {
+                    // Only add if value changed from previous value
+                    if (changingValues.length === 0 || value !== changingValues[changingValues.length - 1][1]) {
+                        changingValues.push([level, value]);
+                    }
                 }
             }
         }
@@ -375,18 +386,22 @@ export class ValueGenerationPhase {
                         calculatedValue: entity.value
                     };
 
-                    results.push({
-                        breakdown: {
-                            components: [{
-                                source: 'Static',
-                                value: entity.value ?? 0,
-                                type: CalculationMethodType.base,
-                                description: `Static modifier: ${entity.value ?? 0}`
-                            }]
-                        },
-                        entity: calculatedEntity,
-                        level
-                    });
+                        results.push({
+                            breakdown: {
+                                components: [{
+                                    source: 'Static',
+                                    value: entity.value ?? 0,
+                                    type: CalculationMethodType.base,
+                                    description: `Static modifier: ${entity.value ?? 0}`,
+                                    // Preserve entity identity on breakdown for
+                                    // downstream consumers.
+                                    sourceType: entity.appliesTo,
+                                    sourceId: entity.appliesToId ?? undefined
+                                }]
+                            },
+                            entity: calculatedEntity,
+                            level
+                        });
                 }
             }
         }

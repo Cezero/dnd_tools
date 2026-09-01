@@ -2,8 +2,7 @@ import {
     DocumentTextIcon,
     ShieldCheckIcon,
     AcademicCapIcon,
-    SparklesIcon,
-    BeakerIcon
+    SparklesIcon
 } from '@heroicons/react/24/outline';
 import { useQueryClient } from '@tanstack/react-query';
 import { isEqual } from 'lodash';
@@ -42,7 +41,6 @@ import {
     SkillsTab,
     ProficienciesTab,
     FeaturesTab,
-    SpellcastingTab,
     DescriptionTab,
     type TabConfig,
     type ClassFormData
@@ -367,9 +365,6 @@ export default function ClassEdit() {
         if (newData.canCastSpells !== undefined && newData.canCastSpells !== state.canCastSpells) {
             updateState({ type: ClassEditStateUpdateType.SET_CAN_CAST_SPELLS, payload: { canCastSpells: newData.canCastSpells } });
         }
-        if (newData.spellsKnown !== undefined && newData.spellsKnown !== state.spellsKnown) {
-            updateState({ type: ClassEditStateUpdateType.SET_SPELLS_KNOWN, payload: { spellsKnown: newData.spellsKnown } });
-        }
         if (newData.isDivine !== undefined && newData.isDivine !== state.isDivine) {
             updateState({ type: ClassEditStateUpdateType.SET_IS_DIVINE, payload: { isDivine: newData.isDivine } });
         }
@@ -384,7 +379,6 @@ export default function ClassEdit() {
     // Tab configuration - use state instead of formData
     const tabs: TabConfig[] = [
         { id: 'basic', label: 'Basic Info', icon: DocumentTextIcon, component: BasicInfoTab },
-        ...(state.canCastSpells ? [{ id: 'spells', label: 'Spellcasting', icon: BeakerIcon, component: SpellcastingTab }] : []),
         { id: 'skills', label: 'Skills', icon: ShieldCheckIcon, component: SkillsTab },
         { id: 'proficiencies', label: 'Proficiencies', icon: AcademicCapIcon, component: ProficienciesTab },
         { id: 'features', label: 'Features', icon: SparklesIcon, component: FeaturesTab },
@@ -1140,7 +1134,13 @@ export default function ClassEdit() {
             {/* Feature Edit Dialog */}
             <FeatureEditForm
                 isOpen={!!state.editingFeatureId || !!state.preSelectedFeatureId}
-                onClose={() => {
+                onClose={(draftState) => {
+                    // Merge draft only when closing without save (draftState passed). After save, onSave already merged refetched feature
+                    if (draftState?.id != null) {
+                        setLoadedFeatures((prev) =>
+                            prev.map((f) => (f.id === draftState.id ? draftState : f))
+                        );
+                    }
                     updateState({ type: ClassEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: null } });
                     updateState({ type: ClassEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID, payload: { preSelectedFeatureId: undefined } });
                 }}
@@ -1154,20 +1154,29 @@ export default function ClassEdit() {
                 }
                 onSave={async (featureId: number) => {
                     // Ensure the featureId is in the class's feature list
-                    // The feature was already saved via state system, we just need to track its ID
-                    // The useEffect hook will automatically sync the link to the backend
                     const currentFeatureIds = state.featureIds || [];
                     if (!currentFeatureIds.includes(featureId)) {
-                        // Add the feature ID to the class's feature list
                         updateState({
                             type: ClassEditStateUpdateType.LINK_FEATURE,
                             payload: { featureId }
                         });
                     }
 
-                    // Refresh session state to get updated feature data from backend
                     if (state.editingFeatureId && resolution.refreshState) {
                         await resolution.refreshState();
+                    }
+
+                    // Refetch the saved feature so Features/Spellcasting tab shows updated data
+                    try {
+                        await queryClient.invalidateQueries({
+                            queryKey: FeatureQueryHooks.getFeatureByIdQueryKey(featureId)
+                        });
+                        const updated = await FeatureQueryHooks.getFeatureById(featureId, queryClient);
+                        setLoadedFeatures((prev) =>
+                            prev.map((f) => (f.id === featureId ? updated : f))
+                        );
+                    } catch (err) {
+                        console.warn('Could not refetch feature after save:', err);
                     }
 
                     updateState({ type: ClassEditStateUpdateType.SET_EDITING_FEATURE_ID, payload: { editingFeatureId: null } });

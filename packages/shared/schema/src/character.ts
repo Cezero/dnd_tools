@@ -692,6 +692,7 @@ export const SkillBonusSchema = z.object({
  * - Available spells for the class
  * - Domain spells (if the character has domains)
  * - Available free spells for spellbook classes
+ * - Feature-based spells-known limits for SpellsKnown classes
  * 
  * @see ResolvedCharacterResultSchema - Used in resolved character results
  */
@@ -699,6 +700,14 @@ export const ClassSpellSelectionSchema = z.object({
     spells: z.array(CharacterSpellSelectionEntrySchema),
     domainSpells: z.array(CharacterSpellSelectionEntrySchema).optional(),
     availableFreeSpells: z.number().int().nonnegative().optional(),
+    /**
+     * Map of spell level -> maximum number of known spells allowed for that level
+     * for this class, derived from SpellsKnownProgression feature entities.
+     *
+     * Only populated for SpellsKnown classes (e.g. Sorcerer, Bard). Prepared/spellbook
+     * classes do not use this structure for enforcement.
+     */
+    maxSpellsKnownByLevel: z.record(z.string(), z.number().int().nonnegative()).optional(),
 });
 
 /**

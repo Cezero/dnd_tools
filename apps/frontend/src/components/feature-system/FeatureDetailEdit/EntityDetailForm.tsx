@@ -360,25 +360,47 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
             />
 
             {/* Display Control */}
-            <div className="flex items-center gap-2">
-                <CustomCheckbox
-                    id={`displayInDetail-${index}`}
-                    checked={entity.displayInDetail !== false}
-                    onCheckedChange={(checked) => {
-                        setFormData(prev => ({
-                            ...prev,
-                            entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
-                                i === index ? { ...ent, displayInDetail: checked } : ent
-                            )
-                        }));
-                    }}
-                    label="Show in Detail View"
-                    labelClassName="text-sm font-medium"
-                    componentExtraClassName=""
-                />
-                <span className="text-xs text-gray-500">
-                    Uncheck to hide this entity from class/race detail pages
-                </span>
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                    <CustomCheckbox
+                        id={`displayInDetail-${index}`}
+                        checked={entity.displayInDetail !== false}
+                        onCheckedChange={(checked) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
+                                    i === index ? { ...ent, displayInDetail: checked } : ent
+                                )
+                            }));
+                        }}
+                        label="Show in Detail View"
+                        labelClassName="text-sm font-medium"
+                        componentExtraClassName=""
+                    />
+                    <span className="text-xs text-gray-500">
+                        Uncheck to hide this entity from class/race detail pages
+                    </span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <CustomCheckbox
+                        id={`showFullProgression-${index}`}
+                        checked={entity.showFullProgression === true}
+                        onCheckedChange={(checked) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
+                                    i === index ? { ...ent, showFullProgression: checked } : ent
+                                )
+                            }));
+                        }}
+                        label="Show Full Progression"
+                        labelClassName="text-sm font-medium"
+                        componentExtraClassName=""
+                    />
+                    <span className="text-xs text-gray-500">
+                        Show every level (formula start–20) in previews instead of only transition levels
+                    </span>
+                </div>
             </div>
 
             {/* Conditions */}

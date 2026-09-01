@@ -210,8 +210,7 @@ export function getAppliesToSelectOptionsSync(appliesTo: EntityAppliesToType, _e
             // CastingType stores the casting type ID (Prepared/Spontaneous) in appliesToId
             return CASTING_TYPE_LIST;
         case EntityAppliesToType.SpellcastingProgression:
-            // SpellcastingProgression stores the feature ID in appliesToId
-            // Return empty array to use number input instead of dropdown
+            // SpellcastingProgression stores the spell level (0-9) in appliesToId; UI uses dedicated dropdown in AppliesToSelector
             return [];
         default:
             return [];
@@ -344,6 +343,9 @@ const COMBINATIONS_WITHOUT_VALUE_OR_FORMULA = new Set<string>([
  * These combinations have formulas that don't require the value field
  */
 const COMBINATIONS_WITH_FORMULA_BUT_NO_VALUE = new Set<string>([
+    // Spell-slot formulas use formulaParams.maxValue (cap), not entity.value
+    `${EntityType.Base}_${EntityAppliesToType.SpellcastingProgression}`,
+    `${EntityType.Base}_${EntityAppliesToType.SpellsKnownProgression}`,
 ]);
 
 /**
@@ -363,7 +365,9 @@ const COMBINATIONS_WITH_FORMULA = new Set<string>([
     `${EntityType.Base}_${EntityAppliesToType.SavingThrow}`, // 100% formula
     `${EntityType.Base}_${EntityAppliesToType.BaseAttackBonus}`, // 100% formula
     `${EntityType.Base}_${EntityAppliesToType.MovementSpeed}`, // 9.1% formula
-    
+    `${EntityType.Base}_${EntityAppliesToType.SpellcastingProgression}`,
+    `${EntityType.Base}_${EntityAppliesToType.SpellsKnownProgression}`,
+
     // Bonus type combinations with formulas
     `${EntityType.Bonus}_${EntityAppliesToType.Skill}`, // 5.4% formula
     `${EntityType.Bonus}_${EntityAppliesToType.SavingThrow}`, // 20.8% formula

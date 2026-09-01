@@ -95,31 +95,37 @@ export const CompanionSummarySchema = z.object({
     name: commonValidations.name(),
 });
 
-// Feature Formula Params Schema
-export const FeatureFormulaParamsSchema = z.object({
-    id: commonValidations.positiveInt('Formula params ID'),
+/**
+ * Base formula params for creating/updating feature entities and drafts.
+ * Only formulaId is required; thresholds and values are optional (match DB and formula types like EVERY_N_LEVELS).
+ */
+export const CreateFeatureFormulaParamsSchema = z.object({
     formulaId: commonValidations.positiveInt('Formula ID'),
     interval: commonValidations.positiveInt('Interval').optional().nullable(),
     formulaStartLevel: commonValidations.positiveInt('Formula start level').optional().nullable(),
     abilityId: commonValidations.positiveInt('Ability ID').optional().nullable(),
-    thresholds: z.array(z.number().int()).nullable(),
-    values: z.array(z.union([z.string(), z.number()])).nullable(),
+    thresholds: z.array(z.number().int()).nullable().optional(),
+    values: z.array(z.union([z.string(), z.number()])).nullable().optional(),
 
-    // Enhanced parameters for complex scaling
     valuesRepresent: z.enum(ConditionalScalingValueType).optional().nullable(),
-    cumulative: z.boolean().default(false),
+    cumulative: z.boolean().optional(),
 
-    // Control whether to include the feature level in the formula calculation
-    includeProgressionLevel: z.boolean().default(true),
-    // When true, returns 0 for levels below formulaStartLevel instead of null or scalingValue
-    featureLevelZero: z.boolean().default(false),
+    includeProgressionLevel: z.boolean().optional(),
+    featureLevelZero: z.boolean().optional(),
 
-    // Division-based formula parameters (for LEVEL_DIVIDED_BY and LEVEL_DIVIDED_BY_PLUS_BASE)
     divisor: commonValidations.positiveInt('Divisor').optional().nullable(),
     baseValue: z.number().int().optional().nullable(),
-
-    // Starting value for formulas that need a different starting value than the increment (e.g., EVERY_N_LEVELS)
     startingValue: z.number().int().optional().nullable(),
+    maxValue: z.number().int().optional().nullable(),
+});
+
+// Feature Formula Params Schema (persisted/runtime shape)
+// Extends the create schema with an id and persisted defaults.
+export const FeatureFormulaParamsSchema = CreateFeatureFormulaParamsSchema.extend({
+    id: commonValidations.positiveInt('Formula params ID'),
+    cumulative: z.boolean().default(false),
+    includeProgressionLevel: z.boolean().default(true),
+    featureLevelZero: z.boolean().default(false),
 });
 
 /**
@@ -171,6 +177,7 @@ export const FeatureEntitySchema = z.object({
     formulaParamsId: z.number().int().optional().nullable(),
     groupingId: z.number().int().default(0),
     displayInDetail: z.boolean().default(true),
+    showFullProgression: z.boolean().default(false),
     filterType: z.number().int().nullable(),
     conditions: z.array(FeatureEntityConditionSchema).optional(),
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
@@ -206,18 +213,6 @@ export const CreateFeatureEntityConditionSchema = FeatureEntityConditionSchema.o
 export const CreateFeatureConditionSchema = FeatureConditionSchema.omit({
     id: true,
     featureId: true,
-});
-
-export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit({
-    id: true,
-}).extend({
-    thresholds: z.array(z.number().int()).nullable().optional(),
-    values: z.array(z.union([z.string(), z.number()])).nullable().optional(),
-    valuesRepresent: z.enum(ConditionalScalingValueType).optional().nullable(),
-    cumulative: z.boolean().optional(),
-    divisor: commonValidations.positiveInt('Divisor').optional().nullable(),
-    baseValue: z.number().int().optional().nullable(),
-    startingValue: z.number().int().optional().nullable(),
 });
 
 export const CreateFeatureEntitySchema = FeatureEntitySchema.omit({
@@ -480,8 +475,8 @@ export const FeatureConditionDraftSchema = FeatureConditionSchema.extend({
     featureId: DraftIdSchema,
 });
 
-export const FeatureFormulaParamsDraftSchema = FeatureFormulaParamsSchema.extend({
-    id: DraftIdSchema,
+export const FeatureFormulaParamsDraftSchema = CreateFeatureFormulaParamsSchema.extend({
+    id: DraftIdSchema.optional(),
 });
 
 export const FeatureEntityDraftSchema = FeatureEntitySchema.extend({

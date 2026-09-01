@@ -454,6 +454,7 @@ export function applyDraftActionAtPath(
                                 formulaParamsId: null,
                                 groupingId: 0,
                                 displayInDetail: true,
+                                showFullProgression: false,
                                 filterType: null,
                                 conditions: [],
                                 formulaParams: null,

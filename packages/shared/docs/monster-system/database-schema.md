@@ -169,7 +169,7 @@ Defines reusable special abilities (attacks and qualities).
 **Key Fields**:
 - **`id`**: Unique identifier for the ability
 - **`name`**: Ability name
-- **`description`**: Full ability description (Text, can contain markdown and be quite large)
+- **`description`**: Full ability description (Text, can contain markdown and be quite large). Validation allows unbounded text; do not use the 2000-character `commonValidations.description()` helper — several Monster Manual abilities exceed that cap and would fail the monster list parse.
 - **`abilityType`**: Type of ability (uses `@MonsterSpecialAbilityTypeId` enum: SpecialAttack=1, SpecialQuality=2)
 
 **Relationships**:

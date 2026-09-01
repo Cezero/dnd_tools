@@ -236,7 +236,8 @@ export const classService: ClassService = {
                             value: createdSpellcastingProgression.id,
                             bonusType: null,
                             groupingId: 0,
-                            displayInDetail: true
+                            displayInDetail: true,
+                            showFullProgression: false
                         }
                     });
 
@@ -299,18 +300,19 @@ export const classService: ClassService = {
                         }
                     });
 
-                    // Create FeatureEntity for SpellsKnown SpellcastingProgression reference
+                    // Create FeatureEntity for SpellsKnown progression reference
                     await tx.featureEntity.create({
                         data: {
                             featureId: spellsKnownFeature.id,
-                            type: EntityType.Other,
-                            appliesTo: EntityAppliesToType.SpellcastingProgression,
+                            type: EntityType.Base,
+                            appliesTo: EntityAppliesToType.SpellsKnownProgression,
                             appliesToId: null,
                             appliesToSubId: null,
                             value: createdSpellsKnownProgression.id,
                             bonusType: null,
                             groupingId: 0,
-                            displayInDetail: true
+                            displayInDetail: true,
+                            showFullProgression: false
                         }
                     });
 
@@ -462,7 +464,8 @@ export const classService: ClassService = {
                             value: createdSpellcastingProgression.id,
                             bonusType: null,
                             groupingId: 0,
-                            displayInDetail: true
+                            displayInDetail: true,
+                            showFullProgression: false
                         }
                     });
 
@@ -538,18 +541,19 @@ export const classService: ClassService = {
                         }
                     });
 
-                    // Create FeatureEntity for SpellsKnown SpellcastingProgression reference
+                    // Create FeatureEntity for SpellsKnown progression reference
                     await tx.featureEntity.create({
                         data: {
                             featureId: spellsKnownFeature.id,
-                            type: EntityType.Other,
-                            appliesTo: EntityAppliesToType.SpellcastingProgression,
+                            type: EntityType.Base,
+                            appliesTo: EntityAppliesToType.SpellsKnownProgression,
                             appliesToId: null,
                             appliesToSubId: null,
                             value: createdSpellsKnownProgression.id,
                             bonusType: null,
                             groupingId: 0,
-                            displayInDetail: true
+                            displayInDetail: true,
+                            showFullProgression: false
                         }
                     });
 

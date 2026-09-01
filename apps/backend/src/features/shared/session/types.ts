@@ -24,6 +24,14 @@ export interface RedisSessionClient {
     get(key: string): Promise<string | null>;
     setEx(key: string, seconds: number, value: string): Promise<string>;
     del(keys: string | string[]): Promise<number>;
+    /**
+     * Refresh TTL for an existing key.
+     *
+     * Implementations should delegate to the underlying Redis client's EXPIRE
+     * operation and ignore the concrete return value. Callers do not depend
+     * on the boolean/number result, only on side effects.
+     */
+    expire(key: string, seconds: number): Promise<void>;
     keys(pattern: string): Promise<string[]>;
     flushAll(): Promise<string>;
     quit(): Promise<void>;

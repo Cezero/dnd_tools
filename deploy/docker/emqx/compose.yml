@@ -1,0 +1,17 @@
+services:
+  emqx:
+    image: emqx/emqx:5.7
+    container_name: ${EMQX_CONTAINER_NAME}
+    user: "913:913"
+    network_mode: host
+    env_file:
+      - /srv/emqx/.env
+    environment:
+      EMQX_NAME: emqx
+      EMQX_HOST: ${HOST_IP}
+      EMQX_CLUSTER__DISCOVERY_STRATEGY: static
+      EMQX_CLUSTER__STATIC__SEEDS: "[emqx@192.168.0.89, emqx@192.168.0.90, emqx@192.168.0.93]"
+    volumes:
+      - /var/lib/emqx/data:/opt/emqx/data
+      - /var/lib/emqx/log:/opt/emqx/log
+    restart: always

@@ -1,0 +1,21 @@
+---
+description: Production Docker deploy via LAN registry on cyberdev01
+alwaysApply: true
+---
+
+# Docker production deploy
+
+Do not deploy unless the user asks. When they do, use this path only.
+
+1. Run from the **repo root on cyberdev01**.
+2. If Zod/`@shared/schema` changed, STOP until the user has rebuilt that package. Never run `pnpm build` there.
+3. If Prisma schema changed, STOP until the user has migrated. Never migrate or `db push`.
+4. Deploy: `deploy/docker/scripts/deploy-app.sh [all|backend|frontend]` (`all` default).
+5. If `http://192.168.0.83:5000/v2/` is down, start with `deploy/docker/scripts/init-registry.sh`. Do **not** re-run `configure-insecure-registry.sh` (restarts dockerd on every host).
+6. Docks use `sudo docker`. Compose lives in `/srv` (local). `/home` is NFS; SSH as `countzero` can fail when NAS stalls — scripts retry.
+7. Do not restart Docker Engine, MySQL, Redis, or EMQX for an app deploy.
+8. Confirm `/health` on each dock after deploy.
+
+**Never:** GitHub Actions, self-hosted runners, `k8s/deploy.sh`, `kubectl`, `docker save`/`load`.
+
+Details: `packages/shared/docs/application-overview/docker-deployment.md`

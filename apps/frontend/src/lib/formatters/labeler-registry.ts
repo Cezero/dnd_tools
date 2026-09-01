@@ -1,6 +1,6 @@
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
-import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, savingThrowProgressionLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler, groupedBonusLanguageLabeler, groupedAutomaticLanguageLabeler, groupedSkillPointsLabeler, animalCompanionLabeler, attackBonusLabeler, castingAbilityLabeler } from './label-formatters';
+import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, savingThrowProgressionLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler, groupedBonusLanguageLabeler, groupedAutomaticLanguageLabeler, groupedSkillPointsLabeler, animalCompanionLabeler, attackBonusLabeler, castingAbilityLabeler, spellcastingProgressionLabeler } from './label-formatters';
 import { generateKey } from './registry-utils';
 import type { CalculatedEntity } from './types';
 
@@ -158,7 +158,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerBaseLabeler(EntityAppliesToType.SkillPoints, displayNameLabeler);
         this.registerBaseLabeler(EntityAppliesToType.CastingAbility, castingAbilityLabeler);
         this.registerBaseLabeler(EntityAppliesToType.CastingType, displayNameLabeler);
-        this.registerBaseLabeler(EntityAppliesToType.SpellcastingProgression, displayNameLabeler);
+        this.registerBaseLabeler(EntityAppliesToType.SpellcastingProgression, spellcastingProgressionLabeler);
         // MovementSpeed is compatible with both Quantity (bonuses) and Base (base race speed)
         this.registerBaseLabeler(EntityAppliesToType.MovementSpeed, displayNameLabeler);
         // Languages are compatible with both Other (language grants) and Base (base race languages)

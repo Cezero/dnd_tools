@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/.git
+**/.env
+**/.env.*
+**/coverage
+**/.turbo
+**/logs
+util/cache
+util/data_extracts
+util/monster_extractor/output
+k8s/db-secret.yaml
+**/*.log
+**/.tsbuildinfo
+apps/backend/prisma-client

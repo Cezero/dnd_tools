@@ -103,26 +103,30 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         context?: DisplayContext,
         showLabels: boolean = true
     ): DisplayResult {
+        // When any entity has showFullProgression, include every level (formula start–20) not just transition levels
+        const includeNonTransitionLevels = context?.includeNonTransitionLevels ?? feature.entities?.some(e => e.showFullProgression === true) ?? false;
+        const mergedContext: DisplayContext | undefined = context ? { ...context, includeNonTransitionLevels } : (includeNonTransitionLevels ? { includeNonTransitionLevels: true } : undefined);
+
         // Phase 1: Value Generation & Calculation
-        const calculatedValues = this.generateValues(feature, context);
+        const calculatedValues = this.generateValues(feature, mergedContext);
 
         // Phase 2: Pure Formatting - Format individual calculated values
-        const formattedItems = this.formattingPhase.formatItems(calculatedValues, feature.level, showLabels, context);
+        const formattedItems = this.formattingPhase.formatItems(calculatedValues, feature.level, showLabels, mergedContext);
 
         // Phase 3: Within-Level Grouping
-        const withinLevelGrouped = this.groupingPhase.groupWithinLevel(formattedItems, feature, context);
+        const withinLevelGrouped = this.groupingPhase.groupWithinLevel(formattedItems, feature, mergedContext);
 
         // Phase 4: Within-Feature Grouping
         const withinProgressionGrouped = this.progressionGroupingPhase.groupWithinProgression(withinLevelGrouped);
 
         // Phase 5: Display-Specific Final Grouping
-        const result = this.createDisplayResult(withinProgressionGrouped, context, feature);
+        const result = this.createDisplayResult(withinProgressionGrouped, mergedContext, feature);
 
         // Phase 6: Format Prerequisites (if feature has prerequisites)
         if (feature.prerequisites && feature.prerequisites.length > 0) {
             const formatted = this.formatPrerequisites(
                 feature.prerequisites,
-                context
+                mergedContext
             );
             result.formattedPrerequisites = formatted;
         }
@@ -157,7 +161,8 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             level: feature.level,
             progressionLevel: feature.level,
             characterLevel: context?.currentLevel,
-            character: context?.character
+            character: context?.character,
+            includeNonTransitionLevels: context?.includeNonTransitionLevels
         };
 
         // Use registry to get feature generator and formula calculator
@@ -242,6 +247,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                 formulaParamsId: null,
                 groupingId: 0,
                 displayInDetail: true,
+                showFullProgression: false,
                 filterType: prereqTypeValue, // Store FeaturePrerequisiteType in filterType (this is a number enum value)
             };
 

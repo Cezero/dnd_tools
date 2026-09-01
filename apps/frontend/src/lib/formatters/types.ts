@@ -132,6 +132,15 @@ export interface DisplayContext extends BaseFormatterContext {
     currentLevel?: number;
     showBreakdown?: boolean;
     displayBonusType?: boolean; // Whether to display bonus type (e.g., "(racial)"). Defaults to true.
+    /**
+     * When true, formatters should emit values for all character levels
+     * in the progression range (e.g., 1–20), including levels where the
+     * underlying value does not change. When false or undefined, formatters
+     * may collapse consecutive identical values and only emit transition
+     * levels where the value changes. This flag is honored only by
+     * strategies and phases that support per-level progression output.
+     */
+    includeNonTransitionLevels?: boolean;
     choices?: Map<string, CharacterFeatureChoice>; // keyed by choiceGroupId
     companions?: CharacterCompanion[];
     deity?: Deity;
@@ -153,6 +162,14 @@ export interface CalculationContext extends BaseFormatterContext {
     level: number;
     progressionLevel: number;
     characterLevel?: number;
+    /**
+     * When true, calculation helpers should avoid collapsing
+     * consecutive identical values when generating per-level
+     * progressions, so callers can see the value at every level.
+     * When false or undefined, helpers may only return transition
+     * levels where the value changes.
+     */
+    includeNonTransitionLevels?: boolean;
     modifierValue?: number;
 }
 

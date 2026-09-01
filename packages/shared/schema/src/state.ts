@@ -336,37 +336,32 @@ export type DraftLockStatus = z.infer<typeof DraftLockStatusSchema>;
 /**
  * Generic schema for updating state values by path.
  * Used by all entity types (Feature, Class, Race, Character, etc.) for path-based state updates.
- * 
+ *
+ * **IMPORTANT – value is scalar only:** `value` must be a string, number, boolean, or null.
+ * Do NOT pass objects or arrays; the request will fail validation. To update nested data
+ * (e.g. formulaParams), send one update per leaf field with a scalar value.
+ * See: packages/shared/docs/application-overview/session-state-management-backend.md
+ *
  * @example
  * ```typescript
- * {
- *   draftType: DraftType.Class,
- *   id: 123,
- *   path: "name",
- *   value: "New Name"
- * }
+ * { draftType: DraftType.Class, id: 123, path: "name", value: "New Name" }
  * ```
- * 
+ *
  * @example
  * ```typescript
- * {
- *   draftType: DraftType.Feature,
- *   id: 456,
- *   path: "entities.0.type",
- *   value: 4
- * }
+ * { draftType: DraftType.Feature, id: 456, path: "entities.byId.7.formulaParams.maxValue", value: 4 }
  * ```
  */
 export const UpdateStateValueSchema = DraftRefRequestSchema.extend({
     /**
-     * The path to update using dot notation (e.g., "name", "entities.0.type", "sourceBookInfo.editionId").
-     * Supports nested objects and array indices.
+     * The path to update using dot notation (e.g., "name", "entities.byId.7.type", "entities.byId.7.formulaParams.maxValue").
+     * Supports nested objects, array indices, and byId selectors.
      */
     path: z.string().min(1, 'Path is required'),
 
     /**
      * The new value to set at the specified path.
-     * Must be a scalar value.
+     * Must be a scalar: string, number, boolean, or null. Objects and arrays are not allowed and will fail validation.
      */
     value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
 

@@ -16,6 +16,7 @@ This folder contains documentation for concepts, principles, and components that
 - **[static-data.md](./static-data.md)** - Shared static data structures and reference systems
 - **[performance-optimization.md](./performance-optimization.md)** - Performance principles and optimization strategies
 - **[maintenance-and-extension.md](./maintenance-and-extension.md)** - Maintenance practices and extension patterns
+- **[docker-deployment.md](./docker-deployment.md)** - Three-dock Docker Compose production topology and LAN-registry app deploy (MySQL GR, Redis Cluster, EMQX, HAProxy)
 
 ### **Implementation Patterns**
 
@@ -77,7 +78,7 @@ Each system documentation folder (feature-system, class-system, race-system) sho
 - **Authentication and Authorization**: Common security patterns
 - **API Design**: Standardized API patterns and conventions
 - **Data Migration**: Common migration strategies and tools
-- **Deployment**: Shared deployment and configuration patterns
+- **Deployment**: Shared deployment and configuration patterns — see [docker-deployment.md](./docker-deployment.md)
 
 ### **Documentation Improvements**
 - **Interactive Examples**: Code examples and interactive documentation

@@ -52,6 +52,21 @@ function createSessionRedisClient(client: InternalRedisClient): RedisSessionClie
             }
         },
 
+        async expire(key: string, seconds: number): Promise<void> {
+            try {
+                // Both RedisClientType and RedisClusterType implement expire.
+                // Their return types differ, but callers ignore the result,
+                // so we simply await the operation for its side effect.
+                await client.expire(key, seconds);
+            } catch (error) {
+                console.error(`Redis EXPIRE error for key ${key}:`, error);
+                if (error instanceof Error) {
+                    console.error(`Redis EXPIRE error details: ${error.message}`, error.stack);
+                }
+                throw error;
+            }
+        },
+
         async keys(pattern: string): Promise<string[]> {
             try {
                 // Both client types implement keys, but TypeScript can't infer from union

@@ -171,6 +171,7 @@ The unified schema that handles all types of feature effects including modifiers
 - **`formulaParamsId`**: Optional positive integer linking to formula parameters
 - **`groupingId`**: Optional integer for grouping related entities (default: 0)
 - **`displayInDetail`**: Optional boolean for display control (default: true)
+- **`showFullProgression`**: Optional boolean; when true, progression previews show every level from formula start to 20 (default: false)
 - **`filterType`**: Optional integer for choice filtering
 - **`conditions`**: Optional array of condition schemas
 - **`formulaParams`**: Optional nested formula parameters schema
@@ -375,6 +376,7 @@ Schema for formula parameters, defining mathematical progression calculations.
 - **`divisor`**: Optional positive integer for division-based formulas (e.g., floor(level / divisor))
 - **`baseValue`**: Optional integer for base value in division-based formulas (e.g., floor(level / divisor) + baseValue)
 - **`startingValue`**: Optional integer for starting value in formulas that need a different starting value than the increment (e.g., @FormulaId.EVERY_N_LEVELS). Defaults to entity.value if not set.
+- **`maxValue`**: Optional integer for the cap (max value) in formulas with an upper bound (e.g., @FormulaId.SPELL_SLOTS_TRIANGULAR, @FormulaId.SPELL_SLOTS_LINEAR). When null, spell-slot formulas use entity.value for backward compatibility.
 
 **Formula Types and Usage Patterns**:
 
@@ -429,16 +431,19 @@ Schema for formula parameters, defining mathematical progression calculations.
 
 ### **CreateFeatureFormulaParamsSchema**
 
-Schema for creating new formula parameters, omitting read-only fields and making optional fields more flexible.
+Schema for creating new formula parameters when creating or saving feature entities. Used for both API create requests and draft-to-create payloads.
 
-**Purpose**: Validates data for creating new formula parameters without requiring existing IDs.
+**Purpose**: Validates formula parameter data for new feature entities without requiring existing IDs or formula-specific fields that are optional in the database.
 
-**Key Differences from Base Schema**:
-- **Omits**: `id` (read-only field)
-- **Flexible Fields**: Makes thresholds, values, valuesRepresent, and cumulative optional for creation
-- **Validation**: Ensures proper formula constraints
+**Required vs optional**:
+- **Required**: Only `formulaId` is required.
+- **Not required**: `id` is not present (create payloads omit it). `thresholds` and `values` are optional and nullable; they are optional in the database and unused by many formula types (e.g. EVERY_N_LEVELS). All other fields (interval, formulaStartLevel, abilityId, baseValue, startingValue, maxValue, divisor, includeProgressionLevel, featureLevelZero, valuesRepresent, cumulative) are optional or optional+nullable.
 
-**Usage**: Validates formula parameter creation requests in API endpoints.
+**Key differences from base schema**:
+- No `id` field (create-only).
+- `thresholds` and `values` are `.nullable().optional()` so minimal payloads (e.g. `{ formulaId: 2, formulaStartLevel: 3 }`) are valid.
+
+**Usage**: Validates formula params in `CreateFeatureEntitySchema` when creating features or when saving feature drafts to the database.
 
 **Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureFormulaParamsSchema definition)
 

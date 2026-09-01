@@ -30,7 +30,8 @@ export const MonsterFeatMapSchema = z.object({
 export const MonsterSpecialAbilitySchema = z.object({
     id: commonValidations.positiveInt('ID'),
     name: commonValidations.name(),
-    description: commonValidations.description().nullable(),
+    // TEXT in MySQL; several MM abilities exceed the 2000-char common description helper
+    description: z.string().nullable(),
     abilityType: commonValidations.positiveInt('Ability type'),
     effectiveCasterLevel: commonValidations.positiveInt('Effective caster level').nullable(),
     saveAbility: commonValidations.positiveInt('Save ability').nullable(),

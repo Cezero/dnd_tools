@@ -76,6 +76,7 @@ The unified model that handles all types of feature effects including modifiers,
 - **`value`**: Numerical value of the entity (if applicable)
 - **`bonusType`**: Bonus type for stacking rules (if applicable)
 - **`displayInDetail`**: Whether to display this entity in detailed views (default: true)
+- **`showFullProgression`**: When true, progression previews show every level from formula start to 20 instead of only transition levels (default: false)
 - **`filterType`**: Type of filtering for choice options (if applicable)
 
 **Relationships**:
@@ -129,6 +130,7 @@ Defines mathematical formulas for feature progression, including intervals, thre
 - **`divisor`**: Divisor value for division-based formulas (e.g., floor(level / divisor))
 - **`baseValue`**: Base value to add for division-based formulas (e.g., floor(level / divisor) + baseValue)
 - **`startingValue`**: Starting value for formulas that need a different starting value than the increment (e.g., EVERY_N_LEVELS). Defaults to entity.value if null.
+- **`maxValue`**: Cap (maximum value) for formulas with an upper bound (e.g., SPELL_SLOTS_TRIANGULAR, SPELL_SLOTS_LINEAR). When null, spell-slot formulas fall back to entity.value for backward compatibility.
 
 **Relationships**:
 - **`featureEntity`**: Links to feature entities using this formula

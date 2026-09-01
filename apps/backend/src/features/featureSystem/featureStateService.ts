@@ -223,8 +223,12 @@ export class FeatureStateService {
                     }) : undefined,
                     formulaParams: formulaParams && typeof formulaParams === 'object' ? (() => {
                         const fp = formulaParams as FeatureFormulaParams;
-                        const { id: _fpId, ...fpData } = fp;
-                        return fpData;
+                        const { id: _fpId, ...rest } = fp;
+                        return {
+                            ...rest,
+                            thresholds: rest.thresholds ?? null,
+                            values: rest.values ?? null,
+                        };
                     })() : null,
                 };
                 

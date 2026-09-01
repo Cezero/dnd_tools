@@ -106,6 +106,24 @@ Full-page component for feature editing that uses FeatureEditForm in embedded mo
 
 **Source File**: `frontend/src/components/feature-system/FeatureEdit.tsx`
 
+### **Shared modifier formatting**
+
+To keep numeric modifier display consistent across the frontend (character sheet, class progression tables, PDF views), sign formatting is centralized in the formatter layer:
+
+- **Helper**: `formatSignedModifier(value: number)` in `frontend/src/lib/formatters/modifier-utils.ts`
+  - Formats modifiers as `+N` for non-negative values and `-N` for negatives (e.g. `0 → "+0"`, `2 → "+2"`, `-1 → "-1"`).
+  - Used by `CharacterSheetDisplayStrategy`, `ClassProgression` helpers, and the PDF renderer instead of hand-written `+`/`-` logic.
+- **Pure formatters** (e.g. `LevelAdjustmentFormatter` in `frontend/src/lib/formatters/pure-formatters.ts`) delegate their sign formatting to the same helper so that changing how modifiers are rendered only requires updating it in one place.
+
+### **Base-only mechanics containers**
+
+Some display components (notably `ClassDisplay` and `RaceDisplay`) treat **base-mechanics containers** differently from user-facing feature text. A base-mechanics container is a feature whose entities are **exclusively** `EntityType.Base` (e.g. shared BAB/save/skill-point progressions, racial size/speed/level-adjustment mechanics, spellcasting progression holders). These features:
+
+- Still participate fully in mechanics extraction and progression grids (via `extractClassMechanics` / `extractRaceMechanics` and the display strategy pipeline).
+- Are intentionally **omitted** from the **Class Features** and **Racial Features** sections, which focus on descriptive and player-facing abilities.
+
+The helper `isBaseOnlyFeature(feature: FeatureWithRelations)` in `frontend/src/lib/formatters/modifier-utils.ts` centralizes this detection so that UI components can consistently distinguish pure mechanics containers from narrative features.
+
 ### **FeatureDetail**
 
 Component for displaying feature details and information.
@@ -129,7 +147,9 @@ Component for displaying feature details and information.
 ### **Feature Entity Editor Components (`FeatureDetailEdit/*`)**
 
 FeatureEditForm uses a set of co-located components under `frontend/src/components/feature-system/FeatureDetailEdit/` to edit feature entities.\n\nThese components cover:\n- entity rows (`EntityDetailForm.tsx`)\n- grouping controls (`EntitySectionRenderer.tsx`, `GroupingControls.tsx`, grouping helpers)\n- formula editing (`FormulaManager.tsx`, `FormulaPreview.tsx`, `ArrayPairEditor.tsx`)\n- conditional requirements (`ConditionEditor.tsx`)\n+
-The legacy `FeatureDetailEdit` component entrypoint was removed; these editor components remain as implementation details used by FeatureEditForm.
+The legacy `FeatureDetailEdit` component entrypoint was removed; these editor components remain as implementation details used by FeatureEditForm. EntityDetailForm exposes **Show in Detail View** (displayInDetail) and **Show Full Progression** (showFullProgression); the latter controls whether progression previews show every level from formula start to 20 or only transition levels.
+
+**Entities tab – Spellcasting Progression**: For entities with type Base and appliesTo Spellcasting Progression, the Entities tab shows the Formula selector and an **Applies To** field. The appliesToId is the **spell level** (0–9), not a feature ID; the UI labels it "Spell Level" and provides a dropdown (0th through 9th). Formula and spell level are used to define spells-per-day (or similar) progressions per spell level. For spell-slot formulas (Triangular/Linear), the **cap** (max slots) is set in Formula Parameters as **Max Slots (cap)** (`formulaParams.maxValue`); the entity Value field is not used and is hidden for this combination. Existing data without `maxValue` falls back to the stored entity value for backward compatibility.
 
 ### **FeatureDisplay**
 
@@ -233,6 +253,7 @@ React Query hooks for fetching and caching feature data from the database.
 - **Editing**: Use `useFeatureResolution` hook for editing (uses isolated entity state)
   - For **new features**, pass `0` as the feature id; the backend will mint a **negative draft id** during `startEditing`, and the resolution hook will adopt it for all draft operations.
   - See [Entity State Management](../application-overview/entity-state-management.md#new-drafts-minted-negative-ids) for the draft id lifecycle.
+  - **Draft update-value API**: When syncing form data to the draft (e.g. in `FeatureEditForm`), the update-value API accepts only **scalar** values (`string | number | boolean | null`). Do not send objects or arrays. For nested data (e.g. `formulaParams`), send **one update per leaf field** (e.g. `entities.byId.<id>.formulaParams.maxValue` with value `4`). See [Session State Management - Backend](../application-overview/session-state-management-backend.md#path-based-updates-update-value-api).
 
 **Canonical Rule (No Duplication)**:
 - Do **not** add a separate `typedApi` wrapper for feature endpoints if the same endpoint exists in `FeatureQueryHooks`.\n+- `createQueryHooks` already uses `typedApi` internally, and centralizing on QueryHooks prevents duplicated query key/invalidation logic.
@@ -354,10 +375,32 @@ The feature system integrates with the feat system through direct embedding:
 
 The feature system integrates with the formula system through specialized components:
 
-**FormulaInput**: Formula parameter input component
-**FormulaPreview**: Real-time formula calculation preview
-**FormulaValidation**: Formula validation and error handling
-**FormulaCalculation**: Dynamic formula calculation display
+**FormulaInput**: Formula parameter input component  
+**FormulaPreview**: Real-time formula calculation preview  
+**FormulaValidation**: Formula validation and error handling  
+**FormulaCalculation**: Dynamic formula calculation display  
+
+#### Conditional Scaling & Draft Sync
+
+For `@FormulaId.CONDITIONAL_SCALING`, the UI uses `ArrayPairEditor` to edit `thresholds`/`values` as **level–value pairs** on each `FeatureEntity`:
+
+- `thresholds[i]`: the level where a new value takes effect (e.g., 18, 19, 20)
+- `values[i]`: the corresponding value or `appliesToId` at/after that level
+
+On the **frontend form state**, these are stored as normal arrays on `feature.entities[index].formulaParams.thresholds` and `.values`.
+
+For the **feature draft state** (Redis), the system uses the scalar-only `DraftApi.updateValue` to synchronize these arrays **per index**:
+
+- Each change produces updates like:
+  - `entities.byId.{entityId}.formulaParams.thresholds.0 = 18`
+  - `entities.byId.{entityId}.formulaParams.values.0 = 3`
+- When pairs are removed or shortened, higher indexes are rewritten to `null`, and the backend normalizes the final arrays when saving.
+
+This design guarantees:
+
+- **Draft API contract is respected** (each `value` is `string | number | boolean | null`)
+- **Incremental edits** (only changed indices are sent)
+- **Consistent semantics** between the React form and the persisted feature formula parameters.
 
 ## 📊 **Error Handling**
 

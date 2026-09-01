@@ -247,6 +247,120 @@ export function FeatureEditForm({
         return draftUpdateQueueRef.current;
     }, []);
 
+    /**
+     * Pushes current formData to the draft (Redis) so the backend has the latest state.
+     * Must be awaited before save() so that formulaParams (e.g. maxValue) and other fields are persisted.
+     */
+    const syncFormDataToDraft = useCallback(
+        async (data: FeatureWithRelations, prevData: FeatureWithRelations | null): Promise<void> => {
+            if (!resolutionFeatureId || resolutionFeatureId === null) return;
+            const prev = prevData;
+            if (!prev) return;
+
+            const topLevelFields: Array<{ field: keyof FeatureWithRelations; value: unknown }> = [
+                { field: 'sourceType', value: data.sourceType },
+                { field: 'displayInCharacterSheet', value: data.displayInCharacterSheet },
+                { field: 'domainId', value: data.domainId },
+                { field: 'featId', value: data.featId },
+                { field: 'companionId', value: data.companionId },
+                { field: 'editionId', value: data.editionId },
+            ];
+            for (const { field, value } of topLevelFields) {
+                const prevVal = (prev as Record<string, unknown>)[field as string];
+                if (!isEqual(prevVal, value)) {
+                    await resolution.updateValue(field as string, value);
+                }
+            }
+
+            const prevEntities = (prev.entities || []) as FeatureEntity[];
+            const nextEntities = (data.entities || []) as FeatureEntity[];
+            const prevById = new Map<number, FeatureEntity>();
+            for (const e of prevEntities) {
+                if (typeof e.id === 'number' && e.id !== 0) prevById.set(e.id, e);
+            }
+            const nextIds = new Set<number>();
+            for (const e of nextEntities) {
+                if (typeof e.id === 'number' && e.id !== 0) nextIds.add(e.id);
+            }
+            for (const [id] of prevById) {
+                if (!nextIds.has(id)) {
+                    await resolution.updateValue(`entities.byId.${id}`, id, DraftAction.Remove);
+                }
+            }
+
+            for (const e of nextEntities) {
+                if (typeof e.id !== 'number' || e.id === 0) continue;
+                const prevEntity = prevById.get(e.id);
+                if (!prevEntity) continue;
+                const basePath = `entities.byId.${e.id}`;
+                const updates: Array<{ path: string; value: unknown }> = [];
+                if (!isEqual(prevEntity.type, e.type)) updates.push({ path: `${basePath}.type`, value: e.type });
+                if (!isEqual(prevEntity.appliesTo, e.appliesTo)) updates.push({ path: `${basePath}.appliesTo`, value: e.appliesTo });
+                if (!isEqual(prevEntity.appliesToId, e.appliesToId)) updates.push({ path: `${basePath}.appliesToId`, value: e.appliesToId });
+                if (!isEqual(prevEntity.appliesToSubId, e.appliesToSubId)) updates.push({ path: `${basePath}.appliesToSubId`, value: e.appliesToSubId });
+                if (!isEqual(prevEntity.value, e.value)) updates.push({ path: `${basePath}.value`, value: e.value });
+                if (!isEqual(prevEntity.bonusType, e.bonusType)) updates.push({ path: `${basePath}.bonusType`, value: e.bonusType });
+                if (!isEqual(prevEntity.displayInDetail, e.displayInDetail)) updates.push({ path: `${basePath}.displayInDetail`, value: e.displayInDetail });
+                if (!isEqual(prevEntity.showFullProgression, e.showFullProgression)) updates.push({ path: `${basePath}.showFullProgression`, value: e.showFullProgression });
+                if (!isEqual(prevEntity.filterType, e.filterType)) updates.push({ path: `${basePath}.filterType`, value: e.filterType });
+                const prevFp = prevEntity.formulaParams ?? null;
+                const nextFp = e.formulaParams ?? null;
+                if (!isEqual(prevFp?.formulaId, nextFp?.formulaId)) updates.push({ path: `${basePath}.formulaParams.formulaId`, value: nextFp?.formulaId ?? null });
+                if (!isEqual(prevFp?.formulaStartLevel, nextFp?.formulaStartLevel)) updates.push({ path: `${basePath}.formulaParams.formulaStartLevel`, value: nextFp?.formulaStartLevel ?? null });
+                if (!isEqual(prevFp?.interval, nextFp?.interval)) updates.push({ path: `${basePath}.formulaParams.interval`, value: nextFp?.interval ?? null });
+                if (!isEqual(prevFp?.abilityId, nextFp?.abilityId)) updates.push({ path: `${basePath}.formulaParams.abilityId`, value: nextFp?.abilityId ?? null });
+                if (!isEqual(prevFp?.baseValue, nextFp?.baseValue)) updates.push({ path: `${basePath}.formulaParams.baseValue`, value: nextFp?.baseValue ?? null });
+                if (!isEqual(prevFp?.startingValue, nextFp?.startingValue)) updates.push({ path: `${basePath}.formulaParams.startingValue`, value: nextFp?.startingValue ?? null });
+                if (!isEqual(prevFp?.maxValue, nextFp?.maxValue)) updates.push({ path: `${basePath}.formulaParams.maxValue`, value: nextFp?.maxValue ?? null });
+                if (!isEqual(prevFp?.divisor, nextFp?.divisor)) updates.push({ path: `${basePath}.formulaParams.divisor`, value: nextFp?.divisor ?? null });
+                if (!isEqual(prevFp?.includeProgressionLevel, nextFp?.includeProgressionLevel)) updates.push({ path: `${basePath}.formulaParams.includeProgressionLevel`, value: nextFp?.includeProgressionLevel ?? null });
+                if (!isEqual(prevFp?.featureLevelZero, nextFp?.featureLevelZero)) updates.push({ path: `${basePath}.formulaParams.featureLevelZero`, value: nextFp?.featureLevelZero ?? null });
+                if (!isEqual(prevFp?.valuesRepresent, nextFp?.valuesRepresent)) updates.push({ path: `${basePath}.formulaParams.valuesRepresent`, value: nextFp?.valuesRepresent ?? null });
+                if (!isEqual(prevFp?.cumulative, nextFp?.cumulative)) updates.push({ path: `${basePath}.formulaParams.cumulative`, value: nextFp?.cumulative ?? null });
+                const prevThresholds = prevFp?.thresholds ?? [];
+                const nextThresholds = nextFp?.thresholds ?? [];
+                const maxThresholdLength = Math.max(prevThresholds.length, nextThresholds.length);
+                for (let i = 0; i < maxThresholdLength; i += 1) {
+                    const prevValue = prevThresholds[i] ?? null;
+                    const nextValue = nextThresholds[i] ?? null;
+                    if (!isEqual(prevValue, nextValue)) {
+                        updates.push({
+                            path: `${basePath}.formulaParams.thresholds.${i}`,
+                            value: nextValue,
+                        });
+                    }
+                }
+                const prevValues = prevFp?.values ?? [];
+                const nextValues = nextFp?.values ?? [];
+                const maxValuesLength = Math.max(prevValues.length, nextValues.length);
+                for (let i = 0; i < maxValuesLength; i += 1) {
+                    const prevValue = prevValues[i] ?? null;
+                    const nextValue = nextValues[i] ?? null;
+                    if (!isEqual(prevValue, nextValue)) {
+                        updates.push({
+                            path: `${basePath}.formulaParams.values.${i}`,
+                            value: nextValue,
+                        });
+                    }
+                }
+                for (const u of updates) {
+                    await resolution.updateValue(u.path, u.value);
+                }
+            }
+
+            const prevPrereqs = (prev.prerequisites || []) as FeaturePrerequisite[];
+            const nextPrereqs = (data.prerequisites || []) as FeaturePrerequisite[];
+            const prevPrereqIds = new Set(prevPrereqs.map(p => p.id).filter((id): id is number => typeof id === 'number' && id !== 0));
+            const nextPrereqIds = new Set(nextPrereqs.map(p => p.id).filter((id): id is number => typeof id === 'number' && id !== 0));
+            for (const prevId of prevPrereqIds) {
+                if (!nextPrereqIds.has(prevId)) {
+                    await resolution.updateValue(`prerequisites.byId.${prevId}`, prevId, DraftAction.Remove);
+                }
+            }
+        },
+        [resolution, resolutionFeatureId]
+    );
+
     const commitDraftField = useCallback((field: string, value: unknown) => {
         if (!isOpen || resolutionFeatureId === null || !hasInitializedRef.current) {
             return;
@@ -345,12 +459,49 @@ export function FeatureEditForm({
                 if (!isEqual(prevEntity.value, e.value)) updates.push({ path: `${basePath}.value`, value: e.value });
                 if (!isEqual(prevEntity.bonusType, e.bonusType)) updates.push({ path: `${basePath}.bonusType`, value: e.bonusType });
                 if (!isEqual(prevEntity.displayInDetail, e.displayInDetail)) updates.push({ path: `${basePath}.displayInDetail`, value: e.displayInDetail });
+                if (!isEqual(prevEntity.showFullProgression, e.showFullProgression)) updates.push({ path: `${basePath}.showFullProgression`, value: e.showFullProgression });
                 if (!isEqual(prevEntity.filterType, e.filterType)) updates.push({ path: `${basePath}.filterType`, value: e.filterType });
 
-                const prevFormulaId = prevEntity.formulaParams?.formulaId ?? null;
-                const nextFormulaId = e.formulaParams?.formulaId ?? null;
-                if (!isEqual(prevFormulaId, nextFormulaId)) {
-                    updates.push({ path: `${basePath}.formulaParams.formulaId`, value: nextFormulaId });
+                // Sync formulaParams as scalar fields (API only accepts string/number/boolean/null per path)
+                const prevFp = prevEntity.formulaParams ?? null;
+                const nextFp = e.formulaParams ?? null;
+                if (!isEqual(prevFp?.formulaId, nextFp?.formulaId)) updates.push({ path: `${basePath}.formulaParams.formulaId`, value: nextFp?.formulaId ?? null });
+                if (!isEqual(prevFp?.formulaStartLevel, nextFp?.formulaStartLevel)) updates.push({ path: `${basePath}.formulaParams.formulaStartLevel`, value: nextFp?.formulaStartLevel ?? null });
+                if (!isEqual(prevFp?.interval, nextFp?.interval)) updates.push({ path: `${basePath}.formulaParams.interval`, value: nextFp?.interval ?? null });
+                if (!isEqual(prevFp?.abilityId, nextFp?.abilityId)) updates.push({ path: `${basePath}.formulaParams.abilityId`, value: nextFp?.abilityId ?? null });
+                if (!isEqual(prevFp?.baseValue, nextFp?.baseValue)) updates.push({ path: `${basePath}.formulaParams.baseValue`, value: nextFp?.baseValue ?? null });
+                if (!isEqual(prevFp?.startingValue, nextFp?.startingValue)) updates.push({ path: `${basePath}.formulaParams.startingValue`, value: nextFp?.startingValue ?? null });
+                if (!isEqual(prevFp?.maxValue, nextFp?.maxValue)) updates.push({ path: `${basePath}.formulaParams.maxValue`, value: nextFp?.maxValue ?? null });
+                if (!isEqual(prevFp?.divisor, nextFp?.divisor)) updates.push({ path: `${basePath}.formulaParams.divisor`, value: nextFp?.divisor ?? null });
+                if (!isEqual(prevFp?.includeProgressionLevel, nextFp?.includeProgressionLevel)) updates.push({ path: `${basePath}.formulaParams.includeProgressionLevel`, value: nextFp?.includeProgressionLevel ?? null });
+                if (!isEqual(prevFp?.featureLevelZero, nextFp?.featureLevelZero)) updates.push({ path: `${basePath}.formulaParams.featureLevelZero`, value: nextFp?.featureLevelZero ?? null });
+                if (!isEqual(prevFp?.valuesRepresent, nextFp?.valuesRepresent)) updates.push({ path: `${basePath}.formulaParams.valuesRepresent`, value: nextFp?.valuesRepresent ?? null });
+                if (!isEqual(prevFp?.cumulative, nextFp?.cumulative)) updates.push({ path: `${basePath}.formulaParams.cumulative`, value: nextFp?.cumulative ?? null });
+                const prevThresholds = prevFp?.thresholds ?? [];
+                const nextThresholds = nextFp?.thresholds ?? [];
+                const maxThresholdLength = Math.max(prevThresholds.length, nextThresholds.length);
+                for (let i = 0; i < maxThresholdLength; i += 1) {
+                    const prevValue = prevThresholds[i] ?? null;
+                    const nextValue = nextThresholds[i] ?? null;
+                    if (!isEqual(prevValue, nextValue)) {
+                        updates.push({
+                            path: `${basePath}.formulaParams.thresholds.${i}`,
+                            value: nextValue,
+                        });
+                    }
+                }
+                const prevValues = prevFp?.values ?? [];
+                const nextValues = nextFp?.values ?? [];
+                const maxValuesLength = Math.max(prevValues.length, nextValues.length);
+                for (let i = 0; i < maxValuesLength; i += 1) {
+                    const prevValue = prevValues[i] ?? null;
+                    const nextValue = nextValues[i] ?? null;
+                    if (!isEqual(prevValue, nextValue)) {
+                        updates.push({
+                            path: `${basePath}.formulaParams.values.${i}`,
+                            value: nextValue,
+                        });
+                    }
                 }
 
                 for (const u of updates) {
@@ -496,6 +647,11 @@ export function FeatureEditForm({
         try {
             setIsLoading(true);
 
+            // Flush current formData to draft so formulaParams (e.g. maxValue) and other edits are in Redis before persist
+            const prev = previousFormDataRef.current ?? resolution.state ?? null;
+            if (prev) {
+                await syncFormDataToDraft(formData, prev);
+            }
             const savedFeatureId = await resolution.save();
 
             if (numericFeatureId) {
@@ -531,6 +687,7 @@ export function FeatureEditForm({
 
             if (mode === 'modal' && onClose) {
                 setTimeout(() => {
+                    // Do not pass draft state when closing after save; caller already updated from refetched feature
                     onClose();
                 }, 500);
             }
@@ -569,7 +726,7 @@ export function FeatureEditForm({
         if (onCancel) {
             onCancel();
         } else if (onClose) {
-            onClose();
+            onClose(resolution.state ?? null);
         }
     };
 
@@ -588,7 +745,7 @@ export function FeatureEditForm({
 
         if (mode === 'modal') {
             return (
-                <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+                <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose?.(resolution?.state ?? null)}>
                     <Dialog.Backdrop className="fixed inset-0 bg-black bg-opacity-25 z-40" />
                     <Dialog.Portal>
                         <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-2">
@@ -610,7 +767,7 @@ export function FeatureEditForm({
         const loadingContent = <div className="flex justify-center items-center h-64">Loading...</div>;
         if (mode === 'modal') {
             return (
-                <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+                <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose?.(resolution?.state ?? null)}>
                     <Dialog.Backdrop className="fixed inset-0 bg-black bg-opacity-25 z-40" />
                     <Dialog.Portal>
                         <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-2">
@@ -639,7 +796,7 @@ export function FeatureEditForm({
         );
         if (mode === 'modal') {
             return (
-                <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+                <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose?.(resolution?.state ?? null)}>
                     <Dialog.Backdrop className="fixed inset-0 bg-black bg-opacity-25 z-40" />
                     <Dialog.Portal>
                         <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-2">
@@ -976,7 +1133,7 @@ export function FeatureEditForm({
 
     if (mode === 'modal') {
         return (
-            <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+            <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose?.(resolution?.state ?? null)}>
                 <Dialog.Backdrop className="fixed inset-0 bg-black bg-opacity-25 z-40" />
                 <Dialog.Portal>
                     <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-2">

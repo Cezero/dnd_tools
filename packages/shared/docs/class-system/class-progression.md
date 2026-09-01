@@ -25,6 +25,15 @@ The progression system calculates character advancement across multiple dimensio
 
 **Level Input** → **Progression Type** → **Formula Application** → **Result Formatting** → **Display Output**
 
+### **Display Strategy and Formatters**
+
+The class progression grid (BaB, saves, spells per day) and the Spellcasting tab’s PHB-style spell slots table are driven by the **Detail display strategy** and the formatting system. No separate formula or grid helpers are used for display.
+
+- **Class progression table** (`ClassDisplay` → `ClassProgressionTable`): Data comes from `buildClassProgressionFromDetail(features)` in `frontend/src/lib/ClassProgression.ts`, which runs `displayStrategyFactory.createStrategy(DisplayType.Detail)` and `strategy.format(features, ...)`, then maps level entries to `ProgressionRow[]` (BaB, Fort/Ref/Will, and spell slots as formatted strings).
+- **Spellcasting tab grid**: Data comes from `buildSpellSlotsGridFromDetail(features)` in the same file, using the same Detail strategy output to build the 1–20 × 0–9 spell slots grid. Placeholders (e.g. `—` for no slots) come from `SpellcastingProgressionFormatter` in the pure-formatters/registry pipeline, not from grid or adapter code. Column headers use `formatSpellLevelForTable` from the formatters package.
+
+To change how saves or spell slots appear, update the corresponding formatter (e.g. Saving Throw formatter, SpellcastingProgressionFormatter) rather than the grid or ClassProgression adapter.
+
 ## ⚔️ **Base Attack Bonus (BAB) System**
 
 ### **Formula-Based Progression**

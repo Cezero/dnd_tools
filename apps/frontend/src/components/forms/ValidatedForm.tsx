@@ -11,6 +11,51 @@ import type {
 } from './types';
 import { FormContext, useFormContext } from './ValidatedFormHooks';
 
+/**
+ * Sets a value at a dot path immutably (clones each segment so the original object is not mutated).
+ * Required for nested form state so that change detection (e.g. draft sync) sees actual changes.
+ */
+function setNestedValueImmutable(
+    obj: Record<string, unknown>,
+    path: string,
+    value: unknown
+): Record<string, unknown> {
+    const keys = path.split('.');
+    if (keys.length === 1) return { ...obj, [path]: value };
+
+    const newObj = { ...obj };
+    let current = newObj;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        const existing = current[key];
+        const nextKey = keys[i + 1];
+        const isNextArrayIndex = /^\d+$/.test(nextKey);
+
+        if (Array.isArray(existing) && isNextArrayIndex) {
+            const idx = parseInt(nextKey, 10);
+            const newArr = [...existing];
+            const existingItem = newArr[idx];
+            newArr[idx] =
+                existingItem != null && typeof existingItem === 'object' && !Array.isArray(existingItem)
+                    ? { ...(existingItem as Record<string, unknown>) }
+                    : ({} as Record<string, unknown>);
+            current[key] = newArr;
+            current = newArr[idx] as Record<string, unknown>;
+            i += 1;
+        } else if (existing != null && typeof existing === 'object' && !Array.isArray(existing)) {
+            current[key] = { ...(existing as Record<string, unknown>) };
+            current = current[key] as Record<string, unknown>;
+        } else {
+            current[key] = isNextArrayIndex ? [] : {};
+            current = current[key] as Record<string, unknown>;
+        }
+    }
+
+    current[keys[keys.length - 1]] = value;
+    return newObj;
+}
+
 export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement, ValidatedInputProps>(
     ({
         field,
@@ -35,25 +80,8 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
             }, obj) ?? '';
         };
 
-        // Helper function to set nested value
-        const setNestedValue = (obj: Record<string, unknown>, path: string, value: unknown): Record<string, unknown> => {
-            if (!nested) return { ...obj, [path]: value };
-
-            const keys = path.split('.');
-            const newObj = { ...obj };
-            let current = newObj;
-
-            for (let i = 0; i < keys.length - 1; i++) {
-                const key = keys[i];
-                if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
-                    current[key] = {};
-                }
-                current = current[key] as Record<string, unknown>;
-            }
-
-            current[keys[keys.length - 1]] = value;
-            return newObj;
-        };
+        const setNestedValue = (o: Record<string, unknown>, p: string, v: unknown) =>
+            nested ? setNestedValueImmutable(o, p, v) : { ...o, [p]: v };
 
         const value = getNestedValue(formData, field);
         const error = validation.getError(field);
@@ -161,25 +189,8 @@ export const ValidatedCustomCheckbox = forwardRef<HTMLButtonElement, ValidatedCu
             return result === undefined ? undefined : Boolean(result);
         };
 
-        // Helper function to set nested value
-        const setNestedValue = (obj: Record<string, unknown>, path: string, value: boolean): Record<string, unknown> => {
-            if (!nested) return { ...obj, [path]: value };
-
-            const keys = path.split('.');
-            const newObj = { ...obj };
-            let current = newObj;
-
-            for (let i = 0; i < keys.length - 1; i++) {
-                const key = keys[i];
-                if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
-                    current[key] = {};
-                }
-                current = current[key] as Record<string, unknown>;
-            }
-
-            current[keys[keys.length - 1]] = value;
-            return newObj;
-        };
+        const setNestedValue = (o: Record<string, unknown>, p: string, v: boolean) =>
+            nested ? setNestedValueImmutable(o, p, v) : { ...o, [p]: v };
 
         const currentValue = getNestedValue(formData, field);
 
@@ -234,25 +245,8 @@ export const ValidatedCustomSelect = <T extends CoreComponent = CoreComponent>({
         }, obj) ?? null;
     };
 
-    // Helper function to set nested value
-    const setNestedValue = (obj: Record<string, unknown>, path: string, value: unknown): Record<string, unknown> => {
-        if (!nested) return { ...obj, [path]: value };
-
-        const keys = path.split('.');
-        const newObj = { ...obj };
-        let current = newObj;
-
-        for (let i = 0; i < keys.length - 1; i++) {
-            const key = keys[i];
-            if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
-                current[key] = {};
-            }
-            current = current[key] as Record<string, unknown>;
-        }
-
-        current[keys[keys.length - 1]] = value;
-        return newObj;
-    };
+    const setNestedValue = (o: Record<string, unknown>, p: string, v: unknown) =>
+        nested ? setNestedValueImmutable(o, p, v) : { ...o, [p]: v };
 
     const value = getNestedValue(formData, field);
 

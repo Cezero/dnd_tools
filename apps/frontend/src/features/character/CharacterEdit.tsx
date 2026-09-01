@@ -281,6 +281,7 @@ export function CharacterEdit(): React.JSX.Element {
                 formulaParamsId: null,
                 groupingId: 0,
                 displayInDetail: true,
+                showFullProgression: false,
                 filterType: null,
             })),
             availableFeatsCount: characterDraft.resolvedCharacter.availableFeatsCount,

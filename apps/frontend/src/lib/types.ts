@@ -3,11 +3,13 @@ import type { CharacterWithAllDetailsResponse, FeatureWithRelations } from '@sha
 export interface ProgressionRow {
     level: number;
     bab: string;
-    fort: number;
-    ref: number;
-    will: number;
-    spells?: { [spellLevel: number]: number };
-    spellsKnown?: { [spellLevel: number]: number };
+    fort: string;
+    ref: string;
+    will: string;
+    // For spell-related columns we prefer formatted strings from the formatting system
+    // so placeholders like "—" come from formatters rather than grid logic.
+    spells?: { [spellLevel: number]: string };
+    spellsKnown?: { [spellLevel: number]: string };
 }
 
 export interface ClassProgressionConfig {

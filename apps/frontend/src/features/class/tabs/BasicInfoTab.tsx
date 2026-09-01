@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import {
     ValidatedInput,
@@ -6,9 +6,13 @@ import {
     CustomCheckbox,
     SourceEditor
 } from '@/components/forms';
+import { buildClassProgressionFromDetail } from '@/lib/ClassProgression';
+import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import {
     EDITION_LIST,
     EditionId,
+    EntityAppliesToType,
+    EntityType,
     SourceType,
 } from '@shared/static-data';
 
@@ -18,8 +22,27 @@ import type { ClassTabProps } from './types';
 export function BasicInfoTab({
     state,
     updateState,
-    isLoading: _isLoading = false
+    isLoading: _isLoading = false,
+    features
 }: ClassTabProps): React.JSX.Element {
+    const hasSpellcastingEntities = useMemo(
+        () =>
+            (features ?? []).some(
+                (feature) =>
+                    feature.entities?.some(
+                        (entity) =>
+                            (entity.type === EntityType.Base || entity.type === EntityType.Quantity) &&
+                            entity.appliesTo === EntityAppliesToType.SpellcastingProgression &&
+                            entity.formulaParams
+                    )
+            ),
+        [features]
+    );
+
+    const progression = useMemo(
+        () => buildClassProgressionFromDetail(features ?? []),
+        [features]
+    );
     return (
         <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -90,8 +113,24 @@ export function BasicInfoTab({
                 </div>
             </div>
 
-            {/* Source References - moved to bottom */}
-            <div className="mt-8">
+            <div className="mt-8 space-y-8">
+                {(state.canCastSpells || hasSpellcastingEntities) && (
+                    <div className="space-y-3">
+                        <div className="border border-dashed border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <p className="text-sm text-blue-800 dark:text-blue-200">
+                                Class features, saving throws, and spellcasting progressions are configured via the Feature system.
+                                Use the <strong>Features</strong> tab to edit the class&apos;s mechanics. The table below is a
+                                read-only preview, formatted using the same progression table as the Class Detail page.
+                            </p>
+                        </div>
+
+                        <div>
+                            <h4 className="text-md font-medium mb-2">Class Features Preview</h4>
+                            <ClassProgressionTable feature={progression} className="mt-2" />
+                        </div>
+                    </div>
+                )}
+
                 <SourceEditor
                     sources={state.sourceBookInfo || []}
                     onSourcesChange={(sources) => {

@@ -31,15 +31,37 @@ Every draft operation identifies the target draft using:
 
 All draft mutations require that the draft is either unlocked or locked by the current user. Locking is handled by `DraftLockService` and enforced by controllers/services before writing updated state.
 
-### Path-based updates (single field mutation)
+### Path-based updates (update-value API)
 
-Instead of action unions like “UpdateClassField”, the backend updates draft JSON using a **path-based** operation:
+The request body is validated by `UpdateStateValueSchema` in `packages/shared/schema/src/state.ts`.
 
-- `path`: dot-notation path (e.g. `name`, `sourceBookInfo.0.pageNumber`, `entities.3.value`)
-- `value`: JSON-serializable primitive (string/number/boolean/null)
-- `action`: optional enum controlling how the path operation is applied (update/insert/remove)
+- `draftType`: numeric enum (Class, Race, Feature, Character, etc.)
+- `id`: draft entity id (or negative id for new drafts)
+- `path`: dot-notation path (e.g. `name`, `entities.byId.123.type`, `entities.byId.123.formulaParams.maxValue`)
+- `value`: **must be a scalar** — one of `string`, `number`, `boolean`, or `null`
+- `action`: optional `DraftAction` (Update, Remove, Add); default is Update
+
+**Critical — value is scalar-only.** The schema allows only `string | number | boolean | null`. **Do not send objects or arrays as `value`.** If you send an object (e.g. a whole `formulaParams` object), the request will fail validation and the update will not be applied. To update nested structures, send **one request per leaf field** with a scalar value. For example, to update feature entity formula params, send separate updates for `entities.byId.<id>.formulaParams.formulaId`, `entities.byId.<id>.formulaParams.maxValue`, `entities.byId.<id>.formulaParams.baseValue`, `entities.byId.<id>.formulaParams.formulaStartLevel`, etc., each with a number or null. The backend will create or merge into the intermediate `formulaParams` object as needed. Correct pattern: see `apps/frontend/src/components/feature-system/FeatureEditForm/FeatureEditForm.tsx` (entity sync, formulaParams per-field updates).
 
 The implementation applies the change via `applyDraftActionAtPath` and persists the updated draft back to Redis.
+
+### Redis client adapter and TTL refresh
+
+Draft state, draft locks, and user sessions all use a shared Redis client adapter:
+
+- `apps/backend/src/features/shared/session/redisClient.ts` – creates the underlying `redis` client (standalone or cluster) and wraps it in a narrow `RedisSessionClient` interface
+- `apps/backend/src/features/shared/session/types.ts` – defines `RedisSessionClient` with only the operations required by backend session/draft services (`get`, `setEx`, `del`, `expire`, `keys`, `flushAll`, `quit`)
+
+TTL behavior is implemented using Redis `EXPIRE` and `SETEX`:
+
+- **SETEX on write**: draft state, draft locks, and sessions are written using `setEx` with a 30‑minute TTL
+- **EXPIRE on read**: `DraftStateService.getState`, `DraftLockService.checkLock`, and `UserSessionService.getUserSession` call `expire` via the `RedisSessionClient` adapter to “touch” keys and extend their TTL while they are actively used
+
+This adapter-based design ensures:
+
+- A single place to configure standalone vs. cluster Redis clients
+- Centralized error logging for Redis operations
+- A consistent TTL strategy across state, locks, and sessions without exposing the full Redis client surface area to feature code
 
 ## Update flow
 

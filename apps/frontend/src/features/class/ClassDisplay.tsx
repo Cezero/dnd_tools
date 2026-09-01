@@ -1,15 +1,14 @@
-import { useQueryClient } from '@tanstack/react-query';
 import pluralize from 'pluralize';
 import React, { useMemo } from 'react';
 
-import { EntityLink } from '@/components/entity-link';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { generateClassProgression } from '@/lib/ClassProgression';
+import { buildClassProgressionFromDetail } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
-import { useCacheFunctions, getSourceDisplay } from '@/services/cache';
+import { isBaseOnlyFeature } from '@/lib/formatters/modifier-utils';
+import { getSourceDisplay } from '@/services/cache';
 import type { DnDClass, FeatureWithRelations } from '@shared/schema';
 import {
     DisplayType,
@@ -48,9 +47,7 @@ export function ClassDisplay({
     lockStatus,
     currentUserId
 }: ClassDisplayProps): React.JSX.Element {
-    const queryClient = useQueryClient();
-    const { getSpellNameFromCache } = useCacheFunctions();
-    const features = featuresProp ?? [];
+    const features = useMemo(() => featuresProp ?? [], [featuresProp]);
 
     // Precache all entities referenced in feature progressions
     usePrecacheFeatureEntities(features.length > 0 ? features : undefined);
@@ -72,32 +69,54 @@ export function ClassDisplay({
         };
     }, [cls, features]);
 
-    // Extract casting ability and type from feature progressions
+    // Extract casting ability and type from class spellcasting features
     const castingInfo = useMemo(() => {
         if (features.length === 0) {
             return { castingAbilityId: null, castingType: null };
         }
         const classId = (cls as { id?: number }).id;
-        // Find level 1 class feature
-        const classLevel1Progression = features.find(
-            p => p.sourceType === FeatureSourceType.Class &&
-                (classId ? (p as { classes?: Array<{ classId: number }> }).classes?.some(c => c.classId === classId) : true) &&
-                p.level === 1
+        // Consider all class-linked features for this class (or all class features if id is absent)
+        const classFeatures = features.filter(
+            (p) =>
+                p.sourceType === FeatureSourceType.Class &&
+                (classId
+                    ? (p as { classes?: Array<{ classId: number }> }).classes?.some((c) => c.classId === classId)
+                    : true)
         );
-        if (classLevel1Progression?.entities) {
-            const castingAbilityEntity = classLevel1Progression.entities.find(
-                e => e.appliesTo === EntityAppliesToType.CastingAbility
-            );
-            const castingTypeEntity = classLevel1Progression.entities.find(
-                e => e.appliesTo === EntityAppliesToType.CastingType
-            );
-            return {
-                castingAbilityId: castingAbilityEntity?.appliesToId ?? null,
-                castingType: castingTypeEntity?.appliesToId ?? null,
-            };
+
+        let castingAbilityId: number | null = null;
+        let castingType: number | null = null;
+
+        for (const feature of classFeatures) {
+            if (!feature.entities) {
+                continue;
+            }
+
+            if (castingAbilityId === null) {
+                const abilityEntity = feature.entities.find(
+                    (e) => e.appliesTo === EntityAppliesToType.CastingAbility && e.appliesToId != null
+                );
+                if (abilityEntity && typeof abilityEntity.appliesToId === 'number') {
+                    castingAbilityId = abilityEntity.appliesToId;
+                }
+            }
+
+            if (castingType === null) {
+                const typeEntity = feature.entities.find(
+                    (e) => e.appliesTo === EntityAppliesToType.CastingType && e.appliesToId != null
+                );
+                if (typeEntity && typeof typeEntity.appliesToId === 'number') {
+                    castingType = typeEntity.appliesToId;
+                }
+            }
+
+            if (castingAbilityId !== null && castingType !== null) {
+                break;
+            }
         }
-        return { castingAbilityId: null, castingType: null };
-    }, [cls]);
+
+        return { castingAbilityId, castingType };
+    }, [cls, features]);
 
     if (!cls) {
         return <div>Error: Class not found</div>;
@@ -113,7 +132,7 @@ export function ClassDisplay({
                                 <h1 className="text-2xl font-bold mb-2">{cls.name}</h1>
                                 <p><strong>Hit Die:</strong> {RPG_DICE[mechanics.hitDie ?? 0]?.name}</p>
                                 <p><strong>Skill Points:</strong> {mechanics.skillPoints ?? 0}</p>
-                                <p><strong>Casting Ability:</strong> {castingInfo.castingAbilityId ? ABILITY_MAP[castingInfo.castingAbilityId]?.name || 'None' : 'None'}</p>
+                                <p><strong>Casting Ability:</strong> {castingInfo.castingAbilityId ? ABILITY_MAP[castingInfo.castingAbilityId]?.abbreviation || 'None' : 'None'}</p>
                                 <p><strong>Casting Type:</strong> {castingInfo.castingType ? CASTING_TYPE_MAP[castingInfo.castingType]?.name || 'Unknown' : 'None'}</p>
                             </div>
                             <div className="text-right">
@@ -138,14 +157,7 @@ export function ClassDisplay({
                     <div className="mt-4">
                         <h3 className="text-lg font-semibold mb-2">Class Feature</h3>
                         {(() => {
-                            const classId = (cls as { id?: number }).id;
-                            const progressionConfig = {
-                                features,
-                                classId,
-                                spellcastingProgression: cls.spellcastingProgression !== null ? cls.spellcastingProgression : undefined,
-                                spellsKnownProgression: cls.spellsKnownProgression !== null ? cls.spellsKnownProgression : undefined,
-                            };
-                            const feature = generateClassProgression(progressionConfig);
+                            const feature = buildClassProgressionFromDetail(features);
                             return (
                                 <ClassProgressionTable
                                     feature={feature}
@@ -218,6 +230,10 @@ export function ClassDisplay({
                             // Check if this feature contains proficiencies
                             const hasProficiencies = feature.sourceType === FeatureSourceType.Class &&
                                 feature.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Proficiency);
+
+                            if (isBaseOnlyFeature(feature)) {
+                                return false;
+                            }
 
                             // Exclude features with skills or proficiencies
                             return !hasClassSkills && !hasProficiencies;

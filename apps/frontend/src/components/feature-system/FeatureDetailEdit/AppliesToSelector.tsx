@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { ValidatedCustomSelect, CustomSelect, useFormContext, SpellSearchInput, ValidatedInput } from '@/components/forms';
+import { ValidatedCustomSelect, CustomSelect, useFormContext, SpellSearchInput } from '@/components/forms';
 import type { FeatureEntity } from '@shared/schema';
 import {
     ENTITY_APPLIES_TO_LIST,
@@ -15,6 +15,20 @@ import type { CoreComponent } from '@shared/static-data';
 
 import type { AppliesToSelectorProps } from './types';
 import { useAppliesToSelectOptions } from './utils';
+
+/** Spell level options (0-9) for SpellbookSpell and SpellcastingProgression appliesToId. */
+const SPELL_LEVEL_OPTIONS: { id: number; name: string }[] = [
+    { id: 0, name: '0th (Cantrip)' },
+    { id: 1, name: '1st' },
+    { id: 2, name: '2nd' },
+    { id: 3, name: '3rd' },
+    { id: 4, name: '4th' },
+    { id: 5, name: '5th' },
+    { id: 6, name: '6th' },
+    { id: 7, name: '7th' },
+    { id: 8, name: '8th' },
+    { id: 9, name: '9th' },
+];
 
 export function AppliesToSelector({
     index,
@@ -64,7 +78,8 @@ export function AppliesToSelector({
         (appliesTo === EntityAppliesToType.BaseAttackBonus) ||
         (appliesTo === EntityAppliesToType.CastingAbility) ||
         (appliesTo === EntityAppliesToType.CastingType) ||
-        (appliesTo === EntityAppliesToType.SpellcastingProgression)
+        (appliesTo === EntityAppliesToType.SpellcastingProgression) ||
+        (appliesTo === EntityAppliesToType.SpellsKnownProgression)
         // Note: SkillPoints, MovementSpeed, and LevelAdjustment use value field, not appliesToId
     );
 
@@ -133,30 +148,26 @@ export function AppliesToSelector({
                                     }));
                                 }}
                                 label="Spell Level"
-                                options={[
-                                    { id: 0, name: '0th (Cantrip)' },
-                                    { id: 1, name: '1st' },
-                                    { id: 2, name: '2nd' },
-                                    { id: 3, name: '3rd' },
-                                    { id: 4, name: '4th' },
-                                    { id: 5, name: '5th' },
-                                    { id: 6, name: '6th' },
-                                    { id: 7, name: '7th' },
-                                    { id: 8, name: '8th' },
-                                    { id: 9, name: '9th' },
-                                ]}
+                                options={SPELL_LEVEL_OPTIONS}
                                 placeholder="Select spell level..."
                                 componentExtraClassName="flex items-center gap-2"
                             />
-                        ) : appliesTo === EntityAppliesToType.SpellcastingProgression ? (
-                            // For SpellcastingProgression, use number input to show the feature ID
-                            <ValidatedInput
+                        ) : appliesTo === EntityAppliesToType.SpellcastingProgression || appliesTo === EntityAppliesToType.SpellsKnownProgression ? (
+                            <CustomSelect
                                 key={`appliesToId-${index}-${appliesTo}`}
-                                field={`entities.${index}.appliesToId`}
-                                label="Feature ID"
-                                type="number"
+                                value={formData?.entities?.[index]?.appliesToId ?? null}
+                                onValueChange={(value) => {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
+                                            i === index ? { ...ent, appliesToId: value } : ent
+                                        )
+                                    }));
+                                }}
+                                label="Spell Level"
+                                options={SPELL_LEVEL_OPTIONS}
+                                placeholder="Select spell level..."
                                 componentExtraClassName="flex items-center gap-2"
-                                nested
                             />
                         ) : (
                             <CustomSelect

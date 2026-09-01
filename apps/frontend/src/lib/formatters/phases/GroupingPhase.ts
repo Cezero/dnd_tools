@@ -78,7 +78,10 @@ export class GroupingPhase {
                             level,
                             featureId: feature.id,
                             formattedValue,
-                            breakdown: { components: [] }, // Simplified for now
+                            // Preserve the original breakdown so downstream
+                            // consumers (e.g. class progression helpers) can
+                            // operate solely on breakdown metadata.
+                            breakdown: item.breakdown,
                             descriptionLevel: feature.level,
                             entityAppliesTo: item.entityAppliesTo,
                             groupingId: item.groupingId
@@ -131,7 +134,9 @@ export class GroupingPhase {
                         level,
                         featureId: feature.id,
                         formattedValue,
-                        breakdown: { components: [] }, // Simplified for now
+                        // Use the merged breakdown from the grouping strategy
+                        // so all contributing components are preserved.
+                        breakdown: groupedResult.breakdown,
                         descriptionLevel: feature.level,
                         entityAppliesTo: firstItem.entityAppliesTo,
                         groupingId: firstItem.groupingId

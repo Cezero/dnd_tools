@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { extractRaceMechanics } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { displayStrategyFactory } from '@/lib/formatters';
+import { isBaseOnlyFeature } from '@/lib/formatters/modifier-utils';
 import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { useCacheFunctions, getSourceDisplay } from '@/services/cache';
 import { Race, FeatureWithRelations } from '@shared/schema';
@@ -98,6 +99,7 @@ export function RaceDisplay({
                 const hasAbilityAdjustment = feature?.entities?.some(e =>
                     e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability
                 );
+                const isBaseOnly = isBaseOnlyFeature(feature);
 
                 if (hasAutomaticLanguage && item.formattedValue) {
                     automaticLanguages.push(item.formattedValue);
@@ -105,7 +107,7 @@ export function RaceDisplay({
                     bonusLanguages.push(item.formattedValue);
                 } else if (hasAbilityAdjustment && item.formattedValue) {
                     abilityAdjustments.push(item.formattedValue);
-                } else {
+                } else if (!isBaseOnly) {
                     otherFeatures.push({ ...item, feature });
                 }
             }

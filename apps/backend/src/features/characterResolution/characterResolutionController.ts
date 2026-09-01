@@ -2,6 +2,7 @@ import type { CharacterWithAllDetailsResponse, ClassSpellSelection, FeatureWithR
 import { EntityAppliesToType } from '@shared/static-data';
 
 import { characterService } from '../character/characterService';
+import { ResolvedFeatureService } from './resolvedFeatureService';
 
 /**
  * Filters out entities with invalid appliesTo values from features.
@@ -87,6 +88,17 @@ export async function calculateSpellSelection(
         }
     }
 
+    // Pre-compute class levels for the character (including secondary classes)
+    const classLevels = new Map<number, number>();
+    for (const adv of character.advancements) {
+        if (adv.classId) {
+            classLevels.set(adv.classId, (classLevels.get(adv.classId) ?? 0) + 1);
+        }
+        if (adv.secondaryClassId) {
+            classLevels.set(adv.secondaryClassId, (classLevels.get(adv.secondaryClassId) ?? 0) + 1);
+        }
+    }
+
     // For each class, check if it's spellcasting and calculate spell selection data
     for (const classId of classIds) {
         try {
@@ -115,10 +127,29 @@ export async function calculateSpellSelection(
                     domainSpellLevel: ds.spellLevel,
                 }));
 
+                // Derive feature-based spells-known limits for SpellsKnown classes, if any.
+                const classLevel = classLevels.get(classId) ?? 0;
+                let maxSpellsKnownByLevel: Record<string, number> | undefined;
+                if (classLevel > 0) {
+                    const spellsKnownByLevel = ResolvedFeatureService.getSpellsKnownByLevelFromFeaturesForClass(
+                        resolvedProgressions,
+                        classId,
+                        classLevel,
+                        character
+                    );
+                    if (Object.keys(spellsKnownByLevel).length > 0) {
+                        maxSpellsKnownByLevel = {};
+                        for (const [levelStr, value] of Object.entries(spellsKnownByLevel)) {
+                            maxSpellsKnownByLevel[levelStr] = value;
+                        }
+                    }
+                }
+
                 spellSelection[classId.toString()] = {
                     spells,
                     ...(domainSpells.length > 0 && { domainSpells }),
                     ...(spellData.availableFreeSpells !== undefined && { availableFreeSpells: spellData.availableFreeSpells }),
+                    ...(maxSpellsKnownByLevel && { maxSpellsKnownByLevel }),
                 };
             }
         } catch (error) {

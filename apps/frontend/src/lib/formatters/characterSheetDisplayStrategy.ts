@@ -16,6 +16,7 @@ import { conditionValueFormatterRegistry } from './condition-value-formatter-reg
 import { DisplayStrategyBase } from './displayStrategyBase';
 import { weaponNameLabeler, type WeaponNameLabelerContext } from './label-formatters';
 import { WeightFormatter, CriticalFormatter, AttackBonusFormatter, DistanceFormatter, SizeCategoryFormatter, DamageTypeFormatter, DamageStringFormatter } from './pure-formatters';
+import { formatSignedModifier } from './modifier-utils';
 import type {
     DisplayContext,
     DisplayResult,
@@ -1867,7 +1868,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      * Used for totals in breakdowns
      */
     private formatModifier(mod: number): string {
-        return mod >= 0 ? `+${mod}` : `${mod}`;
+        return formatSignedModifier(mod);
     }
 
     /**

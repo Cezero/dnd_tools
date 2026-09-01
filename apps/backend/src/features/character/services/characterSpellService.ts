@@ -680,43 +680,51 @@ export const characterSpellService = {
     },
 
     async getMaxCastableSpellLevel(classId: number, characterLevel: number): Promise<number> {
-        // Get spellcasting from feature-based system
-        const features = await featureSystemService.getFeaturesByClassId(classId);
+        // First, try to resolve spell slots from FeatureEntity formulas (new spellcasting model)
+        const classFeatures = await featureSystemService.getFeaturesByClassId(classId);
 
-        // Extract spellcasting feature IDs from feature entities
-        const spellcastingProgressionIds: number[] = [];
-        for (const feature of features) {
-            if (feature.entities) {
-                for (const entity of feature.entities) {
-                    if (entity.appliesTo === EntityAppliesToType.SpellcastingProgression &&
-                        entity.appliesToId !== null &&
-                        typeof entity.appliesToId === 'number') {
-                        spellcastingProgressionIds.push(entity.appliesToId);
-                    }
-                }
-            }
+        const featureBasedMax = ResolvedFeatureService.getMaxCastableSpellLevelFromFeaturesForClass(
+            classFeatures,
+            classId,
+            characterLevel,
+            null
+        );
+
+        if (featureBasedMax > 0) {
+            return featureBasedMax;
         }
+
+        // Fallback: legacy table-based SpellcastingProgression/SpellcastingSlot lookup.
+        // Filter progressions by class via FeatureClassMap -> Feature -> SpellcastingProgression.featureId.
+        const classLinks = await prisma.featureClassMap.findMany({
+            where: { classId },
+            select: { featureId: true },
+        });
+
+        const featureIds = classLinks.map((link) => link.featureId);
+
+        if (featureIds.length === 0) {
+            return 0;
+        }
+
+        const spellcastingProgressions = await prisma.spellcastingProgression.findMany({
+            where: {
+                featureId: { in: featureIds },
+                classLevel: { lte: characterLevel },
+            },
+            include: {
+                slots: true,
+            },
+        });
 
         let maxSpellLevel = 0;
 
-        if (spellcastingProgressionIds.length > 0) {
-            // Get spellcasting from FeatureWithRelations entities
-            const features = await prisma.spellcastingProgression.findMany({
-                where: {
-                    id: { in: spellcastingProgressionIds },
-                    classLevel: { lte: characterLevel }
-                },
-                include: {
-                    slots: true
-                },
-                orderBy: {
-                    classLevel: 'desc'
-                },
-                take: 1
-            });
-
-            if (features.length > 0 && features[0].slots && features[0].slots.length > 0) {
-                maxSpellLevel = Math.max(...features[0].slots.map(slot => slot.spellLevel));
+        for (const progression of spellcastingProgressions) {
+            if (progression.slots && progression.slots.length > 0) {
+                const progressionMax = Math.max(...progression.slots.map((slot) => slot.spellLevel));
+                if (progressionMax > maxSpellLevel) {
+                    maxSpellLevel = progressionMax;
+                }
             }
         }
 
@@ -855,7 +863,7 @@ export const characterSpellService = {
 
         // Check for active resolution state
         const resolvedResultsService = new CharacterResolvedResultsService();
-        let resolvedCharacterResult: ResolvedCharacterResult | undefined;
+        let _resolvedCharacterResult: ResolvedCharacterResult | undefined;
 
         const resolvedResults = await resolvedResultsService.getResolvedResults(characterId);
 
@@ -977,7 +985,7 @@ export const characterSpellService = {
             await stateService.setState(DraftType.Character, characterId, updatedCharacterState);
             await resolvedResultsService.setResolvedResults(characterId, resolvedCharacterResultForSession);
 
-            resolvedCharacterResult = resolvedCharacterResultForSession;
+            _resolvedCharacterResult = resolvedCharacterResultForSession;
         }
 
         // Build response with free spell counts if this was a free grant
@@ -1140,7 +1148,7 @@ export const characterSpellService = {
 
         // Check for active resolution state
         const resolvedResultsService = new CharacterResolvedResultsService();
-        let resolvedCharacterResult: ResolvedCharacterResult | undefined;
+        let _resolvedCharacterResultAfterRemoval: ResolvedCharacterResult | undefined;
 
         const resolvedResults = await resolvedResultsService.getResolvedResults(characterId);
 
@@ -1263,7 +1271,7 @@ export const characterSpellService = {
             await stateService.setState(DraftType.Character, characterId, updatedCharacterState);
             await resolvedResultsService.setResolvedResults(characterId, resolvedCharacterResultForSession);
 
-            resolvedCharacterResult = resolvedCharacterResultForSession;
+            _resolvedCharacterResultAfterRemoval = resolvedCharacterResultForSession;
         }
 
         // Build response with free spell counts if this was a free grant
@@ -1273,9 +1281,9 @@ export const characterSpellService = {
             message: 'Spell removed successfully'
         };
 
-        if (wasFreeGrant && resolvedCharacterResult) {
+        if (wasFreeGrant && _resolvedCharacterResultAfterRemoval) {
             // Use resolved features from the state update (already done above)
-            const effectiveResolvedProgressions = resolvedCharacterResult.resolvedProgressions;
+            const effectiveResolvedProgressions = _resolvedCharacterResultAfterRemoval.resolvedProgressions;
 
             // Calculate available free spells for this advancement level
             const availableFreeSpells = ResolvedFeatureService.getAvailableSpellbookSpells(

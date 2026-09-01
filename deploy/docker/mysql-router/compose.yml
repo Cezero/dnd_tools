@@ -1,0 +1,17 @@
+services:
+  mysql-router:
+    image: mysql/mysql-router:8.0
+    container_name: mysql-router
+    user: "910:910"
+    network_mode: host
+    env_file:
+      - /srv/mysql/.env
+    environment:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_INNODB_CLUSTER_MEMBERS: "3"
+    volumes:
+      - /var/lib/mysql/router:/var/lib/mysqlrouter
+    restart: always

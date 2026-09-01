@@ -1,0 +1,12 @@
+# LAN-only Docker Registry v2. HTTP, no auth. Do not expose :5000 off the LAN.
+services:
+  registry:
+    image: registry:2
+    container_name: docker-registry
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - /srv/registry/data:/var/lib/registry

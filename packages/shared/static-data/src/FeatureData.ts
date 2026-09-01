@@ -117,7 +117,7 @@ export const EntityAppliesToType = {
     SpellbookSpell: 37,  // Spellbook spell selection (wizard, etc.)
 
     // NEW: Class/Race refactoring types
-    SpellcastingProgression: 38, // Reference to SpellcastingProgression
+    SpellcastingProgression: 38, // Reference to SpellcastingProgression (slots per day)
     CastingAbility: 39,          // Casting ability (Intelligence, Wisdom, Charisma)
     CastingType: 40,             // Casting type (Prepared, Spontaneous)
     BaseAttackBonus: 41,         // Base Attack Bonus progression type
@@ -125,6 +125,7 @@ export const EntityAppliesToType = {
     // 43 was Speed - removed, use MovementSpeed (8) instead
     FavoredClass: 44,            // Favored class (for race)
     LevelAdjustment: 45,         // Level adjustment (for race)
+    SpellsKnownProgression: 46,  // Spells-known progression reference (per class level, per spell level)
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -177,6 +178,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
 
     // NEW: Class/Race refactoring types
     [EntityAppliesToType.SpellcastingProgression]: { id: EntityAppliesToType.SpellcastingProgression, name: 'Spellcasting Progression', displayName: 'Spellcasting' },
+    [EntityAppliesToType.SpellsKnownProgression]: { id: EntityAppliesToType.SpellsKnownProgression, name: 'Spells Known Progression', displayName: 'Spells Known' },
     [EntityAppliesToType.CastingAbility]: { id: EntityAppliesToType.CastingAbility, name: 'Casting Ability', displayName: 'Casting Ability' },
     [EntityAppliesToType.CastingType]: { id: EntityAppliesToType.CastingType, name: 'Casting Type', displayName: 'Casting Type' },
     [EntityAppliesToType.BaseAttackBonus]: { id: EntityAppliesToType.BaseAttackBonus, name: 'Base Attack Bonus', displayName: 'BAB' },
@@ -232,7 +234,8 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.MovementSpeed, // Base movement speed (for race mechanics)
         EntityAppliesToType.FavoredClass, // Favored class
         EntityAppliesToType.LevelAdjustment, // Level adjustment
-        EntityAppliesToType.SpellcastingProgression, // Spellcasting progression reference
+        EntityAppliesToType.SpellcastingProgression, // Spellcasting progression reference (slots per day)
+        EntityAppliesToType.SpellsKnownProgression, // Spells-known progression reference (known spells per level)
         EntityAppliesToType.CastingAbility, // Casting ability
         EntityAppliesToType.CastingType, // Casting type
         EntityAppliesToType.Proficiency, // Class proficiencies (Base type for class proficiency features)

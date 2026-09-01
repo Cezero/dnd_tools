@@ -29,8 +29,12 @@ export class ProgressionGroupingPhase {
             groupedByLevel.get(item.level)!.push(item);
         }
 
+        // Iterate levels in ascending order so output is (level, entity) not (entity, level)
+        const sortedLevels = Array.from(groupedByLevel.keys()).sort((a, b) => a - b);
+
         // For each level, group entities by featureId
-        for (const [level, levelItems] of groupedByLevel) {
+        for (const level of sortedLevels) {
+            const levelItems = groupedByLevel.get(level)!;
             if (levelItems.length > 0) {
                 // Group ALL entities at this level by featureId
                 const entitiesByFeatureId = new Map<number, GroupedLevelItem[]>();
@@ -45,19 +49,25 @@ export class ProgressionGroupingPhase {
                 // For each featureId, combine all entities with ', ' delimiter
                 for (const [_featureId, featureEntities] of entitiesByFeatureId) {
                     if (featureEntities.length === 1) {
-                        // Single entity - add as-is
+                        // Single entity - add as-is (its breakdown is already preserved)
                         results.push(featureEntities[0]);
                     } else {
-                        // Multiple entities - combine with ', ' delimiter
+                        // Multiple entities - combine with ', ' delimiter and merge breakdowns
                         const combinedValue = featureEntities.map(item => item.formattedValue).join(', ');
                         const firstItem = featureEntities[0];
+                        const combinedBreakdownComponents = featureEntities.flatMap(item => item.breakdown.components || []);
+
                         results.push({
                             level,
                             featureId: firstItem.featureId,
                             formattedValue: combinedValue,
-                            breakdown: { components: [] },
+                            breakdown: {
+                                components: combinedBreakdownComponents,
+                                formula: undefined,
+                                explanation: undefined
+                            },
                             descriptionLevel: firstItem.descriptionLevel,
-                            entityAppliesTo: undefined,
+                            entityAppliesTo: firstItem.entityAppliesTo,
                             groupingId: 0 // Reset to 0 since we're now grouping by featureId
                         });
                     }

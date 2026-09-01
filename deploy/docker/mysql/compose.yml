@@ -1,0 +1,19 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    user: "910:910"
+    network_mode: host
+    env_file:
+      - /srv/mysql/.env
+    volumes:
+      - /var/lib/mysql/data:/var/lib/mysql
+      - /srv/mysql/gr.cnf:/etc/mysql/conf.d/gr.cnf:ro
+    tmpfs:
+      - /var/run/mysqld:uid=910,gid=910,mode=0755
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30

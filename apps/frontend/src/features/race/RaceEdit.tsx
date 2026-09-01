@@ -541,6 +541,7 @@ export function RaceEdit() {
             conditions: [],
             groupingId: 1, // Group all race languages together as one feature
             displayInDetail: true,
+            showFullProgression: false,
         };
 
         // Update the existing feature or add a new one
@@ -746,6 +747,7 @@ export function RaceEdit() {
                                 conditions: [],
                                 groupingId: 1, // Group all race ability adjustments together as one feature
                                 displayInDetail: true,
+                                showFullProgression: false,
                             }]
                         }
                         : fp
@@ -792,6 +794,7 @@ export function RaceEdit() {
                     conditions: [],
                     groupingId: 1, // Group all race ability adjustments together as one feature
                     displayInDetail: true,
+                    showFullProgression: false,
                 }],
             };
             updatedFeatures = [...prev, newAbilityFeature];

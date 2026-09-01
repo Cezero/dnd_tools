@@ -2,6 +2,7 @@ import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-ut
 import { getSkillNameFromCache } from '@/services/cache';
 import { ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, SPELL_SCHOOL_MAP, ATTACK_BONUS_APPLIES_TO_TYPES } from '@shared/static-data';
 
+import { formatSpellLevelForTable } from './pure-formatters';
 import type { CalculatedEntity } from './types';
 
 // Helper function to get skill name including subtypes
@@ -63,6 +64,16 @@ export function displayNameLabeler(value: string, modifier: CalculatedEntity): s
         return `${typeInfo.displayName}: ${value}`;
     }
     return value;
+}
+
+/** Labeler for spellcasting progression: shows spell level (e.g. "1st", "2nd") then slots. */
+export function spellcastingProgressionLabeler(value: string, modifier: CalculatedEntity): string {
+    const level = modifier.appliesToId;
+    if (level !== null && level !== undefined && typeof level === 'number') {
+        return `${formatSpellLevelForTable(level)}: ${value}`;
+    }
+    const typeInfo = ENTITY_APPLIES_TO_TYPES[modifier.appliesTo];
+    return typeInfo?.displayName ? `${typeInfo.displayName}: ${value}` : value;
 }
 
 // Labeler for Attack bonuses - includes appliesToSubId context (main-hand, off-hand, thrown)

@@ -1,0 +1,26 @@
+services:
+  backend:
+    image: ${DND_REGISTRY:-192.168.0.83:5000}/dnd-tools-backend:${APP_TAG:-local}
+    container_name: dnd-tools-backend
+    user: "912:912"
+    network_mode: host
+    env_file:
+      - /srv/dnd-tools/.env
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+    restart: always
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    image: ${DND_REGISTRY:-192.168.0.83:5000}/dnd-tools-frontend:${APP_TAG:-local}
+    container_name: dnd-tools-frontend
+    user: "912:912"
+    network_mode: host
+    environment:
+      NODE_ENV: production
+    restart: always

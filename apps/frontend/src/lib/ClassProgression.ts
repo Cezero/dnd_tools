@@ -1,7 +1,9 @@
 import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
+import { displayStrategyFactory } from '@/lib/formatters';
 import type { CharacterWithAllDetailsResponse, FeatureWithRelations } from '@shared/schema';
-import { EntityAppliesToType, EntityType, FeatureSourceType, SavingThrowId } from '@shared/static-data';
+import { DisplayType, EntityAppliesToType, EntityType, FeatureSourceType, SavingThrowId } from '@shared/static-data';
 
+import { formatSignedModifier } from './formatters/modifier-utils';
 import type { ClassProgressionConfig, MinimalCharacterForFormula, ProgressionRow } from './types';
 
 /**
@@ -170,18 +172,18 @@ export function generateClassProgression(config: ClassProgressionConfig): Progre
         const row: ProgressionRow = {
             level,
             bab: calculateBABForLevel(config.features, level, config.classId),
-            fort: calculateSaveForLevel(config.features, level, SavingThrowId.Fortitude, config.classId),
-            ref: calculateSaveForLevel(config.features, level, SavingThrowId.Reflex, config.classId),
-            will: calculateSaveForLevel(config.features, level, SavingThrowId.Will, config.classId),
+            fort: String(calculateSaveForLevel(config.features, level, SavingThrowId.Fortitude, config.classId)),
+            ref: String(calculateSaveForLevel(config.features, level, SavingThrowId.Reflex, config.classId)),
+            will: String(calculateSaveForLevel(config.features, level, SavingThrowId.Will, config.classId)),
         };
 
         // Add spellcasting data if available
         if (config.spellcastingProgression) {
             const spellProgression = config.spellcastingProgression.find(p => p.classLevel === level);
             if (spellProgression && spellProgression.slots) {
-                const spells: { [spellLevel: number]: number } = {};
+                const spells: { [spellLevel: number]: string } = {};
                 spellProgression.slots.forEach(slot => {
-                    spells[slot.spellLevel] = slot.slotsPerDay;
+                    spells[slot.spellLevel] = String(slot.slotsPerDay);
                 });
                 row.spells = spells;
             }
@@ -191,9 +193,9 @@ export function generateClassProgression(config: ClassProgressionConfig): Progre
         if (config.spellsKnownProgression) {
             const spellsKnownProgression = config.spellsKnownProgression.find(p => p.classLevel === level);
             if (spellsKnownProgression && spellsKnownProgression.slots) {
-                const spellsKnown: { [spellLevel: number]: number } = {};
+                const spellsKnown: { [spellLevel: number]: string } = {};
                 spellsKnownProgression.slots.forEach(slot => {
-                    spellsKnown[slot.spellLevel] = slot.slotsPerDay;
+                    spellsKnown[slot.spellLevel] = String(slot.slotsPerDay);
                 });
                 row.spellsKnown = spellsKnown;
             }
@@ -204,3 +206,136 @@ export function generateClassProgression(config: ClassProgressionConfig): Progre
 
     return feature;
 }
+
+/** One row per class level 1..20; each row maps spell level 0..9 to formatted cell string (formatter owns placeholders e.g. '—'). */
+export interface SpellSlotsGridFromDetail {
+    rows: Array<Record<number, string>>;
+}
+
+// Deprecated: legacy helper used by the old SpellcastingTab. The unified class
+// progression flow now uses buildClassProgressionFromDetail + ClassProgressionTable
+// for both display and editing previews. This type is retained only for
+// documentation references and should not be used in new code.
+
+/**
+ * Build a class progression purely from the Detail display strategy output.
+ * This helper uses the formatting system (including formulas and formatters)
+ * as the single source of truth, then adapts that data into ProgressionRow[]
+ * for use by ClassProgressionTable.
+ */
+export function buildClassProgressionFromDetail(
+    features: FeatureWithRelations[]
+): ProgressionRow[] {
+    const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+    const result = strategy.format(
+        features,
+        { includeNonTransitionLevels: true },
+        false
+    );
+
+    const rows: ProgressionRow[] = [];
+
+    for (let level = 1; level <= 20; level++) {
+        const levelEntry = result.levelEntries?.find(entry => entry.level === level);
+        const items = levelEntry?.items ?? [];
+
+        // Flatten all breakdown components for this level.
+        const components = items.flatMap(item => item.breakdown?.components ?? []);
+
+        const getTotalBySourceType = (sourceType: EntityAppliesToType, sourceId?: number): number | null => {
+            const matching = components.filter(component => {
+                if (component.sourceType !== sourceType) {
+                    return false;
+                }
+                if (sourceId !== undefined && component.sourceId !== sourceId) {
+                    return false;
+                }
+                return true;
+            });
+
+            if (matching.length === 0) {
+                return null;
+            }
+
+            if (matching.length > 1) {
+                // Defensive: class progression should typically see exactly
+                // one component per (sourceType, sourceId, level). If we
+                // encounter more, log a warning to help debugging.
+                console.warn('Multiple breakdown components found for', { sourceType, sourceId, level, matching });
+            }
+
+            const first = matching[0];
+            if (typeof first.value === 'number') {
+                return first.value;
+            }
+            const numeric = Number(first.value);
+            return Number.isNaN(numeric) ? null : numeric;
+        };
+
+        // BaB: derive purely from breakdown components so the table shows
+        // clean numeric values (headers already provide the label).
+        const babValue = getTotalBySourceType(EntityAppliesToType.BaseAttackBonus) ?? 0;
+        let bab: string;
+        if (babValue > 0) {
+            const attacks: number[] = [];
+            let current = babValue;
+            while (current > 0) {
+                attacks.push(current);
+                current -= 5;
+            }
+            bab = attacks.map(a => formatSignedModifier(a)).join('/');
+        } else {
+            bab = '+0';
+        }
+
+        // Saves: prefer the Detail formatter strings, but identify which item is which
+        // using breakdown metadata (no direct entity access).
+        const getSaveDisplay = (saveId: number): string => {
+            const total = getTotalBySourceType(EntityAppliesToType.SavingThrow, saveId) ?? 0;
+            return formatSignedModifier(total);
+        };
+
+        const fort = getSaveDisplay(SavingThrowId.Fortitude);
+        const ref = getSaveDisplay(SavingThrowId.Reflex);
+        const will = getSaveDisplay(SavingThrowId.Will);
+
+        // Spells per day: derive per-spell-level counts from breakdown components.
+        const spells: { [spellLevel: number]: string } = {};
+        for (let spellLevel = 0; spellLevel <= 9; spellLevel++) {
+            const total = getTotalBySourceType(EntityAppliesToType.SpellcastingProgression, spellLevel);
+            if (total !== null) {
+                spells[spellLevel] = total > 0 ? String(total) : '—';
+            }
+        }
+
+        // Spells known: derive per-spell-level counts from breakdown components for SpellsKnown classes.
+        const spellsKnown: { [spellLevel: number]: string } = {};
+        for (let spellLevel = 0; spellLevel <= 9; spellLevel++) {
+            const total = getTotalBySourceType(EntityAppliesToType.SpellsKnownProgression, spellLevel);
+            if (total !== null) {
+                spellsKnown[spellLevel] = total > 0 ? String(total) : '—';
+            }
+        }
+
+        const row: ProgressionRow = {
+            level,
+            bab,
+            fort,
+            ref,
+            will
+        };
+
+        if (Object.keys(spells).length > 0) {
+            row.spells = spells;
+        }
+
+        if (Object.keys(spellsKnown).length > 0) {
+            row.spellsKnown = spellsKnown;
+        }
+
+        rows.push(row);
+    }
+
+    return rows;
+}
+
