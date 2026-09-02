@@ -1,0 +1,268 @@
+- generic [active] [ref=f15e1]:
+  - generic [ref=f15e4]:
+    - navigation [ref=f15e5]:
+      - link "DnD Tools" [ref=f15e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f15e8]:
+        - button [ref=f15e10]:
+          - text: Logged in as
+          - strong [ref=f15e11]: cursor
+        - button "Enable dark mode" [ref=f15e12]
+    - generic [ref=f15e15]:
+      - generic [ref=f15e16]:
+        - button "Collapse sidebar to minimal" [ref=f15e18]
+        - navigation [ref=f15e22]:
+          - list [ref=f15e23]:
+            - listitem [ref=f15e24]:
+              - link "Characters" [ref=f15e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f15e29]:
+              - button "Reference" [ref=f15e30]
+            - listitem [ref=f15e36]:
+              - button "DM Tools" [ref=f15e37]
+            - listitem [ref=f15e43]:
+              - button "Admin" [ref=f15e44]
+      - main [ref=f15e51]:
+        - generic [ref=f15e53]:
+          - heading "Items" [level=1] [ref=f15e54]
+          - button "New Item" [ref=f15e56]
+          - generic [ref=f15e57]:
+            - table [ref=f15e60]:
+              - rowgroup [ref=f15e61]:
+                - row [ref=f15e62]:
+                  - columnheader [ref=f15e63]:
+                    - button "Item Name" [ref=f15e66]
+                  - columnheader [ref=f15e68]:
+                    - button "Type" [ref=f15e71]
+                  - columnheader [ref=f15e73]:
+                    - button "Cost" [ref=f15e76]
+                  - columnheader [ref=f15e78]:
+                    - button "Weight" [ref=f15e81]
+                  - columnheader [ref=f15e83]:
+                    - button "Description" [ref=f15e86]
+              - rowgroup [ref=f15e88]:
+                - row [ref=f15e89]:
+                  - cell "Acid (flask)" [ref=f15e90]
+                  - cell "Gear" [ref=f15e91]
+                  - cell "10 gp" [ref=f15e92]
+                  - cell "1 lbs" [ref=f15e93]
+                  - cell "You can throw a flask of acid as a splash weapon. Treat this attack as a ranged touch attack with a range increment of 10 feet. A direct hit deals 1d6 points of acid damage. Every creature within 5 fe..." [ref=f15e94]:
+                    - generic [ref=f15e95]:
+                      - generic [ref=f15e96]: You can throw a flask of acid as a splash weapon. Treat this attack as a ranged touch attack with a range increment of 10 feet. A direct hit deals 1d6 points of acid damage. Every creature within 5 fe...
+                      - generic [ref=f15e97]:
+                        - generic "Edit" [ref=f15e98] [cursor=pointer]
+                        - generic "Delete" [ref=f15e101] [cursor=pointer]
+                - row [ref=f15e104]:
+                  - cell "Alchemist's fire (flask)" [ref=f15e105]
+                  - cell "Gear" [ref=f15e106]
+                  - cell "20 gp" [ref=f15e107]
+                  - cell "1 lbs" [ref=f15e108]
+                  - cell "Alchemist's fire is sticky, adhesive substance that ignites when exposed to air. You can throw a flask of alchemist's fire as a splash weapon. Treat this attack as a ranged touch attack with a range i..." [ref=f15e109]:
+                    - generic [ref=f15e110]:
+                      - generic [ref=f15e111]: Alchemist's fire is sticky, adhesive substance that ignites when exposed to air. You can throw a flask of alchemist's fire as a splash weapon. Treat this attack as a ranged touch attack with a range i...
+                      - generic [ref=f15e112]:
+                        - generic "Edit" [ref=f15e113] [cursor=pointer]
+                        - generic "Delete" [ref=f15e116] [cursor=pointer]
+                - row [ref=f15e119]:
+                  - cell "Alchemist's lab" [ref=f15e120]
+                  - cell "Tool" [ref=f15e121]
+                  - cell "500 gp" [ref=f15e122]
+                  - cell "40 lbs" [ref=f15e123]
+                  - cell "This set of equipment includes beakers, bottles mixing and measuring containers, and a miscellany of chemicals and substances. An alchemist's lab always has the perfect tool for making alchemical item..." [ref=f15e124]:
+                    - generic [ref=f15e125]:
+                      - generic [ref=f15e126]: This set of equipment includes beakers, bottles mixing and measuring containers, and a miscellany of chemicals and substances. An alchemist's lab always has the perfect tool for making alchemical item...
+                      - generic [ref=f15e127]:
+                        - generic "Edit" [ref=f15e128] [cursor=pointer]
+                        - generic "Delete" [ref=f15e131] [cursor=pointer]
+                - row [ref=f15e134]:
+                  - cell "Ale, Gallon" [ref=f15e135]
+                  - cell "Food & Drink" [ref=f15e136]
+                  - cell "2 sp" [ref=f15e137]
+                  - cell "8 lbs" [ref=f15e138]
+                  - cell [ref=f15e139]:
+                    - generic [ref=f15e141]:
+                      - generic "Edit" [ref=f15e142] [cursor=pointer]
+                      - generic "Delete" [ref=f15e145] [cursor=pointer]
+                - row [ref=f15e148]:
+                  - cell "Ale, Mug" [ref=f15e149]
+                  - cell "Food & Drink" [ref=f15e150]
+                  - cell "4 cp" [ref=f15e151]
+                  - cell "1 lbs" [ref=f15e152]
+                  - cell [ref=f15e153]:
+                    - generic [ref=f15e155]:
+                      - generic "Edit" [ref=f15e156] [cursor=pointer]
+                      - generic "Delete" [ref=f15e159] [cursor=pointer]
+                - row [ref=f15e162]:
+                  - cell "All Items" [ref=f15e163]
+                  - cell "Armor" [ref=f15e164]
+                  - cell "-" [ref=f15e165]
+                  - cell "-" [ref=f15e166]
+                  - cell "Special entry representing all items of a given type/category" [ref=f15e167]:
+                    - generic [ref=f15e168]:
+                      - generic [ref=f15e169]: Special entry representing all items of a given type/category
+                      - generic [ref=f15e170]:
+                        - generic "Edit" [ref=f15e171] [cursor=pointer]
+                        - generic "Delete" [ref=f15e174] [cursor=pointer]
+                - row [ref=f15e177]:
+                  - cell "Antitoxin (vial)" [ref=f15e178]
+                  - cell "Gear" [ref=f15e179]
+                  - cell "50 gp" [ref=f15e180]
+                  - cell "-" [ref=f15e181]
+                  - cell "If you drink antitoxin, you get a +5 alchemical bonus on Fortitude saving throws against poison for 1 hour." [ref=f15e182]:
+                    - generic [ref=f15e183]:
+                      - generic [ref=f15e184]: If you drink antitoxin, you get a +5 alchemical bonus on Fortitude saving throws against poison for 1 hour.
+                      - generic [ref=f15e185]:
+                        - generic "Edit" [ref=f15e186] [cursor=pointer]
+                        - generic "Delete" [ref=f15e189] [cursor=pointer]
+                - row [ref=f15e192]:
+                  - cell "Arrow" [ref=f15e193]
+                  - cell "Ammo" [ref=f15e194]
+                  - cell "1 gp" [ref=f15e195]
+                  - cell "3 lbs" [ref=f15e196]
+                  - cell "An arrow used as a melee weapon is treated as a light improvised weapon (-4 penalty on attack rolls) and deals damage as a dagger of its size (critical multiplier x2). Arrows come in a leather quiver ..." [ref=f15e197]:
+                    - generic [ref=f15e198]:
+                      - generic [ref=f15e199]: An arrow used as a melee weapon is treated as a light improvised weapon (-4 penalty on attack rolls) and deals damage as a dagger of its size (critical multiplier x2). Arrows come in a leather quiver ...
+                      - generic [ref=f15e200]:
+                        - generic "Edit" [ref=f15e201] [cursor=pointer]
+                        - generic "Delete" [ref=f15e204] [cursor=pointer]
+                - row [ref=f15e207]:
+                  - cell "Artisan's outfit" [ref=f15e208]
+                  - cell "Clothing" [ref=f15e209]
+                  - cell "1 gp" [ref=f15e210]
+                  - cell "4 lbs" [ref=f15e211]
+                  - cell "This outfit includes a shirt with buttons, a skirt or pants with a drawstring, shoes, and perhaps a cap or hat. It may also include a belt or a leather or cloth apron for carrying tools." [ref=f15e212]:
+                    - generic [ref=f15e213]:
+                      - generic [ref=f15e214]: This outfit includes a shirt with buttons, a skirt or pants with a drawstring, shoes, and perhaps a cap or hat. It may also include a belt or a leather or cloth apron for carrying tools.
+                      - generic [ref=f15e215]:
+                        - generic "Edit" [ref=f15e216] [cursor=pointer]
+                        - generic "Delete" [ref=f15e219] [cursor=pointer]
+                - row [ref=f15e222]:
+                  - cell "Artisan's tools" [ref=f15e223]
+                  - cell "Tool" [ref=f15e224]
+                  - cell "5 gp" [ref=f15e225]
+                  - cell "5 lbs" [ref=f15e226]
+                  - cell "These special tools include the items needed to pursue any craft. Without them, you have to use improvised tools (-2 penalty on Craft checks), if you can do the job at all." [ref=f15e227]:
+                    - generic [ref=f15e228]:
+                      - generic [ref=f15e229]: These special tools include the items needed to pursue any craft. Without them, you have to use improvised tools (-2 penalty on Craft checks), if you can do the job at all.
+                      - generic [ref=f15e230]:
+                        - generic "Edit" [ref=f15e231] [cursor=pointer]
+                        - generic "Delete" [ref=f15e234] [cursor=pointer]
+                - row [ref=f15e237]:
+                  - cell "Artisan's tools, masterwork" [ref=f15e238]
+                  - cell "Tool" [ref=f15e239]
+                  - cell "55 gp" [ref=f15e240]
+                  - cell "5 lbs" [ref=f15e241]
+                  - cell "These tools serve the same purpose as artisan's tools, but masterwork artisan's tools are the perfect tools for the job, so you get a +2 circumstance bonus on Craft checks made with them." [ref=f15e242]:
+                    - generic [ref=f15e243]:
+                      - generic [ref=f15e244]: These tools serve the same purpose as artisan's tools, but masterwork artisan's tools are the perfect tools for the job, so you get a +2 circumstance bonus on Craft checks made with them.
+                      - generic [ref=f15e245]:
+                        - generic "Edit" [ref=f15e246] [cursor=pointer]
+                        - generic "Delete" [ref=f15e249] [cursor=pointer]
+                - row [ref=f15e252]:
+                  - cell "Axe, orc double" [ref=f15e253]
+                  - cell "Weapon" [ref=f15e254]
+                  - cell "60 gp" [ref=f15e255]
+                  - cell "15 lbs" [ref=f15e256]
+                  - cell "An orc double axe is a double weapon. You can fight with it as if fighting with two weapons, but if you do, you incur all the normal attack penalties associated with fighting with two weapons, just as..." [ref=f15e257]:
+                    - generic [ref=f15e258]:
+                      - generic [ref=f15e259]: An orc double axe is a double weapon. You can fight with it as if fighting with two weapons, but if you do, you incur all the normal attack penalties associated with fighting with two weapons, just as...
+                      - generic [ref=f15e260]:
+                        - generic "Edit" [ref=f15e261] [cursor=pointer]
+                        - generic "Delete" [ref=f15e264] [cursor=pointer]
+                - row [ref=f15e267]:
+                  - cell "Axe, throwing" [ref=f15e268]
+                  - cell "Weapon" [ref=f15e269]
+                  - cell "8 gp" [ref=f15e270]
+                  - cell "2 lbs" [ref=f15e271]
+                  - cell "A throwing axe is lighter than a handaxe and balanced for throwing. Gnome fighters often use throwing axes for both melee and ranged attacks." [ref=f15e272]:
+                    - generic [ref=f15e273]:
+                      - generic [ref=f15e274]: A throwing axe is lighter than a handaxe and balanced for throwing. Gnome fighters often use throwing axes for both melee and ranged attacks.
+                      - generic [ref=f15e275]:
+                        - generic "Edit" [ref=f15e276] [cursor=pointer]
+                        - generic "Delete" [ref=f15e279] [cursor=pointer]
+                - row [ref=f15e282]:
+                  - cell "Backpack (empty)" [ref=f15e283]
+                  - cell "Gear" [ref=f15e284]
+                  - cell "2 gp" [ref=f15e285]
+                  - cell "2 lbs" [ref=f15e286]
+                  - cell "A backpack is a leather pack carried on the back typically with straps to secure it." [ref=f15e287]:
+                    - generic [ref=f15e288]:
+                      - generic [ref=f15e289]: A backpack is a leather pack carried on the back typically with straps to secure it.
+                      - generic [ref=f15e290]:
+                        - generic "Edit" [ref=f15e291] [cursor=pointer]
+                        - generic "Delete" [ref=f15e294] [cursor=pointer]
+                - row [ref=f15e297]:
+                  - cell "Banded Mail" [ref=f15e298]
+                  - cell "Armor" [ref=f15e299]
+                  - cell "250 gp" [ref=f15e300]
+                  - cell "35 lbs" [ref=f15e301]
+                  - cell "This armor is made of overlapping strips of metal sewn to a backing of leather and chainmail. The strips cover vulnerable areas, while the chain and leather protect the joints and provide freedom of m..." [ref=f15e302]:
+                    - generic [ref=f15e303]:
+                      - generic [ref=f15e304]: This armor is made of overlapping strips of metal sewn to a backing of leather and chainmail. The strips cover vulnerable areas, while the chain and leather protect the joints and provide freedom of m...
+                      - generic [ref=f15e305]:
+                        - generic "Edit" [ref=f15e306] [cursor=pointer]
+                        - generic "Delete" [ref=f15e309] [cursor=pointer]
+                - row [ref=f15e312]:
+                  - cell "Banquet (per person)" [ref=f15e313]
+                  - cell "Food & Drink" [ref=f15e314]
+                  - cell "10 gp" [ref=f15e315]
+                  - cell "-" [ref=f15e316]
+                  - cell [ref=f15e317]:
+                    - generic [ref=f15e319]:
+                      - generic "Edit" [ref=f15e320] [cursor=pointer]
+                      - generic "Delete" [ref=f15e323] [cursor=pointer]
+                - row [ref=f15e326]:
+                  - cell "Barrel (empty)" [ref=f15e327]
+                  - cell "Gear" [ref=f15e328]
+                  - cell "2 gp" [ref=f15e329]
+                  - cell "30 lbs" [ref=f15e330]
+                  - cell [ref=f15e331]:
+                    - generic [ref=f15e333]:
+                      - generic "Edit" [ref=f15e334] [cursor=pointer]
+                      - generic "Delete" [ref=f15e337] [cursor=pointer]
+                - row [ref=f15e340]:
+                  - cell "Basket (empty)" [ref=f15e341]
+                  - cell "Gear" [ref=f15e342]
+                  - cell "4 sp" [ref=f15e343]
+                  - cell "1 lbs" [ref=f15e344]
+                  - cell [ref=f15e345]:
+                    - generic [ref=f15e347]:
+                      - generic "Edit" [ref=f15e348] [cursor=pointer]
+                      - generic "Delete" [ref=f15e351] [cursor=pointer]
+                - row [ref=f15e354]:
+                  - cell "Battleaxe" [ref=f15e355]
+                  - cell "Weapon" [ref=f15e356]
+                  - cell "10 gp" [ref=f15e357]
+                  - cell "6 lbs" [ref=f15e358]
+                  - cell "The battleaxe is the most common melee weapon among dwarves." [ref=f15e359]:
+                    - generic [ref=f15e360]:
+                      - generic [ref=f15e361]: The battleaxe is the most common melee weapon among dwarves.
+                      - generic [ref=f15e362]:
+                        - generic "Edit" [ref=f15e363] [cursor=pointer]
+                        - generic "Delete" [ref=f15e366] [cursor=pointer]
+                - row [ref=f15e369]:
+                  - cell "Bedroll" [ref=f15e370]
+                  - cell "Gear" [ref=f15e371]
+                  - cell "1 sp" [ref=f15e372]
+                  - cell "5 lbs" [ref=f15e373]
+                  - cell "You never know where you're going to sleep, and a bedroll helps you get better sleep in a hayloft or on the cold ground. A bedroll consists of bedding and a blanket thin enough to be rolled up and tie..." [ref=f15e374]:
+                    - generic [ref=f15e375]:
+                      - generic [ref=f15e376]: You never know where you're going to sleep, and a bedroll helps you get better sleep in a hayloft or on the cold ground. A bedroll consists of bedding and a blanket thin enough to be rolled up and tie...
+                      - generic [ref=f15e377]:
+                        - generic "Edit" [ref=f15e378] [cursor=pointer]
+                        - generic "Delete" [ref=f15e381] [cursor=pointer]
+            - status [ref=f15e384]
+            - generic [ref=f15e385]:
+              - generic [ref=f15e386]: Showing 1–20 of 250
+              - generic [ref=f15e387]:
+                - generic [ref=f15e388]:
+                  - combobox [ref=f15e389]:
+                    - generic [ref=f15e390]: "20"
+                  - textbox [ref=f15e394]: "20"
+                - button "First" [disabled] [ref=f15e395]
+                - button "< Prev" [disabled] [ref=f15e396]
+                - generic [ref=f15e397]: Page 1 of 13
+                - button "Next >" [ref=f15e398]
+                - button "Last" [ref=f15e399]
+  - generic:
+    - region "Notifications"

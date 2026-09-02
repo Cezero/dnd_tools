@@ -1,0 +1,154 @@
+- generic [active] [ref=f10e1]:
+  - generic [ref=f10e4]:
+    - navigation [ref=f10e5]:
+      - link "DnD Tools" [ref=f10e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f10e8]:
+        - button [ref=f10e10]:
+          - text: Logged in as
+          - strong [ref=f10e11]: cursor
+        - button "Enable dark mode" [ref=f10e12]
+    - generic [ref=f10e15]:
+      - generic [ref=f10e16]:
+        - button "Collapse sidebar to minimal" [ref=f10e18]
+        - navigation [ref=f10e22]:
+          - list [ref=f10e23]:
+            - listitem [ref=f10e24]:
+              - link "Characters" [ref=f10e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f10e29]:
+              - button "Reference" [ref=f10e30]
+            - listitem [ref=f10e36]:
+              - button "DM Tools" [ref=f10e37]
+            - listitem [ref=f10e43]:
+              - button "Admin" [ref=f10e44]
+      - main [ref=f10e51]:
+        - generic [ref=f10e54]:
+          - generic [ref=f10e56]:
+            - heading "Aasimar" [level=1] [ref=f10e57]
+            - generic [ref=f10e58]:
+              - paragraph [ref=f10e59]:
+                - strong [ref=f10e60]: "Edition:"
+                - text: D&D 3.5E
+              - paragraph [ref=f10e61]:
+                - strong [ref=f10e62]: "Source:"
+                - text: MM
+          - generic [ref=f10e63]:
+            - paragraph [ref=f10e64]:
+              - strong [ref=f10e65]: "Hit Dice:"
+              - text: 1d2+1 (5 hp)
+            - paragraph [ref=f10e66]:
+              - strong [ref=f10e67]: "Initiative:"
+              - text: "+4"
+            - paragraph [ref=f10e68]:
+              - strong [ref=f10e69]: "Speed:"
+              - text: 20 ft.
+            - paragraph [ref=f10e70]:
+              - strong [ref=f10e71]: "Armor Class:"
+              - text: 16 (touch 10, flat-footed 16)
+            - paragraph [ref=f10e72]:
+              - strong [ref=f10e73]: "Base Attack/Grapple:"
+              - text: +1/+2
+            - paragraph [ref=f10e74]:
+              - strong [ref=f10e75]: "Attack:"
+              - paragraph [ref=f10e78]: Longsword +2 melee (1d8+l/l9-20) or light crossbow +1 ranged (1d8/l9-20)
+            - paragraph [ref=f10e79]:
+              - strong [ref=f10e80]: "Full Attack:"
+              - paragraph [ref=f10e83]: Longsword +2 melee (1d8+1/19-20) or light crossbow +1 ranged (1d8/19-20)
+            - paragraph [ref=f10e84]:
+              - strong [ref=f10e85]: "Space/Reach:"
+              - text: 5 ft./5 ft.
+            - paragraph [ref=f10e86]:
+              - strong [ref=f10e87]: "Special Attacks:"
+              - text: Daylight
+            - paragraph [ref=f10e88]:
+              - strong [ref=f10e89]: "Special Qualities:"
+              - text: Darkvision 60 ft., resistance to acid 5, cold 5, and electricity 5
+            - paragraph [ref=f10e90]:
+              - strong [ref=f10e91]: "Saves:"
+              - text: Fort +3, Ref +0, Will +0
+            - paragraph [ref=f10e92]:
+              - strong [ref=f10e93]: "Abilities:"
+              - text: Str 13, Dex 11, Con 12, Int 10, Wis 11
+            - paragraph [ref=f10e94]:
+              - strong [ref=f10e95]: "Skills:"
+              - link "Heal" [ref=f10e96] [cursor=pointer]:
+                - /url: /skills/15
+              - text: +4,
+              - link "Knowledge" [ref=f10e97] [cursor=pointer]:
+                - /url: /skills/19
+              - text: +1,
+              - link "Listen" [ref=f10e98] [cursor=pointer]:
+                - /url: /skills/29
+              - text: +3,
+              - link "Ride" [ref=f10e99] [cursor=pointer]:
+                - /url: /skills/34
+              - text: +1,
+              - link "Spot" [ref=f10e100] [cursor=pointer]:
+                - /url: /skills/40
+              - text: "+3"
+            - paragraph [ref=f10e101]:
+              - strong [ref=f10e102]: "Feats:"
+              - link "Improved Initiative" [ref=f10e103] [cursor=pointer]:
+                - /url: /feats/144
+            - paragraph [ref=f10e104]:
+              - strong [ref=f10e105]: "Organization:"
+              - paragraph [ref=f10e108]: Solitary, pair, or team (3-4)
+            - paragraph [ref=f10e109]:
+              - strong [ref=f10e110]: "Challenge Rating:"
+              - text: 1/2
+            - paragraph [ref=f10e111]:
+              - strong [ref=f10e112]: "Treasure:"
+              - text: Standard
+            - paragraph [ref=f10e113]:
+              - strong [ref=f10e114]: "Alignment:"
+              - text: Usually good (any)
+            - paragraph [ref=f10e115]:
+              - strong [ref=f10e116]: "Advancement:"
+              - text: By character class
+            - paragraph [ref=f10e117]:
+              - strong [ref=f10e118]: "Level Adjustment:"
+              - text: "+1"
+          - paragraph [ref=f10e121]: This being looks like a beautiful human, with calm, serene features and an inner radiance that shines from its face.
+          - generic [ref=f10e122]:
+            - generic [ref=f10e123]:
+              - button:
+                - button [expanded] [ref=f10e124]
+              - paragraph [ref=f10e129]: Planetouched is a general word to describe someone who can trace his or her bloodline back to an outsider, usually a fiend or celestial. The effects of having a supernatural being in one's heritage last for many generations. Although not as dramatically altered as a half-celestial or a half-fiend, planetouched still retain some special qualities. The two planetouched varieties described here are the most common. Aasimars are humans with some trace of celestial blood in their veins, and tieflings have some fiendishness in their family tree. There is no "typical" aasimar or tiefling. They do not have their own societies or cultures, instead blending into existing ones. Many have character classes.
+            - paragraph [ref=f10e132]: "Graced with a touch of the holy, aasimars are usually tall, good-looking, and generally pleasant. Some have a minor physical trait suggesting their heritage, such as silver hair, golden eyes, or an unnaturally intense stare. Most aasimars are decidedly good-aligned. They fight against evil causes and attempt to sway others to do the right thing. Occasionally they take on the vengeful, judgmental aspect of their celestial ancestor, but this is rare. They are rarely found in leadership positions and often live as loners due to their absolute dedication to goodness. Others are less fanatical and fit seamlessly into normal human society. The aasimar warrior presented here had the following ability scores before racial adjustments: Str 13, Dex 11, Con 12, Int 10, Wis 9, Cha 8."
+          - generic [ref=f10e133]:
+            - heading "Combat" [level=2] [ref=f10e134]
+            - paragraph [ref=f10e137]: Aasimars usually like a fair, straightforward contest. Against a particularly evil foe, however, they fight with utter conviction and to the death.
+          - generic [ref=f10e138]:
+            - paragraph [ref=f10e141]:
+              - strong [ref=f10e142]: Daylight (Sp)
+              - text: ": An aasimar can use"
+              - link "Daylight" [ref=f10e143] [cursor=pointer]:
+                - /url: /spells/575
+              - text: once per day as a 1st-level caster or a caster of his class levels, whichever is higher.
+            - paragraph [ref=f10e146]:
+              - strong [ref=f10e147]: Skills (Ex)
+              - text: ": An aasimar has a +2 racial bonus on Spot and Listen checks."
+          - generic [ref=f10e149]:
+            - generic [ref=f10e150]:
+              - button [expanded] [ref=f10e151]
+              - generic [ref=f10e154]: Aasimar as Characters
+            - generic [ref=f10e157]:
+              - paragraph [ref=f10e158]: Aasimar characters possess the following racial traits.
+              - list [ref=f10e159]:
+                - listitem [ref=f10e160]: — +2 Wisdom, +2 Charisma.
+                - listitem [ref=f10e161]: — Medium size.
+                - listitem [ref=f10e162]: — An aasimar's base land speed is 30 feet.
+                - listitem [ref=f10e163]: "— Darkvision: Aasimars can see in the dark up to 60 feet."
+                - listitem [ref=f10e164]: "— Racial Skills: Aasimars have a +2 racial bonus on Spot and Listen checks."
+                - listitem [ref=f10e165]: "— Racial Feats: An aasimar gains feats according to its class levels."
+                - listitem [ref=f10e166]: "— Special Attacks (see above): Daylight."
+                - listitem [ref=f10e167]: "— Special Qualities (see above): Resistance to acid 5, cold 5, and electricity 5."
+                - listitem [ref=f10e168]: "— Automatic Languages: Common, Celestial. Bonus Languages: Draconic, Dwarven, Elven, Gnome, Halfling, Sylvan."
+                - listitem [ref=f10e169]: "— Favored Class: Paladin."
+                - listitem [ref=f10e170]: — Level adjustment +1.
+          - generic [ref=f10e171]:
+            - button "Back to Monsters" [ref=f10e172]
+            - button "Edit Monster" [ref=f10e173]
+  - generic:
+    - region "Notifications"

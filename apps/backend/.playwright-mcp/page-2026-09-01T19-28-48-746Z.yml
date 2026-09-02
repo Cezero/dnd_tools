@@ -1,0 +1,45 @@
+- generic [ref=f20e1]:
+  - generic [ref=f20e5]:
+    - navigation [ref=f20e6]:
+      - link "DnD Tools" [ref=f20e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f20e9]:
+        - button [ref=f20e11]:
+          - text: Logged in as
+          - strong [ref=f20e12]: cursor
+        - button "Enable dark mode" [ref=f20e13]
+    - generic [ref=f20e16]:
+      - generic [ref=f20e17]:
+        - button "Collapse sidebar to minimal" [ref=f20e19]
+        - navigation [ref=f20e23]:
+          - list [ref=f20e24]:
+            - listitem [ref=f20e25]:
+              - link "Characters" [ref=f20e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f20e30]:
+              - button "Reference" [ref=f20e31]
+            - listitem [ref=f20e37]:
+              - button "DM Tools" [ref=f20e38]
+            - listitem [ref=f20e44]:
+              - button "Admin" [ref=f20e45]
+      - main [ref=f20e52]:
+        - generic [ref=f20e55]:
+          - navigation [ref=f20e57]:
+            - generic [ref=f20e58]:
+              - button "Abilities & Race" [ref=f20e59]
+              - button "Class" [active] [ref=f20e63]
+              - button "Skills" [ref=f20e67]
+              - button "Feats" [ref=f20e71]
+              - button "Choices" [ref=f20e75]
+              - button "Description" [ref=f20e79]
+              - button "Equipment" [ref=f20e83]
+              - button "Combat" [ref=f20e87]
+              - button "Configuration" [ref=f20e91]
+            - button [ref=f20e96]
+          - generic [ref=f20e444]:
+            - generic [ref=f20e445]: "Class:"
+            - combobox [ref=f20e446]:
+              - generic [ref=f20e447]: Select a class...
+            - textbox [ref=f20e451]
+  - generic:
+    - region "Notifications"

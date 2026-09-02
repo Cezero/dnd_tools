@@ -23,7 +23,8 @@ export function BasicInfoTab({
     state,
     updateState,
     isLoading: _isLoading = false,
-    features
+    features,
+    classId
 }: ClassTabProps): React.JSX.Element {
     const hasSpellcastingEntities = useMemo(
         () =>
@@ -40,8 +41,8 @@ export function BasicInfoTab({
     );
 
     const progression = useMemo(
-        () => buildClassProgressionFromDetail(features ?? []),
-        [features]
+        () => buildClassProgressionFromDetail(features ?? [], classId ?? state.classId ?? undefined),
+        [features, classId, state.classId]
     );
     return (
         <div className="p-6">

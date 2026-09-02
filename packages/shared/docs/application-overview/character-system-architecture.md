@@ -107,6 +107,7 @@ Spell selection data comes from the resolved character response:
   - `spells`: Array of CharacterSpellSelectionEntry
   - `domainSpells`: Array of domain spells (optional)
   - `availableFreeSpells`: number (optional, for spellbook classes)
+  - `maxSpellsKnownByLevel`: optional map of spell level → max known (SpellsKnown classes only; from `SpellsKnownProgression` FeatureEntities)
 - **Calculation**: Calculated during character resolution using resolved progressions
 - **Architectural Correctness**: This is the correct source since the data depends on resolved progressions
 

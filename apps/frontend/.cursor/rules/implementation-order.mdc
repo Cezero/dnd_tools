@@ -13,4 +13,4 @@ Always follow this implementation order:
 4. Implement any frontend changes
 5. Lint and resolve any errors
 6. update documentation in shared/docs
-7. Do not deploy to the docks unless the user asks. When they do, follow docker-deploy.mdc.
+7. Deploy to the docks when the full block is deployable (see deploy-complete-block.mdc). Follow docker-deploy.mdc. Do not deploy a known-broken intermediate slice.

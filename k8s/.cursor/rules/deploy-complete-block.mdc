@@ -1,0 +1,16 @@
+---
+description: Deploy after a complete, working block — never a known-broken slice
+alwaysApply: true
+---
+
+# Deploy complete blocks
+
+After finishing a **deployable** block of work, deploy to the docks. Do not wait for the user to ask.
+
+A block is deployable only when the docks would not be left in a known-broken state:
+
+- Backend + frontend + Zod/`@shared/schema` that depend on each other: deploy **once** all required layers are done (and the user has rebuilt Zod / migrated Prisma if those changed).
+- Backend-only or frontend-only work that is independently correct: deploy that target when that block is done.
+- Do **not** deploy midway through a stacked change (e.g. new API without the matching frontend, or new Zod types before the user rebuilt `@shared/schema`).
+
+How to deploy: follow `docker-deploy.mdc` (`deploy/docker/scripts/deploy-app.sh [all|backend|frontend]` from the repo root).

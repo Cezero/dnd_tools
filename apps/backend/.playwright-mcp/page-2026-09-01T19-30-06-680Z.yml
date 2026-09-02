@@ -1,0 +1,409 @@
+- generic [ref=f20e1]:
+  - generic [ref=f20e5]:
+    - navigation [ref=f20e6]:
+      - link "DnD Tools" [ref=f20e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f20e9]:
+        - button [ref=f20e11]:
+          - text: Logged in as
+          - strong [ref=f20e12]: cursor
+        - button "Enable dark mode" [ref=f20e13]
+    - generic [ref=f20e16]:
+      - generic [ref=f20e17]:
+        - button "Collapse sidebar to minimal" [ref=f20e19]
+        - navigation [ref=f20e23]:
+          - list [ref=f20e24]:
+            - listitem [ref=f20e25]:
+              - link "Characters" [ref=f20e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f20e30]:
+              - button "Reference" [ref=f20e31]
+            - listitem [ref=f20e37]:
+              - button "DM Tools" [ref=f20e38]
+            - listitem [ref=f20e44]:
+              - button "Admin" [ref=f20e45]
+      - main [ref=f20e52]:
+        - generic [ref=f20e55]:
+          - navigation [ref=f20e57]:
+            - generic [ref=f20e58]:
+              - button "Abilities & Race" [ref=f20e59]
+              - button "Class" [ref=f20e63]
+              - button "Skills" [ref=f20e67]
+              - button "Feats" [ref=f20e71]
+              - button "Choices" [ref=f20e75]
+              - button "Description" [ref=f20e79]
+              - button "Equipment" [ref=f20e83]
+              - button "Combat" [ref=f20e87]
+              - button "Configuration" [ref=f20e91]
+            - button [ref=f20e96]
+          - generic [ref=f20e440]:
+            - generic [ref=f20e444]:
+              - generic [ref=f20e445]: "Class:"
+              - combobox [active] [ref=f20e446]:
+                - generic [ref=f20e447]: Wizard
+              - textbox [ref=f20e451]: "27"
+            - generic [ref=f20e526]:
+              - generic [ref=f20e665]:
+                - paragraph [ref=f20e666]: A few unintelligible words and fleeting gestures carry more power than a battleaxe, when they are the words and gestures of a wizard. These simple acts make magic seem easy, but they only hint at the time the wizard must spend poring over her spellbook preparing each spell for casting, and the years before that spent in apprenticeship to learn the arts of magic.
+                - paragraph [ref=f20e667]: Wizards depend on intensive study to create their magic. They examine musty old tomes, debate magical theory with their peers, and practice minor magics whenever they can. For a wizard, magic is not a talent but a difficult, rewarding art.
+                - paragraph [ref=f20e668]:
+                  - strong [ref=f20e669]: "Adventures:"
+                  - text: Wizards conduct their adventures with caution and forethought. When prepared, they can use their spells to devastating effect. When caught by surprise, they are vulnerable. They seek knowledge, power, and the resources to conduct their studies. They may also have any of the noble or ignoble motivations that other adventurers have.
+                - paragraph [ref=f20e670]:
+                  - strong [ref=f20e671]: "Characteristics:"
+                  - text: The wizard’s strength is her spells. Everything else is secondary. She learns new spells as she experiments and grows in experience, and she can also learn them from other wizards. In addition to learning new spells, a wizard can, over time, learn to manipulate her spells so they go farther, work better, or are improved in some other way.
+                - paragraph [ref=f20e672]: Some wizards prefer to specialize in a certain type of magic. Specialization makes a wizard more powerful in her chosen field, but it denies her access to some of the spells that lie outside that field. (See School Specialization)
+                - paragraph [ref=f20e673]: Like a sorcerer, a wizard can call a familiar - a small, magical animal companion that serves her. For some wizards, their familiars are their only true friends.
+                - paragraph [ref=f20e674]:
+                  - strong [ref=f20e675]: "Alignment:"
+                  - text: Overall, wizards show a slight tendency toward law over chaos because the study of magic rewards those who are disciplined. Illusionists and transmuters, however, are masters of deception and change, respectively. They favor chaos over law.
+                - paragraph [ref=f20e676]:
+                  - strong [ref=f20e677]: "Religion:"
+                  - text: Wizards commonly revere Boccob (god of magic). Some, especially necromancers or simply more misanthropic wizards, prefer Wee Jas (goddess of death and magic). Evil necromancers are known to worship Nerull (god of death). Wizards in general are more devoted to their studies than to their spiritual sides.
+                - paragraph [ref=f20e678]:
+                  - strong [ref=f20e679]: "Background:"
+                  - text: Wizards recognize each other as comrades or rivals. Even wizards from very different cultures or magical traditions have much in common because they all conform to the same laws of magic. Unlike fighters or rogues, wizards see themselves as members of a distinct, if diverse, group. In civilized lands where wizards study in academies, schools, or guilds, wizards also identify themselves and others according to membership in these formal organizations. But while a guild magician may look down her nose at a rustic wizard who learned his arts from a doddering hermit, she nevertheless can’t deny the rustic’s identity as a wizard.
+                - paragraph [ref=f20e680]:
+                  - strong [ref=f20e681]: "Races:"
+                  - text: "Humans take to magic for any of various reasons: curiosity, ambition, lust for power, or just personal inclination. Human wizards tend to be practical innovators, creating new spells or using old spells creatively."
+                - paragraph [ref=f20e682]: Elves are enthralled by magic, and many of them become wizards for love of the art. Elf wizards see themselves as artists, and they hold magic in high regard as a wondrous mystery, as opposed to the more pragmatic human wizards, who see magic more as a set of tools or tricks.
+                - paragraph [ref=f20e683]: Illusion magic comes so simply to gnomes that becoming an illusionist is just natural to brighter and more talented ones. Gnome wizards who don’t specialize in the school of illusion are rare, but they don’t suffer under any special stigma.
+                - paragraph [ref=f20e684]: Half-elf wizards feel both the elf’s attraction to magic and the human’s drive to conquer and understand. Some of the most powerful wizards are half-elves.
+                - paragraph [ref=f20e685]: Dwarf and halfling wizards are rare because their societies don’t encourage the study of magic. Half-orc wizards are rare because few half-orcs have the brains necessary for wizardry.
+                - paragraph [ref=f20e686]: Drow (evil, subterranean elves) often take up wizardry, but wizards are quite rare among the savage humanoids.
+                - paragraph [ref=f20e687]:
+                  - strong [ref=f20e688]: "Other Classes:"
+                  - text: Wizards prefer to work with members of other classes. They love to cast their spells from behind strong fighters, to “magic up” rogues and send them out to scout, and to rely on the divine healing of clerics. They may find members of certain classes (such as sorcerers, rogues, and bards) to be not quite serious enough, but they’re not judgmental.
+                - paragraph [ref=f20e689]:
+                  - strong [ref=f20e690]: "Role:"
+                  - text: The wizard’s role depends somewhat on her spell selection, but most wizards share certain similarities in function. They are among the most offensively minded of the spellcasting classes, with a broad range of options available for neutralizing enemies. Some wizards provide great support to their comrades by way of their spells, while others may focus on divination or other facets of wizardry.
+              - generic [ref=f20e528]:
+                - heading "Class Feature" [level=3] [ref=f20e529]
+                - table [ref=f20e531]:
+                  - rowgroup [ref=f20e532]:
+                    - row [ref=f20e533]:
+                      - columnheader "Level" [ref=f20e534]
+                      - columnheader "Base Attack Bonus" [ref=f20e535]: BaseAttack Bonus
+                      - columnheader "Fort Save" [ref=f20e536]: FortSave
+                      - columnheader "Ref Save" [ref=f20e537]: RefSave
+                      - columnheader "Will Save" [ref=f20e538]: WillSave
+                  - rowgroup [ref=f20e539]:
+                    - row [ref=f20e540]:
+                      - cell "1st" [ref=f20e541]
+                      - cell "+0" [ref=f20e542]
+                      - cell "+0" [ref=f20e543]
+                      - cell "+0" [ref=f20e544]
+                      - cell "+0" [ref=f20e545]
+                    - row [ref=f20e546]:
+                      - cell "2nd" [ref=f20e547]
+                      - cell "+0" [ref=f20e548]
+                      - cell "+0" [ref=f20e549]
+                      - cell "+0" [ref=f20e550]
+                      - cell "+0" [ref=f20e551]
+                    - row [ref=f20e552]:
+                      - cell "3rd" [ref=f20e553]
+                      - cell "+0" [ref=f20e554]
+                      - cell "+0" [ref=f20e555]
+                      - cell "+0" [ref=f20e556]
+                      - cell "+0" [ref=f20e557]
+                    - row [ref=f20e558]:
+                      - cell "4th" [ref=f20e559]
+                      - cell "+0" [ref=f20e560]
+                      - cell "+0" [ref=f20e561]
+                      - cell "+0" [ref=f20e562]
+                      - cell "+0" [ref=f20e563]
+                    - row [ref=f20e564]:
+                      - cell "5th" [ref=f20e565]
+                      - cell "+0" [ref=f20e566]
+                      - cell "+0" [ref=f20e567]
+                      - cell "+0" [ref=f20e568]
+                      - cell "+0" [ref=f20e569]
+                    - row [ref=f20e570]:
+                      - cell "6th" [ref=f20e571]
+                      - cell "+0" [ref=f20e572]
+                      - cell "+0" [ref=f20e573]
+                      - cell "+0" [ref=f20e574]
+                      - cell "+0" [ref=f20e575]
+                    - row [ref=f20e576]:
+                      - cell "7th" [ref=f20e577]
+                      - cell "+0" [ref=f20e578]
+                      - cell "+0" [ref=f20e579]
+                      - cell "+0" [ref=f20e580]
+                      - cell "+0" [ref=f20e581]
+                    - row [ref=f20e582]:
+                      - cell "8th" [ref=f20e583]
+                      - cell "+0" [ref=f20e584]
+                      - cell "+0" [ref=f20e585]
+                      - cell "+0" [ref=f20e586]
+                      - cell "+0" [ref=f20e587]
+                    - row [ref=f20e588]:
+                      - cell "9th" [ref=f20e589]
+                      - cell "+0" [ref=f20e590]
+                      - cell "+0" [ref=f20e591]
+                      - cell "+0" [ref=f20e592]
+                      - cell "+0" [ref=f20e593]
+                    - row [ref=f20e594]:
+                      - cell "10th" [ref=f20e595]
+                      - cell "+0" [ref=f20e596]
+                      - cell "+0" [ref=f20e597]
+                      - cell "+0" [ref=f20e598]
+                      - cell "+0" [ref=f20e599]
+                    - row [ref=f20e600]:
+                      - cell "11th" [ref=f20e601]
+                      - cell "+0" [ref=f20e602]
+                      - cell "+0" [ref=f20e603]
+                      - cell "+0" [ref=f20e604]
+                      - cell "+0" [ref=f20e605]
+                    - row [ref=f20e606]:
+                      - cell "12th" [ref=f20e607]
+                      - cell "+0" [ref=f20e608]
+                      - cell "+0" [ref=f20e609]
+                      - cell "+0" [ref=f20e610]
+                      - cell "+0" [ref=f20e611]
+                    - row [ref=f20e612]:
+                      - cell "13th" [ref=f20e613]
+                      - cell "+0" [ref=f20e614]
+                      - cell "+0" [ref=f20e615]
+                      - cell "+0" [ref=f20e616]
+                      - cell "+0" [ref=f20e617]
+                    - row [ref=f20e618]:
+                      - cell "14th" [ref=f20e619]
+                      - cell "+0" [ref=f20e620]
+                      - cell "+0" [ref=f20e621]
+                      - cell "+0" [ref=f20e622]
+                      - cell "+0" [ref=f20e623]
+                    - row [ref=f20e624]:
+                      - cell "15th" [ref=f20e625]
+                      - cell "+0" [ref=f20e626]
+                      - cell "+0" [ref=f20e627]
+                      - cell "+0" [ref=f20e628]
+                      - cell "+0" [ref=f20e629]
+                    - row [ref=f20e630]:
+                      - cell "16th" [ref=f20e631]
+                      - cell "+0" [ref=f20e632]
+                      - cell "+0" [ref=f20e633]
+                      - cell "+0" [ref=f20e634]
+                      - cell "+0" [ref=f20e635]
+                    - row [ref=f20e636]:
+                      - cell "17th" [ref=f20e637]
+                      - cell "+0" [ref=f20e638]
+                      - cell "+0" [ref=f20e639]
+                      - cell "+0" [ref=f20e640]
+                      - cell "+0" [ref=f20e641]
+                    - row [ref=f20e642]:
+                      - cell "18th" [ref=f20e643]
+                      - cell "+0" [ref=f20e644]
+                      - cell "+0" [ref=f20e645]
+                      - cell "+0" [ref=f20e646]
+                      - cell "+0" [ref=f20e647]
+                    - row [ref=f20e648]:
+                      - cell "19th" [ref=f20e649]
+                      - cell "+0" [ref=f20e650]
+                      - cell "+0" [ref=f20e651]
+                      - cell "+0" [ref=f20e652]
+                      - cell "+0" [ref=f20e653]
+                    - row [ref=f20e654]:
+                      - cell "20th" [ref=f20e655]
+                      - cell "+0" [ref=f20e656]
+                      - cell "+0" [ref=f20e657]
+                      - cell "+0" [ref=f20e658]
+                      - cell "+0" [ref=f20e659]
+              - generic [ref=f20e691]:
+                - heading "Class Skills" [level=3] [ref=f20e692]
+                - generic [ref=f20e693]: Concentration, Craft (All), Decipher Script, Knowledge (All), Profession, Spellcraft
+              - generic [ref=f20e695]:
+                - heading "Class Proficiencies" [level=3] [ref=f20e696]
+                - generic [ref=f20e697]: club, crossbow, heavy, crossbow, light, dagger, quarterstaff
+              - generic [ref=f20e699]:
+                - heading "Class Features" [level=3] [ref=f20e700]
+                - generic [ref=f20e701]:
+                  - generic [ref=f20e702]:
+                    - heading "Level 1" [level=4] [ref=f20e703]
+                    - generic [ref=f20e704]:
+                      - generic [ref=f20e707]:
+                        - paragraph [ref=f20e708]:
+                          - strong [ref=f20e709]: "School Specialization:"
+                          - text: A school is one of eight groupings of spells, each defined by a common theme, such as illusion or necromancy. If desired, a wizard may specialize in one school of magic. Specialization allows a wizard to cast extra spells from her chosen school, but she then never learns to cast spells from some other schools. Essentially, the wizard gains exceptional mastery over a single school by neglecting the study of other schools.
+                        - paragraph [ref=f20e710]: A specialist wizard can prepare one additional spell of her specialty school per spell level each day. She also gains a +2 bonus on Spellcraft checks to learn the spells of her chosen school.
+                        - paragraph [ref=f20e711]: The wizard must choose whether to specialize and, if she does so, choose her specialty at 1st level. At this time, she must also give up two other schools of magic (unless she chooses to specialize in divination; see below), which become her prohibited schools. For instance, if she chooses to specialize in conjuration, she might decide to give up enchantment and necromancy, or evocation and transmutation. A wizard can never give up divination to fulfill this requirement. Spells of the prohibited school or schools are not available to the wizard, and she can’t even cast such spells from scrolls or fire them from wands. She may not change either her specialization or her prohibited schools later.
+                        - paragraph [ref=f20e712]: The eight schools of arcane magic are abjuration, conjuration, divination, enchantment, evocation, illusion, necromancy, and transmutation. Spells that do not fall into any of these schools are called universal spells.
+                        - paragraph [ref=f20e713]:
+                          - emphasis [ref=f20e714]: "Abjuration:"
+                          - text: Spells that protect, block, or banish. An abjuration specialist is called an abjurer.
+                        - paragraph [ref=f20e715]:
+                          - emphasis [ref=f20e716]: "Conjuration:"
+                          - text: Spells that bring creatures or materials to the caster. A conjuration specialist is called a conjurer.
+                        - paragraph [ref=f20e717]:
+                          - emphasis [ref=f20e718]: "Divination:"
+                          - text: Spells that reveal information. A divination specialist is called a diviner. Unlike the other specialists, a diviner must give up only one other school.
+                        - paragraph [ref=f20e719]:
+                          - emphasis [ref=f20e720]: "Enchantment:"
+                          - text: Spells that imbue the recipient with some property or grant the caster power over another being. An enchantment specialist is called an enchanter.
+                        - paragraph [ref=f20e721]:
+                          - emphasis [ref=f20e722]: "Evocation:"
+                          - text: Spells that manipulate energy or create something from nothing. An evocation specialist is called an evoker.
+                        - paragraph [ref=f20e723]:
+                          - emphasis [ref=f20e724]: "Illusion:"
+                          - text: Spells that alter perception or create false images. An illusion specialist is called an illusionist.
+                        - paragraph [ref=f20e725]:
+                          - emphasis [ref=f20e726]: "Necromancy:"
+                          - text: Spells that manipulate, create, or destroy life or life force. A necromancy specialist is called a necromancer.
+                        - paragraph [ref=f20e727]:
+                          - emphasis [ref=f20e728]: "Transmutation:"
+                          - text: Spells that transform the recipient physically or change its properties in a more subtle way. A transmutation specialist is called a transmuter.
+                        - paragraph [ref=f20e729]:
+                          - emphasis [ref=f20e730]: "Universal:"
+                          - text: Not a school, but a category for spells that all wizards can learn. A wizard cannot select universal as a specialty school or as a prohibited school. Only a limited number of spells fall into this category.
+                      - paragraph [ref=f20e734]:
+                        - strong [ref=f20e735]: "Armor Restriction:"
+                        - text: Armor of any type interferes with a wizard’s movements, which can cause her spells with somatic components to fail.
+                      - generic [ref=f20e737]:
+                        - generic [ref=f20e738]:
+                          - paragraph [ref=f20e739]:
+                            - strong [ref=f20e740]: "Familiar:"
+                            - text: A wizard can obtain a familiar. Doing so takes 24 hours and uses up magical materials that cost 100 gp. A familiar is a magical beast that resembles a small animal and is unusually tough and intelligent. The creature serves as a companion and servant.
+                          - paragraph [ref=f20e741]: The wizard chooses the kind of familiar he gets. As the wizard advances in level, his familiar also increases in power.
+                          - paragraph [ref=f20e742]: If the familiar dies or is dismissed by the wizard, the wizard must attempt a DC 15 Fortitude saving throw. Failure means he loses 200 experience points per wizard level; success reduces the loss to one-half that amount. However, a wizard’s experience point total can never go below 0 as the result of a familiar’s demise or dismissal. For example, suppose that Hennet is a 3rd level wizard with 3,230 XP when his owl familiar is killed by a bugbear. Hennet makes a successful saving throw, so he loses 300 XP, dropping him below 3,000 XP and back to 2nd level. A slain or dismissed familiar cannot be replaced for a year and day. A slain familiar can be raised from the dead just as a character can be, and it does not lose a level or a Constitution point when this happy event occurs.
+                          - paragraph [ref=f20e743]: A character with more than one class that grants a familiar may have only one familiar at a time.
+                        - text: Select Familiar
+                      - generic [ref=f20e745]:
+                        - paragraph [ref=f20e747]:
+                          - strong [ref=f20e748]: "Scribe Scroll:"
+                          - text: At 1st level, a wizard gains Scribe Scroll as a bonus feat. This feats enables her to create magic scrolls.
+                        - text: "Granted Feat: Scribe Scroll"
+                      - generic [ref=f20e750]:
+                        - generic [ref=f20e751]:
+                          - paragraph [ref=f20e752]:
+                            - strong [ref=f20e753]: "Spellbooks:"
+                            - text: A wizard must study her spellbook each day to prepare her spells. She cannot prepare any spell not recorded in her spellbook, except for read magic, which all wizards can prepare from memory.
+                          - paragraph [ref=f20e754]: A wizard begins play with a spellbook containing all 0-level wizard spells (except those from her prohibited school or schools, if any) plus three 1st-level spells of your choice. For each point of Intelligence bonus the wizard has, the spellbook holds one additional 1st-level spell of your choice. At each new wizard level, she gains two new spells of any spell level or levels that she can cast (based on her new wizard level) for her spellbook. For example, when a wizard attains 5th level, she can cast 3rd-level spells. At this point, she can add two new 3rd-level spells to her spellbook, or one 2nd-level spell and one 3rd-level spell, or any combination of two spells between 1st and 3rd level. At any time, a wizard can also add spells found in other wizards’ spellbooks to her own.
+                        - text: "Choose a Spellbook Spell: (3), All 0th (Cantrip) level spells"
+                      - generic [ref=f20e756]:
+                        - paragraph [ref=f20e758]:
+                          - strong [ref=f20e759]: "Bonus Languages:"
+                          - text: A wizard may substitute Draconic for one of the bonus languages available to the character because of her race. Many ancient tomes of magic are written in Draconic, and apprentice wizards often learn it as part of their studies.
+                        - text: "Bonus Language: Draconic"
+                      - generic [ref=f20e762]:
+                        - paragraph [ref=f20e763]:
+                          - strong [ref=f20e764]: "Spells:"
+                          - text: A wizard casts arcane spells (the same type of spells available to sorcerers and bards), which are drawn from the sorcerer/wizard spell list. A wizard must choose and prepare her spells ahead of time.
+                        - paragraph [ref=f20e765]: To learn, prepare, or cast a spell, the wizard must have an Intelligence score equal to at least 10 + the spell level (Int 10 for 0-level spells, Int 11 for 1st-level spells, and so forth). The Difficulty Class for a saving throw against a wizard’s spell is 10 + the spell level + the wizard’s Intelligence modifier.
+                        - paragraph [ref=f20e766]: Like other spellcasters, a wizard can cast only a certain number of spells of each spell level per day. Her base daily spell allotment is given on the Spells per Day table. In addition, she receives bonus spells per day if she has a high Intelligence score.
+                        - paragraph [ref=f20e767]: Unlike a bard or sorcerer, a wizard may know any number of spells. She must choose and prepare her spells ahead of time by getting a good night’s sleep and spending 1 hour studying her spellbook. While studying, the wizard decides which spells to prepare.
+                  - generic [ref=f20e768]:
+                    - heading "Level 2" [level=4] [ref=f20e769]
+                    - generic [ref=f20e772]:
+                      - strong [ref=f20e773]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e774]:
+                    - heading "Level 3" [level=4] [ref=f20e775]
+                    - generic [ref=f20e778]:
+                      - strong [ref=f20e779]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e780]:
+                    - heading "Level 4" [level=4] [ref=f20e781]
+                    - generic [ref=f20e784]:
+                      - strong [ref=f20e785]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e786]:
+                    - heading "Level 5" [level=4] [ref=f20e787]
+                    - generic [ref=f20e788]:
+                      - generic [ref=f20e790]:
+                        - generic [ref=f20e791]:
+                          - paragraph [ref=f20e792]:
+                            - strong [ref=f20e793]: "Bonus Feats:"
+                            - text: At 5th, 10th, 15th, and 20th level, a wizard gains a bonus feat. At each such opportunity, she can choose a metamagic feat, an item creation feat, or Spell Mastery. The wizard must still meet all prerequisites for a bonus feat, including caster level minimums.
+                          - paragraph [ref=f20e794]: These bonus feats are in addition to the feat that a character of any class gets every three levels The wizard is not limited to the categories of item creation feats, metamagic feats, or Spell Mastery when choosing these feats.
+                        - text: Select Metamagic or Item Creation
+                      - generic [ref=f20e796]:
+                        - strong [ref=f20e797]: Spellbooks
+                        - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e798]:
+                    - heading "Level 6" [level=4] [ref=f20e799]
+                    - generic [ref=f20e802]:
+                      - strong [ref=f20e803]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e804]:
+                    - heading "Level 7" [level=4] [ref=f20e805]
+                    - generic [ref=f20e808]:
+                      - strong [ref=f20e809]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e810]:
+                    - heading "Level 8" [level=4] [ref=f20e811]
+                    - generic [ref=f20e814]:
+                      - strong [ref=f20e815]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e816]:
+                    - heading "Level 9" [level=4] [ref=f20e817]
+                    - generic [ref=f20e820]:
+                      - strong [ref=f20e821]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e822]:
+                    - heading "Level 10" [level=4] [ref=f20e823]
+                    - generic [ref=f20e824]:
+                      - generic [ref=f20e826]:
+                        - strong [ref=f20e827]: Bonus Feats
+                        - text: Select Metamagic or Item Creation
+                      - generic [ref=f20e829]:
+                        - strong [ref=f20e830]: Spellbooks
+                        - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e831]:
+                    - heading "Level 11" [level=4] [ref=f20e832]
+                    - generic [ref=f20e835]:
+                      - strong [ref=f20e836]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e837]:
+                    - heading "Level 12" [level=4] [ref=f20e838]
+                    - generic [ref=f20e841]:
+                      - strong [ref=f20e842]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e843]:
+                    - heading "Level 13" [level=4] [ref=f20e844]
+                    - generic [ref=f20e847]:
+                      - strong [ref=f20e848]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e849]:
+                    - heading "Level 14" [level=4] [ref=f20e850]
+                    - generic [ref=f20e853]:
+                      - strong [ref=f20e854]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e855]:
+                    - heading "Level 15" [level=4] [ref=f20e856]
+                    - generic [ref=f20e857]:
+                      - generic [ref=f20e859]:
+                        - strong [ref=f20e860]: Bonus Feats
+                        - text: Select Metamagic or Item Creation
+                      - generic [ref=f20e862]:
+                        - strong [ref=f20e863]: Spellbooks
+                        - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e864]:
+                    - heading "Level 16" [level=4] [ref=f20e865]
+                    - generic [ref=f20e868]:
+                      - strong [ref=f20e869]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e870]:
+                    - heading "Level 17" [level=4] [ref=f20e871]
+                    - generic [ref=f20e874]:
+                      - strong [ref=f20e875]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e876]:
+                    - heading "Level 18" [level=4] [ref=f20e877]
+                    - generic [ref=f20e880]:
+                      - strong [ref=f20e881]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e882]:
+                    - heading "Level 19" [level=4] [ref=f20e883]
+                    - generic [ref=f20e886]:
+                      - strong [ref=f20e887]: Spellbooks
+                      - text: "Choose a Spellbook Spell: (2)"
+                  - generic [ref=f20e888]:
+                    - heading "Level 20" [level=4] [ref=f20e889]
+                    - generic [ref=f20e890]:
+                      - generic [ref=f20e892]:
+                        - strong [ref=f20e893]: Bonus Feats
+                        - text: Select Metamagic or Item Creation
+                      - generic [ref=f20e895]:
+                        - strong [ref=f20e896]: Spellbooks
+                        - text: "Choose a Spellbook Spell: (2)"
+  - generic:
+    - region "Notifications"

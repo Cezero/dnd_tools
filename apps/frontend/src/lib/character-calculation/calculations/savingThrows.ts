@@ -72,35 +72,20 @@ export function getSavingThrow(
     }
 
     let baseSave = 0;
+    let hasResolvedSave = false;
 
-    // Try to use pre-resolved values first
+    // Explicit 0 is a valid poor-save result at low level; do not fall through
     if (resolvedFormulaValues) {
-        // Find save entities for this save type in resolved features
-        const saveEntities: Array<{ entityId: number; feature: FeatureWithRelations }> = [];
-        for (const feature of resolvedProgressions) {
-            if (feature.entities) {
-                for (const entity of feature.entities) {
-                    if (entity.appliesTo === EntityAppliesToType.SavingThrow &&
-                        entity.appliesToId === savingThrowId &&
-                        entity.formulaParams) {
-                        saveEntities.push({ entityId: entity.id, feature });
-                    }
-                }
-            }
-        }
-
-        // Try to use pre-resolved values first
-        if (resolvedFormulaValues) {
-            const saveKey = `save_${savingThrowId}`;
-            const resolvedSave = resolvedFormulaValues[saveKey];
-            if (resolvedSave !== undefined) {
-                baseSave = resolvedSave;
-            }
+        const saveKey = `save_${savingThrowId}`;
+        const resolvedSave = resolvedFormulaValues[saveKey];
+        if (resolvedSave !== undefined) {
+            baseSave = resolvedSave;
+            hasResolvedSave = true;
         }
     }
 
     // Fallback: if no resolved values found
-    if (baseSave === 0) {
+    if (!hasResolvedSave) {
         if (isGestalt) {
             // For gestalt, backend has already filtered to include only the best save feature
             // Use total character level with the best feature from resolved features

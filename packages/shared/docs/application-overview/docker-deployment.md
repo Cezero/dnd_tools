@@ -19,13 +19,15 @@ Source: [`deploy/docker/`](../../../../deploy/docker/).
 
 Day-to-day: ship frontend and/or backend to the three docks. This does not restart Docker Engine, MySQL, Redis, or EMQX.
 
+Deploy when a block of work is complete and would not leave the docks in a known-broken state (for example wait until backend, Zod rebuild, and frontend that depend on each other are all ready). Do not deploy an intermediate slice that is known to be incompatible.
+
 **Where:** cyberdev01, repository root.
 
 **Before deploying:**
 
 - If Zod types in `@shared/schema` changed, the operator must rebuild that package (`pnpm build` in `packages/shared/schema`). Agents must not run that build.
 - If Prisma schema changed, the operator must migrate the database. Agents must not migrate or `db push`.
-- The LAN registry must answer `http://192.168.0.83:5000/v2/`. If it does not, start it with [`init-registry.sh`](../../../../deploy/docker/scripts/init-registry.sh). Do not re-run [`configure-insecure-registry.sh`](../../../../deploy/docker/scripts/configure-insecure-registry.sh) for a normal deploy (it restarts dockerd on every host).
+- The LAN registry must answer `http://192.168.0.83:5000/v2/`. If it does not, start it with [`init-registry.sh`](../../../../deploy/docker/scripts/init-registry.sh). Do not re-run [`configure-insecure-registry.sh`](../../../../deploy/docker/scripts/configure-insecure-registry.sh) for a normal deploy.
 
 **Command:**
 
@@ -73,6 +75,10 @@ flowchart LR
 ```
 
 - **MySQL 8 Group Replication**, single-primary. App containers use `DATABASE_URL` against the local MySQL Router `127.0.0.1:6446`. Other hosts use `cybersql.local.cyberdeck.org:3306` (HAProxy on `cyberlb01` → any dock Router `:6446`, which follows the current PRIMARY).
+- Members set `group_replication_start_on_boot=ON` so a **single** dock/mysqld restart rejoins automatically. `group_replication_bootstrap_group` stays `OFF`. If **all three** members restart together, the group does not exist to rejoin — run [`recover-mysql-gr.sh`](../../../../deploy/docker/scripts/recover-mysql-gr.sh) from cyberdev01 (bootstraps the member whose `gtid_executed` contains the others, then `START GROUP_REPLICATION` on the rest). Do not bootstrap two members. Do not use `bootstrap-mysql-gr.sh` for this; that script is first-time bring-up and also recreates the `repl` user.
+- MySQL Router on each dock waits for **one** ONLINE InnoDB Cluster member (`MYSQL_INNODB_CLUSTER_MEMBERS=1`) and persists config under `/var/lib/mysql/router`. [`init-mysql-router.sh`](../../../../deploy/docker/scripts/init-mysql-router.sh) does not wipe that directory unless `FORCE_ROUTER_BOOTSTRAP=1`. Requiring three ONLINE members made Router crash-loop whenever GR was down or a dock was offline, which took out `127.0.0.1:6446` and `cybersql:3306`.
+- Never restart Docker Engine on all docks at once. [`configure-insecure-registry.sh`](../../../../deploy/docker/scripts/configure-insecure-registry.sh) skips the restart when `daemon.json` already lists the registry, and otherwise restarts **one dock at a time**, waiting for that host's GR member to be `ONLINE` before the next. `FORCE_DOCKER_RESTART=1` overrides the skip. Do not re-run this script for a normal app deploy.
+- Cluster recovery accounts (`mysql_innodb_cluster_*`) use `mysql_native_password`. GUI/app accounts (`root@%`, `dndtools`, `cyberro`) do as well, because this LAN path has no TLS. `caching_sha2_password` without TLS fails distributed recovery with error 2061.
 - **Redis Cluster**: one master and one replica per host (`:6379` / `:6380`). Replica of each master lives on another dock. App sets `REDIS_CLUSTER_MODE=true` and `REDIS_CLUSTER_NODES`. Other hosts seed `redis.local.cyberdeck.org:6379` (HAProxy → the three masters). Cluster clients still follow `MOVED` to dock IPs.
 - **EMQX 5.7** static cluster, one node per dock, host networking. Seeds are all three LAN IPs.
 - **App**: backend `:3001` (`/health`, `/api`, `/ws`), frontend `:5173`. Host networking.
@@ -97,9 +103,21 @@ Run from a machine that can SSH to the docks. `/home` on each dock is NFS (`cybe
 2. `deploy/docker/scripts/migrate-emqx-cluster.sh` — 3-node EMQX; add dock03 to HAProxy MQTT/dashboard
 3. `init-shared-secrets.sh` on dock01, copy `shared.env` to 02/03, then `init-host-env.sh` on each dock
 4. `bootstrap-mysql-gr.sh` then `restore-mysql.sh` (default dump: `apps/backend/backup/cyberdnd_bkp_01192026.sql`) then baseline/apply Prisma migrations
-5. `init-mysql-router.sh` — adopts the GR group as InnoDB Cluster `mysql` (needed for Router metadata), then starts Router on each dock from `/srv/mysql/router-compose.yml`
+5. `init-mysql-router.sh` — adopts the GR group as InnoDB Cluster `mysql` (needed for Router metadata), then starts Router on each dock from `/srv/mysql/router-compose.yml` (keeps existing router config)
+
+## Group Replication recovery
+
+Symptoms when the group is gone: mysqld `:3306` is up on the docks but `super_read_only=ON`, XCom `:33061` is not listening, Router `:6446` is closed, `cybersql:3306` accepts TCP then drops the handshake, and app login returns `401` / `Server error` because Prisma cannot reach `127.0.0.1:6446`.
+
+1. Confirm membership: `SELECT MEMBER_HOST, MEMBER_STATE, MEMBER_ROLE FROM performance_schema.replication_group_members;` on each dock (via `sudo docker exec mysql mysql ...`).
+2. If any member is `ONLINE`, only `START GROUP_REPLICATION` on the others.
+3. If all are `OFFLINE`, compare `@@gtid_executed` and bootstrap **one** member — the one whose GTID set contains the others. On 2026-09-01 that was cyberdock02 (`1-86975`); cyberdock01 was behind (`1-86969`) and must not be bootstrapped.
+4. From cyberdev01: `deploy/docker/scripts/recover-mysql-gr.sh`
+5. Then `deploy/docker/scripts/init-mysql-router.sh` if `:6446` is still down.
+
+Avoid the failure: never restart Docker Engine or mysqld on all three docks at once; `start_on_boot` can only rejoin a group that still exists. `group_replication_member_expel_timeout=60` (in `gr.cnf.template`) gives members a minute after suspicion before they are expelled. Router stays up if a single member remains ONLINE.
 6. `init-redis-cluster.sh`
-7. `init-registry.sh` on cyberdev01, then one-time `configure-insecure-registry.sh` (restarts Docker on cyberdev01 and all docks), then `deploy-app.sh` (`frontend` or `backend` for a single image)
+7. `init-registry.sh` on cyberdev01, then one-time `configure-insecure-registry.sh` (writes `insecure-registries`; restarts Docker only if `daemon.json` changed, one dock at a time after GR ONLINE), then `deploy-app.sh` (`frontend` or `backend` for a single image)
 8. Merge [`deploy/docker/haproxy/dndtools.cfg`](../../../../deploy/docker/haproxy/dndtools.cfg) into `/etc/haproxy/haproxy.cfg` on cyberlb01 and reload
 
 ## Restore
@@ -107,6 +125,8 @@ Run from a machine that can SSH to the docks. `/home` on each dock is NFS (`cybe
 Newest full dump is [`apps/backend/backup/cyberdnd_bkp_01192026.sql`](../../../../apps/backend/backup/cyberdnd_bkp_01192026.sql) (Jan 19, 2026, from `cybersql`). Restore onto the GR primary, then baseline any Prisma migrations already present in that dump. The older Aug 2025 dump in `tmp_backup/` is missing Feature/Monster/Deity tables.
 
 That dump still has the pre-merge `Feature` + `FeatureProgression` schema. After restore, run [`deploy/docker/scripts/merge-feature-progression.sh`](../../../../deploy/docker/scripts/merge-feature-progression.sh) so `Feature.id` becomes the old progression id, `FeatureClassMap` / `FeatureRaceMap` replace the progression maps, and `FeatureEntity.featureId` replaces `progressionId`. The script stops backends first. Logic matches `apps/backend/scripts/import-feature-data.ts`. Without this step, class/race feature lists and the feats page query missing `Feature.sourceType` / `Feature.featId` / `FeatureRaceMap`.
+
+The dump also still stores variant/gestalt/LA flags and coin amounts as columns on `UserCharacter`. Prisma expects `CharacterConfig` (1:1) and `CharacterWealth` (one row per `@CurrencyId`). Without [`20260901195700_add_character_config_and_wealth`](../../../../apps/backend/prisma/migrations/20260901195700_add_character_config_and_wealth/migration.sql), character create-save returns Prisma `P2021` (`CharacterConfig` does not exist). From cyberdev01, `cd apps/backend && pnpm exec prisma migrate deploy`. `DATABASE_URL` in `apps/backend/.env` (gitignored) must be the GR app user (`MYSQL_APP_USER` / `MYSQL_APP_PASSWORD` from any dock `/srv/mysql/.env`) at `cybersql.local.cyberdeck.org:3306` so HAProxy can pick a live Router. The old cybersql `root` / `dndtools` passwords in that file will fail.
 
 ## HAProxy
 
@@ -119,12 +139,30 @@ HTTP `:80` for `dndtools.local.cyberdeck.org`:
 
 TLS is not configured.
 
-`cybersql.local.cyberdeck.org` is a DNS alias for `cyberlb01` (`192.168.0.92`). HAProxy TCP `:3306` forwards to MySQL Router `:6446` on each dock. Do not point clients at a dock `:3306` — secondaries are `super_read_only`.
+`cybersql.local.cyberdeck.org` is a DNS alias for `cyberlb01` (`192.168.0.92`). HAProxy TCP `:3306` forwards to MySQL Router `:6446` on each dock. Do not point clients at a dock `:3306` — secondaries are `super_read_only`. App containers keep using local Router `127.0.0.1:6446`.
 
-Remote users (both `mysql_native_password` so GUI clients work without TLS):
+### cybersql error 1129 (Too many connection errors)
+
+MySQL **error 1129** is not “too many connections” (1040). After `max_connect_errors` consecutive **incomplete handshakes** from one client IP, that IP is blocked until the host cache is cleared. HAProxy is the client: every cybersql session and every health check appears to Router as `192.168.0.92`. The app’s local `127.0.0.1:6446` path is a different client, so the site can stay up while cybersql is dead.
+
+`option tcp-check` (connect then RST, no MySQL handshake) plus Netdata’s TCP probe of LB `:3306` used to increment Router’s counter. Default Router `max_connect_errors` is **100**. After roughly eight minutes of aborted checks, Router logged `blocking client host for 192.168.0.92` and returned 1129 on `:6446`. HAProxy still saw TCP open, so it kept using the blocked backend.
+
+`FLUSH HOSTS` on mysqld does **not** clear this. mysqld already has `max_connect_errors=1000000` and does not see the LB IP (Router opens a new connection). Unblock by recreating `mysql-router` (in-memory block + `/tmp/mysqlrouter` bootstrap). The official image always bootstraps `/tmp/mysqlrouter --force` on start; the `/var/lib/mysql/router` volume is unused by that entrypoint.
+
+Prevention (already in tree / live):
+
+- HAProxy `backend mysql_rw` uses `option mysql-check user haproxy post-41` so a real handshake **resets** the LB’s error counter. Merge [`dndtools.cfg`](../../../../deploy/docker/haproxy/dndtools.cfg) into `/etc/haproxy/haproxy.cfg` on cyberlb01 and reload (do not restart Docker/MySQL).
+- `'haproxy'@'%'` — `USAGE` only, empty `mysql_native_password`. [`init-mysql-router.sh`](../../../../deploy/docker/scripts/init-mysql-router.sh) creates it on the PRIMARY via local `:6446`.
+- Router bootstrap sets `routing:bootstrap_rw.max_connect_errors=1000000` (and the RO port). This option belongs on `[routing]`, not `[DEFAULT]` (`unknown_config_option=error`). Recreate the Router container to apply; do not `FORCE_ROUTER_BOOTSTRAP=1`.
+
+If 1129 returns: confirm `performance_schema.host_cache` has no `192.168.0.92` row on the PRIMARY (mysqld is not the blocker), then `docker compose ... up -d --force-recreate` for `mysql-router` on each dock. After that, `mysql-check` should show HAProxy servers `UP` / `L7OK`.
+
+Remote users (`mysql_native_password` so GUI clients and GR recovery work without TLS):
 
 - `'dndtools'@'%'` — `GRANT ALL` on `cyberdnd` only
+- `'cyberro'@'%'` — `SELECT` on `cyberdnd` only (MCP / read-only clients)
 - `'root'@'%'` — `WITH GRANT OPTION` on `*.*`
+- `'haproxy'@'%'` — `USAGE` only, empty password (HAProxy `mysql-check`)
 
 Passwords live in `/srv/mysql/.env` on each dock (`MYSQL_APP_PASSWORD`, `MYSQL_ROOT_PASSWORD`). Do not commit them.
 
@@ -149,9 +187,24 @@ GitHub Actions is not used: the repo is public, and self-hosted runners on publi
 One-time bring-up:
 
 1. [`init-registry.sh`](../../../../deploy/docker/scripts/init-registry.sh) on cyberdev01
-2. [`configure-insecure-registry.sh`](../../../../deploy/docker/scripts/configure-insecure-registry.sh) **once** — writes `insecure-registries` into `/etc/docker/daemon.json` on cyberdev01 and all docks, then **restarts Docker Engine** (MySQL/Redis/EMQX/app bounce). Also sets `DND_REGISTRY` / `APP_TAG` in `/srv/dnd-tools/.env`
+2. [`configure-insecure-registry.sh`](../../../../deploy/docker/scripts/configure-insecure-registry.sh) **once** — writes `insecure-registries` into `/etc/docker/daemon.json` on cyberdev01 and all docks. Restarts Docker Engine only when that file actually changed, and never on all docks at once (waits for GR `ONLINE` between docks). Also sets `DND_REGISTRY` / `APP_TAG` in `/srv/dnd-tools/.env`. A normal `deploy-app.sh` must not run this script.
 
 Override host with `DND_REGISTRY=host:5000` and tag with `APP_TAG=…`. Do not publish `:5000` off `192.168.0.0/22`. TLS is not configured.
+
+## Netdata
+
+Agents on the three docks are claimed to Netdata Cloud (ACLK). Enable MySQL, Redis, Router, and Docker collectors with [`init-netdata-collectors.sh`](../../../../deploy/docker/scripts/init-netdata-collectors.sh). That script:
+
+- Stores `MYSQL_NETDATA_PASSWORD` in `/srv/mysql/shared.env` (and `/srv/mysql/.env`)
+- Creates `'netdata'@'127.0.0.1'` on the GR primary (`PROCESS`, `REPLICATION CLIENT`, `SELECT` on `performance_schema`) using `mysql_native_password`
+- Sets `[web] mode = static-threaded` and `bind to = 127.0.0.1` so file-based go.d jobs register (Cloud-only `mode = none` does not)
+- Writes `/etc/netdata/go.d/{mysql,redis,portcheck}.conf` and `my.cnf` from host secrets (mode `0640`, `root:netdata`)
+- Adds the `netdata` user to group `docker` so the stock Docker collector can read `/var/run/docker.sock`
+- Installs and claims Netdata 2.11 on `cyberlb01` (Alpine, 2.7G root: use the static installer under `/opt/netdata`, not `apk`; `/tmp` is a 235M tmpfs — copy the `.gz.run` to `/var/tmp`). Scrapes HAProxy at `http://127.0.0.1:8404/metrics` and port-checks `:80`, `:3306`, `:6379`, `:1883`, `:8404`. OpenRC service is `netdata` in runlevel `default`.
+
+Port checks cover mysqld `:3306`, Router `:6446`, and Redis `:6379`/`:6380`. Cloud alerts use the stock Netdata health checks once those charts exist (collector down, port failed, Redis/MySQL unreachable). Do not commit collector passwords.
+
+HAProxy Prometheus is localhost-only (`frontend netdata_haproxy` in [`dndtools.cfg`](../../../../deploy/docker/haproxy/dndtools.cfg)).
 
 ## Related
 

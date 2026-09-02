@@ -1,0 +1,50 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e114]:
+    - navigation [ref=f1e115]:
+      - link "DnD Tools" [ref=f1e117] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f1e118]:
+        - button [ref=f1e120]:
+          - text: Logged in as
+          - strong [ref=f1e121]: cursor
+        - button "Enable dark mode" [ref=f1e122]
+    - generic [ref=f1e125]:
+      - generic [ref=f1e126]:
+        - button "Collapse sidebar to minimal" [ref=f1e128]
+        - navigation [ref=f1e132]:
+          - list [ref=f1e133]:
+            - listitem [ref=f1e134]:
+              - link "Characters" [ref=f1e135] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f1e139]:
+              - button "Reference" [ref=f1e140]
+            - listitem [ref=f1e146]:
+              - button "DM Tools" [ref=f1e147]
+            - listitem [ref=f1e153]:
+              - button "Admin" [ref=f1e154]
+      - main [ref=f1e161]:
+        - generic [ref=f1e163]:
+          - heading "My Characters" [level=1] [ref=f1e164]
+          - button "New Character" [ref=f1e166]
+          - generic [ref=f1e167]:
+            - table [ref=f1e168]:
+              - rowgroup [ref=f1e169]:
+                - row [ref=f1e170]:
+                  - columnheader [ref=f1e171]:
+                    - button "Character Name" [ref=f1e174]
+                  - columnheader [ref=f1e176]:
+                    - button "Race" [ref=f1e179]
+                  - columnheader [ref=f1e181]:
+                    - button "Alignment" [ref=f1e184]
+                  - columnheader [ref=f1e186]:
+                    - button "Class/Level" [ref=f1e189]
+                  - columnheader [ref=f1e191]:
+                    - button "Character Level" [ref=f1e194]
+                  - columnheader [ref=f1e196]:
+                    - button "Notes" [ref=f1e199]
+              - rowgroup [ref=f1e201]:
+                - row [ref=f1e202]:
+                  - cell "No characters found." [ref=f1e203]
+            - status [ref=f1e205]
+  - generic:
+    - region "Notifications"

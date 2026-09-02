@@ -146,10 +146,30 @@ Component for displaying feature details and information.
 
 ### **Feature Entity Editor Components (`FeatureDetailEdit/*`)**
 
-FeatureEditForm uses a set of co-located components under `frontend/src/components/feature-system/FeatureDetailEdit/` to edit feature entities.\n\nThese components cover:\n- entity rows (`EntityDetailForm.tsx`)\n- grouping controls (`EntitySectionRenderer.tsx`, `GroupingControls.tsx`, grouping helpers)\n- formula editing (`FormulaManager.tsx`, `FormulaPreview.tsx`, `ArrayPairEditor.tsx`)\n- conditional requirements (`ConditionEditor.tsx`)\n+
+FeatureEditForm uses a set of co-located components under `frontend/src/components/feature-system/FeatureDetailEdit/` to edit feature entities.
+
+These components cover:
+- entity rows (`EntityDetailForm.tsx`)
+- grouping controls (`EntitySectionRenderer.tsx`, `GroupingControls.tsx`, grouping helpers)
+- formula editing (`FormulaManager.tsx`, `FormulaPreview.tsx`, `ArrayPairEditor.tsx`)
+- conditional requirements (`ConditionEditor.tsx`)
+
 The legacy `FeatureDetailEdit` component entrypoint was removed; these editor components remain as implementation details used by FeatureEditForm. EntityDetailForm exposes **Show in Detail View** (displayInDetail) and **Show Full Progression** (showFullProgression); the latter controls whether progression previews show every level from formula start to 20 or only transition levels.
 
-**Entities tab – Spellcasting Progression**: For entities with type Base and appliesTo Spellcasting Progression, the Entities tab shows the Formula selector and an **Applies To** field. The appliesToId is the **spell level** (0–9), not a feature ID; the UI labels it "Spell Level" and provides a dropdown (0th through 9th). Formula and spell level are used to define spells-per-day (or similar) progressions per spell level. For spell-slot formulas (Triangular/Linear), the **cap** (max slots) is set in Formula Parameters as **Max Slots (cap)** (`formulaParams.maxValue`); the entity Value field is not used and is hidden for this combination. Existing data without `maxValue` falls back to the stored entity value for backward compatibility.
+<a id="spellcasting-features"></a>
+
+**Entities tab – Spellcasting and Spells Known Progression**:
+
+For `EntityType.Base` entities with `EntityAppliesToType.SpellcastingProgression` **or** `EntityAppliesToType.SpellsKnownProgression`, the Entities tab shows the Formula selector and an **Applies To** field. In both cases `appliesToId` is the **spell level** (0–9), not a feature ID; the UI labels it "Spell Level" and provides a dropdown (0th through 9th). The raw Value field is hidden for these combinations (formulas own the scaling).
+
+| Applies-to | Meaning | Class progression column |
+|---|---|---|
+| `SpellcastingProgression` (38) | Spells per day (slots) at that spell level | Spells per Day |
+| `SpellsKnownProgression` (46) | Maximum spells known at that spell level | Spells Known |
+
+For spell-slot formulas (Triangular/Linear) on SpellcastingProgression, the **cap** (max slots) is set in Formula Parameters as **Max Slots (cap)** (`formulaParams.maxValue`). Existing data without `maxValue` falls back to the stored entity value for backward compatibility.
+
+Authoring sources: `AppliesToSelector.tsx`, `FeatureDetailEdit/utils.ts` (formula-required sets for both applies-to values).
 
 ### **FeatureDisplay**
 

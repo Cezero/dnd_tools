@@ -1,0 +1,31 @@
+- generic [active] [ref=f13e1]:
+  - generic [ref=f13e4]:
+    - navigation [ref=f13e5]:
+      - link "DnD Tools" [ref=f13e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f13e8]:
+        - button [ref=f13e10]:
+          - text: Logged in as
+          - strong [ref=f13e11]: cursor
+        - button "Enable dark mode" [ref=f13e12]
+    - generic [ref=f13e15]:
+      - generic [ref=f13e16]:
+        - button "Collapse sidebar to minimal" [ref=f13e18]
+        - navigation [ref=f13e22]:
+          - list [ref=f13e23]:
+            - listitem [ref=f13e24]:
+              - link "Characters" [ref=f13e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f13e29]:
+              - button "Reference" [ref=f13e30]
+            - listitem [ref=f13e36]:
+              - button "DM Tools" [ref=f13e37]
+            - listitem [ref=f13e43]:
+              - button "Admin" [ref=f13e44]
+      - main [ref=f13e51]:
+        - generic [ref=f13e53]:
+          - heading "Skills" [level=1] [ref=f13e54]
+          - button "New Skill" [ref=f13e56]
+          - generic [ref=f13e57]: Loading...
+  - generic:
+    - region "Notifications"

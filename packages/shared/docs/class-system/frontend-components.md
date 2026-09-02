@@ -19,7 +19,7 @@ The frontend implementation follows the shared [Frontend Component Architecture]
 - Detail Components: `frontend/src/features/class/ClassDetail.tsx`
 - API Layer: `frontend/src/features/class/ClassQueryHooks.ts`
 - Configuration: `frontend/src/features/class/ClassConfig.ts`
-- Tab Components: `frontend/src/features/class/tabs/` (BasicInfoTab.tsx, FeaturesTab.tsx, SkillsTab.tsx, ProficienciesTab.tsx, SpellcastingTab.tsx, DescriptionTab.tsx)
+- Tab Components: `frontend/src/features/class/tabs/` (BasicInfoTab.tsx, FeaturesTab.tsx, SkillsTab.tsx, ProficienciesTab.tsx, DescriptionTab.tsx)
 - Tab Types: `frontend/src/features/class/tabs/types.ts`
 - Tab Index: `frontend/src/features/class/tabs/index.ts`
 
@@ -63,7 +63,7 @@ Comprehensive display component for viewing complete class information. Shows lo
 - **Lock Status Display**: Shows "Currently locked by User {userId}" when locked by another user
 - **Edit Button Disabled**: Edit button is disabled when locked by another user
 - **Database Data**: Always displays data from database (via TanStack Query cache)
-- **Class progression grid**: BaB, saves, and spells per day are driven by the Detail display strategy via `buildClassProgressionFromDetail(features)`. This helper opts into `includeNonTransitionLevels: true` on the formatter `DisplayContext` so the grid reflects values for all character levels 1–20, not just levels where values change. See [Class Progression](class-progression.md#display-strategy-and-formatters).
+- **Class progression grid**: BAB and saves come from feature formulas via `buildClassProgressionFromDetail(features, classId)`. Spell columns still overlay from the Detail display strategy. See [Class Progression](class-progression.md#display-strategy-and-formatters).
 
 **Source File**: `frontend/src/features/class/ClassDisplay.tsx`
 
@@ -274,15 +274,17 @@ const [isDirty, setIsDirty] = useState<boolean>(false);
 **Purpose and Function**:
 - **Core Attributes**: Manage fundamental class characteristics
 - **Classification**: Set class type, visibility, and edition information
-- **Mechanical Properties**: Configure hit die, skill points, and progression values
+- **Spellcasting Flag**: Toggle `canCastSpells` (and related divine caster flag)
+- **Class Features Preview**: Show a read-only PHB-style progression table (BAB, saves, spells) above Source References
+- **Source References**: Edit source book attributions
 - **Validation**: Ensure all required fields are properly filled
 
 **Form Fields** (see [Database Schema](database-schema.md) for field descriptions):
 - **Identity Fields**: Name, abbreviation with validation
 - **Classification**: Edition, prestige status, visibility settings
-- **Mechanical Properties**: Hit die, skill points, progression values
-- **Spellcasting Configuration**: Spellcasting flags and casting type
-- **Description**: Rich text description with markdown support
+- **Spellcasting Configuration**: High-level `canCastSpells` / divine caster flags (casting ability, casting type, and progressions live on Features)
+- **Class Features Preview**: Shared progression table with Class Detail (see below)
+- **Source References**: Source book info via `SourceEditor`
 
 **Source File**: `frontend/src/features/class/tabs/BasicInfoTab.tsx`
 
@@ -340,23 +342,24 @@ Tab for managing class weapon and armor proficiencies.
 
 **Source File**: `frontend/src/features/class/tabs/ProficienciesTab.tsx`
 
-### **Spellcasting Preview in BasicInfoTab**
+### **Class Features Preview in BasicInfoTab**
 
-Spellcasting capabilities are surfaced in the **Basic Info** tab via a read-only progression preview.
+Class mechanics (BAB, saves, and spellcasting) are surfaced in the **Basic Info** tab via a read-only **Class Features Preview**, placed above the Source References block.
 
 **Purpose and Function**:
-- **Spellcasting Preview**: Show the final PHB-style spell progression table while editing a class.
+- **Class Features Preview**: Show the final PHB-style progression table (Level, BAB, Fort/Ref/Will, Spells per Day, Spells Known) while editing a class.
 - **Unified Formatting**: Reuse the same progression builder and table as the detail view so authors see exactly what the Class Detail page will render.
-- **Spellcasting Integration**: Integrate with the spellcasting and feature systems without duplicating configuration.
+- **Feature Integration**: Progressions are configured on Features; Basic Info only previews them.
 
 **Class-Specific Features**:
-- **Spellcasting Flag**: `canCastSpells` remains a high-level class flag; spells-known behavior is inferred from spellcasting FeatureEntities (no separate `spellsKnown` toggle in the UI).
+- **Visibility**: Shown when `canCastSpells` is true or the class has spellcasting FeatureEntities (`EntityAppliesToType.SpellcastingProgression` or `SpellsKnownProgression` with formula params).
+- **Spellcasting Flags**: `canCastSpells` remains the high-level casting flag. `Class.spellsKnown` still distinguishes SpellsKnown UI (Learn/Forget) from spellbook/prepared flows; per-level known caps come from `SpellsKnownProgression` FeatureEntities, not from legacy table fields at runtime.
 - **Casting Ability & Type via Features**: The primary casting ability and casting type are derived from the class's spellcasting feature using `FeatureEntity` records:
   - `EntityAppliesToType.CastingAbility` → `appliesToId` points to the ability (e.g., Intelligence, Wisdom, Charisma).
   - `EntityAppliesToType.CastingType` → `appliesToId` points to the casting chassis (prepared, spontaneous, etc.).
   - The `ClassDisplay` header scans all class-linked features for these entities and shows the first configured values.
-- **Spell Progression**: Spell slot and spells-known progressions are configured via spellcasting FeatureEntities (see [Feature System Frontend Components](../feature-system/frontend-components.md#spellcasting-features)).
-- **Progression Table**: Read-only PHB-style table (levels 1–20, BAB/saves, **Spells per Day**, **Spells Known**) built via `buildClassProgressionFromDetail(features)` and rendered with `ClassProgressionTable`; see [Class Progression](class-progression.md#display-strategy-and-formatters).
+- **Spell Progression**: Spells-per-day uses `SpellcastingProgression` entities; spells-known uses `SpellsKnownProgression` entities (see [Feature System Frontend Components](../feature-system/frontend-components.md#spellcasting-features)).
+- **Progression Table**: Read-only PHB-style table (levels 1–20, BAB/saves, **Spells per Day**, **Spells Known**) built via `buildClassProgressionFromDetail(features, classId)` and rendered with `ClassProgressionTable`; see [Class Progression](class-progression.md#display-strategy-and-formatters).
 
 **Source File**: `frontend/src/features/class/tabs/BasicInfoTab.tsx`
 
@@ -405,7 +408,7 @@ Query hooks + imperative methods for class system backend communication.
 
 The class editing interface uses tab-based organization to separate concerns:
 
-**Basic Info**: Core class properties, metadata, and spellcasting preview
+**Basic Info**: Core class properties, metadata, Class Features Preview, and source references
 **Features**: Class features and abilities
 **Skills**: Class skills and skill point allocation
 **Proficiencies**: Weapon and armor proficiencies
@@ -651,14 +654,14 @@ The class system integrates with the feature system through the FeaturesTab:
 
 ### **Spellcasting System Integration**
 
-The class system integrates with the spellcasting system through the SpellcastingTab:
+The class system integrates with the spellcasting system through Features and a Basic Info preview:
 
-**Spellcasting Configuration**: Configure spellcasting capabilities
-**Spell Progression**: Set spell slot progression
-**Spells Known**: Configure spells known for spontaneous casters
-**Spellcasting Validation**: Ensure proper spellcasting configuration
+**Spellcasting Configuration**: High-level `canCastSpells` on Basic Info; casting ability, casting type, and progressions on Features
+**Spell Progression**: Spell slot / spells-known FeatureEntities (see Feature System docs)
+**Class Features Preview**: Read-only `ClassProgressionTable` on Basic Info, shared with Class Detail
+**Spells Known**: Implied by spellcasting FeatureEntities (no separate UI toggle)
 
-**Related Documentation**: [Spellcasting System Frontend Components](../spell-system/frontend-components.md#spellcasting-progression-components)
+**Related Documentation**: [Spellcasting System](spellcasting-system.md), [Feature System Frontend Components](../feature-system/frontend-components.md#spellcasting-features)
 
 ### **Skill System Integration**
 

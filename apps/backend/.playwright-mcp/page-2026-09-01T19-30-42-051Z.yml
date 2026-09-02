@@ -1,0 +1,85 @@
+- generic [ref=f20e1]:
+  - generic [ref=f20e5]:
+    - navigation [ref=f20e6]:
+      - link "DnD Tools" [ref=f20e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f20e9]:
+        - button [ref=f20e11]:
+          - text: Logged in as
+          - strong [ref=f20e12]: cursor
+        - button "Enable dark mode" [ref=f20e13]
+    - generic [ref=f20e16]:
+      - generic [ref=f20e17]:
+        - button "Collapse sidebar to minimal" [ref=f20e19]
+        - navigation [ref=f20e23]:
+          - list [ref=f20e24]:
+            - listitem [ref=f20e25]:
+              - link "Characters" [ref=f20e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f20e30]:
+              - button "Reference" [ref=f20e31]
+            - listitem [ref=f20e37]:
+              - button "DM Tools" [ref=f20e38]
+            - listitem [ref=f20e44]:
+              - button "Admin" [ref=f20e45]
+      - main [ref=f20e52]:
+        - generic [ref=f20e55]:
+          - navigation [ref=f20e57]:
+            - generic [ref=f20e58]:
+              - button "Abilities & Race" [ref=f20e59]
+              - button "Class" [ref=f20e63]
+              - button "Skills" [ref=f20e67]
+              - button "Feats" [ref=f20e71]
+              - button "Choices" [ref=f20e75]
+              - button "Description" [ref=f20e79]
+              - button "Equipment" [ref=f20e83]
+              - button "Combat" [ref=f20e87]
+              - button "Configuration" [ref=f20e91]
+            - button [active] [ref=f20e96]
+          - generic [ref=f20e897]:
+            - heading "Description" [level=2] [ref=f20e898]
+            - generic [ref=f20e899]:
+              - generic [ref=f20e901]:
+                - generic [ref=f20e902]:
+                  - heading "Character Name" [level=3] [ref=f20e903]
+                  - textbox "Enter character name..." [ref=f20e904]: Cursor Smoke Test
+                - generic [ref=f20e905]:
+                  - heading "Alignment" [level=3] [ref=f20e906]
+                  - generic [ref=f20e907]:
+                    - combobox [ref=f20e908]:
+                      - generic [ref=f20e909]: Lawful Good
+                    - textbox [ref=f20e913]: "0"
+              - generic [ref=f20e914]:
+                - heading "Physical Description" [level=3] [ref=f20e915]
+                - generic [ref=f20e916]:
+                  - generic [ref=f20e918]:
+                    - generic [ref=f20e919]:
+                      - generic [ref=f20e920]: Age
+                      - generic [ref=f20e921]:
+                        - spinbutton "Enter age..." [ref=f20e922]
+                        - button "Roll Age" [ref=f20e923]
+                    - generic [ref=f20e924]:
+                      - generic [ref=f20e925]: Height (inches)
+                      - spinbutton "Enter height..." [ref=f20e926]
+                    - button "Roll Height/Weight" [ref=f20e929]
+                    - generic [ref=f20e930]:
+                      - generic [ref=f20e931]: Weight
+                      - textbox "Enter weight..." [ref=f20e932]
+                  - generic [ref=f20e934]:
+                    - generic [ref=f20e935]:
+                      - generic [ref=f20e936]: Eyes
+                      - textbox "Enter eye color..." [ref=f20e937]
+                    - generic [ref=f20e938]:
+                      - generic [ref=f20e939]: Hair
+                      - textbox "Enter hair color..." [ref=f20e940]
+                    - generic [ref=f20e941]:
+                      - generic [ref=f20e942]: Gender
+                      - textbox "Enter gender..." [ref=f20e943]
+              - generic [ref=f20e944]:
+                - heading "Languages" [level=3] [ref=f20e945]
+                - generic [ref=f20e946]: Common
+              - generic [ref=f20e949]:
+                - heading "Notes" [level=3] [ref=f20e950]
+                - textbox "Enter character notes, background, or other information..." [ref=f20e951]
+  - generic:
+    - region "Notifications"

@@ -749,44 +749,46 @@ export class ResolvedFeatureService {
             }
         }
 
-        // Collect all BAB and save entities by class
+        // Collect all BAB and save entities by the character's matching class IDs.
+        // Shared features list every linked class; only those on the character contribute.
         const babEntitiesByClass = new Map<number, Array<{ entity: FeatureEntity; feature: FeatureWithRelations }>>();
         const saveEntitiesByClass = new Map<number, Array<{ entity: FeatureEntity; saveType: number; feature: FeatureWithRelations }>>();
 
         for (const feature of resolvedProgressions) {
             if (!feature.entities) continue;
 
-            // Get class ID from feature
-            const classId = feature.classes?.[0]?.classId;
-            if (!classId) continue;
+            const matchingClassIds = this.matchingClassIds(feature, classLevels);
+            if (matchingClassIds.length === 0) continue;
 
-            for (const entity of feature.entities) {
-                // Only resolve BAB and saving throw entities with formulas
-                const isBAB = entity.appliesTo === EntityAppliesToType.BaseAttackBonus;
-                const isSave = entity.appliesTo === EntityAppliesToType.SavingThrow &&
-                    entity.appliesToId !== null &&
-                    (entity.appliesToId === SavingThrowId.Fortitude ||
-                        entity.appliesToId === SavingThrowId.Reflex ||
-                        entity.appliesToId === SavingThrowId.Will);
+            for (const classId of matchingClassIds) {
+                for (const entity of feature.entities) {
+                    const isBAB = entity.appliesTo === EntityAppliesToType.BaseAttackBonus;
+                    const isSave = entity.appliesTo === EntityAppliesToType.SavingThrow &&
+                        entity.appliesToId !== null &&
+                        (entity.appliesToId === SavingThrowId.Fortitude ||
+                            entity.appliesToId === SavingThrowId.Reflex ||
+                            entity.appliesToId === SavingThrowId.Will);
 
-                if ((isBAB || isSave) && entity.formulaParams) {
-                    if (isBAB) {
-                        if (!babEntitiesByClass.has(classId)) {
-                            babEntitiesByClass.set(classId, []);
+                    if ((isBAB || isSave) && entity.formulaParams) {
+                        if (isBAB) {
+                            if (!babEntitiesByClass.has(classId)) {
+                                babEntitiesByClass.set(classId, []);
+                            }
+                            babEntitiesByClass.get(classId)!.push({ entity, feature });
+                        } else if (isSave) {
+                            if (!saveEntitiesByClass.has(classId)) {
+                                saveEntitiesByClass.set(classId, []);
+                            }
+                            saveEntitiesByClass.get(classId)!.push({ entity, saveType: entity.appliesToId ?? 0, feature });
                         }
-                        babEntitiesByClass.get(classId)!.push({ entity, feature });
-                    } else if (isSave) {
-                        if (!saveEntitiesByClass.has(classId)) {
-                            saveEntitiesByClass.set(classId, []);
-                        }
-                        saveEntitiesByClass.get(classId)!.push({ entity, saveType: entity.appliesToId ?? 0, feature });
                     }
                 }
             }
         }
 
-        // Calculate BAB: sum all class contributions
+        // Calculate BAB: sum all class contributions, including a legitimate 0 at low level
         let totalBAB = 0;
+        let hasBabContribution = false;
         for (const [classId, entities] of babEntitiesByClass.entries()) {
             const classLevel = classLevels.get(classId) ?? 0;
             if (classLevel === 0) continue;
@@ -795,16 +797,18 @@ export class ResolvedFeatureService {
                 const value = this.calculateFormulaValueForEntity(entity, feature, classLevel, character);
                 if (value !== null) {
                     totalBAB += value;
+                    hasBabContribution = true;
                 }
             }
         }
-        if (totalBAB > 0) {
+        if (hasBabContribution) {
             resolvedValues['bab'] = totalBAB;
         }
 
-        // Calculate saves: sum all class contributions per save type
+        // Calculate saves: sum all class contributions per save type, including 0
         for (const saveType of [SavingThrowId.Fortitude, SavingThrowId.Reflex, SavingThrowId.Will]) {
             let totalSave = 0;
+            let hasSaveContribution = false;
             for (const [classId, entities] of saveEntitiesByClass.entries()) {
                 const classLevel = classLevels.get(classId) ?? 0;
                 if (classLevel === 0) continue;
@@ -814,15 +818,28 @@ export class ResolvedFeatureService {
                     const value = this.calculateFormulaValueForEntity(entity, feature, classLevel, character);
                     if (value !== null) {
                         totalSave += value;
+                        hasSaveContribution = true;
                     }
                 }
             }
-            if (totalSave > 0) {
+            if (hasSaveContribution) {
                 resolvedValues[`save_${saveType}`] = totalSave;
             }
         }
 
         return resolvedValues;
+    }
+
+    /**
+     * Class IDs on both the feature's FeatureClassMap links and the character's class levels.
+     * Shared mechanics (poor-bab, good-will-save) list every class that uses them.
+     */
+    private static matchingClassIds(
+        feature: FeatureWithRelations,
+        classLevels: Map<number, number>
+    ): number[] {
+        const linkedClassIds = feature.classes?.map(c => c.classId) ?? [];
+        return linkedClassIds.filter(classId => (classLevels.get(classId) ?? 0) > 0);
     }
 
     /**
@@ -883,17 +900,11 @@ export class ResolvedFeatureService {
             params.baseValue = entity.value ?? 0;
         }
 
-        // Calculate formula value
+        // Calculate formula value (0 is valid for poor BAB/saves at low level)
         try {
             const value = formulaDef.calculate(params);
             if (value !== null && value !== undefined && typeof value === 'number') {
-                // Allow 0 values when featureLevelZero is enabled
-                if (value === 0 && entity.formulaParams.featureLevelZero === true) {
-                    return 0;
-                }
-                if (value > 0) {
-                    return value;
-                }
+                return value;
             }
         } catch (error) {
             console.error('Error calculating formula value:', error);

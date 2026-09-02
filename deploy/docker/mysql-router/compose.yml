@@ -11,7 +11,14 @@ services:
       MYSQL_PORT: 3306
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_INNODB_CLUSTER_MEMBERS: "3"
+      # Wait for a PRIMARY, not a full 3-member group. Requiring 3 ONLINE
+      # members made Router crash-loop whenever GR had a blip or a dock was down.
+      MYSQL_INNODB_CLUSTER_MEMBERS: "1"
+      MYSQL_CREATE_ROUTER_USER: "0"
+      # max_connect_errors belongs on [routing], not DEFAULT (unknown_config_option=error).
+      # Image entrypoint re-bootstraps /tmp/mysqlrouter on every start, so this applies
+      # after compose up / container recreate. Default is 100; HAProxy checks share the LB IP.
+      MYSQL_ROUTER_BOOTSTRAP_EXTRA_OPTIONS: "--conf-bind-address=0.0.0.0 --conf-set-option=routing:bootstrap_rw.max_connect_errors=1000000 --conf-set-option=routing:bootstrap_ro.max_connect_errors=1000000"
     volumes:
       - /var/lib/mysql/router:/var/lib/mysqlrouter
     restart: always

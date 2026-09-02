@@ -7,7 +7,7 @@ alwaysApply: true
 
 The k8s cluster is gone. Do not run `k8s/deploy.sh` or `kubectl apply` for this app.
 
-When the user asks to deploy, from the repo root on cyberdev01:
+When a block is deployable (see `deploy-complete-block.mdc`), from the repo root on cyberdev01:
 
 `deploy/docker/scripts/deploy-app.sh [all|backend|frontend]`
 

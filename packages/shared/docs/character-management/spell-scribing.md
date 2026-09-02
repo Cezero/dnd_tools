@@ -44,18 +44,22 @@ The spell scribing feature provides comprehensive spell management for spellbook
 ### **SpellsKnown Classes** (e.g., Sorcerer, Bard)
 
 **Characteristics**:
-- Use `SpellcastingProgression.spellsKnown` progression
-- Spells are tracked in `AdvancementSpell` (no `isFreeGrant` distinction needed)
-- Maximum spells per level are enforced via `spellsKnownProgression`
-- 0th level spells are selected and stored in `AdvancementSpell` records
-- Cannot scribe additional spells ad-hoc (fixed spells known list)
+- Caps come from `EntityType.Base` + `EntityAppliesToType.SpellsKnownProgression` FeatureEntities (formula per spell level)
+- Resolution exposes `ClassSpellSelection.maxSpellsKnownByLevel` (`spellLevel` string keys → max known)
+- `SpellSelectionTab` enforces Learn/Forget against those resolved limits
+- Spells are tracked in `AdvancementSpell` / `state.spellsKnown` (which spells are known—not the max table)
+- **No free-grant concept**: free grants (`SpellbookSpell` / `isFreeGrant`) apply only to spellbook/prepared casters
+- 0th level spells are selected and stored in `AdvancementSpell` records (unlike spellbook cantrips)
 
-**Detection**:
-- Backend: Checks for `class.spellsKnown === true` and `spellsKnownProgression` exists
-- Frontend: Uses `selectedClass?.spellsKnown` property
+**Detection / UI mode**:
+- Backend and frontend still use `Class.spellsKnown === true` to choose SpellsKnown vs spellbook UI
+- Runtime max-known enforcement uses `maxSpellsKnownByLevel`, not legacy `spellsKnownProgression` tables
+- Authoring may still persist progression tables on class edit drafts; display and character limits are feature-entity-driven
 
 **Source Files**:
-- Backend: `apps/backend/src/features/character/characterService.ts` (`getAvailableSpellsForClass`)
+- Backend: `apps/backend/src/features/characterResolution/resolvedFeatureService.ts` (`getSpellsKnownByLevelFromFeaturesForClass`)
+- Backend: `apps/backend/src/features/characterResolution/characterResolutionController.ts` (`calculateSpellSelection`)
+- Schema: `packages/shared/schema/src/character.ts` (`ClassSpellSelectionSchema.maxSpellsKnownByLevel`)
 - Frontend: `apps/frontend/src/features/character/tabs/SpellSelectionTab.tsx`
 
 ## 💰 **Free Grant System**

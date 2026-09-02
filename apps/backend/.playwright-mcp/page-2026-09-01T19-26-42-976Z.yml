@@ -1,0 +1,70 @@
+- generic [active] [ref=f14e1]:
+  - generic [ref=f14e5]:
+    - navigation [ref=f14e6]:
+      - link "DnD Tools" [ref=f14e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f14e9]:
+        - button [ref=f14e11]:
+          - text: Logged in as
+          - strong [ref=f14e12]: cursor
+        - button "Enable dark mode" [ref=f14e13]
+    - generic [ref=f14e16]:
+      - generic [ref=f14e17]:
+        - button "Collapse sidebar to minimal" [ref=f14e19]
+        - navigation [ref=f14e23]:
+          - list [ref=f14e24]:
+            - listitem [ref=f14e25]:
+              - link "Characters" [ref=f14e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f14e30]:
+              - button "Reference" [ref=f14e31]
+            - listitem [ref=f14e37]:
+              - button "DM Tools" [ref=f14e38]
+            - listitem [ref=f14e44]:
+              - button "Admin" [ref=f14e45]
+      - main [ref=f14e52]:
+        - generic [ref=f14e56]:
+          - generic [ref=f14e57]:
+            - generic [ref=f14e58]:
+              - heading "Appraise" [level=1] [ref=f14e59]
+              - heading "(INT)" [level=1] [ref=f14e60]
+            - generic [ref=f14e61]:
+              - paragraph [ref=f14e62]:
+                - strong [ref=f14e63]: "Trained Only:"
+                - text: "No"
+              - paragraph [ref=f14e64]:
+                - strong [ref=f14e65]: "Armor Check Penalty:"
+                - text: "No"
+              - paragraph [ref=f14e66]:
+                - strong [ref=f14e67]: "Analog:"
+                - text: "No"
+          - generic [ref=f14e68]:
+            - paragraph [ref=f14e71]: Use this skill to tell an antique from old junk, a sword that’s old and fancy from an elven heirloom, and high-quality jewelry from cheap stuff made to look good.
+            - generic [ref=f14e72]:
+              - generic [ref=f14e73]: "Check:"
+              - generic [ref=f14e75]:
+                - paragraph [ref=f14e76]: You can appraise common or well-known objects with a DC 12 Appraise check. Failure means that you estimate the value at 50% to 150%. The DM secretly rolls a 2d6+3, multiplies the result by 10%, multiplies the actual value by that percentage, then tells you the resulting value for the item. (For a common or well-known item, your chance of estimating the value within 10% is fairly high even if you fail the check - in such a case, you made a lucky guess.)
+                - paragraph [ref=f14e77]: Appraising a rare or exotic item requires a successful check against DC 15, 20, or higher. If the check is successful, you estimate the value correctly; failure means you cannot estimate the item’s value.
+                - paragraph [ref=f14e78]: A magnifying glass gives you a +2 circumstance bonus on Appraise checks involving any item that is small or highly detailed, such as a gem. A merchant’s scale gives you a +2 circumstance bonus on Appraise checks involving any items that are valued by weight, including anything made of precious metals. These bonuses stack.
+            - generic [ref=f14e79]:
+              - generic [ref=f14e80]: "Action:"
+              - paragraph [ref=f14e83]: Appraising an item takes 1 minute (ten consecutive full-round actions).
+            - generic [ref=f14e84]:
+              - generic [ref=f14e85]:
+                - generic [ref=f14e86]: "Try Again:"
+                - generic [ref=f14e87]: "No"
+              - paragraph [ref=f14e90]: You cannot try again on the same object, regardless of success.
+            - generic [ref=f14e91]:
+              - generic [ref=f14e92]: "Special:"
+              - paragraph [ref=f14e95]: A dwarf gets a +2 racial bonus on Appraise checks that are related to stone or metal items because dwarves are familiar with valuable items of all kinds (especially those made of stone or metal).
+            - generic [ref=f14e96]:
+              - generic [ref=f14e97]: "Synergy:"
+              - paragraph [ref=f14e100]: If you have 5 ranks in any Craft skill, you gain a +2 bonus on Appraise checks related to items made with that Craft skill.
+            - generic [ref=f14e101]:
+              - generic [ref=f14e102]: "Untrained:"
+              - paragraph [ref=f14e105]: For common items, failure on an untrained check means no estimate. For rare items, success means an estimate of 50% to 150% (2d6+3 times 10%).
+          - generic [ref=f14e106]:
+            - button "Back to Skills" [ref=f14e107]
+            - button "Edit Skill" [ref=f14e108]
+  - generic:
+    - region "Notifications"

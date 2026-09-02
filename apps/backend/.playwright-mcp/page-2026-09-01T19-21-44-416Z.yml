@@ -1,0 +1,431 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e5]:
+    - navigation [ref=f3e6]:
+      - link "DnD Tools" [ref=f3e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f3e9]:
+        - button [ref=f3e11]:
+          - text: Logged in as
+          - strong [ref=f3e12]: cursor
+        - button "Enable dark mode" [ref=f3e13]
+    - generic [ref=f3e16]:
+      - generic [ref=f3e17]:
+        - button "Collapse sidebar to minimal" [ref=f3e19]
+        - navigation [ref=f3e23]:
+          - list [ref=f3e24]:
+            - listitem [ref=f3e25]:
+              - link "Characters" [ref=f3e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f3e30]:
+              - button "Reference" [ref=f3e31]
+            - listitem [ref=f3e37]:
+              - button "DM Tools" [ref=f3e38]
+            - listitem [ref=f3e44]:
+              - button "Admin" [ref=f3e45]
+      - main [ref=f3e52]:
+        - generic [ref=f3e54]:
+          - heading "Races" [level=1] [ref=f3e55]
+          - button "New Race" [ref=f3e57]
+          - generic [ref=f3e58]:
+            - table [ref=f3e59]:
+              - rowgroup [ref=f3e60]:
+                - row [ref=f3e61]:
+                  - columnheader [ref=f3e62]:
+                    - button "Name" [ref=f3e65]
+                  - columnheader [ref=f3e67]:
+                    - button "Edition" [ref=f3e70]
+                  - columnheader [ref=f3e72]:
+                    - button "Source" [ref=f3e75]
+                  - columnheader [ref=f3e77]:
+                    - button "Display" [ref=f3e80]
+                  - columnheader [ref=f3e82]:
+                    - button "Description" [ref=f3e85]
+                  - columnheader [ref=f3e87]:
+                    - button "Size" [ref=f3e90]
+                  - columnheader [ref=f3e92]:
+                    - button "Speed" [ref=f3e95]
+                  - columnheader [ref=f3e97]:
+                    - button "Favored Class" [ref=f3e100]
+              - rowgroup [ref=f3e102]:
+                - row [ref=f3e103]:
+                  - cell "Catfolk" [ref=f3e104]
+                  - cell "D&D 3.5E" [ref=f3e105]
+                  - cell "RW 92" [ref=f3e106]
+                  - cell "Yes" [ref=f3e107]
+                  - cell [ref=f3e108]:
+                    - generic [ref=f3e109]:
+                      - paragraph [ref=f3e110]:
+                        - emphasis [ref=f3e111]: “Wherever the plains take me, that is where I will wander.”
+                        - text: —Marrash of the Flying Eagle Tribe, catfolk scout
+                      - paragraph [ref=f3e112]: The great tribes of the catfolk roam where they will, putting passion into every day o...
+                  - cell "Medium" [ref=f3e113]
+                  - cell "40" [ref=f3e114]
+                  - cell "Ranger" [ref=f3e115]:
+                    - generic [ref=f3e116]:
+                      - generic [ref=f3e117]: Ranger
+                      - generic [ref=f3e118]:
+                        - generic "Edit" [ref=f3e119] [cursor=pointer]
+                        - generic "Delete" [ref=f3e122] [cursor=pointer]
+                - row [ref=f3e125]:
+                  - cell "Dwarf" [ref=f3e126]
+                  - cell "D&D 3.5E" [ref=f3e127]
+                  - cell "PHB 14" [ref=f3e128]
+                  - cell "Yes" [ref=f3e129]
+                  - cell [ref=f3e130]:
+                    - paragraph [ref=f3e132]: Dwarves are known for their skill in warfare, their ability to withstand physical and magical punishment, their knowledge of the earth's secrets, their hard work, and their capacity for drinking ale T...
+                  - cell "Medium" [ref=f3e133]
+                  - cell "20" [ref=f3e134]
+                  - cell "Fighter" [ref=f3e135]:
+                    - generic [ref=f3e136]:
+                      - generic [ref=f3e137]: Fighter
+                      - generic [ref=f3e138]:
+                        - generic "Edit" [ref=f3e139] [cursor=pointer]
+                        - generic "Delete" [ref=f3e142] [cursor=pointer]
+                - row [ref=f3e145]:
+                  - cell "Elf" [ref=f3e146]
+                  - cell "D&D 3.5E" [ref=f3e147]
+                  - cell "PHB 15" [ref=f3e148]
+                  - cell "Yes" [ref=f3e149]
+                  - cell [ref=f3e150]:
+                    - paragraph [ref=f3e152]: Elves mingle freely in human lands, always welcome yet never at home there. They are well known for their poetry, dance, song, lore, and magical arts. Elves favor things of natural and simple beauty.W...
+                  - cell "Medium" [ref=f3e153]
+                  - cell "30" [ref=f3e154]
+                  - cell "Wizard" [ref=f3e155]:
+                    - generic [ref=f3e156]:
+                      - generic [ref=f3e157]: Wizard
+                      - generic [ref=f3e158]:
+                        - generic "Edit" [ref=f3e159] [cursor=pointer]
+                        - generic "Delete" [ref=f3e162] [cursor=pointer]
+                - row [ref=f3e165]:
+                  - cell "Gnome" [ref=f3e166]
+                  - cell "D&D 3.5E" [ref=f3e167]
+                  - cell "PHB 16" [ref=f3e168]
+                  - cell "Yes" [ref=f3e169]
+                  - cell [ref=f3e170]:
+                    - paragraph [ref=f3e172]: Gnomes are welcome everywhere as technicians, alchemists, and inventors. Despite the demand for their skills, most gnomes prefer to remain among their own kind, living in comfortable burrows beneath r...
+                  - cell "Small" [ref=f3e173]
+                  - cell "20" [ref=f3e174]
+                  - cell "Bard" [ref=f3e175]:
+                    - generic [ref=f3e176]:
+                      - generic [ref=f3e177]: Bard
+                      - generic [ref=f3e178]:
+                        - generic "Edit" [ref=f3e179] [cursor=pointer]
+                        - generic "Delete" [ref=f3e182] [cursor=pointer]
+                - row [ref=f3e185]:
+                  - cell "Half-Elf" [ref=f3e186]
+                  - cell "D&D 3.5E" [ref=f3e187]
+                  - cell "PHB 18" [ref=f3e188]
+                  - cell "Yes" [ref=f3e189]
+                  - cell [ref=f3e190]:
+                    - paragraph [ref=f3e192]: Humans and elves sometimes wed, the elf attracted to the human's energy and the human to the elf's grace. These marriages end quickly as elves count years because a human's life is so brief, but they ...
+                  - cell "Medium" [ref=f3e193]
+                  - cell "30" [ref=f3e194]
+                  - cell "Any" [ref=f3e195]:
+                    - generic [ref=f3e196]:
+                      - generic [ref=f3e197]: Any
+                      - generic [ref=f3e198]:
+                        - generic "Edit" [ref=f3e199] [cursor=pointer]
+                        - generic "Delete" [ref=f3e202] [cursor=pointer]
+                - row [ref=f3e205]:
+                  - cell "Half-Orc" [ref=f3e206]
+                  - cell "D&D 3.5E" [ref=f3e207]
+                  - cell "PHB 18" [ref=f3e208]
+                  - cell "Yes" [ref=f3e209]
+                  - cell [ref=f3e210]:
+                    - paragraph [ref=f3e212]: In the wild frontiers, tribes of human and orc barbarians live in uneasy balance, fighting in times of war and trading in times of peace. Half-orcs who are born in the frontier may live with either hu...
+                  - cell "Medium" [ref=f3e213]
+                  - cell "30" [ref=f3e214]
+                  - cell "Barbarian" [ref=f3e215]:
+                    - generic [ref=f3e216]:
+                      - generic [ref=f3e217]: Barbarian
+                      - generic [ref=f3e218]:
+                        - generic "Edit" [ref=f3e219] [cursor=pointer]
+                        - generic "Delete" [ref=f3e222] [cursor=pointer]
+                - row [ref=f3e225]:
+                  - cell "Halfling" [ref=f3e226]
+                  - cell "D&D 3.5E" [ref=f3e227]
+                  - cell "PHB 19" [ref=f3e228]
+                  - cell "Yes" [ref=f3e229]
+                  - cell [ref=f3e230]:
+                    - paragraph [ref=f3e232]: Halflings are clever, capable opportunists. Halfling individuals and clans find room for themselves wherever they can. Often they are strangers and wanderers, and others react to them with suspicion o...
+                  - cell "Small" [ref=f3e233]
+                  - cell "20" [ref=f3e234]
+                  - cell "Rogue" [ref=f3e235]:
+                    - generic [ref=f3e236]:
+                      - generic [ref=f3e237]: Rogue
+                      - generic [ref=f3e238]:
+                        - generic "Edit" [ref=f3e239] [cursor=pointer]
+                        - generic "Delete" [ref=f3e242] [cursor=pointer]
+                - row [ref=f3e245]:
+                  - cell "Human" [ref=f3e246]
+                  - cell "D&D 3.5E" [ref=f3e247]
+                  - cell "PHB 12" [ref=f3e248]
+                  - cell "Yes" [ref=f3e249]
+                  - cell [ref=f3e250]:
+                    - paragraph [ref=f3e252]: Most humans are the descendants of pioneers, conquerors, traders, travelers, refugees, and other people on the move. As a result, human lands are home to a mix of people-physically, culturally, religi...
+                  - cell "Medium" [ref=f3e253]
+                  - cell "30" [ref=f3e254]
+                  - cell "Any" [ref=f3e255]:
+                    - generic [ref=f3e256]:
+                      - generic [ref=f3e257]: Any
+                      - generic [ref=f3e258]:
+                        - generic "Edit" [ref=f3e259] [cursor=pointer]
+                        - generic "Delete" [ref=f3e262] [cursor=pointer]
+                - row [ref=f3e265]:
+                  - cell "Tiefling" [ref=f3e266]
+                  - cell "D&D 3.5E" [ref=f3e267]
+                  - cell "MM 210" [ref=f3e268]
+                  - cell "Yes" [ref=f3e269]
+                  - cell [ref=f3e270]:
+                    - paragraph [ref=f3e272]: Twisted, devious, and untrustworthy, tieflings more often than not follow their inherent tendencies and heed the call to evil. A few defy their nature, but still must fight against popular opinion (if...
+                  - cell "Medium" [ref=f3e273]
+                  - cell "30" [ref=f3e274]
+                  - cell "Rogue" [ref=f3e275]:
+                    - generic [ref=f3e276]:
+                      - generic [ref=f3e277]: Rogue
+                      - generic [ref=f3e278]:
+                        - generic "Edit" [ref=f3e279] [cursor=pointer]
+                        - generic "Delete" [ref=f3e282] [cursor=pointer]
+            - status [ref=f3e285]
+            - generic [ref=f3e286]:
+              - generic [ref=f3e287]: Showing 1–9 of 9
+              - generic [ref=f3e288]:
+                - generic [ref=f3e289]:
+                  - combobox [ref=f3e290]:
+                    - generic [ref=f3e291]: "20"
+                  - textbox [ref=f3e295]: "20"
+                - button "First" [disabled] [ref=f3e296]
+                - button "< Prev" [disabled] [ref=f3e297]
+                - generic [ref=f3e298]: Page 1 of 1
+                - button "Next >" [disabled] [ref=f3e299]
+                - button "Last" [disabled] [ref=f3e300]
+          - heading "Feature Definitions" [level=2] [ref=f3e301]
+          - button "New Feature" [ref=f3e303]
+          - generic [ref=f3e305]:
+            - table [ref=f3e306]:
+              - rowgroup [ref=f3e307]:
+                - row [ref=f3e308]:
+                  - columnheader [ref=f3e309]:
+                    - button "ID" [ref=f3e312]
+                  - columnheader [ref=f3e314]:
+                    - button "Feature Slug" [ref=f3e317]
+                  - columnheader [ref=f3e319]:
+                    - button "Name" [ref=f3e322]
+                  - columnheader [ref=f3e324]:
+                    - button "Description" [ref=f3e327]
+              - rowgroup [ref=f3e329]:
+                - row [ref=f3e330]:
+                  - cell "18438" [ref=f3e331]
+                  - cell "automaticlanguage" [ref=f3e332]
+                  - cell "Automatic Language" [ref=f3e333]
+                  - cell [ref=f3e334]:
+                    - generic [ref=f3e335]:
+                      - paragraph [ref=f3e338]: Holds racial automatic languages, this discription should never be displayed!
+                      - generic [ref=f3e339]:
+                        - generic "Edit" [ref=f3e340] [cursor=pointer]
+                        - generic "Delete" [ref=f3e343] [cursor=pointer]
+                - row [ref=f3e346]:
+                  - cell "18471" [ref=f3e347]
+                  - cell "automaticlanguage-18471" [ref=f3e348]
+                  - cell "Automatic Language" [ref=f3e349]
+                  - cell [ref=f3e350]:
+                    - generic [ref=f3e351]:
+                      - paragraph [ref=f3e354]: Holds racial automatic languages, this discription should never be displayed!
+                      - generic [ref=f3e355]:
+                        - generic "Edit" [ref=f3e356] [cursor=pointer]
+                        - generic "Delete" [ref=f3e359] [cursor=pointer]
+                - row [ref=f3e362]:
+                  - cell "18495" [ref=f3e363]
+                  - cell "automaticlanguage-18495" [ref=f3e364]
+                  - cell "Automatic Language" [ref=f3e365]
+                  - cell [ref=f3e366]:
+                    - generic [ref=f3e367]:
+                      - paragraph [ref=f3e370]: Holds racial automatic languages, this discription should never be displayed!
+                      - generic [ref=f3e371]:
+                        - generic "Edit" [ref=f3e372] [cursor=pointer]
+                        - generic "Delete" [ref=f3e375] [cursor=pointer]
+                - row [ref=f3e378]:
+                  - cell "18510" [ref=f3e379]
+                  - cell "automaticlanguage-18510" [ref=f3e380]
+                  - cell "Automatic Language" [ref=f3e381]
+                  - cell [ref=f3e382]:
+                    - generic [ref=f3e383]:
+                      - paragraph [ref=f3e386]: Holds racial automatic languages, this discription should never be displayed!
+                      - generic [ref=f3e387]:
+                        - generic "Edit" [ref=f3e388] [cursor=pointer]
+                        - generic "Delete" [ref=f3e391] [cursor=pointer]
+                - row [ref=f3e394]:
+                  - cell "18534" [ref=f3e395]
+                  - cell "automaticlanguage-18534" [ref=f3e396]
+                  - cell "Automatic Language" [ref=f3e397]
+                  - cell [ref=f3e398]:
+                    - generic [ref=f3e399]:
+                      - paragraph [ref=f3e402]: Holds racial automatic languages, this discription should never be displayed!
+                      - generic [ref=f3e403]:
+                        - generic "Edit" [ref=f3e404] [cursor=pointer]
+                        - generic "Delete" [ref=f3e407] [cursor=pointer]
+                - row [ref=f3e410]:
+                  - cell "18663" [ref=f3e411]
+                  - cell "automaticlanguage-18663" [ref=f3e412]
+                  - cell "Automatic Language" [ref=f3e413]
+                  - cell [ref=f3e414]:
+                    - generic [ref=f3e415]:
+                      - paragraph [ref=f3e418]: Holds racial automatic languages, this discription should never be displayed!
+                      - generic [ref=f3e419]:
+                        - generic "Edit" [ref=f3e420] [cursor=pointer]
+                        - generic "Delete" [ref=f3e423] [cursor=pointer]
+                - row [ref=f3e426]:
+                  - cell "18750" [ref=f3e427]
+                  - cell "automaticlanguage-18750" [ref=f3e428]
+                  - cell "Automatic Language" [ref=f3e429]
+                  - cell [ref=f3e430]:
+                    - generic [ref=f3e431]:
+                      - paragraph [ref=f3e434]: Holds racial automatic languages, this discription should never be displayed!
+                      - generic [ref=f3e435]:
+                        - generic "Edit" [ref=f3e436] [cursor=pointer]
+                        - generic "Delete" [ref=f3e439] [cursor=pointer]
+                - row [ref=f3e442]:
+                  - cell "18927" [ref=f3e443]
+                  - cell "automaticlanguage-18927" [ref=f3e444]
+                  - cell "Automatic Language" [ref=f3e445]
+                  - cell [ref=f3e446]:
+                    - generic [ref=f3e447]:
+                      - paragraph [ref=f3e450]: Holds racial automatic languages, this discription should never be displayed!
+                      - generic [ref=f3e451]:
+                        - generic "Edit" [ref=f3e452] [cursor=pointer]
+                        - generic "Delete" [ref=f3e455] [cursor=pointer]
+                - row [ref=f3e458]:
+                  - cell "21386" [ref=f3e459]
+                  - cell "automaticlanguage-21386" [ref=f3e460]
+                  - cell "Automatic Language" [ref=f3e461]
+                  - cell [ref=f3e462]:
+                    - generic [ref=f3e463]:
+                      - paragraph [ref=f3e466]: Holds racial automatic languages, this discription should never be displayed!
+                      - generic [ref=f3e467]:
+                        - generic "Edit" [ref=f3e468] [cursor=pointer]
+                        - generic "Delete" [ref=f3e471] [cursor=pointer]
+                - row [ref=f3e474]:
+                  - cell "18950" [ref=f3e475]
+                  - cell "awareness" [ref=f3e476]
+                  - cell "Awareness" [ref=f3e477]
+                  - cell [ref=f3e478]:
+                    - generic [ref=f3e479]:
+                      - paragraph [ref=f3e482]: "+2 racial bonus on Listen, Search, and Spot checks. An [var: racenamelower] who merely passes within 5 feet of a secret or concealed door is entitled to a Search check to notice it as if she were acti..."
+                      - generic [ref=f3e483]:
+                        - generic "Edit" [ref=f3e484] [cursor=pointer]
+                        - generic "Delete" [ref=f3e487] [cursor=pointer]
+                - row [ref=f3e490]:
+                  - cell "18941" [ref=f3e491]
+                  - cell "bonusfeat" [ref=f3e492]
+                  - cell "Bonus Feat" [ref=f3e493]
+                  - cell [ref=f3e494]:
+                    - generic [ref=f3e495]:
+                      - paragraph [ref=f3e498]: 1 extra feat at 1st level, because humans are quick to master specialized tasks and varied in their talents.
+                      - generic [ref=f3e499]:
+                        - generic "Edit" [ref=f3e500] [cursor=pointer]
+                        - generic "Delete" [ref=f3e503] [cursor=pointer]
+                - row [ref=f3e506]:
+                  - cell "18441" [ref=f3e507]
+                  - cell "bonuslanguage" [ref=f3e508]
+                  - cell "Bonus Language" [ref=f3e509]
+                  - cell [ref=f3e510]:
+                    - generic [ref=f3e511]:
+                      - paragraph [ref=f3e514]: Holds racial bonus languages, this discription should never be displayed!
+                      - generic [ref=f3e515]:
+                        - generic "Edit" [ref=f3e516] [cursor=pointer]
+                        - generic "Delete" [ref=f3e519] [cursor=pointer]
+                - row [ref=f3e522]:
+                  - cell "18474" [ref=f3e523]
+                  - cell "bonuslanguage-18474" [ref=f3e524]
+                  - cell "Bonus Language" [ref=f3e525]
+                  - cell [ref=f3e526]:
+                    - generic [ref=f3e527]:
+                      - paragraph [ref=f3e530]: Holds racial bonus languages, this discription should never be displayed!
+                      - generic [ref=f3e531]:
+                        - generic "Edit" [ref=f3e532] [cursor=pointer]
+                        - generic "Delete" [ref=f3e535] [cursor=pointer]
+                - row [ref=f3e538]:
+                  - cell "18498" [ref=f3e539]
+                  - cell "bonuslanguage-18498" [ref=f3e540]
+                  - cell "Bonus Language" [ref=f3e541]
+                  - cell [ref=f3e542]:
+                    - generic [ref=f3e543]:
+                      - paragraph [ref=f3e546]: Holds racial bonus languages, this discription should never be displayed!
+                      - generic [ref=f3e547]:
+                        - generic "Edit" [ref=f3e548] [cursor=pointer]
+                        - generic "Delete" [ref=f3e551] [cursor=pointer]
+                - row [ref=f3e554]:
+                  - cell "18513" [ref=f3e555]
+                  - cell "bonuslanguage-18513" [ref=f3e556]
+                  - cell "Bonus Language" [ref=f3e557]
+                  - cell [ref=f3e558]:
+                    - generic [ref=f3e559]:
+                      - paragraph [ref=f3e562]: Holds racial bonus languages, this discription should never be displayed!
+                      - generic [ref=f3e563]:
+                        - generic "Edit" [ref=f3e564] [cursor=pointer]
+                        - generic "Delete" [ref=f3e567] [cursor=pointer]
+                - row [ref=f3e570]:
+                  - cell "18537" [ref=f3e571]
+                  - cell "bonuslanguage-18537" [ref=f3e572]
+                  - cell "Bonus Language" [ref=f3e573]
+                  - cell [ref=f3e574]:
+                    - generic [ref=f3e575]:
+                      - paragraph [ref=f3e578]: Holds racial bonus languages, this discription should never be displayed!
+                      - generic [ref=f3e579]:
+                        - generic "Edit" [ref=f3e580] [cursor=pointer]
+                        - generic "Delete" [ref=f3e583] [cursor=pointer]
+                - row [ref=f3e586]:
+                  - cell "18666" [ref=f3e587]
+                  - cell "bonuslanguage-18666" [ref=f3e588]
+                  - cell "Bonus Language" [ref=f3e589]
+                  - cell [ref=f3e590]:
+                    - generic [ref=f3e591]:
+                      - paragraph [ref=f3e594]: Holds racial bonus languages, this discription should never be displayed!
+                      - generic [ref=f3e595]:
+                        - generic "Edit" [ref=f3e596] [cursor=pointer]
+                        - generic "Delete" [ref=f3e599] [cursor=pointer]
+                - row [ref=f3e602]:
+                  - cell "18753" [ref=f3e603]
+                  - cell "bonuslanguage-18753" [ref=f3e604]
+                  - cell "Bonus Language" [ref=f3e605]
+                  - cell [ref=f3e606]:
+                    - generic [ref=f3e607]:
+                      - paragraph [ref=f3e610]: Holds racial bonus languages, this discription should never be displayed!
+                      - generic [ref=f3e611]:
+                        - generic "Edit" [ref=f3e612] [cursor=pointer]
+                        - generic "Delete" [ref=f3e615] [cursor=pointer]
+                - row [ref=f3e618]:
+                  - cell "18930" [ref=f3e619]
+                  - cell "bonuslanguage-18930" [ref=f3e620]
+                  - cell "Bonus Language" [ref=f3e621]
+                  - cell [ref=f3e622]:
+                    - generic [ref=f3e623]:
+                      - paragraph [ref=f3e626]: Holds racial bonus languages, this discription should never be displayed!
+                      - generic [ref=f3e627]:
+                        - generic "Edit" [ref=f3e628] [cursor=pointer]
+                        - generic "Delete" [ref=f3e631] [cursor=pointer]
+                - row [ref=f3e634]:
+                  - cell "21389" [ref=f3e635]
+                  - cell "bonuslanguage-21389" [ref=f3e636]
+                  - cell "Bonus Language" [ref=f3e637]
+                  - cell [ref=f3e638]:
+                    - generic [ref=f3e639]:
+                      - paragraph [ref=f3e642]: Holds racial bonus languages, this discription should never be displayed!
+                      - generic [ref=f3e643]:
+                        - generic "Edit" [ref=f3e644] [cursor=pointer]
+                        - generic "Delete" [ref=f3e647] [cursor=pointer]
+            - status [ref=f3e650]
+            - generic [ref=f3e651]:
+              - generic [ref=f3e652]: Showing 1–20 of 103
+              - generic [ref=f3e653]:
+                - generic [ref=f3e654]:
+                  - combobox [ref=f3e655]:
+                    - generic [ref=f3e656]: "20"
+                  - textbox [ref=f3e660]: "20"
+                - button "First" [disabled] [ref=f3e661]
+                - button "< Prev" [disabled] [ref=f3e662]
+                - generic [ref=f3e663]: Page 1 of 6
+                - button "Next >" [ref=f3e664]
+                - button "Last" [ref=f3e665]
+  - generic:
+    - region "Notifications"

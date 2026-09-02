@@ -112,3 +112,48 @@ sudo_docker() {
 sudo_compose() {
     sudo docker compose "$@"
 }
+
+# After a dock Docker Engine restart, wait until local mysqld is in the group
+# as ONLINE. If the group has no ONLINE members yet (first bootstrap), succeed
+# once mysqladmin ping works so bring-up is not blocked.
+wait_dock_gr_online() {
+    local host="$1"
+    local timeout_s="${2:-180}"
+    echo "Waiting for Group Replication ONLINE on ${host} (timeout ${timeout_s}s)..."
+    remote "${host}" "sudo bash -c '
+set -euo pipefail
+set -a
+source /srv/mysql/.env
+set +a
+deadline=\$((SECONDS+${timeout_s}))
+while (( SECONDS < deadline )); do
+    if docker exec mysql mysqladmin ping -h127.0.0.1 -uroot -p\"\$MYSQL_ROOT_PASSWORD\" --silent >/dev/null 2>&1; then
+        break
+    fi
+    sleep 3
+done
+if ! docker exec mysql mysqladmin ping -h127.0.0.1 -uroot -p\"\$MYSQL_ROOT_PASSWORD\" --silent >/dev/null 2>&1; then
+    echo \"MySQL did not become ready on ${host}\" >&2
+    exit 1
+fi
+member_sql() {
+    docker exec mysql mysql -N -uroot -p\"\$MYSQL_ROOT_PASSWORD\" --protocol=TCP -h127.0.0.1 -e \"\$1\" 2>/dev/null | tail -1
+}
+online_any=\$(member_sql \"SELECT COUNT(*) FROM performance_schema.replication_group_members WHERE MEMBER_STATE=\\\"ONLINE\\\";\")
+if [[ \"\${online_any}\" == \"0\" ]]; then
+    echo \"GR not bootstrapped yet on ${host}; mysql is up\"
+    exit 0
+fi
+state=\"NONE\"
+while (( SECONDS < deadline )); do
+    state=\$(member_sql \"SELECT IFNULL(MAX(MEMBER_STATE), \\\"NONE\\\") FROM performance_schema.replication_group_members WHERE MEMBER_HOST=\\\"\$HOST_IP\\\";\")
+    if [[ \"\$state\" == \"ONLINE\" ]]; then
+        echo \"${host} GR member ONLINE\"
+        exit 0
+    fi
+    sleep 3
+done
+echo \"Timed out waiting for GR ONLINE on ${host} (last state=\${state})\" >&2
+exit 1
+'"
+}

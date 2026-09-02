@@ -1,0 +1,47 @@
+- generic [ref=f29e1]:
+  - generic [ref=f29e5]:
+    - navigation [ref=f29e6]:
+      - link "DnD Tools" [ref=f29e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f29e9]:
+        - button [ref=f29e11]:
+          - text: Logged in as
+          - strong [ref=f29e12]: cursor
+        - button "Enable dark mode" [ref=f29e13]
+    - generic [ref=f29e16]:
+      - generic [ref=f29e17]:
+        - button "Collapse sidebar to minimal" [ref=f29e19]
+        - navigation [ref=f29e23]:
+          - list [ref=f29e24]:
+            - listitem [ref=f29e25]:
+              - link "Characters" [ref=f29e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f29e30]:
+              - button "Reference" [ref=f29e31]
+            - listitem [ref=f29e37]:
+              - button "DM Tools" [ref=f29e38]
+            - listitem [ref=f29e44]:
+              - button "Admin" [expanded] [active] [ref=f29e45]
+              - generic [ref=f29e60]:
+                - link "Dashboard" [ref=f29e61] [cursor=pointer]:
+                  - /url: /admin
+                - link "Features" [ref=f29e65] [cursor=pointer]:
+                  - /url: /features
+                - link "Edition Features" [ref=f29e69] [cursor=pointer]:
+                  - /url: /admin/edition-features
+                - link "Reference Tables" [ref=f29e73] [cursor=pointer]:
+                  - /url: /admin/referencetables
+                - link "Dice Configuration" [ref=f29e77] [cursor=pointer]:
+                  - /url: /admin/dice-configuration
+                - link "Dice Testing" [ref=f29e81] [cursor=pointer]:
+                  - /url: /admin/dice-testing
+                - link "Character Explorer" [ref=f29e85] [cursor=pointer]:
+                  - /url: /admin/characters
+      - main [ref=f29e52]:
+        - generic [ref=f29e53]:
+          - heading "Session Monitoring" [level=1] [ref=f29e54]
+          - generic [ref=f29e55]: "Error: Failed to load monitoring data"
+          - button "Retry" [ref=f29e56]
+  - generic:
+    - region "Notifications"
+  - navigation [ref=f29e90]

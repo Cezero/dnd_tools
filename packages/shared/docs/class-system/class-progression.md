@@ -27,12 +27,16 @@ The progression system calculates character advancement across multiple dimensio
 
 ### **Display Strategy and Formatters**
 
-The class progression grid (BaB, saves, spells per day) and the Spellcasting tab’s PHB-style spell slots table are driven by the **Detail display strategy** and the formatting system. No separate formula or grid helpers are used for display.
+The class progression grid is built by `buildClassProgressionFromDetail` in `frontend/src/lib/ClassProgression.ts`.
 
-- **Class progression table** (`ClassDisplay` → `ClassProgressionTable`): Data comes from `buildClassProgressionFromDetail(features)` in `frontend/src/lib/ClassProgression.ts`, which runs `displayStrategyFactory.createStrategy(DisplayType.Detail)` and `strategy.format(features, ...)`, then maps level entries to `ProgressionRow[]` (BaB, Fort/Ref/Will, and spell slots as formatted strings).
-- **Spellcasting tab grid**: Data comes from `buildSpellSlotsGridFromDetail(features)` in the same file, using the same Detail strategy output to build the 1–20 × 0–9 spell slots grid. Placeholders (e.g. `—` for no slots) come from `SpellcastingProgressionFormatter` in the pure-formatters/registry pipeline, not from grid or adapter code. Column headers use `formatSpellLevelForTable` from the formatters package.
+- **BAB and saves** come from `generateClassProgression`, which evaluates each class feature’s formula entities via `applyFeatureFormula`. Shared features such as `poor-bab` and `good-will-save` use `displayInDetail = false` so they stay out of the narrative feature list; the Detail display strategy therefore cannot populate those columns.
+- **Spell columns** are filled from the Detail display strategy breakdowns (`includeNonTransitionLevels: true`):
+  - **Spells per Day** ← totals for `EntityAppliesToType.SpellcastingProgression` by spell level
+  - **Spells Known** ← totals for `EntityAppliesToType.SpellsKnownProgression` by spell level
 
-To change how saves or spell slots appear, update the corresponding formatter (e.g. Saving Throw formatter, SpellcastingProgressionFormatter) rather than the grid or ClassProgression adapter.
+`buildClassProgressionFromDetail` writes those values onto each `ProgressionRow` (`spells` / `spellsKnown`). `ClassProgressionTable` renders the columns when any row has data.
+
+Source: [`apps/frontend/src/lib/ClassProgression.ts`](../../../apps/frontend/src/lib/ClassProgression.ts).
 
 ## ⚔️ **Base Attack Bonus (BAB) System**
 

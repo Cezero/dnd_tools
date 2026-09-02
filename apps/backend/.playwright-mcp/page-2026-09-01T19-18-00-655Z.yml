@@ -1,0 +1,50 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e11]:
+    - navigation [ref=f1e12]:
+      - link "DnD Tools" [ref=f1e14] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f1e15]:
+        - button [ref=f1e17]:
+          - text: Logged in as
+          - strong [ref=f1e18]: cursor
+        - button "Enable dark mode" [ref=f1e19]
+    - generic [ref=f1e22]:
+      - generic [ref=f1e23]:
+        - button "Collapse sidebar to minimal" [ref=f1e25]
+        - navigation [ref=f1e29]:
+          - list [ref=f1e30]:
+            - listitem [ref=f1e31]:
+              - link "Characters" [ref=f1e32] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f1e36]:
+              - button "Reference" [ref=f1e37]
+            - listitem [ref=f1e43]:
+              - button "DM Tools" [ref=f1e44]
+            - listitem [ref=f1e50]:
+              - button "Admin" [ref=f1e51]
+      - main [ref=f1e58]:
+        - generic [ref=f1e60]:
+          - heading "My Characters" [level=1] [ref=f1e61]
+          - button "New Character" [ref=f1e63]
+          - generic [ref=f1e64]:
+            - table [ref=f1e65]:
+              - rowgroup [ref=f1e66]:
+                - row [ref=f1e67]:
+                  - columnheader [ref=f1e68]:
+                    - button "Character Name" [ref=f1e71]
+                  - columnheader [ref=f1e73]:
+                    - button "Race" [ref=f1e76]
+                  - columnheader [ref=f1e78]:
+                    - button "Alignment" [ref=f1e81]
+                  - columnheader [ref=f1e83]:
+                    - button "Class/Level" [ref=f1e86]
+                  - columnheader [ref=f1e88]:
+                    - button "Character Level" [ref=f1e91]
+                  - columnheader [ref=f1e93]:
+                    - button "Notes" [ref=f1e96]
+              - rowgroup [ref=f1e98]:
+                - row [ref=f1e99]:
+                  - cell "No characters found." [ref=f1e100]
+            - status [ref=f1e102]
+  - generic:
+    - region "Notifications"

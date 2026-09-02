@@ -1,0 +1,468 @@
+- generic [ref=f20e1]:
+  - generic [ref=f20e5]:
+    - navigation [ref=f20e6]:
+      - link "DnD Tools" [ref=f20e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f20e9]:
+        - button [ref=f20e11]:
+          - text: Logged in as
+          - strong [ref=f20e12]: cursor
+        - button "Enable dark mode" [ref=f20e13]
+    - generic [ref=f20e16]:
+      - generic [ref=f20e17]:
+        - button "Collapse sidebar to minimal" [ref=f20e19]
+        - navigation [ref=f20e23]:
+          - list [ref=f20e24]:
+            - listitem [ref=f20e25]:
+              - link "Characters" [ref=f20e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f20e30]:
+              - button "Reference" [ref=f20e31]
+            - listitem [ref=f20e37]:
+              - button "DM Tools" [ref=f20e38]
+            - listitem [ref=f20e44]:
+              - button "Admin" [ref=f20e45]
+      - main [ref=f20e52]:
+        - generic [ref=f20e55]:
+          - navigation [ref=f20e57]:
+            - generic [ref=f20e58]:
+              - button "Abilities & Race" [ref=f20e59]
+              - button "Class" [ref=f20e63]
+              - button "Skills" [active] [ref=f20e67]
+              - button "Feats" [ref=f20e71]
+              - button "Choices" [ref=f20e75]
+              - button "Description" [ref=f20e79]
+              - button "Equipment" [ref=f20e83]
+              - button "Combat" [ref=f20e87]
+              - button "Configuration" [ref=f20e91]
+            - button [ref=f20e96]
+          - generic [ref=f20e969]:
+            - heading "Skills" [level=2] [ref=f20e970]
+            - generic [ref=f20e972]:
+              - generic [ref=f20e974]:
+                - generic [ref=f20e975]:
+                  - generic [ref=f20e976]:
+                    - generic [ref=f20e977]: "Spent:"
+                    - generic [ref=f20e978]: "0"
+                  - generic [ref=f20e979]:
+                    - generic [ref=f20e980]: "Remaining:"
+                    - generic [ref=f20e981]: "12"
+                - generic [ref=f20e982]:
+                  - generic [ref=f20e983]: "Skill Points Formula:"
+                  - generic [ref=f20e984]: "Human: 4 + ((Wizard: 2 + INT: 0) × 4)"
+                - generic [ref=f20e985]:
+                  - generic [ref=f20e986]:
+                    - generic [ref=f20e987]: "Class Skills Max Ranks:"
+                    - generic [ref=f20e988]: "4"
+                    - generic [ref=f20e989]: (1 pt./rank)
+                  - generic [ref=f20e990]:
+                    - generic [ref=f20e991]: "Cross-class Skills Max Ranks:"
+                    - generic [ref=f20e992]: "2"
+                    - generic [ref=f20e993]: (2 pts./rank, half-ranks allowed)
+              - generic [ref=f20e994]:
+                - generic [ref=f20e995]:
+                  - generic [ref=f20e996]:
+                    - generic [ref=f20e997]: Skill Name
+                    - generic [ref=f20e998]: Ranks
+                    - generic [ref=f20e999]: Ability
+                    - generic [ref=f20e1000]: Mod
+                    - generic [ref=f20e1001]: Total
+                  - generic [ref=f20e1002]:
+                    - generic [ref=f20e1003]:
+                      - generic [ref=f20e1004]: Appraise
+                      - generic [ref=f20e1006]:
+                        - spinbutton [ref=f20e1007]: "0"
+                        - generic [ref=f20e1008]:
+                          - button [ref=f20e1009]
+                          - button [ref=f20e1012]
+                      - generic [ref=f20e1015]: INT +0
+                      - generic [ref=f20e1016]: "-"
+                      - generic "= +0" [ref=f20e1017]: "+0"
+                    - generic [ref=f20e1018]:
+                      - generic [ref=f20e1019]: Balance
+                      - generic [ref=f20e1021]:
+                        - spinbutton [ref=f20e1022]: "0"
+                        - generic [ref=f20e1023]:
+                          - button [ref=f20e1024]
+                          - button [ref=f20e1027]
+                      - generic [ref=f20e1030]: DEX +0
+                      - generic [ref=f20e1031]: "-"
+                      - generic "= +0" [ref=f20e1032]: "+0"
+                    - generic [ref=f20e1033]:
+                      - generic [ref=f20e1034]: Bluff
+                      - generic [ref=f20e1036]:
+                        - spinbutton [ref=f20e1037]: "0"
+                        - generic [ref=f20e1038]:
+                          - button [ref=f20e1039]
+                          - button [ref=f20e1042]
+                      - generic [ref=f20e1045]: CHA +0
+                      - generic [ref=f20e1046]: "-"
+                      - generic "= +0" [ref=f20e1047]: "+0"
+                    - generic [ref=f20e1048]:
+                      - generic [ref=f20e1049]: Climb
+                      - generic [ref=f20e1051]:
+                        - spinbutton [ref=f20e1052]: "0"
+                        - generic [ref=f20e1053]:
+                          - button [ref=f20e1054]
+                          - button [ref=f20e1057]
+                      - generic [ref=f20e1060]: STR +0
+                      - generic [ref=f20e1061]: "-"
+                      - generic "= +0" [ref=f20e1062]: "+0"
+                    - generic [ref=f20e1063]:
+                      - generic [ref=f20e1064]:
+                        - generic [ref=f20e1065]: Concentration
+                        - generic [ref=f20e1066]: C
+                      - generic [ref=f20e1067]:
+                        - spinbutton [ref=f20e1068]: "0"
+                        - generic [ref=f20e1069]:
+                          - button [ref=f20e1070]
+                          - button [ref=f20e1073]
+                      - generic [ref=f20e1076]: CON +0
+                      - generic [ref=f20e1077]: "-"
+                      - generic "= +0" [ref=f20e1078]: "+0"
+                    - generic [ref=f20e1079]:
+                      - generic [ref=f20e1080]: Control Shape
+                      - generic [ref=f20e1082]:
+                        - spinbutton [ref=f20e1083]: "0"
+                        - generic [ref=f20e1084]:
+                          - button [ref=f20e1085]
+                          - button [ref=f20e1088]
+                      - generic [ref=f20e1091]: WIS +0
+                      - generic [ref=f20e1092]: "-"
+                      - generic "= +0" [ref=f20e1093]: "+0"
+                    - generic [ref=f20e1094]:
+                      - generic [ref=f20e1095]:
+                        - generic "Click to modify subtype" [ref=f20e1096] [cursor=pointer]: Craft
+                        - generic [ref=f20e1097]: C
+                      - generic [ref=f20e1098]:
+                        - spinbutton [ref=f20e1099]: "0"
+                        - generic [ref=f20e1100]:
+                          - button [ref=f20e1101]
+                          - button [ref=f20e1104]
+                      - generic [ref=f20e1107]: INT +0
+                      - generic [ref=f20e1108]: "-"
+                      - generic "= +0" [ref=f20e1109]: "+0"
+                    - generic [ref=f20e1110]:
+                      - generic [ref=f20e1111]:
+                        - generic [ref=f20e1112]: Decipher Script
+                        - generic [ref=f20e1113]: C
+                      - generic [ref=f20e1114]:
+                        - spinbutton [ref=f20e1115]: "0"
+                        - generic [ref=f20e1116]:
+                          - button [ref=f20e1117]
+                          - button [ref=f20e1120]
+                      - generic [ref=f20e1123]: INT +0
+                      - generic [ref=f20e1124]: "-"
+                      - generic "= +0" [ref=f20e1125]: "+0"
+                    - generic [ref=f20e1126]:
+                      - generic [ref=f20e1127]: Diplomacy
+                      - generic [ref=f20e1129]:
+                        - spinbutton [ref=f20e1130]: "0"
+                        - generic [ref=f20e1131]:
+                          - button [ref=f20e1132]
+                          - button [ref=f20e1135]
+                      - generic [ref=f20e1138]: CHA +0
+                      - generic [ref=f20e1139]: "-"
+                      - generic "= +0" [ref=f20e1140]: "+0"
+                    - generic [ref=f20e1141]:
+                      - generic [ref=f20e1142]: Disable Device
+                      - generic [ref=f20e1144]:
+                        - spinbutton [ref=f20e1145]: "0"
+                        - generic [ref=f20e1146]:
+                          - button [ref=f20e1147]
+                          - button [ref=f20e1150]
+                      - generic [ref=f20e1153]: INT +0
+                      - generic [ref=f20e1154]: "-"
+                      - generic "= +0" [ref=f20e1155]: "+0"
+                    - generic [ref=f20e1156]:
+                      - generic [ref=f20e1157]: Disguise
+                      - generic [ref=f20e1159]:
+                        - spinbutton [ref=f20e1160]: "0"
+                        - generic [ref=f20e1161]:
+                          - button [ref=f20e1162]
+                          - button [ref=f20e1165]
+                      - generic [ref=f20e1168]: CHA +0
+                      - generic [ref=f20e1169]: "-"
+                      - generic "= +0" [ref=f20e1170]: "+0"
+                    - generic [ref=f20e1171]:
+                      - generic [ref=f20e1172]: Escape Artist
+                      - generic [ref=f20e1174]:
+                        - spinbutton [ref=f20e1175]: "0"
+                        - generic [ref=f20e1176]:
+                          - button [ref=f20e1177]
+                          - button [ref=f20e1180]
+                      - generic [ref=f20e1183]: DEX +0
+                      - generic [ref=f20e1184]: "-"
+                      - generic "= +0" [ref=f20e1185]: "+0"
+                    - generic [ref=f20e1186]:
+                      - generic [ref=f20e1187]: Forgery
+                      - generic [ref=f20e1189]:
+                        - spinbutton [ref=f20e1190]: "0"
+                        - generic [ref=f20e1191]:
+                          - button [ref=f20e1192]
+                          - button [ref=f20e1195]
+                      - generic [ref=f20e1198]: INT +0
+                      - generic [ref=f20e1199]: "-"
+                      - generic "= +0" [ref=f20e1200]: "+0"
+                - generic [ref=f20e1201]:
+                  - generic [ref=f20e1202]:
+                    - generic [ref=f20e1203]: Skill Name
+                    - generic [ref=f20e1204]: Ranks
+                    - generic [ref=f20e1205]: Ability
+                    - generic [ref=f20e1206]: Mod
+                    - generic [ref=f20e1207]: Total
+                  - generic [ref=f20e1208]:
+                    - generic [ref=f20e1209]:
+                      - generic [ref=f20e1210]: Gather Information
+                      - generic [ref=f20e1212]:
+                        - spinbutton [ref=f20e1213]: "0"
+                        - generic [ref=f20e1214]:
+                          - button [ref=f20e1215]
+                          - button [ref=f20e1218]
+                      - generic [ref=f20e1221]: CHA +0
+                      - generic [ref=f20e1222]: "-"
+                      - generic "= +0" [ref=f20e1223]: "+0"
+                    - generic [ref=f20e1224]:
+                      - generic [ref=f20e1225]: Handle Animal
+                      - generic [ref=f20e1227]:
+                        - spinbutton [ref=f20e1228]: "0"
+                        - generic [ref=f20e1229]:
+                          - button [ref=f20e1230]
+                          - button [ref=f20e1233]
+                      - generic [ref=f20e1236]: CHA +0
+                      - generic [ref=f20e1237]: "-"
+                      - generic "= +0" [ref=f20e1238]: "+0"
+                    - generic [ref=f20e1239]:
+                      - generic [ref=f20e1240]: Heal
+                      - generic [ref=f20e1242]:
+                        - spinbutton [ref=f20e1243]: "0"
+                        - generic [ref=f20e1244]:
+                          - button [ref=f20e1245]
+                          - button [ref=f20e1248]
+                      - generic [ref=f20e1251]: WIS +0
+                      - generic [ref=f20e1252]: "-"
+                      - generic "= +0" [ref=f20e1253]: "+0"
+                    - generic [ref=f20e1254]:
+                      - generic [ref=f20e1255]: Hide
+                      - generic [ref=f20e1257]:
+                        - spinbutton [ref=f20e1258]: "0"
+                        - generic [ref=f20e1259]:
+                          - button [ref=f20e1260]
+                          - button [ref=f20e1263]
+                      - generic [ref=f20e1266]: DEX +0
+                      - generic [ref=f20e1267]: "-"
+                      - generic "= +0" [ref=f20e1268]: "+0"
+                    - generic [ref=f20e1269]:
+                      - generic [ref=f20e1270]: Intimidate
+                      - generic [ref=f20e1272]:
+                        - spinbutton [ref=f20e1273]: "0"
+                        - generic [ref=f20e1274]:
+                          - button [ref=f20e1275]
+                          - button [ref=f20e1278]
+                      - generic [ref=f20e1281]: CHA +0
+                      - generic [ref=f20e1282]: "-"
+                      - generic "= +0" [ref=f20e1283]: "+0"
+                    - generic [ref=f20e1284]:
+                      - generic [ref=f20e1285]: Jump
+                      - generic [ref=f20e1287]:
+                        - spinbutton [ref=f20e1288]: "0"
+                        - generic [ref=f20e1289]:
+                          - button [ref=f20e1290]
+                          - button [ref=f20e1293]
+                      - generic [ref=f20e1296]: STR +0
+                      - generic [ref=f20e1297]: "-"
+                      - generic "= +0" [ref=f20e1298]: "+0"
+                    - generic [ref=f20e1299]:
+                      - generic [ref=f20e1300]:
+                        - generic "Click to modify subtype" [ref=f20e1301] [cursor=pointer]: Knowledge
+                        - generic [ref=f20e1302]: C
+                      - generic [ref=f20e1303]:
+                        - spinbutton [ref=f20e1304]: "0"
+                        - generic [ref=f20e1305]:
+                          - button [ref=f20e1306]
+                          - button [ref=f20e1309]
+                      - generic [ref=f20e1312]: INT +0
+                      - generic [ref=f20e1313]: "-"
+                      - generic "= +0" [ref=f20e1314]: "+0"
+                    - generic [ref=f20e1315]:
+                      - generic [ref=f20e1316]: Listen
+                      - generic [ref=f20e1318]:
+                        - spinbutton [ref=f20e1319]: "0"
+                        - generic [ref=f20e1320]:
+                          - button [ref=f20e1321]
+                          - button [ref=f20e1324]
+                      - generic [ref=f20e1327]: WIS +0
+                      - generic [ref=f20e1328]: "-"
+                      - generic "= +0" [ref=f20e1329]: "+0"
+                    - generic [ref=f20e1330]:
+                      - generic [ref=f20e1331]: Move Silently
+                      - generic [ref=f20e1333]:
+                        - spinbutton [ref=f20e1334]: "0"
+                        - generic [ref=f20e1335]:
+                          - button [ref=f20e1336]
+                          - button [ref=f20e1339]
+                      - generic [ref=f20e1342]: DEX +0
+                      - generic [ref=f20e1343]: "-"
+                      - generic "= +0" [ref=f20e1344]: "+0"
+                    - generic [ref=f20e1345]:
+                      - generic [ref=f20e1346]: Open Lock
+                      - generic [ref=f20e1348]:
+                        - spinbutton [ref=f20e1349]: "0"
+                        - generic [ref=f20e1350]:
+                          - button [ref=f20e1351]
+                          - button [ref=f20e1354]
+                      - generic [ref=f20e1357]: DEX +0
+                      - generic [ref=f20e1358]: "-"
+                      - generic "= +0" [ref=f20e1359]: "+0"
+                    - generic [ref=f20e1360]:
+                      - generic "Click to modify subtype" [ref=f20e1362] [cursor=pointer]: Perform
+                      - generic [ref=f20e1363]:
+                        - spinbutton [ref=f20e1364]: "0"
+                        - generic [ref=f20e1365]:
+                          - button [ref=f20e1366]
+                          - button [ref=f20e1369]
+                      - generic [ref=f20e1372]: CHA +0
+                      - generic [ref=f20e1373]: "-"
+                      - generic "= +0" [ref=f20e1374]: "+0"
+                    - generic [ref=f20e1375]:
+                      - generic [ref=f20e1376]:
+                        - generic "Click to modify subtype" [ref=f20e1377] [cursor=pointer]: Profession
+                        - generic [ref=f20e1378]: C
+                      - generic [ref=f20e1379]:
+                        - spinbutton [ref=f20e1380]: "0"
+                        - generic [ref=f20e1381]:
+                          - button [ref=f20e1382]
+                          - button [ref=f20e1385]
+                      - generic [ref=f20e1388]: WIS +0
+                      - generic [ref=f20e1389]: "-"
+                      - generic "= +0" [ref=f20e1390]: "+0"
+                    - generic [ref=f20e1391]:
+                      - generic [ref=f20e1392]: Ride
+                      - generic [ref=f20e1394]:
+                        - spinbutton [ref=f20e1395]: "0"
+                        - generic [ref=f20e1396]:
+                          - button [ref=f20e1397]
+                          - button [ref=f20e1400]
+                      - generic [ref=f20e1403]: DEX +0
+                      - generic [ref=f20e1404]: "-"
+                      - generic "= +0" [ref=f20e1405]: "+0"
+                - generic [ref=f20e1406]:
+                  - generic [ref=f20e1407]:
+                    - generic [ref=f20e1408]: Skill Name
+                    - generic [ref=f20e1409]: Ranks
+                    - generic [ref=f20e1410]: Ability
+                    - generic [ref=f20e1411]: Mod
+                    - generic [ref=f20e1412]: Total
+                  - generic [ref=f20e1413]:
+                    - generic [ref=f20e1414]:
+                      - generic [ref=f20e1415]: Search
+                      - generic [ref=f20e1417]:
+                        - spinbutton [ref=f20e1418]: "0"
+                        - generic [ref=f20e1419]:
+                          - button [ref=f20e1420]
+                          - button [ref=f20e1423]
+                      - generic [ref=f20e1426]: INT +0
+                      - generic [ref=f20e1427]: "-"
+                      - generic "= +0" [ref=f20e1428]: "+0"
+                    - generic [ref=f20e1429]:
+                      - generic [ref=f20e1430]: Sense Motive
+                      - generic [ref=f20e1432]:
+                        - spinbutton [ref=f20e1433]: "0"
+                        - generic [ref=f20e1434]:
+                          - button [ref=f20e1435]
+                          - button [ref=f20e1438]
+                      - generic [ref=f20e1441]: WIS +0
+                      - generic [ref=f20e1442]: "-"
+                      - generic "= +0" [ref=f20e1443]: "+0"
+                    - generic [ref=f20e1444]:
+                      - generic [ref=f20e1445]: Sleight of Hand
+                      - generic [ref=f20e1447]:
+                        - spinbutton [ref=f20e1448]: "0"
+                        - generic [ref=f20e1449]:
+                          - button [ref=f20e1450]
+                          - button [ref=f20e1453]
+                      - generic [ref=f20e1456]: DEX +0
+                      - generic [ref=f20e1457]: "-"
+                      - generic "= +0" [ref=f20e1458]: "+0"
+                    - generic [ref=f20e1459]:
+                      - generic [ref=f20e1460]: Speak Language
+                      - generic [ref=f20e1462]:
+                        - spinbutton [ref=f20e1463]: "0"
+                        - generic [ref=f20e1464]:
+                          - button [ref=f20e1465]
+                          - button [ref=f20e1468]
+                      - generic [ref=f20e1471]: "-"
+                    - generic [ref=f20e1473]:
+                      - generic [ref=f20e1474]:
+                        - generic [ref=f20e1475]: Spellcraft
+                        - generic [ref=f20e1476]: C
+                      - generic [ref=f20e1477]:
+                        - spinbutton [ref=f20e1478]: "0"
+                        - generic [ref=f20e1479]:
+                          - button [ref=f20e1480]
+                          - button [ref=f20e1483]
+                      - generic [ref=f20e1486]: INT +0
+                      - generic [ref=f20e1487]: "-"
+                      - generic "= +0" [ref=f20e1488]: "+0"
+                    - generic [ref=f20e1489]:
+                      - generic [ref=f20e1490]: Spot
+                      - generic [ref=f20e1492]:
+                        - spinbutton [ref=f20e1493]: "0"
+                        - generic [ref=f20e1494]:
+                          - button [ref=f20e1495]
+                          - button [ref=f20e1498]
+                      - generic [ref=f20e1501]: WIS +0
+                      - generic [ref=f20e1502]: "-"
+                      - generic "= +0" [ref=f20e1503]: "+0"
+                    - generic [ref=f20e1504]:
+                      - generic [ref=f20e1505]: Survival
+                      - generic [ref=f20e1507]:
+                        - spinbutton [ref=f20e1508]: "0"
+                        - generic [ref=f20e1509]:
+                          - button [ref=f20e1510]
+                          - button [ref=f20e1513]
+                      - generic [ref=f20e1516]: WIS +0
+                      - generic [ref=f20e1517]: "-"
+                      - generic "= +0" [ref=f20e1518]: "+0"
+                    - generic [ref=f20e1519]:
+                      - generic [ref=f20e1520]: Swim
+                      - generic [ref=f20e1522]:
+                        - spinbutton [ref=f20e1523]: "0"
+                        - generic [ref=f20e1524]:
+                          - button [ref=f20e1525]
+                          - button [ref=f20e1528]
+                      - generic [ref=f20e1531]: STR +0
+                      - generic [ref=f20e1532]: "-"
+                      - generic "= +0" [ref=f20e1533]: "+0"
+                    - generic [ref=f20e1534]:
+                      - generic [ref=f20e1535]: Tumble
+                      - generic [ref=f20e1537]:
+                        - spinbutton [ref=f20e1538]: "0"
+                        - generic [ref=f20e1539]:
+                          - button [ref=f20e1540]
+                          - button [ref=f20e1543]
+                      - generic [ref=f20e1546]: DEX +0
+                      - generic [ref=f20e1547]: "-"
+                      - generic "= +0" [ref=f20e1548]: "+0"
+                    - generic [ref=f20e1549]:
+                      - generic [ref=f20e1550]: Use Magic Device
+                      - generic [ref=f20e1552]:
+                        - spinbutton [ref=f20e1553]: "0"
+                        - generic [ref=f20e1554]:
+                          - button [ref=f20e1555]
+                          - button [ref=f20e1558]
+                      - generic [ref=f20e1561]: CHA +0
+                      - generic [ref=f20e1562]: "-"
+                      - generic "= +0" [ref=f20e1563]: "+0"
+                    - generic [ref=f20e1564]:
+                      - generic [ref=f20e1565]: Use Rope
+                      - generic [ref=f20e1567]:
+                        - spinbutton [ref=f20e1568]: "0"
+                        - generic [ref=f20e1569]:
+                          - button [ref=f20e1570]
+                          - button [ref=f20e1573]
+                      - generic [ref=f20e1576]: DEX +0
+                      - generic [ref=f20e1577]: "-"
+                      - generic "= +0" [ref=f20e1578]: "+0"
+  - generic:
+    - region "Notifications"

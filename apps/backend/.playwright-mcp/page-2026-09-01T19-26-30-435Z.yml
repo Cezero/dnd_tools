@@ -1,0 +1,702 @@
+- generic [active] [ref=f13e1]:
+  - generic [ref=f13e4]:
+    - navigation [ref=f13e5]:
+      - link "DnD Tools" [ref=f13e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f13e8]:
+        - button [ref=f13e10]:
+          - text: Logged in as
+          - strong [ref=f13e11]: cursor
+        - button "Enable dark mode" [ref=f13e12]
+    - generic [ref=f13e15]:
+      - generic [ref=f13e16]:
+        - button "Collapse sidebar to minimal" [ref=f13e18]
+        - navigation [ref=f13e22]:
+          - list [ref=f13e23]:
+            - listitem [ref=f13e24]:
+              - link "Characters" [ref=f13e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f13e29]:
+              - button "Reference" [ref=f13e30]
+            - listitem [ref=f13e36]:
+              - button "DM Tools" [ref=f13e37]
+            - listitem [ref=f13e43]:
+              - button "Admin" [ref=f13e44]
+      - main [ref=f13e51]:
+        - generic [ref=f13e53]:
+          - heading "Skills" [level=1] [ref=f13e54]
+          - button "New Skill" [ref=f13e56]
+          - generic [ref=f13e57]:
+            - table [ref=f13e60]:
+              - rowgroup [ref=f13e61]:
+                - row [ref=f13e62]:
+                  - columnheader [ref=f13e63]:
+                    - button "Skill Name" [ref=f13e66]
+                  - columnheader [ref=f13e68]:
+                    - button "Ability Score" [ref=f13e71]
+                  - columnheader [ref=f13e73]:
+                    - button "Trained Only" [ref=f13e76]
+                  - columnheader [ref=f13e78]:
+                    - button "Armor Check Penalty" [ref=f13e81]
+                  - columnheader [ref=f13e83]:
+                    - button "Skill Check" [ref=f13e86]
+                  - columnheader [ref=f13e88]:
+                    - button "Action" [ref=f13e91]
+                  - columnheader [ref=f13e93]:
+                    - button "Retry" [ref=f13e96]
+                  - columnheader [ref=f13e98]:
+                    - button "Try Again Desc" [ref=f13e101]
+                  - columnheader [ref=f13e103]:
+                    - button "Special" [ref=f13e106]
+                  - columnheader [ref=f13e108]:
+                    - button "Synergy" [ref=f13e111]
+                  - columnheader [ref=f13e113]:
+                    - button "Untrained Desc" [ref=f13e116]
+                  - columnheader [ref=f13e118]:
+                    - button "Description" [ref=f13e121]
+              - rowgroup [ref=f13e123]:
+                - row [ref=f13e124]:
+                  - cell "Appraise" [ref=f13e125]
+                  - cell "INT" [ref=f13e126]
+                  - cell "No" [ref=f13e127]
+                  - cell "No" [ref=f13e128]
+                  - cell [ref=f13e129]:
+                    - paragraph [ref=f13e131]: You can appraise common or well-known objects with a DC 12 Appraise check. Failure means that you estimate the value at 50% to 150%. The DM secretly rolls a 2d6+3, multiplies the result by 10%, multip...
+                  - cell [ref=f13e132]:
+                    - paragraph [ref=f13e134]: Appraising an item takes 1 minute (ten consecutive full-round actions).
+                  - cell "No" [ref=f13e135]
+                  - cell [ref=f13e136]:
+                    - paragraph [ref=f13e138]: You cannot try again on the same object, regardless of success.
+                  - cell [ref=f13e139]:
+                    - paragraph [ref=f13e141]: A dwarf gets a +2 racial bonus on Appraise checks that are related to stone or metal items because dwarves are familiar with valuable items of all kinds (especially those made of stone or metal).
+                  - cell [ref=f13e142]:
+                    - paragraph [ref=f13e144]: If you have 5 ranks in any Craft skill, you gain a +2 bonus on Appraise checks related to items made with that Craft skill.
+                  - cell [ref=f13e145]:
+                    - paragraph [ref=f13e147]: For common items, failure on an untrained check means no estimate. For rare items, success means an estimate of 50% to 150% (2d6+3 times 10%).
+                  - cell [ref=f13e148]:
+                    - generic [ref=f13e149]:
+                      - paragraph [ref=f13e152]: Use this skill to tell an antique from old junk, a sword that’s old and fancy from an elven heirloom, and high-quality jewelry from cheap stuff made to look good.
+                      - generic [ref=f13e153]:
+                        - generic "Edit" [ref=f13e154] [cursor=pointer]
+                        - generic "Delete" [ref=f13e157] [cursor=pointer]
+                - row [ref=f13e160]:
+                  - cell "Balance" [ref=f13e161]
+                  - cell "DEX" [ref=f13e162]
+                  - cell "No" [ref=f13e163]
+                  - cell "Yes" [ref=f13e164]
+                  - cell [ref=f13e165]:
+                    - paragraph [ref=f13e167]: You can walk on a precarious surface. A successful check lets you move at half your speed along the surface for 1 round. A failure by 4 or less means you can’t move for 1 round. A failure by 5 or more...
+                  - cell [ref=f13e168]:
+                    - paragraph [ref=f13e170]: None. A Balance check doesn’t require an action; it is made as part of another action or as a reaction to a situation.
+                  - cell "No" [ref=f13e171]
+                  - cell [ref=f13e172]
+                  - cell [ref=f13e173]:
+                    - paragraph [ref=f13e175]: If you have the Agile feat, you get a +2 bonus on Balance checks.
+                  - cell [ref=f13e176]:
+                    - paragraph [ref=f13e178]: If you have 5 or more ranks in Tumble, you get a +2 bonus on Balance checks.
+                  - cell [ref=f13e179]
+                  - cell [ref=f13e180]:
+                    - generic [ref=f13e181]:
+                      - paragraph [ref=f13e184]: You can keep your balance while walking on a tightrope, a narrow beam, a slippery ledge, or an uneven floor.
+                      - generic [ref=f13e185]:
+                        - generic "Edit" [ref=f13e186] [cursor=pointer]
+                        - generic "Delete" [ref=f13e189] [cursor=pointer]
+                - row [ref=f13e192]:
+                  - cell "Bardic Knowledge" [ref=f13e193]
+                  - cell "INT" [ref=f13e194]
+                  - cell "No" [ref=f13e195]
+                  - cell "No" [ref=f13e196]
+                  - cell [ref=f13e197]:
+                    - paragraph [ref=f13e199]: Bardic Knowledge (1d20 + Bard Level + INT)
+                  - cell [ref=f13e200]
+                  - cell "Unknown" [ref=f13e201]
+                  - cell [ref=f13e202]
+                  - cell [ref=f13e203]
+                  - cell [ref=f13e204]
+                  - cell [ref=f13e205]
+                  - cell [ref=f13e206]:
+                    - generic [ref=f13e208]:
+                      - generic "Edit" [ref=f13e209] [cursor=pointer]
+                      - generic "Delete" [ref=f13e212] [cursor=pointer]
+                - row [ref=f13e215]:
+                  - cell "Bluff" [ref=f13e216]
+                  - cell "CHA" [ref=f13e217]
+                  - cell "No" [ref=f13e218]
+                  - cell "No" [ref=f13e219]
+                  - cell [ref=f13e220]:
+                    - paragraph [ref=f13e222]: A Bluff check is opposed by the target’s Sense Motive check. See the accompanying table for examples of different kinds of bluffs and the modifier to the target’s Sense Motive check for each one. [Tab...
+                  - cell [ref=f13e223]:
+                    - paragraph [ref=f13e225]: Varies. A Bluff check made as part of general interaction always takes at least 1 round (and is at least a full-round action), but it can take much longer if you try something elaborate. A Bluff check...
+                  - cell "Special" [ref=f13e226]
+                  - cell [ref=f13e227]:
+                    - paragraph [ref=f13e229]: Varies. Generally, a failed Bluff check in social interaction makes the target too suspicious for you to try again in the same circumstances, but you may retry freely on Bluff checks made to feint in ...
+                  - cell [ref=f13e230]:
+                    - generic [ref=f13e231]:
+                      - paragraph [ref=f13e232]: A ranger gains a bonus on Bluff checks when using this skill against a favored enemy.
+                      - paragraph [ref=f13e233]: The master of a snake familiar gains a +3 bonus on Bluff checks.
+                      - paragraph [ref=f13e234]: If you have the Persuasive feat, you get a +2 b...
+                  - cell [ref=f13e235]:
+                    - paragraph [ref=f13e237]: If you have 5 or more ranks in Bluff, you get a +2 bonus on Diplomacy, Intimidate, and Sleight of Hand checks, as well as on Disguise checks made when you know you’re being observed and you try to act...
+                  - cell [ref=f13e238]
+                  - cell [ref=f13e239]:
+                    - generic [ref=f13e240]:
+                      - paragraph [ref=f13e243]: You can make the outrageous or the untrue seem plausible, or use doublespeak or innuendo to deliver a secret message to another character. The skill encompasses acting, conning, fast talking, misdirec...
+                      - generic [ref=f13e244]:
+                        - generic "Edit" [ref=f13e245] [cursor=pointer]
+                        - generic "Delete" [ref=f13e248] [cursor=pointer]
+                - row [ref=f13e251]:
+                  - cell "Climb" [ref=f13e252]
+                  - cell "STR" [ref=f13e253]
+                  - cell "No" [ref=f13e254]
+                  - cell "Yes" [ref=f13e255]
+                  - cell [ref=f13e256]:
+                    - paragraph [ref=f13e258]: With a successful Climb check, you can advance up, down, or across a slope, a wall, or some other steep incline (or even a ceiling with handholds) at one-quarter your normal speed. A slope is consider...
+                  - cell [ref=f13e259]:
+                    - paragraph [ref=f13e261]: Climbing is part of movement, so it’s generally part of a move action (and may be combined with other types of movement in a move action). Each move action that includes any climbing requires a separa...
+                  - cell "No" [ref=f13e262]
+                  - cell [ref=f13e263]
+                  - cell [ref=f13e264]:
+                    - generic [ref=f13e265]:
+                      - paragraph [ref=f13e266]: You can use a rope to haul a character upward (or lower a character) through sheer strength. You can lift double your maximum load in this manner.
+                      - paragraph [ref=f13e267]: A halfling has a +2 racial bonus on Climb checks bec...
+                  - cell [ref=f13e268]:
+                    - paragraph [ref=f13e270]: If you have 5 or more ranks in Use Rope, you get a +2 bonus on Climb checks made to climb a rope, a knotted rope, or a rope-and-wall combination.
+                  - cell [ref=f13e271]
+                  - cell [ref=f13e272]:
+                    - generic [ref=f13e273]:
+                      - paragraph [ref=f13e276]: Use this skill to scale a cliff, to get to the window on the second story of a wizard’s tower, or to climb out of a pit after falling through a trapdoor.
+                      - generic [ref=f13e277]:
+                        - generic "Edit" [ref=f13e278] [cursor=pointer]
+                        - generic "Delete" [ref=f13e281] [cursor=pointer]
+                - row [ref=f13e284]:
+                  - cell "Concentration" [ref=f13e285]
+                  - cell "CON" [ref=f13e286]
+                  - cell "No" [ref=f13e287]
+                  - cell "No" [ref=f13e288]
+                  - cell [ref=f13e289]:
+                    - paragraph [ref=f13e291]: You must make a Concentration check whenever you might potentially be distracted (by taking damage, by harsh weather, and so on) while engaged in some action that requires your full attention. Such ac...
+                  - cell [ref=f13e292]:
+                    - paragraph [ref=f13e294]: None. Making a Concentration check doesn’t take an action; it is either a free action (when attempted reactively) or part of another action (when attempted actively).
+                  - cell "Yes" [ref=f13e295]
+                  - cell [ref=f13e296]:
+                    - paragraph [ref=f13e298]: though a success doesn’t cancel the effect of a previous failure, such as the loss of a spell you were casting or the disruption of a spell you were concentrating on.
+                  - cell [ref=f13e299]:
+                    - paragraph [ref=f13e301]: You can use Concentration to cast a spell, use a spell-like ability, or use a skill defensively, so as to avoid attacks of opportunity altogether. This doesn’t apply to other actions that might provok...
+                  - cell [ref=f13e302]
+                  - cell [ref=f13e303]
+                  - cell [ref=f13e304]:
+                    - generic [ref=f13e305]:
+                      - paragraph [ref=f13e308]: You are particularly good at focusing your mind.
+                      - generic [ref=f13e309]:
+                        - generic "Edit" [ref=f13e310] [cursor=pointer]
+                        - generic "Delete" [ref=f13e313] [cursor=pointer]
+                - row [ref=f13e316]:
+                  - cell "Control Shape" [ref=f13e317]
+                  - cell "WIS" [ref=f13e318]
+                  - cell "Yes" [ref=f13e319]
+                  - cell "No" [ref=f13e320]
+                  - cell [ref=f13e321]:
+                    - paragraph [ref=f13e323]: An afflicted character must make a check at moonrise each night of the full moon to resist involuntarily assuming animal form. An injured character must also check for an involuntary change after accu...
+                  - cell [ref=f13e324]
+                  - cell "Unknown" [ref=f13e325]
+                  - cell [ref=f13e326]:
+                    - paragraph [ref=f13e328]: Check to resist an involuntary change once each time a triggering event occurs. A character can retry voluntary changes to animal form or hybrid form as often as he likes. Each attempt is a standard a...
+                  - cell [ref=f13e329]:
+                    - paragraph [ref=f13e331]: An afflicted lycanthrope cannot attempt a voluntary change until it becomes aware of its condition (see Lycanthropy as an Affliction, page 178).
+                  - cell [ref=f13e332]
+                  - cell [ref=f13e333]
+                  - cell [ref=f13e334]:
+                    - generic [ref=f13e335]:
+                      - paragraph [ref=f13e338]: Any character who has contracted lycanthropy and is aware of his condition can learn Control Shape as a class skill. (An afflicted lycanthrope not yet aware of his condition can attempt Control Shape ...
+                      - generic [ref=f13e339]:
+                        - generic "Edit" [ref=f13e340] [cursor=pointer]
+                        - generic "Delete" [ref=f13e343] [cursor=pointer]
+                - row [ref=f13e346]:
+                  - cell "Craft" [ref=f13e347]
+                  - cell "INT" [ref=f13e348]
+                  - cell "No" [ref=f13e349]
+                  - cell "No" [ref=f13e350]
+                  - cell [ref=f13e351]:
+                    - paragraph [ref=f13e353]: You can practice your trade and make a decent living, earning about half your check result in gold pieces per week of dedicated work. You know how to use the tools of your trade, how to perform the cr...
+                  - cell [ref=f13e354]:
+                    - paragraph [ref=f13e356]: Does not apply. Craft checks are made by the day or week (see above).
+                  - cell "Yes" [ref=f13e357]
+                  - cell [ref=f13e358]:
+                    - paragraph [ref=f13e360]: Yes, but each time you miss by 5 or more, you ruin half the raw materials and have to pay half the original raw material cost again.
+                  - cell [ref=f13e361]:
+                    - generic [ref=f13e362]:
+                      - paragraph [ref=f13e363]: A dwarf has a +2 racial bonus on Craft checks that are related to stone or metal, because dwarves are especially capable with stonework and metalwork.
+                      - paragraph [ref=f13e364]: A gnome has a +2 racial bonus on Craft (alchemy)...
+                  - cell [ref=f13e365]:
+                    - paragraph [ref=f13e367]: If you have 5 ranks in a Craft skill, you get a +2 bonus on Appraise checks related to items made with that Craft skill.
+                  - cell [ref=f13e368]
+                  - cell [ref=f13e369]:
+                    - generic [ref=f13e370]:
+                      - paragraph [ref=f13e373]: You are trained in a craft, trade, or art, such as alchemy, armorsmithing, basketweaving, bookbinding, bowmaking, blacksmithing, calligraphy, carpentry, cobbling, gemcutting, leatherworking, locksmith...
+                      - generic [ref=f13e374]:
+                        - generic "Edit" [ref=f13e375] [cursor=pointer]
+                        - generic "Delete" [ref=f13e378] [cursor=pointer]
+                - row [ref=f13e381]:
+                  - cell "Decipher Script" [ref=f13e382]
+                  - cell "INT" [ref=f13e383]
+                  - cell "Yes" [ref=f13e384]
+                  - cell "No" [ref=f13e385]
+                  - cell [ref=f13e386]:
+                    - paragraph [ref=f13e388]: You can decipher writing in an unfamiliar language or a message written in an incomplete or archaic form. The base DC is 20 for the simplest messages, 25 for standard texts, and 30 or higher for intri...
+                  - cell [ref=f13e389]:
+                    - paragraph [ref=f13e391]: Deciphering the equivalent of a single page of script takes 1 minute (ten consecutive full-round actions).
+                  - cell "No" [ref=f13e392]
+                  - cell [ref=f13e393]
+                  - cell [ref=f13e394]:
+                    - paragraph [ref=f13e396]: A character with the Diligent feat gets a +2 bonus on Decipher Script checks.
+                  - cell [ref=f13e397]:
+                    - paragraph [ref=f13e399]: If you have 5 or more ranks in Decipher Script, you get a +2 bonus on Use Magic Device checks involving scrolls.
+                  - cell [ref=f13e400]
+                  - cell [ref=f13e401]:
+                    - generic [ref=f13e402]:
+                      - paragraph [ref=f13e405]: Use this skill to piece together the meaning of ancient runes carved into the wall of an abandoned temple, to get the gist of an intercepted letter written in the Infernal language, to follow the dire...
+                      - generic [ref=f13e406]:
+                        - generic "Edit" [ref=f13e407] [cursor=pointer]
+                        - generic "Delete" [ref=f13e410] [cursor=pointer]
+                - row [ref=f13e413]:
+                  - cell "Diplomacy" [ref=f13e414]
+                  - cell "CHA" [ref=f13e415]
+                  - cell "No" [ref=f13e416]
+                  - cell "No" [ref=f13e417]
+                  - cell [ref=f13e418]:
+                    - paragraph [ref=f13e420]: You can change the attitudes of others (nonplayer characters) with a successful Diplomacy check; see the Influencing NPC Attitudes sidebar, below, for basic DCs. (The Dungeon Master’s Guide has more i...
+                  - cell [ref=f13e421]:
+                    - paragraph [ref=f13e423]: Changing others’ attitudes with Diplomacy generally takes at least 1 full minute (10 consecutive full-round actions). In some situations, this time requirement may greatly increase. A rushed Diplomacy...
+                  - cell "Yes" [ref=f13e424]
+                  - cell [ref=f13e425]:
+                    - paragraph [ref=f13e427]: Optional, but not recommended because retries usually do not work. Even if the initial Diplomacy check succeeds, the other character can be persuaded only so far, and a retry may do more harm than goo...
+                  - cell [ref=f13e428]:
+                    - generic [ref=f13e429]:
+                      - paragraph [ref=f13e430]: A half-elf has a +2 racial bonus on Diplomacy checks, thanks to her ability to relate well to others.
+                      - paragraph [ref=f13e431]: If you have the Negotiator feat, you get a +2 bonus on Diplomacy checks.
+                  - cell [ref=f13e432]:
+                    - paragraph [ref=f13e434]: If you have 5 or more ranks in Bluff, Knowledge (nobility and royalty), or Sense Motive, you get a +2 bonus on Diplomacy checks.
+                  - cell [ref=f13e435]
+                  - cell [ref=f13e436]:
+                    - generic [ref=f13e437]:
+                      - paragraph [ref=f13e440]: Use this skill to persuade the chamberlain to let you see the king, to negotiate peace between feuding barbarian tribes, or to convince the ogre mages that have captured you that they should ransom yo...
+                      - generic [ref=f13e441]:
+                        - generic "Edit" [ref=f13e442] [cursor=pointer]
+                        - generic "Delete" [ref=f13e445] [cursor=pointer]
+                - row [ref=f13e448]:
+                  - cell "Disable Device" [ref=f13e449]
+                  - cell "INT" [ref=f13e450]
+                  - cell "Yes" [ref=f13e451]
+                  - cell "No" [ref=f13e452]
+                  - cell [ref=f13e453]:
+                    - paragraph [ref=f13e455]: Your DM makes the Disable Device check for you secretly, so that you don’t necessarily know whether you’ve succeeded. The DC depends on how tricky the device is. Disabling (or rigging or jamming) a fa...
+                  - cell [ref=f13e456]:
+                    - paragraph [ref=f13e458]: The amount of time needed to make a Disable Device check depends on the task, as noted above. Disabling a simple device takes 1 round and is a full-round action. An intricate or complex device require...
+                  - cell "Yes" [ref=f13e459]
+                  - cell [ref=f13e460]:
+                    - paragraph [ref=f13e462]: Varies. You can retry if you have missed the check by 4 or less, though you must be aware that you have failed in order to try again.
+                  - cell [ref=f13e463]:
+                    - generic [ref=f13e464]:
+                      - paragraph [ref=f13e465]: If you have the Nimble Fingers feat, you get a +2 bonus on Disable Device checks.
+                      - paragraph [ref=f13e466]: A rogue who beats a trap’s DC by 10 or more can study the trap, figure out how it works, and bypass it (along with he...
+                  - cell [ref=f13e467]
+                  - cell [ref=f13e468]
+                  - cell [ref=f13e469]:
+                    - generic [ref=f13e470]:
+                      - paragraph [ref=f13e473]: Use this skill to disarm a trap, jam a lock (in either the open or closed position), or rig a wagon wheel to fall off. You can examine a fairly simple or fairly small mechanical device and disable it....
+                      - generic [ref=f13e474]:
+                        - generic "Edit" [ref=f13e475] [cursor=pointer]
+                        - generic "Delete" [ref=f13e478] [cursor=pointer]
+                - row [ref=f13e481]:
+                  - cell "Disguise" [ref=f13e482]
+                  - cell "CHA" [ref=f13e483]
+                  - cell "No" [ref=f13e484]
+                  - cell "No" [ref=f13e485]
+                  - cell [ref=f13e486]:
+                    - paragraph [ref=f13e488]: Your Disguise check result determines how good the disguise is, and it is opposed by others’ Spot check results. If you don’t draw any attention to yourself, others do not get to make Spot checks. If ...
+                  - cell [ref=f13e489]:
+                    - paragraph [ref=f13e491]: Creating a disguise requires 1d3×10 minutes of work.
+                  - cell "Yes" [ref=f13e492]
+                  - cell [ref=f13e493]:
+                    - paragraph [ref=f13e495]: You may try to redo a failed disguise, but once others know that a disguise was attempted, they’ll be more suspicious.
+                  - cell [ref=f13e496]:
+                    - paragraph [ref=f13e498]:
+                      - text: Magic that alters your form, such as
+                      - link "alter self" [ref=f13e499] [cursor=pointer]:
+                        - /url: /spells/42
+                      - text: ","
+                      - link "disguise self" [ref=f13e500] [cursor=pointer]:
+                        - /url: /spells/685
+                      - text: ","
+                      - link "polymorph" [ref=f13e501] [cursor=pointer]:
+                        - /url: /spells/1719
+                      - text: ", or"
+                      - link "shapechange" [ref=f13e502] [cursor=pointer]:
+                        - /url: /spells/2033
+                      - text: ", grants you a +10 bonus on Disguise checks (see the individual spell descr..."
+                  - cell [ref=f13e503]:
+                    - paragraph [ref=f13e505]: If you have 5 or more ranks in Bluff, you get a +2 bonus on Disguise checks when you know that you’re being observed and you try to act in character.
+                  - cell [ref=f13e506]
+                  - cell [ref=f13e507]:
+                    - generic [ref=f13e508]:
+                      - paragraph [ref=f13e511]: Use this skill to change your appearance or someone else’s. The effort requires at least a few props, some makeup, and some time. The use of a disguise kit provides a +2 circumstance bonus to a Disgui...
+                      - generic [ref=f13e512]:
+                        - generic "Edit" [ref=f13e513] [cursor=pointer]
+                        - generic "Delete" [ref=f13e516] [cursor=pointer]
+                - row [ref=f13e519]:
+                  - cell "Escape Artist" [ref=f13e520]
+                  - cell "DEX" [ref=f13e521]
+                  - cell "No" [ref=f13e522]
+                  - cell "Yes" [ref=f13e523]
+                  - cell [ref=f13e524]:
+                    - generic [ref=f13e525]:
+                      - paragraph [ref=f13e526]: The table below gives the DCs to escape various forms of restraints.
+                      - paragraph [ref=f13e527]:
+                        - emphasis [ref=f13e528]: "Ropes:"
+                        - text: Your Escape Artist check is opposed by the binder’s Use Rope check. Since it’s easier to tie someone up than to escape fr...
+                  - cell [ref=f13e529]:
+                    - paragraph [ref=f13e531]:
+                      - text: Making an Escape Artist check to escape from rope bindings, manacles, or other restraints (except a grappler) requires 1 minute of work. Escaping from a net or an
+                      - link "animate rope" [ref=f13e532] [cursor=pointer]:
+                        - /url: /spells/69
+                      - text: ", [Spell: comman..."
+                  - cell "Yes" [ref=f13e533]
+                  - cell [ref=f13e534]:
+                    - paragraph [ref=f13e536]: Varies. You can make another check after a failed check if you’re squeezing your way through a tight space, making multiple checks. If the situation permits, you can make additional checks, or even ta...
+                  - cell [ref=f13e537]:
+                    - paragraph [ref=f13e539]: If you have the Agile feat, you get a +2 bonus on Escape Artist checks.
+                  - cell [ref=f13e540]:
+                    - generic [ref=f13e541]:
+                      - paragraph [ref=f13e542]: If you have 5 or more ranks in Escape Artist, you get a +2 bonus on Use Rope checks to bind someone.
+                      - paragraph [ref=f13e543]: If you have 5 or more ranks in Use Rope, you get a +2 bonus on Escape Artist checks when escaping ...
+                  - cell [ref=f13e544]
+                  - cell [ref=f13e545]:
+                    - generic [ref=f13e546]:
+                      - paragraph [ref=f13e549]: Use this skill to slip out of bonds or manacles, wriggle through tight spaces, or escape the grip of a monster that grapples you.
+                      - generic [ref=f13e550]:
+                        - generic "Edit" [ref=f13e551] [cursor=pointer]
+                        - generic "Delete" [ref=f13e554] [cursor=pointer]
+                - row [ref=f13e557]:
+                  - cell "Forgery" [ref=f13e558]
+                  - cell "INT" [ref=f13e559]
+                  - cell "No" [ref=f13e560]
+                  - cell "No" [ref=f13e561]
+                  - cell [ref=f13e562]:
+                    - paragraph [ref=f13e564]: Forgery requires writing materials appropriate to the document being forged, enough light or sufficient visual acuity to see the details of what you’re writing, wax for seals (if appropriate), and som...
+                  - cell [ref=f13e565]:
+                    - paragraph [ref=f13e567]: Forging a very short and simple document takes about 1 minute. A longer or more complex document takes 1d4 minutes per page.
+                  - cell "Special" [ref=f13e568]
+                  - cell [ref=f13e569]:
+                    - paragraph [ref=f13e571]: Usually, no. A retry is never possible after a particular reader detects a particular forgery. But the document created by the forger might still fool someone else. The result of a Forgery check for a...
+                  - cell [ref=f13e572]:
+                    - paragraph [ref=f13e574]: If you have the Deceitful feat, you get a +2 bonus on Forgery checks.
+                  - cell [ref=f13e575]
+                  - cell [ref=f13e576]
+                  - cell [ref=f13e577]:
+                    - generic [ref=f13e578]:
+                      - paragraph [ref=f13e581]: Use this skill to fake a written order from the duchess instructing a jailer to release prisoners, to create an authentic-looking treasure map, or to detect forgeries that others try to pass off.
+                      - generic [ref=f13e582]:
+                        - generic "Edit" [ref=f13e583] [cursor=pointer]
+                        - generic "Delete" [ref=f13e586] [cursor=pointer]
+                - row [ref=f13e589]:
+                  - cell "Gather Information" [ref=f13e590]
+                  - cell "CHA" [ref=f13e591]
+                  - cell "No" [ref=f13e592]
+                  - cell "No" [ref=f13e593]
+                  - cell [ref=f13e594]:
+                    - paragraph [ref=f13e596]: An evening’s time, a few gold pieces for buying drinks and making friends, and a DC 10 Gather Information check get you a general idea of a city’s major news items, assuming there are no obvious reaso...
+                  - cell [ref=f13e597]:
+                    - paragraph [ref=f13e599]: A typical Gather Information check takes 1d4+1 hours.
+                  - cell "Yes" [ref=f13e600]
+                  - cell [ref=f13e601]:
+                    - paragraph [ref=f13e603]: Yes, but it takes time for each check. Furthermore, you may draw attention to yourself if you repeatedly pursue a certain type of information.
+                  - cell [ref=f13e604]:
+                    - generic [ref=f13e605]:
+                      - paragraph [ref=f13e606]: A half-elf has a +2 racial bonus on Gather Information checks, thanks to her ability to relate well to others.
+                      - paragraph [ref=f13e607]: If you have the Investigator feat, you get a +2 bonus on Gather Information checks.
+                  - cell [ref=f13e608]:
+                    - paragraph [ref=f13e610]: If you have 5 or more ranks in Knowledge (local), you get a +2 bonus on Gather Information checks.
+                  - cell [ref=f13e611]
+                  - cell [ref=f13e612]:
+                    - generic [ref=f13e613]:
+                      - paragraph [ref=f13e616]: Use this skill for making contacts in an area, finding out local gossip, rumormongering, and collecting general information.
+                      - generic [ref=f13e617]:
+                        - generic "Edit" [ref=f13e618] [cursor=pointer]
+                        - generic "Delete" [ref=f13e621] [cursor=pointer]
+                - row [ref=f13e624]:
+                  - cell "Handle Animal" [ref=f13e625]
+                  - cell "CHA" [ref=f13e626]
+                  - cell "Yes" [ref=f13e627]
+                  - cell "No" [ref=f13e628]
+                  - cell [ref=f13e629]:
+                    - generic [ref=f13e630]:
+                      - paragraph [ref=f13e631]: The DC depends on what you are trying to do.
+                      - table [ref=f13e632]:
+                        - rowgroup [ref=f13e636]:
+                          - row [ref=f13e637]:
+                            - columnheader [ref=f13e638]:
+                              - paragraph [ref=f13e640]: Task
+                            - columnheader [ref=f13e641]:
+                              - paragraph [ref=f13e643]: Handle Animal DC
+                        - rowgroup [ref=f13e644]:
+                          - row [ref=f13e645]:
+                            - cell [ref=f13e646]:
+                              - paragraph [ref=f13e647]: Handle an animal
+                            - cell [ref=f13e648]:
+                              - paragraph [ref=f13e649]: "10"
+                          - row [ref=f13e650]:
+                            - cell [ref=f13e651]:
+                              - paragraph [ref=f13e652]: "\"Push\" an animal"
+                            - cell [ref=f13e653]:
+                              - paragraph [ref=f13e654]: "25"
+                          - row [ref=f13e655]:
+                            - cell [ref=f13e656]:
+                              - paragraph [ref=f13e657]: Teach an animal a trick
+                            - cell [ref=f13e658]:
+                              - paragraph [ref=f13e659]:
+                                - text: 15 or 20
+                                - superscript [ref=f13e660]: "1"
+                          - row [ref=f13e661]:
+                            - cell [ref=f13e662]:
+                              - paragraph [ref=f13e663]: Train an animal for a general purpose
+                            - cell [ref=f13e664]:
+                              - paragraph [ref=f13e665]:
+                                - text: 15 or 20
+                                - superscript [ref=f13e666]: "1"
+                          - row [ref=f13e667]:
+                            - cell [ref=f13e668]:
+                              - paragraph [ref=f13e669]: Rear a wild animal
+                            - cell [ref=f13e670]:
+                              - paragraph [ref=f13e671]: 15 + HD of animal
+                          - row [ref=f13e672]:
+                            - cell [ref=f13e673]:
+                              - paragraph [ref=f13e674]:
+                                - superscript [ref=f13e675]: "1"
+                                - text: See the specific trick or purpose below.
+                      - table [ref=f13e676]:
+                        - rowgroup [ref=f13e680]:
+                          - row [ref=f13e681]:
+                            - columnheader [ref=f13e682]:
+                              - paragraph [ref=f13e684]: General Purpose
+                            - columnheader [ref=f13e685]:
+                              - paragraph [ref=f13e687]: DC
+                        - rowgroup [ref=f13e688]:
+                          - row [ref=f13e689]:
+                            - cell [ref=f13e690]:
+                              - paragraph [ref=f13e691]: Combat riding
+                            - cell [ref=f13e692]:
+                              - paragraph [ref=f13e693]: "20"
+                          - row [ref=f13e694]:
+                            - cell [ref=f13e695]:
+                              - paragraph [ref=f13e696]: Fighting
+                            - cell [ref=f13e697]:
+                              - paragraph [ref=f13e698]: "20"
+                          - row [ref=f13e699]:
+                            - cell [ref=f13e700]:
+                              - paragraph [ref=f13e701]: Guarding
+                            - cell [ref=f13e702]:
+                              - paragraph [ref=f13e703]: "20"
+                          - row [ref=f13e704]:
+                            - cell [ref=f13e705]:
+                              - paragraph [ref=f13e706]: Heavy labor
+                            - cell [ref=f13e707]:
+                              - paragraph [ref=f13e708]: "15"
+                          - row [ref=f13e709]:
+                            - cell [ref=f13e710]:
+                              - paragraph [ref=f13e711]: Hunting
+                            - cell [ref=f13e712]:
+                              - paragraph [ref=f13e713]: "20"
+                          - row [ref=f13e714]:
+                            - cell [ref=f13e715]:
+                              - paragraph [ref=f13e716]: Performance
+                            - cell [ref=f13e717]:
+                              - paragraph [ref=f13e718]: "15"
+                          - row [ref=f13e719]:
+                            - cell [ref=f13e720]:
+                              - paragraph [ref=f13e721]: Riding
+                            - cell [ref=f13e722]:
+                              - paragraph [ref=f13e723]: "15"
+                      - paragraph [ref=f13e724]:
+                        - emphasis [ref=f13e725]: "Handle an Animal:"
+                        - text: This task involves commanding an animal to perform a task or trick that it ...
+                  - cell [ref=f13e726]:
+                    - paragraph [ref=f13e728]: Varies. Handling an animal is a move action, while pushing an animal is a full-round action. (A druid or ranger can handle her animal companion as a free action or push it as a move action.) For tasks...
+                  - cell "Yes" [ref=f13e729]
+                  - cell [ref=f13e730]:
+                    - paragraph [ref=f13e732]: Yes, except for rearing an animal.
+                  - cell [ref=f13e733]:
+                    - paragraph [ref=f13e735]: You can use this skill on a creature with an Intelligence score of 1 or 2 that is not an animal, but the DC of any such check increases by 5. Such creatures have the same limit on tricks known as anim...
+                  - cell [ref=f13e736]:
+                    - paragraph [ref=f13e738]: If you have 5 or more ranks in Handle Animal, you get a +2 bonus on Ride checks and wild empathy checks.
+                  - cell [ref=f13e739]:
+                    - paragraph [ref=f13e741]: If you have no ranks in Handle Animal, you can use a Charisma check to handle and push domestic animals, but you can’t teach, rear, or train animals. A druid or ranger with no ranks in Handle Animal c...
+                  - cell [ref=f13e742]:
+                    - generic [ref=f13e743]:
+                      - paragraph [ref=f13e746]: Use this skill to drive a team of horses pulling a wagon over rough terrain, to teach a dog to guard, or to teach a tyrannosaur to “speak” on your command.
+                      - generic [ref=f13e747]:
+                        - generic "Edit" [ref=f13e748] [cursor=pointer]
+                        - generic "Delete" [ref=f13e751] [cursor=pointer]
+                - row [ref=f13e754]:
+                  - cell "Heal" [ref=f13e755]
+                  - cell "WIS" [ref=f13e756]
+                  - cell "No" [ref=f13e757]
+                  - cell "No" [ref=f13e758]
+                  - cell [ref=f13e759]:
+                    - generic [ref=f13e760]:
+                      - paragraph [ref=f13e761]: The DC and effect depend on the task you attempt.
+                      - table [ref=f13e762]:
+                        - rowgroup [ref=f13e766]:
+                          - row [ref=f13e767]:
+                            - columnheader [ref=f13e768]:
+                              - paragraph [ref=f13e770]: Task
+                            - columnheader [ref=f13e771]:
+                              - paragraph [ref=f13e773]: DC
+                        - rowgroup [ref=f13e774]:
+                          - row [ref=f13e775]:
+                            - cell [ref=f13e776]:
+                              - paragraph [ref=f13e777]: First aid
+                            - cell [ref=f13e778]:
+                              - paragraph [ref=f13e779]: "15"
+                          - row [ref=f13e780]:
+                            - cell [ref=f13e781]:
+                              - paragraph [ref=f13e782]: Long-term care
+                            - cell [ref=f13e783]:
+                              - paragraph [ref=f13e784]: "15"
+                          - row [ref=f13e785]:
+                            - cell [ref=f13e786]:
+                              - paragraph [ref=f13e787]:
+                                - text: Treat wound from caltrop,
+                                - link "spike growth" [ref=f13e788] [cursor=pointer]:
+                                  - /url: /spells/2185
+                                - text: ", or"
+                                - link "spike stones" [ref=f13e789] [cursor=pointer]:
+                                  - /url: /spells/2186
+                            - cell [ref=f13e790]:
+                              - paragraph [ref=f13e791]: "15"
+                          - row [ref=f13e792]:
+                            - cell [ref=f13e793]:
+                              - paragraph [ref=f13e794]: Treat poison
+                            - cell [ref=f13e795]:
+                              - paragraph [ref=f13e796]: Poison's save DC
+                          - row [ref=f13e797]:
+                            - cell [ref=f13e798]:
+                              - paragraph [ref=f13e799]: Treat disease
+                            - cell [ref=f13e800]:
+                              - paragraph [ref=f13e801]: Disease's save DC
+                      - paragraph [ref=f13e802]:
+                        - emphasis [ref=f13e803]: "First Aid:"
+                        - text: You usually use first aid to save a dying character. If a character has negative hit points and is losing hit points (at...
+                  - cell [ref=f13e804]:
+                    - paragraph [ref=f13e806]:
+                      - text: Providing first aid, treating a wound, or treating poison is a standard action. Treating a disease or tending a creature wounded by a
+                      - link "spike growth" [ref=f13e807] [cursor=pointer]:
+                        - /url: /spells/2185
+                      - text: or
+                      - link "spike stones" [ref=f13e808] [cursor=pointer]:
+                        - /url: /spells/2186
+                      - text: spell takes 10 minu...
+                  - cell "Special" [ref=f13e809]
+                  - cell [ref=f13e810]:
+                    - paragraph [ref=f13e812]: Varies. Generally speaking, you can’t try a Heal check again without proof of the original check’s failure. For instance, until a poisoned character makes a saving throw against the poisoned wound you...
+                  - cell [ref=f13e813]:
+                    - generic [ref=f13e814]:
+                      - paragraph [ref=f13e815]: A character with the Self-Sufficient feat gets a +2 bonus on Heal checks.
+                      - paragraph [ref=f13e816]: A healer’s kit (page 130) gives you a +2 circumstance bonus on Heal checks.
+                  - cell [ref=f13e817]
+                  - cell [ref=f13e818]
+                  - cell [ref=f13e819]:
+                    - generic [ref=f13e820]:
+                      - paragraph [ref=f13e823]: Use this skill to keep a badly wounded friend from dying, to help others recover faster from wounds, to keep your friend from succumbing to a wyvern’s sting, or to treat disease.
+                      - generic [ref=f13e824]:
+                        - generic "Edit" [ref=f13e825] [cursor=pointer]
+                        - generic "Delete" [ref=f13e828] [cursor=pointer]
+                - row [ref=f13e831]:
+                  - cell "Hide" [ref=f13e832]
+                  - cell "DEX" [ref=f13e833]
+                  - cell "No" [ref=f13e834]
+                  - cell "Yes" [ref=f13e835]
+                  - cell [ref=f13e836]:
+                    - paragraph [ref=f13e838]: Your Hide check is opposed by the Spot check of anyone who might see you. You can move up to one-half your normal speed and hide at no penalty. When moving at a speed greater than onehalf but less tha...
+                  - cell [ref=f13e839]:
+                    - paragraph [ref=f13e841]: Usually none. Normally, you make a Hide check as part of movement, so it doesn’t take a separate action. However, hiding immediately after a ranged attack (see Sniping, above) is a move action.
+                  - cell "Unknown" [ref=f13e842]
+                  - cell [ref=f13e843]
+                  - cell [ref=f13e844]:
+                    - generic [ref=f13e845]:
+                      - paragraph [ref=f13e846]: If you are invisible, you gain a +40 bonus on Hide checks if you are immobile, or a +20 bonus on Hide checks if you’re moving.
+                      - paragraph [ref=f13e847]: If you have the Stealthy feat, you get a +2 bonus on Hide checks.
+                      - paragraph [ref=f13e848]: A 13t...
+                  - cell [ref=f13e849]
+                  - cell [ref=f13e850]
+                  - cell [ref=f13e851]:
+                    - generic [ref=f13e852]:
+                      - paragraph [ref=f13e855]: Use this skill to sink back into the shadows and proceed unseen, to approach a wizard’s tower under cover of brush, or to tail someone through a busy street without being noticed.
+                      - generic [ref=f13e856]:
+                        - generic "Edit" [ref=f13e857] [cursor=pointer]
+                        - generic "Delete" [ref=f13e860] [cursor=pointer]
+                - row [ref=f13e863]:
+                  - cell "Intimidate" [ref=f13e864]
+                  - cell "CHA" [ref=f13e865]
+                  - cell "No" [ref=f13e866]
+                  - cell "No" [ref=f13e867]
+                  - cell [ref=f13e868]:
+                    - paragraph [ref=f13e870]: You can change another’s behavior with a successful check. Your Intimidate check is opposed by the target’s modified level check (1d20 + character level or Hit Dice + target’s Wisdom bonus [if any] + ...
+                  - cell [ref=f13e871]:
+                    - paragraph [ref=f13e873]: Varies. Changing another’s behavior requires 1 minute of interaction. Intimidating an opponent in combat is a standard action.
+                  - cell "Special" [ref=f13e874]
+                  - cell [ref=f13e875]:
+                    - paragraph [ref=f13e877]: Optional, but not recommended because retries usually do not work. Even if the initial check succeeds, the other character can be intimidated only so far, and a retry doesn’t help. If the initial chec...
+                  - cell [ref=f13e878]:
+                    - paragraph [ref=f13e880]: You gain a +4 bonus on your Intimidate check for every size category that you are larger than your target. Conversely, you take a -4 penalty on your Intimidate check for every size category that you a...
+                  - cell [ref=f13e881]:
+                    - paragraph [ref=f13e883]: If you have 5 or more ranks in Bluff, you get a +2 bonus on Intimidate checks.
+                  - cell [ref=f13e884]
+                  - cell [ref=f13e885]:
+                    - generic [ref=f13e886]:
+                      - paragraph [ref=f13e889]: Use this skill to get a bully to back down, to frighten an opponent, or to make a prisoner give you the information you want. Intimidation includes verbal threats and body language.
+                      - generic [ref=f13e890]:
+                        - generic "Edit" [ref=f13e891] [cursor=pointer]
+                        - generic "Delete" [ref=f13e894] [cursor=pointer]
+                - row [ref=f13e897]:
+                  - cell "Jump" [ref=f13e898]
+                  - cell "STR" [ref=f13e899]
+                  - cell "No" [ref=f13e900]
+                  - cell "Yes" [ref=f13e901]
+                  - cell [ref=f13e902]:
+                    - generic [ref=f13e903]:
+                      - paragraph [ref=f13e904]: The DC and the distance you can cover vary according to the type of jump you are attempting (see below).
+                      - paragraph [ref=f13e905]: Your Jump check is modified by your speed. If your speed is 30 feet (the speed of an unarmored...
+                  - cell [ref=f13e906]:
+                    - paragraph [ref=f13e908]: None. A Jump check is included in your movement, so it is part of a move action. If you run out of movement mid-jump, your next action (either on this turn or, if necessary, on your next turn) must be...
+                  - cell "Unknown" [ref=f13e909]
+                  - cell [ref=f13e910]
+                  - cell [ref=f13e911]:
+                    - generic [ref=f13e912]:
+                      - paragraph [ref=f13e913]: Effects that increase your movement also increase your jumping distance, since your check is modified by your speed.
+                      - paragraph [ref=f13e914]: If you have the Run feat, you get a +4 bonus on Jump checks for any jumps made aft...
+                  - cell [ref=f13e915]:
+                    - generic [ref=f13e916]:
+                      - paragraph [ref=f13e917]: If you have 5 or more ranks in Tumble, you get a +2 bonus on Jump checks.
+                      - paragraph [ref=f13e918]: If you have 5 or more ranks in Jump, you get a +2 bonus on Tumble checks.
+                  - cell [ref=f13e919]
+                  - cell [ref=f13e920]:
+                    - generic [ref=f13e921]:
+                      - paragraph [ref=f13e924]: Use this skill to leap over pits, vault low fences, or reach a tree’s lowest branches.
+                      - generic [ref=f13e925]:
+                        - generic "Edit" [ref=f13e926] [cursor=pointer]
+                        - generic "Delete" [ref=f13e929] [cursor=pointer]
+            - status [ref=f13e932]
+            - generic [ref=f13e933]:
+              - generic [ref=f13e934]: Showing 1–20 of 40
+              - generic [ref=f13e935]:
+                - generic [ref=f13e936]:
+                  - combobox [ref=f13e937]:
+                    - generic [ref=f13e938]: "20"
+                  - textbox [ref=f13e942]: "20"
+                - button "First" [disabled] [ref=f13e943]
+                - button "< Prev" [disabled] [ref=f13e944]
+                - generic [ref=f13e945]: Page 1 of 2
+                - button "Next >" [ref=f13e946]
+                - button "Last" [ref=f13e947]
+  - generic:
+    - region "Notifications"

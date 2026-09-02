@@ -1,0 +1,28 @@
+- generic [active] [ref=f6e1]:
+  - generic [ref=f6e4]:
+    - navigation [ref=f6e5]:
+      - link "DnD Tools" [ref=f6e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f6e8]:
+        - button [ref=f6e10]:
+          - text: Logged in as
+          - strong [ref=f6e11]: cursor
+        - button "Enable dark mode" [ref=f6e12]
+    - generic [ref=f6e15]:
+      - generic [ref=f6e16]:
+        - button "Collapse sidebar to minimal" [ref=f6e18]
+        - navigation [ref=f6e22]:
+          - list [ref=f6e23]:
+            - listitem [ref=f6e24]:
+              - link "Characters" [ref=f6e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f6e29]:
+              - button "Reference" [ref=f6e30]
+            - listitem [ref=f6e36]:
+              - button "DM Tools" [ref=f6e37]
+            - listitem [ref=f6e43]:
+              - button "Admin" [ref=f6e44]
+      - main [ref=f6e51]:
+        - generic [ref=f6e52]: Loading...
+  - generic:
+    - region "Notifications"

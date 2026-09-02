@@ -134,7 +134,8 @@ The spell system integrates with the class system through spell lists and spellc
 **Source Files**:
 - Database: `prisma/schema.prisma` (SpellLevelMap model)
 - Backend: `backend/src/features/class/` (spellcasting services)
-- Frontend: `frontend/src/features/class/tabs/SpellcastingTab.tsx`
+- Frontend preview: `frontend/src/features/class/tabs/BasicInfoTab.tsx` (Class Features Preview)
+- Feature configuration: class Features tab / Feature Edit Form
 
 ### **Character System Integration**
 The spell system integrates with the character system through spell preparation:

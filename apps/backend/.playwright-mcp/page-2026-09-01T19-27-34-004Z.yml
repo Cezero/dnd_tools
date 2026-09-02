@@ -1,0 +1,234 @@
+- generic [active] [ref=f18e1]:
+  - generic [ref=f18e4]:
+    - navigation [ref=f18e5]:
+      - link "DnD Tools" [ref=f18e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f18e8]:
+        - button [ref=f18e10]:
+          - text: Logged in as
+          - strong [ref=f18e11]: cursor
+        - button "Enable dark mode" [ref=f18e12]
+    - generic [ref=f18e15]:
+      - generic [ref=f18e16]:
+        - button "Collapse sidebar to minimal" [ref=f18e18]
+        - navigation [ref=f18e22]:
+          - list [ref=f18e23]:
+            - listitem [ref=f18e24]:
+              - link "Characters" [ref=f18e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f18e29]:
+              - button "Reference" [ref=f18e30]
+            - listitem [ref=f18e36]:
+              - button "DM Tools" [ref=f18e37]
+            - listitem [ref=f18e43]:
+              - button "Admin" [ref=f18e44]
+      - main [ref=f18e51]:
+        - generic [ref=f18e53]:
+          - heading "Companions" [level=1] [ref=f18e54]
+          - button "New Companion" [ref=f18e56]
+          - generic [ref=f18e57]:
+            - table [ref=f18e60]:
+              - rowgroup [ref=f18e61]:
+                - row [ref=f18e62]:
+                  - columnheader [ref=f18e63]:
+                    - button "Monster" [ref=f18e66]
+                  - columnheader [ref=f18e68]:
+                    - button "Type" [ref=f18e71]
+                  - columnheader [ref=f18e73]:
+                    - button "Minimum Level" [ref=f18e76]
+              - rowgroup [ref=f18e78]:
+                - row [ref=f18e79]:
+                  - cell "Bat" [ref=f18e80]
+                  - cell "Familiar" [ref=f18e81]
+                  - cell "-" [ref=f18e82]:
+                    - generic [ref=f18e83]:
+                      - generic [ref=f18e84]: "-"
+                      - generic [ref=f18e85]:
+                        - generic "Edit" [ref=f18e86] [cursor=pointer]
+                        - generic "Delete" [ref=f18e89] [cursor=pointer]
+                - row [ref=f18e92]:
+                  - cell "Cat" [ref=f18e93]
+                  - cell "Familiar" [ref=f18e94]
+                  - cell "-" [ref=f18e95]:
+                    - generic [ref=f18e96]:
+                      - generic [ref=f18e97]: "-"
+                      - generic [ref=f18e98]:
+                        - generic "Edit" [ref=f18e99] [cursor=pointer]
+                        - generic "Delete" [ref=f18e102] [cursor=pointer]
+                - row [ref=f18e105]:
+                  - cell "Hawk" [ref=f18e106]
+                  - cell "Familiar" [ref=f18e107]
+                  - cell "-" [ref=f18e108]:
+                    - generic [ref=f18e109]:
+                      - generic [ref=f18e110]: "-"
+                      - generic [ref=f18e111]:
+                        - generic "Edit" [ref=f18e112] [cursor=pointer]
+                        - generic "Delete" [ref=f18e115] [cursor=pointer]
+                - row [ref=f18e118]:
+                  - cell "Lizard" [ref=f18e119]
+                  - cell "Familiar" [ref=f18e120]
+                  - cell "-" [ref=f18e121]:
+                    - generic [ref=f18e122]:
+                      - generic [ref=f18e123]: "-"
+                      - generic [ref=f18e124]:
+                        - generic "Edit" [ref=f18e125] [cursor=pointer]
+                        - generic "Delete" [ref=f18e128] [cursor=pointer]
+                - row [ref=f18e131]:
+                  - cell "Owl" [ref=f18e132]
+                  - cell "Familiar" [ref=f18e133]
+                  - cell "-" [ref=f18e134]:
+                    - generic [ref=f18e135]:
+                      - generic [ref=f18e136]: "-"
+                      - generic [ref=f18e137]:
+                        - generic "Edit" [ref=f18e138] [cursor=pointer]
+                        - generic "Delete" [ref=f18e141] [cursor=pointer]
+                - row [ref=f18e144]:
+                  - cell "Rat" [ref=f18e145]
+                  - cell "Familiar" [ref=f18e146]
+                  - cell "-" [ref=f18e147]:
+                    - generic [ref=f18e148]:
+                      - generic [ref=f18e149]: "-"
+                      - generic [ref=f18e150]:
+                        - generic "Edit" [ref=f18e151] [cursor=pointer]
+                        - generic "Delete" [ref=f18e154] [cursor=pointer]
+                - row [ref=f18e157]:
+                  - cell "Raven" [ref=f18e158]
+                  - cell "Familiar" [ref=f18e159]
+                  - cell "-" [ref=f18e160]:
+                    - generic [ref=f18e161]:
+                      - generic [ref=f18e162]: "-"
+                      - generic [ref=f18e163]:
+                        - generic "Edit" [ref=f18e164] [cursor=pointer]
+                        - generic "Delete" [ref=f18e167] [cursor=pointer]
+                - row [ref=f18e170]:
+                  - cell "Snake, Tiny Viper" [ref=f18e171]
+                  - cell "Familiar" [ref=f18e172]
+                  - cell "-" [ref=f18e173]:
+                    - generic [ref=f18e174]:
+                      - generic [ref=f18e175]: "-"
+                      - generic [ref=f18e176]:
+                        - generic "Edit" [ref=f18e177] [cursor=pointer]
+                        - generic "Delete" [ref=f18e180] [cursor=pointer]
+                - row [ref=f18e183]:
+                  - cell "Toad" [ref=f18e184]
+                  - cell "Familiar" [ref=f18e185]
+                  - cell "-" [ref=f18e186]:
+                    - generic [ref=f18e187]:
+                      - generic [ref=f18e188]: "-"
+                      - generic [ref=f18e189]:
+                        - generic "Edit" [ref=f18e190] [cursor=pointer]
+                        - generic "Delete" [ref=f18e193] [cursor=pointer]
+                - row [ref=f18e196]:
+                  - cell "Weasel" [ref=f18e197]
+                  - cell "Familiar" [ref=f18e198]
+                  - cell "-" [ref=f18e199]:
+                    - generic [ref=f18e200]:
+                      - generic [ref=f18e201]: "-"
+                      - generic [ref=f18e202]:
+                        - generic "Edit" [ref=f18e203] [cursor=pointer]
+                        - generic "Delete" [ref=f18e206] [cursor=pointer]
+                - row [ref=f18e209]:
+                  - cell "Badger" [ref=f18e210]
+                  - cell "Animal Companion" [ref=f18e211]
+                  - cell "-" [ref=f18e212]:
+                    - generic [ref=f18e213]:
+                      - generic [ref=f18e214]: "-"
+                      - generic [ref=f18e215]:
+                        - generic "Edit" [ref=f18e216] [cursor=pointer]
+                        - generic "Delete" [ref=f18e219] [cursor=pointer]
+                - row [ref=f18e222]:
+                  - cell "Camel" [ref=f18e223]
+                  - cell "Animal Companion" [ref=f18e224]
+                  - cell "-" [ref=f18e225]:
+                    - generic [ref=f18e226]:
+                      - generic [ref=f18e227]: "-"
+                      - generic [ref=f18e228]:
+                        - generic "Edit" [ref=f18e229] [cursor=pointer]
+                        - generic "Delete" [ref=f18e232] [cursor=pointer]
+                - row [ref=f18e235]:
+                  - cell "Dire Rat" [ref=f18e236]
+                  - cell "Animal Companion" [ref=f18e237]
+                  - cell "-" [ref=f18e238]:
+                    - generic [ref=f18e239]:
+                      - generic [ref=f18e240]: "-"
+                      - generic [ref=f18e241]:
+                        - generic "Edit" [ref=f18e242] [cursor=pointer]
+                        - generic "Delete" [ref=f18e245] [cursor=pointer]
+                - row [ref=f18e248]:
+                  - cell "Dog" [ref=f18e249]
+                  - cell "Animal Companion" [ref=f18e250]
+                  - cell "-" [ref=f18e251]:
+                    - generic [ref=f18e252]:
+                      - generic [ref=f18e253]: "-"
+                      - generic [ref=f18e254]:
+                        - generic "Edit" [ref=f18e255] [cursor=pointer]
+                        - generic "Delete" [ref=f18e258] [cursor=pointer]
+                - row [ref=f18e261]:
+                  - cell "Riding Dog" [ref=f18e262]
+                  - cell "Animal Companion" [ref=f18e263]
+                  - cell "-" [ref=f18e264]:
+                    - generic [ref=f18e265]:
+                      - generic [ref=f18e266]: "-"
+                      - generic [ref=f18e267]:
+                        - generic "Edit" [ref=f18e268] [cursor=pointer]
+                        - generic "Delete" [ref=f18e271] [cursor=pointer]
+                - row [ref=f18e274]:
+                  - cell "Eagle" [ref=f18e275]
+                  - cell "Animal Companion" [ref=f18e276]
+                  - cell "-" [ref=f18e277]:
+                    - generic [ref=f18e278]:
+                      - generic [ref=f18e279]: "-"
+                      - generic [ref=f18e280]:
+                        - generic "Edit" [ref=f18e281] [cursor=pointer]
+                        - generic "Delete" [ref=f18e284] [cursor=pointer]
+                - row [ref=f18e287]:
+                  - cell "Hawk" [ref=f18e288]
+                  - cell "Animal Companion" [ref=f18e289]
+                  - cell "-" [ref=f18e290]:
+                    - generic [ref=f18e291]:
+                      - generic [ref=f18e292]: "-"
+                      - generic [ref=f18e293]:
+                        - generic "Edit" [ref=f18e294] [cursor=pointer]
+                        - generic "Delete" [ref=f18e297] [cursor=pointer]
+                - row [ref=f18e300]:
+                  - cell "Horse, Heavy" [ref=f18e301]
+                  - cell "Animal Companion" [ref=f18e302]
+                  - cell "-" [ref=f18e303]:
+                    - generic [ref=f18e304]:
+                      - generic [ref=f18e305]: "-"
+                      - generic [ref=f18e306]:
+                        - generic "Edit" [ref=f18e307] [cursor=pointer]
+                        - generic "Delete" [ref=f18e310] [cursor=pointer]
+                - row [ref=f18e313]:
+                  - cell "Horse, Light" [ref=f18e314]
+                  - cell "Animal Companion" [ref=f18e315]
+                  - cell "-" [ref=f18e316]:
+                    - generic [ref=f18e317]:
+                      - generic [ref=f18e318]: "-"
+                      - generic [ref=f18e319]:
+                        - generic "Edit" [ref=f18e320] [cursor=pointer]
+                        - generic "Delete" [ref=f18e323] [cursor=pointer]
+                - row [ref=f18e326]:
+                  - cell "Owl" [ref=f18e327]
+                  - cell "Animal Companion" [ref=f18e328]
+                  - cell "-" [ref=f18e329]:
+                    - generic [ref=f18e330]:
+                      - generic [ref=f18e331]: "-"
+                      - generic [ref=f18e332]:
+                        - generic "Edit" [ref=f18e333] [cursor=pointer]
+                        - generic "Delete" [ref=f18e336] [cursor=pointer]
+            - status [ref=f18e339]
+            - generic [ref=f18e340]:
+              - generic [ref=f18e341]: Showing 1–20 of 79
+              - generic [ref=f18e342]:
+                - generic [ref=f18e343]:
+                  - combobox [ref=f18e344]:
+                    - generic [ref=f18e345]: "20"
+                  - textbox [ref=f18e349]: "20"
+                - button "First" [disabled] [ref=f18e350]
+                - button "< Prev" [disabled] [ref=f18e351]
+                - generic [ref=f18e352]: Page 1 of 4
+                - button "Next >" [ref=f18e353]
+                - button "Last" [ref=f18e354]
+  - generic:
+    - region "Notifications"

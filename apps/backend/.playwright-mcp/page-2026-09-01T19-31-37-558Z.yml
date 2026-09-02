@@ -1,0 +1,251 @@
+- generic [ref=f20e1]:
+  - generic [ref=f20e5]:
+    - navigation [ref=f20e6]:
+      - link "DnD Tools" [ref=f20e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f20e9]:
+        - button [ref=f20e11]:
+          - text: Logged in as
+          - strong [ref=f20e12]: cursor
+        - button "Enable dark mode" [ref=f20e13]
+    - generic [ref=f20e16]:
+      - generic [ref=f20e17]:
+        - button "Collapse sidebar to minimal" [ref=f20e19]
+        - navigation [ref=f20e23]:
+          - list [ref=f20e24]:
+            - listitem [ref=f20e25]:
+              - link "Characters" [ref=f20e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f20e30]:
+              - button "Reference" [ref=f20e31]
+            - listitem [ref=f20e37]:
+              - button "DM Tools" [ref=f20e38]
+            - listitem [ref=f20e44]:
+              - button "Admin" [ref=f20e45]
+      - main [ref=f20e52]:
+        - generic [ref=f20e55]:
+          - navigation [ref=f20e57]:
+            - generic [ref=f20e58]:
+              - button "Abilities & Race" [ref=f20e59]
+              - button "Class" [ref=f20e63]
+              - button "Skills" [ref=f20e67]
+              - button "Feats" [active] [ref=f20e71]
+              - button "Choices" [ref=f20e75]
+              - button "Description" [ref=f20e79]
+              - button "Equipment" [ref=f20e83]
+              - button "Combat" [ref=f20e87]
+              - button "Configuration" [ref=f20e91]
+            - button [ref=f20e96]
+          - generic [ref=f20e1579]:
+            - generic [ref=f20e1580]:
+              - heading "Feats" [level=2] [ref=f20e1581]
+              - generic [ref=f20e1582]:
+                - heading "Your Feats (1)" [level=3] [ref=f20e1583]
+                - generic [ref=f20e1588]:
+                  - heading "Scribe Scroll" [level=4] [ref=f20e1589]
+                  - generic [ref=f20e1590]: Granted
+            - generic [ref=f20e1591]:
+              - generic [ref=f20e1592]:
+                - generic [ref=f20e1593]:
+                  - heading "Available Feats (2 remaining)" [level=3] [ref=f20e1594]
+                  - generic [ref=f20e1595]: 59 of 59 feats
+                - textbox "Search feats..." [ref=f20e1597]
+                - paragraph [ref=f20e1598]: Showing feats you qualify for based on your character's abilities, skills, and level.
+              - generic [ref=f20e1600]:
+                - generic [ref=f20e1602]:
+                  - generic [ref=f20e1604]:
+                    - heading "Ability Focus" [level=4] [ref=f20e1605]
+                    - generic [ref=f20e1606]: Repeatable
+                  - button "Select" [ref=f20e1608]
+                - generic [ref=f20e1610]:
+                  - heading "Acrobatic" [level=4] [ref=f20e1613]
+                  - button "Select" [ref=f20e1615]
+                - generic [ref=f20e1617]:
+                  - heading "Agile" [level=4] [ref=f20e1620]
+                  - button "Select" [ref=f20e1622]
+                - generic [ref=f20e1624]:
+                  - heading "Alertness" [level=4] [ref=f20e1627]
+                  - button "Select" [ref=f20e1629]
+                - generic [ref=f20e1631]:
+                  - heading "Animal Affinity" [level=4] [ref=f20e1634]
+                  - button "Select" [ref=f20e1636]
+                - generic [ref=f20e1638]:
+                  - heading "Armor Proficiency (Light)" [level=4] [ref=f20e1641]
+                  - button "Select" [ref=f20e1643]
+                - generic [ref=f20e1645]:
+                  - heading "Athletic" [level=4] [ref=f20e1648]
+                  - button "Select" [ref=f20e1650]
+                - generic [ref=f20e1652]:
+                  - heading "Blind-Fight" [level=4] [ref=f20e1655]
+                  - button "Select" [ref=f20e1657]
+                - generic [ref=f20e1659]:
+                  - heading "Combat Casting" [level=4] [ref=f20e1662]
+                  - button "Select" [ref=f20e1664]
+                - generic [ref=f20e1666]:
+                  - heading "Combat Reflexes" [level=4] [ref=f20e1669]
+                  - button "Select" [ref=f20e1671]
+                - generic [ref=f20e1673]:
+                  - heading "Craft Construct" [level=4] [ref=f20e1676]
+                  - button "Select" [ref=f20e1678]
+                - generic [ref=f20e1680]:
+                  - heading "Deceitful" [level=4] [ref=f20e1683]
+                  - button "Select" [ref=f20e1685]
+                - generic [ref=f20e1687]:
+                  - heading "Deft Hands" [level=4] [ref=f20e1690]
+                  - button "Select" [ref=f20e1692]
+                - generic [ref=f20e1694]:
+                  - heading "Diehard" [level=4] [ref=f20e1697]
+                  - button "Select" [ref=f20e1699]
+                - generic [ref=f20e1701]:
+                  - heading "Diligent" [level=4] [ref=f20e1704]
+                  - button "Select" [ref=f20e1706]
+                - generic [ref=f20e1708]:
+                  - heading "Empower Spell" [level=4] [ref=f20e1711]
+                  - button "Select" [ref=f20e1713]
+                - generic [ref=f20e1715]:
+                  - generic [ref=f20e1717]:
+                    - heading "Empower Spell-Like Ability" [level=4] [ref=f20e1718]
+                    - generic [ref=f20e1719]: Repeatable
+                  - button "Select" [ref=f20e1721]
+                - generic [ref=f20e1723]:
+                  - heading "Endurance" [level=4] [ref=f20e1726]
+                  - button "Select" [ref=f20e1728]
+                - generic [ref=f20e1730]:
+                  - heading "Enlarge Spell" [level=4] [ref=f20e1733]
+                  - button "Select" [ref=f20e1735]
+                - generic [ref=f20e1737]:
+                  - heading "Eschew Materials" [level=4] [ref=f20e1740]
+                  - button "Select" [ref=f20e1742]
+                - generic [ref=f20e1744]:
+                  - heading "Extend Spell" [level=4] [ref=f20e1747]
+                  - button "Select" [ref=f20e1749]
+                - generic [ref=f20e1751]:
+                  - heading "Flyby Attack" [level=4] [ref=f20e1754]
+                  - button "Select" [ref=f20e1756]
+                - generic [ref=f20e1758]:
+                  - heading "Great Fortitude" [level=4] [ref=f20e1761]
+                  - button "Select" [ref=f20e1763]
+                - generic [ref=f20e1765]:
+                  - heading "Heighten Spell" [level=4] [ref=f20e1768]
+                  - button "Select" [ref=f20e1770]
+                - generic [ref=f20e1772]:
+                  - heading "Hover" [level=4] [ref=f20e1775]
+                  - button "Select" [ref=f20e1777]
+                - generic [ref=f20e1779]:
+                  - heading "Improved Counterspell" [level=4] [ref=f20e1782]
+                  - button "Select" [ref=f20e1784]
+                - generic [ref=f20e1786]:
+                  - heading "Improved Initiative" [level=4] [ref=f20e1789]
+                  - button "Select" [ref=f20e1791]
+                - generic [ref=f20e1793]:
+                  - generic [ref=f20e1795]:
+                    - heading "Improved Natural Armor" [level=4] [ref=f20e1796]
+                    - generic [ref=f20e1797]: Repeatable
+                  - button "Select" [ref=f20e1799]
+                - generic [ref=f20e1801]:
+                  - heading "Improved Natural Attack" [level=4] [ref=f20e1804]
+                  - button "Select" [ref=f20e1806]
+                - generic [ref=f20e1808]:
+                  - heading "Improved Unarmed Strike" [level=4] [ref=f20e1811]
+                  - button "Select" [ref=f20e1813]
+                - generic [ref=f20e1815]:
+                  - heading "Investigator" [level=4] [ref=f20e1818]
+                  - button "Select" [ref=f20e1820]
+                - generic [ref=f20e1822]:
+                  - heading "Iron Will" [level=4] [ref=f20e1825]
+                  - button "Select" [ref=f20e1827]
+                - generic [ref=f20e1829]:
+                  - heading "Lightning Reflexes" [level=4] [ref=f20e1832]
+                  - button "Select" [ref=f20e1834]
+                - generic [ref=f20e1836]:
+                  - heading "Magical Aptitude" [level=4] [ref=f20e1839]
+                  - button "Select" [ref=f20e1841]
+                - generic [ref=f20e1843]:
+                  - generic [ref=f20e1845]:
+                    - heading "Martial Weapon Proficiency" [level=4] [ref=f20e1846]
+                    - generic [ref=f20e1847]: Repeatable
+                  - button "Select" [ref=f20e1849]
+                - generic [ref=f20e1851]:
+                  - heading "Maximize Spell" [level=4] [ref=f20e1854]
+                  - button "Select" [ref=f20e1856]
+                - generic [ref=f20e1858]:
+                  - heading "Multiattack" [level=4] [ref=f20e1861]
+                  - button "Select" [ref=f20e1863]
+                - generic [ref=f20e1865]:
+                  - heading "Multiweapon Fighting" [level=4] [ref=f20e1868]
+                  - button "Select" [ref=f20e1870]
+                - generic [ref=f20e1872]:
+                  - heading "Negotiator" [level=4] [ref=f20e1875]
+                  - button "Select" [ref=f20e1877]
+                - generic [ref=f20e1879]:
+                  - heading "Nimble Fingers" [level=4] [ref=f20e1882]
+                  - button "Select" [ref=f20e1884]
+                - generic [ref=f20e1886]:
+                  - heading "Persuasive" [level=4] [ref=f20e1889]
+                  - button "Select" [ref=f20e1891]
+                - generic [ref=f20e1893]:
+                  - heading "Point Blank Shot" [level=4] [ref=f20e1896]
+                  - button "Select" [ref=f20e1898]
+                - generic [ref=f20e1900]:
+                  - heading "Quicken Spell" [level=4] [ref=f20e1903]
+                  - button "Select" [ref=f20e1905]
+                - generic [ref=f20e1907]:
+                  - generic [ref=f20e1909]:
+                    - heading "Quicken Spell-Like Ability" [level=4] [ref=f20e1910]
+                    - generic [ref=f20e1911]: Repeatable
+                  - button "Select" [ref=f20e1913]
+                - generic [ref=f20e1915]:
+                  - heading "Run" [level=4] [ref=f20e1918]
+                  - button "Select" [ref=f20e1920]
+                - generic [ref=f20e1922]:
+                  - heading "Self-Sufficient" [level=4] [ref=f20e1925]
+                  - button "Select" [ref=f20e1927]
+                - generic [ref=f20e1929]:
+                  - heading "Shield Proficiency" [level=4] [ref=f20e1932]
+                  - button "Select" [ref=f20e1934]
+                - generic [ref=f20e1936]:
+                  - heading "Silent Spell" [level=4] [ref=f20e1939]
+                  - button "Select" [ref=f20e1941]
+                - generic [ref=f20e1943]:
+                  - generic [ref=f20e1945]:
+                    - heading "Simple Weapon Proficiency" [level=4] [ref=f20e1946]
+                    - generic [ref=f20e1947]: Repeatable
+                  - button "Select" [ref=f20e1949]
+                - generic [ref=f20e1951]:
+                  - generic [ref=f20e1953]:
+                    - heading "Skill Focus" [level=4] [ref=f20e1954]
+                    - generic [ref=f20e1955]: Repeatable
+                  - button "Select" [ref=f20e1957]
+                - generic [ref=f20e1959]:
+                  - heading "Snatch" [level=4] [ref=f20e1962]
+                  - button "Select" [ref=f20e1964]
+                - generic [ref=f20e1966]:
+                  - generic [ref=f20e1968]:
+                    - heading "Spell Focus" [level=4] [ref=f20e1969]
+                    - generic [ref=f20e1970]: Repeatable
+                  - button "Select" [ref=f20e1972]
+                - generic [ref=f20e1974]:
+                  - heading "Spell Penetration" [level=4] [ref=f20e1977]
+                  - button "Select" [ref=f20e1979]
+                - generic [ref=f20e1981]:
+                  - heading "Stealthy" [level=4] [ref=f20e1984]
+                  - button "Select" [ref=f20e1986]
+                - generic [ref=f20e1988]:
+                  - heading "Still Spell" [level=4] [ref=f20e1991]
+                  - button "Select" [ref=f20e1993]
+                - generic [ref=f20e1995]:
+                  - generic [ref=f20e1997]:
+                    - heading "Toughness" [level=4] [ref=f20e1998]
+                    - generic [ref=f20e1999]: Repeatable
+                  - button "Select" [ref=f20e2001]
+                - generic [ref=f20e2003]:
+                  - heading "Track" [level=4] [ref=f20e2006]
+                  - button "Select" [ref=f20e2008]
+                - generic [ref=f20e2010]:
+                  - heading "Widen Spell" [level=4] [ref=f20e2013]
+                  - button "Select" [ref=f20e2015]
+                - generic [ref=f20e2017]:
+                  - heading "Wingover" [level=4] [ref=f20e2020]
+                  - button "Select" [ref=f20e2022]
+  - generic:
+    - region "Notifications"

@@ -1,0 +1,30 @@
+- generic [active] [ref=f22e1]:
+  - generic [ref=f22e5]:
+    - navigation [ref=f22e6]:
+      - link "DnD Tools" [ref=f22e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f22e9]:
+        - button [ref=f22e11]:
+          - text: Logged in as
+          - strong [ref=f22e12]: cursor
+        - button "Enable dark mode" [ref=f22e13]
+    - generic [ref=f22e16]:
+      - generic [ref=f22e17]:
+        - button "Collapse sidebar to minimal" [ref=f22e19]
+        - navigation [ref=f22e23]:
+          - list [ref=f22e24]:
+            - listitem [ref=f22e25]:
+              - link "Characters" [ref=f22e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f22e30]:
+              - button "Reference" [ref=f22e31]
+            - listitem [ref=f22e37]:
+              - button "DM Tools" [ref=f22e38]
+            - listitem [ref=f22e44]:
+              - button "Admin" [ref=f22e45]
+      - main [ref=f22e52]:
+        - generic [ref=f22e53]:
+          - heading "Admin Dashboard" [level=1] [ref=f22e54]
+          - paragraph [ref=f22e55]: This page will display various administrative statistics and tools.
+  - generic:
+    - region "Notifications"

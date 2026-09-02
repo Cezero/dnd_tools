@@ -179,7 +179,7 @@ npx tsx scripts/validate-spellcasting-migration.ts
 - ✅ All code uses feature-based pattern
 
 **Frontend:**
-- ✅ `ClassEdit SpellcastingTab` uses FeatureProgression-based creation
+- ✅ `ClassEdit` Basic Info **Class Features Preview** uses Feature-based progression (`buildClassProgressionFromDetail` + `ClassProgressionTable`)
 - ✅ Character spell display uses resolved progressions
 
 ### Implementation Status

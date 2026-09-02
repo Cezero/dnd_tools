@@ -12,12 +12,20 @@ Class and race mechanics (hit die, BAB, saving throws, size, speed, etc.) are no
 
 ### Feature Progression Structure
 
-Mechanics are stored in feature progressions with the slug `"class-mechanics"` (for classes) or `"race-mechanics"` (for races). Each progression contains `FeatureEntity` entries with `EntityType.Base` that represent individual mechanical values:
+Mechanics are `FeatureEntity` rows with `EntityType.Base`. Extractors scan all class/race features by `appliesTo`; they do not require a `class-mechanics` slug.
 
-- **Hit Die**: `EntityAppliesToType.HitDice` with value in `appliesToId`
+**Shared atomic class features (preferred):** BAB and (for Wizard/Sorcerer) saves, hit die, and skill points live on their own features and are reused through `FeatureClassMap`. PHB-wide BAB slugs are `good-bab`, `average-bab`, and `poor-bab`. Wizard/Sorcerer also use `good-will-save`, `bad-fort-save`, `bad-ref-save`, `hit-die-d4`, and `skill-points-2`. See [Class and Race Feature Refactoring](../application-overview/class-race-feature-refactoring.md#shared-atomic-mechanics-features).
+
+**Leftover containers:** Other classes may still carry Fort/Ref/Will, hit die, and skill points on `class-mechanics-*`. The dummy slug `class-mechanics` (id 21329) is a placeholder linked to many unmigrated classes; extractors prefer any other matching feature when both are present.
+
+**Race mechanics** still use `race-mechanics` / `race-mechanics-*` containers.
+
+Entity storage:
+
+- **Hit Die**: `EntityAppliesToType.HitDice` with die id in `appliesToId` (`RpgDice.D4` is 0)
 - **BAB Progression**: `EntityAppliesToType.BaseAttackBonus` with formula-based calculation (see Formula-Based BAB below)
 - **Saving Throws**: `EntityAppliesToType.SavingThrow` with formula-based calculation (see Formula-Based Saves below)
-- **Skill Points**: `EntityAppliesToType.SkillPoints` with base value in `value` (uses `ABILITY_BASED` formula)
+- **Skill Points**: `EntityAppliesToType.SkillPoints` with base value in `value`
 - **Size**: `EntityAppliesToType.Size` with size ID in `appliesToId`
 - **Speed**: `EntityAppliesToType.MovementSpeed` with speed value in `value`
 - **Favored Class**: `EntityAppliesToType.FavoredClass` with class ID in `appliesToId`
@@ -62,7 +70,7 @@ const mechanics = extractClassMechanics(progressions, classId);
 - `extractBABProgression(progressions, classId?)` - Returns BAB progression type (good/average/poor) by reverse-lookup from formula
 - `extractSaveProgression(progressions, saveType, classId?)` - Returns saving throw progression type (good/poor) by reverse-lookup from formula
 
-**Note**: These functions check for formula-based entities first and use `formulaToProgressionType` helpers to reverse-lookup the `ProgressionType` from formula parameters.
+**Note**: These functions check for formula-based entities first and use `formulaToProgressionType` helpers to reverse-lookup the `ProgressionType` from formula parameters. When both the dummy `class-mechanics` template and a real or atomic feature are linked, the template is ignored. Hit die `appliesToId` 0 is d4, not missing.
 
 ### Race Mechanics Extraction
 

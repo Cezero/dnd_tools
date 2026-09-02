@@ -59,9 +59,9 @@ Defines the types of entities that features can provide, affecting how they are 
 - **Real Example**: Monk Unarmed Strike replaces unarmed damage with progressive dice (type: 2, appliesTo: 20=UnarmedDamage, formulaParams: threshold-based progression)
 
 **Base Entities (4)**: Base value entities for class and race mechanics
-- **Examples**: Base Attack Bonus, saving throw progressions, hit dice, skill points, size, movement speed, favored class, level adjustment, spellcasting progression, casting ability, casting type
+- **Examples**: Base Attack Bonus, saving throw progressions, hit dice, skill points, size, movement speed, favored class, level adjustment, spellcasting progression (slots per day), spells-known progression, casting ability, casting type
 - **Stacking**: Custom logic per mechanic type (summing for multiclass, best value for gestalt)
-- **Compatibility**: BaseAttackBonus, SavingThrow, HitDice, SkillPoints, Size, MovementSpeed, FavoredClass, LevelAdjustment, SpellcastingProgression, CastingAbility, CastingType
+- **Compatibility**: BaseAttackBonus, SavingThrow, HitDice, SkillPoints, Size, MovementSpeed, FavoredClass, LevelAdjustment, SpellcastingProgression, SpellsKnownProgression, CastingAbility, CastingType
 - **Real Example**: Fighter class mechanics progression provides Good BAB (type: 4, appliesTo: 41=BaseAttackBonus, formulaParams: linear-scaling)
 - **Note**: MovementSpeed is compatible with both EntityType.Quantity (for bonuses like Fast Movement) and EntityType.Base (for base race speed)
 
@@ -147,6 +147,21 @@ Defines what an entity applies to, determining the target of the modification th
   - `EntityType.Choice` + `SpellbookSpell`: Free spell grants with quantity formulas (e.g., "3 + INT" at 1st level, "2 spells per level")
   - `EntityType.Other` + `SpellbookSpell` + `appliesToId: 0` + `appliesToSubId: -1`: Feature-based 0th level spell grant (all 0th level spells)
 - **Related Documentation**: [Spell Scribing Feature](../character-management/spell-scribing.md) - Comprehensive spell scribing documentation
+
+**SpellcastingProgression (38)**: Spells-per-day (slot) progression for a class
+- **Purpose**: Defines how many spell slots of each spell level a class receives by class level
+- **Entity Types**: Used with `EntityType.Base` and formula params
+- **Parameters**: `appliesToId` is the spell level (0–9)
+- **Distinction**: Slots per day only; not the same as spells known
+- **Related Documentation**: [Class Spellcasting System](../class-system/spellcasting-system.md)
+
+**SpellsKnownProgression (46)**: Spells-known progression for SpellsKnown classes
+- **Purpose**: Defines how many spells a SpellsKnown class (e.g., Sorcerer, Bard) may know at each spell level by class level
+- **Entity Types**: Used with `EntityType.Base` and formula params (same editing pattern as SpellcastingProgression)
+- **Parameters**: `appliesToId` is the spell level (0–9); formula params drive level scaling
+- **Resolution**: `ResolvedFeatureService.getSpellsKnownByLevelFromFeaturesForClass` produces a `spellLevel → maxKnown` map exposed as `ClassSpellSelection.maxSpellsKnownByLevel`
+- **Not free grants**: SpellsKnown classes have no free-grant chassis; free grants use `SpellbookSpell` for spellbook/prepared casters only
+- **Related Documentation**: [Spell Scribing Feature](../character-management/spell-scribing.md#spellsknown-classes-eg-sorcerer-bard), [Character Resolution System](../character-management/character-resolution-system.md)
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (EntityAppliesToType definition)
 

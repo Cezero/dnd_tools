@@ -1,0 +1,174 @@
+- generic [active] [ref=f4e1]:
+  - generic [ref=f4e4]:
+    - navigation [ref=f4e5]:
+      - link "DnD Tools" [ref=f4e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f4e8]:
+        - button [ref=f4e10]:
+          - text: Logged in as
+          - strong [ref=f4e11]: cursor
+        - button "Enable dark mode" [ref=f4e12]
+    - generic [ref=f4e15]:
+      - generic [ref=f4e16]:
+        - button "Collapse sidebar to minimal" [ref=f4e18]
+        - navigation [ref=f4e22]:
+          - list [ref=f4e23]:
+            - listitem [ref=f4e24]:
+              - link "Characters" [ref=f4e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f4e29]:
+              - button "Reference" [ref=f4e30]
+            - listitem [ref=f4e36]:
+              - button "DM Tools" [ref=f4e37]
+            - listitem [ref=f4e43]:
+              - button "Admin" [ref=f4e44]
+      - main [ref=f4e51]:
+        - generic [ref=f4e59]:
+          - generic [ref=f4e60]:
+            - heading "Human" [level=1] [ref=f4e61]
+            - generic [ref=f4e62]:
+              - paragraph [ref=f4e63]:
+                - strong [ref=f4e64]: "Edition:"
+                - text: D&D 3.5E
+              - paragraph [ref=f4e65]:
+                - strong [ref=f4e66]: "Source:"
+                - text: PHB 12
+              - paragraph [ref=f4e67]:
+                - strong [ref=f4e68]: "Display:"
+                - text: "Yes"
+          - generic [ref=f4e69]:
+            - generic [ref=f4e70]:
+              - paragraph [ref=f4e71]:
+                - strong [ref=f4e72]: "Size:"
+              - paragraph [ref=f4e73]:
+                - strong [ref=f4e74]: "Speed:"
+                - text: "0"
+              - paragraph [ref=f4e75]:
+                - strong [ref=f4e76]: "Level Adjustment:"
+                - text: "0"
+              - paragraph [ref=f4e77]:
+                - strong [ref=f4e78]: "Favored Class:"
+                - text: Loading...
+            - generic [ref=f4e79]:
+              - paragraph [ref=f4e80]:
+                - strong [ref=f4e81]: "Automatic Language:"
+                - text: Common
+              - paragraph [ref=f4e82]:
+                - strong [ref=f4e83]: "Bonus Languages:"
+                - text: Abyssal, Aquan, Auran, Celestial, Draconic, Dwarven, Elven, Giant, Gnoll, Gnome, Goblin, Halfling, Ignan, Infernal, Orc, Sylvan, Terran, Undercommon
+              - paragraph [ref=f4e84]:
+                - strong [ref=f4e85]: "Ability Adjustments:"
+                - text: None
+          - generic [ref=f4e87]:
+            - paragraph [ref=f4e88]: Most humans are the descendants of pioneers, conquerors, traders, travelers, refugees, and other people on the move. As a result, human lands are home to a mix of people-physically, culturally, religiously, and politically different. Hardy or fine, light-skinned or dark, showy or austere, primitive or civilized, devout or impious, humans run the gamut.
+            - paragraph [ref=f4e89]:
+              - strong [ref=f4e90]: "Personality:"
+              - text: Humans are the most adaptable, flexible, and ambitious people among the common races. They are diverse in their tastes, morals, customs, and habits. Others accuse them of having little respect for history, but it's only natural that humans, with their relatively short life spans and constantly changing cultures, would have a shorter collective memory than dwarves, elves, gnomes, or halflings.
+            - paragraph [ref=f4e91]:
+              - strong [ref=f4e92]: "Physical Description:"
+              - text: Humans typically stand from 5 feet to a little over 6 feet tall and weigh from 125 to 250 pounds, with men noticeably taller and heavier than women. Thanks to their penchant for migration and conquest, and to their short life spans, humans are more physically diverse than other common races. Their skin shades range from nearly black to very pale, their hair from black to blond (curly, kinky, or straight), and their facial hair (for men) from sparse to thick. Plenty of humans have a dash of nonhuman blood, and they may demonstrate hints of elf, orc, or other lineages. Members of this race are often ostentatious or unorthodox in their grooming and dress, sporting unusual hairstyles, fanciful clothes, tattoos, body piercings, and the like. Humans reach adulthood around age 15 and have relatively short lifespans, rarely living beyond a single century.
+            - paragraph [ref=f4e93]:
+              - strong [ref=f4e94]: "Relations:"
+              - text: Just as readily as they mix with each other, humans mix with members of other races, among which they are known as "everyone's second-best friends." Humans serve as ambassadors,diplomats, magistrates, merchants, and functionaries of all kinds.
+            - paragraph [ref=f4e95]:
+              - strong [ref=f4e96]: "Alignment:"
+              - text: Humans tend toward no particular alignment, not even neutrality. The best and the worst are found among them.
+            - paragraph [ref=f4e97]:
+              - strong [ref=f4e98]: "Human Lands:"
+              - text: Human lands are usually in flux, with new ideas,social changes, innovations, and new leaders constantly coming to the fore. Members of longer-lived races find human culture exciting but eventually a little wearying or even bewildering.
+            - paragraph [ref=f4e99]: Since humans lead such short lives, their leaders are all young compared to the political, religious, and military leaders among the other races. Even where individual humans are conservative traditionalists, human institutions change with the generations,adapting and evolving faster than parallel institutions among the elves, dwarves, gnomes, and halflings. Individually and as a group,humans are adaptable opportunists, and they stay on top of changing political dynamics.
+            - paragraph [ref=f4e100]: Human lands generally include relatively large numbers of nonhumans (compared, for instance, to the number of non-dwarves who live in dwarven lands)
+            - paragraph [ref=f4e101]:
+              - strong [ref=f4e102]: "Religion:"
+              - text: Unlike members of the other common races, humans do not have a chief racial deity. Pelor, the sun god, is the most commonly worshiped deity in human lands, but he can claim nothing like the central place that the dwarves give Moradin or the elves give Corellon Larethian in their respective pantheons. Some humans are the most ardent and zealous adherents of a given religion, while others are the most impious people around
+            - paragraph [ref=f4e103]:
+              - strong [ref=f4e104]: "Language:"
+              - text: "Humans speak Common. They typically learn other languages as well, including obscure ones, and they are fond of sprinkling their speech with words borrowed from other tongues: Orc curses, Elven musical expressions, Dwarven military phrases, and so on."
+            - paragraph [ref=f4e105]:
+              - strong [ref=f4e106]: "Names:"
+              - text: Human names vary greatly. Without a unifying deity to give them a touchstone for their culture, and with such a fast breeding cycle, humans mutate socially at a fast rate. Human culture, therefore, is more diverse than other cultures, and no human names are truly typical. Some human parents give their children dwarven or elven names (pronounced more or less correctly)
+            - paragraph [ref=f4e107]:
+              - strong [ref=f4e108]: "Adventurers:"
+              - text: Human adventurers are the most audacious, daring, and ambitious members of an audacious, daring, and ambitious race. A human can earn glory in the eyes of her fellows by amassing power, wealth, and fame. Humans, more than other people, champion causes rather than territories or groups.
+          - generic [ref=f4e109]:
+            - heading "Human Racial Features" [level=3] [ref=f4e110]
+            - generic [ref=f4e111]:
+              - generic [ref=f4e113]:
+                - paragraph [ref=f4e115]: Holds racial automatic languages, this discription should never be displayed!
+                - text: "Automatic Language: Common"
+              - generic [ref=f4e117]:
+                - paragraph [ref=f4e119]: Holds racial bonus languages, this discription should never be displayed!
+                - text: "Bonus Languages: Abyssal, Aquan, Auran, Celestial, Draconic, Dwarven, Elven, Giant, Gnoll, Gnome, Goblin, Halfling, Ignan, Infernal, Orc, Sylvan, Terran, Undercommon"
+              - generic [ref=f4e121]:
+                - paragraph [ref=f4e123]: 1 extra feat at 1st level, because humans are quick to master specialized tasks and varied in their talents.
+                - text: Select Bonus Feat
+              - generic [ref=f4e125]:
+                - paragraph [ref=f4e127]:
+                  - text: 4 extra skill points at 1
+                  - superscript [ref=f4e128]: st
+                  - text: level and 1 extra skill point at each additional level, since humans are versatile and capable. (The 4 skill points at 1
+                  - superscript [ref=f4e129]: st
+                  - text: level are added on as a bonus, not multiplied in)
+                - text: "Bonus Skill Points: (Select 4)"
+              - generic [ref=f4e131]:
+                - strong [ref=f4e132]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e134]:
+                - strong [ref=f4e135]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e137]:
+                - strong [ref=f4e138]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e140]:
+                - strong [ref=f4e141]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e143]:
+                - strong [ref=f4e144]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e146]:
+                - strong [ref=f4e147]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e149]:
+                - strong [ref=f4e150]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e152]:
+                - strong [ref=f4e153]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e155]:
+                - strong [ref=f4e156]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e158]:
+                - strong [ref=f4e159]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e161]:
+                - strong [ref=f4e162]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e164]:
+                - strong [ref=f4e165]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e167]:
+                - strong [ref=f4e168]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e170]:
+                - strong [ref=f4e171]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e173]:
+                - strong [ref=f4e174]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e176]:
+                - strong [ref=f4e177]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e179]:
+                - strong [ref=f4e180]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e182]:
+                - strong [ref=f4e183]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+              - generic [ref=f4e185]:
+                - strong [ref=f4e186]: Bonus Skill Points
+                - text: "Bonus Skill Points: (Select 1)"
+          - generic [ref=f4e187]:
+            - button "Back to List" [ref=f4e188]
+            - button "Edit Race" [ref=f4e189]
+  - generic:
+    - region "Notifications"

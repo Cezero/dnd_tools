@@ -9,7 +9,8 @@ The spellcasting system manages magical abilities for character classes, includi
 **Source Files**: 
 - Database: `prisma/schema.prisma` (SpellcastingProgression, SpellcastingSlot models)
 - Validation: `packages/shared/schema/src/spellcasting.ts`
-- Frontend: `frontend/src/features/class/tabs/SpellcastingTab.tsx`
+- Frontend preview: `frontend/src/features/class/tabs/BasicInfoTab.tsx` (Class Features Preview via `ClassProgressionTable`)
+- Feature configuration: class Features tab / Feature Edit Form (spellcasting FeatureEntities)
 
 ## 🏗️ **System Architecture**
 

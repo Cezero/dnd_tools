@@ -1,0 +1,95 @@
+- generic [active] [ref=f27e1]:
+  - generic [ref=f27e5]:
+    - navigation [ref=f27e6]:
+      - link "DnD Tools" [ref=f27e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f27e9]:
+        - button [ref=f27e11]:
+          - text: Logged in as
+          - strong [ref=f27e12]: cursor
+        - button "Enable dark mode" [ref=f27e13]
+    - generic [ref=f27e16]:
+      - generic [ref=f27e17]:
+        - button "Collapse sidebar to minimal" [ref=f27e19]
+        - navigation [ref=f27e23]:
+          - list [ref=f27e24]:
+            - listitem [ref=f27e25]:
+              - link "Characters" [ref=f27e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f27e30]:
+              - button "Reference" [ref=f27e31]
+            - listitem [ref=f27e37]:
+              - button "DM Tools" [ref=f27e38]
+            - listitem [ref=f27e44]:
+              - button "Admin" [ref=f27e45]
+      - main [ref=f27e52]:
+        - generic [ref=f27e56]:
+          - generic [ref=f27e57]:
+            - heading "Dice Testing Tools" [level=1] [ref=f27e58]
+            - paragraph [ref=f27e59]: Tools for testing and debugging dice components and color schemes.
+          - generic [ref=f27e60]:
+            - generic [ref=f27e61]:
+              - generic [ref=f27e62]:
+                - heading "SVG Testing Tool" [level=3] [ref=f27e63]
+                - button "Show SVG Testing Tool" [ref=f27e64]
+              - paragraph [ref=f27e65]: Test SVG dice icons with different configurations and colors.
+            - generic [ref=f27e66]:
+              - heading "Color Scheme Demo" [level=3] [ref=f27e67]
+              - paragraph [ref=f27e68]: Test how different base colors generate complete dice color schemes.
+              - generic [ref=f27e69]:
+                - generic [ref=f27e70]: Test Color
+                - generic [ref=f27e71]:
+                  - textbox [ref=f27e72] [cursor=pointer]: "#3937b8"
+                  - textbox [ref=f27e73]: "#3937b8"
+              - generic [ref=f27e74]:
+                - generic [ref=f27e75]:
+                  - heading "Formulaic Color System Demo" [level=3] [ref=f27e76]
+                  - paragraph [ref=f27e77]: Select a base color to see how the entire dice color scheme is automatically generated.
+                  - generic [ref=f27e78]:
+                    - generic [ref=f27e79]: "Base Color:"
+                    - generic [ref=f27e80]:
+                      - 'button "Select color #2e8555" [ref=f27e81]'
+                      - 'button "Select color #dc2626" [ref=f27e82]'
+                      - 'button "Select color #2563eb" [ref=f27e83]'
+                      - 'button "Select color #7c3aed" [ref=f27e84]'
+                      - 'button "Select color #ea580c" [ref=f27e85]'
+                      - 'button "Select color #059669" [ref=f27e86]'
+                      - 'button "Select color #be185d" [ref=f27e87]'
+                      - 'button "Select color #1f2937" [ref=f27e88]'
+                  - generic [ref=f27e89]:
+                    - generic [ref=f27e90]:
+                      - heading "Default State" [level=4] [ref=f27e91]
+                      - generic [ref=f27e92]:
+                        - generic [ref=f27e93]: "Main: #3937b8"
+                        - generic [ref=f27e96]: "Edges: #9796bf"
+                        - generic [ref=f27e99]: "Numbers: #c8c8ea"
+                        - generic [ref=f27e102]: "Edge Stroke: #ffffff (2px)"
+                        - generic [ref=f27e105]: "Number Stroke: #ffffff (2px)"
+                    - generic [ref=f27e108]:
+                      - heading "Hover State" [level=4] [ref=f27e109]
+                      - generic [ref=f27e110]:
+                        - generic [ref=f27e111]: "Main: #7473c9"
+                        - generic [ref=f27e114]: "Edges: #9796bf"
+                        - generic [ref=f27e117]: "Numbers: #c8c8ea"
+                        - generic [ref=f27e120]: "Edge Stroke: #ffffff (2px)"
+                        - generic [ref=f27e123]: "Number Stroke: #ffffff (2px)"
+                    - generic [ref=f27e126]:
+                      - heading "Disabled State" [level=4] [ref=f27e127]
+                      - generic [ref=f27e128]:
+                        - generic [ref=f27e129]: "Main: #5c5bae"
+                        - generic [ref=f27e132]: "Edges: #9796bf"
+                        - generic [ref=f27e135]: "Numbers: #c8c8ea"
+                        - generic [ref=f27e138]: "Edge Stroke: #ffffff (2px)"
+                        - generic [ref=f27e141]: "Number Stroke: #ffffff (2px)"
+                - generic [ref=f27e144]:
+                  - heading "Dice Preview (Hover to see states)" [level=4] [ref=f27e145]
+                  - generic [ref=f27e146]:
+                    - button "Roll 1d4" [ref=f27e147]
+                    - button "Roll 1d6" [ref=f27e154]
+                    - button "Roll 1d8" [ref=f27e161]
+                    - button "Roll 1d10" [ref=f27e168]
+                    - button "Roll 1d12" [ref=f27e175]
+                    - button "Roll 1d20" [ref=f27e182]
+                    - button "Roll 1d100" [ref=f27e189]
+  - generic:
+    - region "Notifications"

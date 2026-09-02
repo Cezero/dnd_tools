@@ -7,26 +7,44 @@ import { formatSignedModifier } from './formatters/modifier-utils';
 import type { ClassProgressionConfig, MinimalCharacterForFormula, ProgressionRow } from './types';
 
 /**
- * Find BAB entity from feature features for a specific class level
+ * True when the feature is linked to classId, or has no class map (already fetched for this class).
+ */
+function featureMatchesClass(feature: FeatureWithRelations, classId?: number): boolean {
+    if (classId === undefined) {
+        return true;
+    }
+    if (!feature.classes || feature.classes.length === 0) {
+        return true;
+    }
+    return feature.classes.some(c => c.classId === classId);
+}
+
+/**
+ * Find BAB entity from class features for a specific class level.
+ * Prefers a formula-backed entity over a placeholder.
  */
 function findBABEntity(
     features: FeatureWithRelations[],
     level: number,
     classId?: number
 ) {
+    const matches: Array<{ entity: NonNullable<FeatureWithRelations['entities']>[number]; feature: FeatureWithRelations }> = [];
+
     for (const feature of features) {
         if (feature.sourceType !== FeatureSourceType.Class) continue;
-        if (classId && !feature.classes?.some(c => c.classId === classId)) continue;
+        if (!featureMatchesClass(feature, classId)) continue;
         if (feature.level > level) continue;
+        if (feature.slug === 'class-mechanics') continue;
 
         const babEntity = feature.entities?.find(
             e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.BaseAttackBonus
         );
         if (babEntity) {
-            return { entity: babEntity, feature };
+            matches.push({ entity: babEntity, feature });
         }
     }
-    return null;
+
+    return matches.find(m => m.entity.formulaParams) ?? matches[0] ?? null;
 }
 
 /**
@@ -38,10 +56,13 @@ function findSaveEntity(
     saveType: SavingThrowId,
     classId?: number
 ) {
+    const matches: Array<{ entity: NonNullable<FeatureWithRelations['entities']>[number]; feature: FeatureWithRelations }> = [];
+
     for (const feature of features) {
         if (feature.sourceType !== FeatureSourceType.Class) continue;
-        if (classId && !feature.classes?.some(c => c.classId === classId)) continue;
+        if (!featureMatchesClass(feature, classId)) continue;
         if (feature.level > level) continue;
+        if (feature.slug === 'class-mechanics') continue;
 
         const saveEntity = feature.entities?.find(
             e => e.type === EntityType.Base &&
@@ -49,10 +70,11 @@ function findSaveEntity(
                 e.appliesToId === saveType
         );
         if (saveEntity) {
-            return { entity: saveEntity, feature };
+            matches.push({ entity: saveEntity, feature });
         }
     }
-    return null;
+
+    return matches.find(m => m.entity.formulaParams) ?? matches[0] ?? null;
 }
 
 /**
@@ -218,14 +240,19 @@ export interface SpellSlotsGridFromDetail {
 // documentation references and should not be used in new code.
 
 /**
- * Build a class progression purely from the Detail display strategy output.
- * This helper uses the formatting system (including formulas and formatters)
- * as the single source of truth, then adapts that data into ProgressionRow[]
- * for use by ClassProgressionTable.
+ * Build a class progression table from feature formulas.
+ *
+ * BAB and saves come from generateClassProgression (applyFeatureFormula).
+ * The Detail display strategy hides displayInDetail=false mechanics entities,
+ * so it cannot drive those columns. Spell columns still overlay from Detail
+ * until spellcasting is migrated the same way.
  */
 export function buildClassProgressionFromDetail(
-    features: FeatureWithRelations[]
+    features: FeatureWithRelations[],
+    classId?: number
 ): ProgressionRow[] {
+    const mechanicsRows = generateClassProgression({ features, classId });
+
     const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
     const result = strategy.format(
         features,
@@ -233,14 +260,9 @@ export function buildClassProgressionFromDetail(
         false
     );
 
-    const rows: ProgressionRow[] = [];
-
-    for (let level = 1; level <= 20; level++) {
-        const levelEntry = result.levelEntries?.find(entry => entry.level === level);
-        const items = levelEntry?.items ?? [];
-
-        // Flatten all breakdown components for this level.
-        const components = items.flatMap(item => item.breakdown?.components ?? []);
+    return mechanicsRows.map((row) => {
+        const levelEntry = result.levelEntries?.find(entry => entry.level === row.level);
+        const components = (levelEntry?.items ?? []).flatMap(item => item.breakdown?.components ?? []);
 
         const getTotalBySourceType = (sourceType: EntityAppliesToType, sourceId?: number): number | null => {
             const matching = components.filter(component => {
@@ -257,13 +279,6 @@ export function buildClassProgressionFromDetail(
                 return null;
             }
 
-            if (matching.length > 1) {
-                // Defensive: class progression should typically see exactly
-                // one component per (sourceType, sourceId, level). If we
-                // encounter more, log a warning to help debugging.
-                console.warn('Multiple breakdown components found for', { sourceType, sourceId, level, matching });
-            }
-
             const first = matching[0];
             if (typeof first.value === 'number') {
                 return first.value;
@@ -272,34 +287,6 @@ export function buildClassProgressionFromDetail(
             return Number.isNaN(numeric) ? null : numeric;
         };
 
-        // BaB: derive purely from breakdown components so the table shows
-        // clean numeric values (headers already provide the label).
-        const babValue = getTotalBySourceType(EntityAppliesToType.BaseAttackBonus) ?? 0;
-        let bab: string;
-        if (babValue > 0) {
-            const attacks: number[] = [];
-            let current = babValue;
-            while (current > 0) {
-                attacks.push(current);
-                current -= 5;
-            }
-            bab = attacks.map(a => formatSignedModifier(a)).join('/');
-        } else {
-            bab = '+0';
-        }
-
-        // Saves: prefer the Detail formatter strings, but identify which item is which
-        // using breakdown metadata (no direct entity access).
-        const getSaveDisplay = (saveId: number): string => {
-            const total = getTotalBySourceType(EntityAppliesToType.SavingThrow, saveId) ?? 0;
-            return formatSignedModifier(total);
-        };
-
-        const fort = getSaveDisplay(SavingThrowId.Fortitude);
-        const ref = getSaveDisplay(SavingThrowId.Reflex);
-        const will = getSaveDisplay(SavingThrowId.Will);
-
-        // Spells per day: derive per-spell-level counts from breakdown components.
         const spells: { [spellLevel: number]: string } = {};
         for (let spellLevel = 0; spellLevel <= 9; spellLevel++) {
             const total = getTotalBySourceType(EntityAppliesToType.SpellcastingProgression, spellLevel);
@@ -308,7 +295,6 @@ export function buildClassProgressionFromDetail(
             }
         }
 
-        // Spells known: derive per-spell-level counts from breakdown components for SpellsKnown classes.
         const spellsKnown: { [spellLevel: number]: string } = {};
         for (let spellLevel = 0; spellLevel <= 9; spellLevel++) {
             const total = getTotalBySourceType(EntityAppliesToType.SpellsKnownProgression, spellLevel);
@@ -317,25 +303,22 @@ export function buildClassProgressionFromDetail(
             }
         }
 
-        const row: ProgressionRow = {
-            level,
-            bab,
-            fort,
-            ref,
-            will
+        const built: ProgressionRow = {
+            level: row.level,
+            bab: row.bab,
+            fort: formatSignedModifier(Number(row.fort)),
+            ref: formatSignedModifier(Number(row.ref)),
+            will: formatSignedModifier(Number(row.will)),
         };
 
         if (Object.keys(spells).length > 0) {
-            row.spells = spells;
+            built.spells = spells;
         }
-
         if (Object.keys(spellsKnown).length > 0) {
-            row.spellsKnown = spellsKnown;
+            built.spellsKnown = spellsKnown;
         }
 
-        rows.push(row);
-    }
-
-    return rows;
+        return built;
+    });
 }
 

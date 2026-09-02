@@ -1,0 +1,244 @@
+- generic [active] [ref=f23e1]:
+  - generic [ref=f23e5]:
+    - navigation [ref=f23e6]:
+      - link "DnD Tools" [ref=f23e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f23e9]:
+        - button [ref=f23e11]:
+          - text: Logged in as
+          - strong [ref=f23e12]: cursor
+        - button "Enable dark mode" [ref=f23e13]
+    - generic [ref=f23e16]:
+      - generic [ref=f23e17]:
+        - button "Collapse sidebar to minimal" [ref=f23e19]
+        - navigation [ref=f23e23]:
+          - list [ref=f23e24]:
+            - listitem [ref=f23e25]:
+              - link "Characters" [ref=f23e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f23e30]:
+              - button "Reference" [ref=f23e31]
+            - listitem [ref=f23e37]:
+              - button "DM Tools" [ref=f23e38]
+            - listitem [ref=f23e44]:
+              - button "Admin" [ref=f23e45]
+      - main [ref=f23e52]:
+        - generic [ref=f23e54]:
+          - heading "Feature Management" [level=1] [ref=f23e55]
+          - paragraph [ref=f23e56]: Manage standalone features for classes, races, and other game elements
+          - generic [ref=f23e57]:
+            - button "Orphaned Cleanup" [ref=f23e58]
+            - button "New Feature" [ref=f23e59]
+          - generic [ref=f23e60]:
+            - table [ref=f23e61]:
+              - rowgroup [ref=f23e62]:
+                - row [ref=f23e63]:
+                  - columnheader [ref=f23e64]:
+                    - button "Slug" [ref=f23e67]
+                  - columnheader [ref=f23e69]:
+                    - button "Name" [ref=f23e72]
+                  - columnheader [ref=f23e74]:
+                    - button "Description" [ref=f23e77]
+              - rowgroup [ref=f23e79]:
+                - row [ref=f23e80]:
+                  - cell "airdomainturnearth" [ref=f23e81]
+                  - cell "Turn Earth" [ref=f23e82]
+                  - cell [ref=f23e83]:
+                    - generic [ref=f23e84]:
+                      - paragraph [ref=f23e87]: Turn or destroy earth creatures as a good cleric turns undead. Rebuke, command, or bolster air creatures as an evil cleric rebukes undead. Use these abilities a total number of times per day equal to ...
+                      - generic [ref=f23e88]:
+                        - generic "Edit" [ref=f23e89] [cursor=pointer]
+                        - generic "Delete" [ref=f23e92] [cursor=pointer]
+                - row [ref=f23e95]:
+                  - cell "clclericbonusdomain" [ref=f23e96]
+                  - cell "Bonus Domain" [ref=f23e97]
+                  - cell [ref=f23e98]:
+                    - generic [ref=f23e99]:
+                      - paragraph [ref=f23e102]:
+                        - strong [ref=f23e103]: "Bonus Domain:"
+                        - text: In addition to any domains selected from his deity's list, a cloistered cleric automatically gains Knowledge as a bonus domain (even if Knowledge is not normally available to clerics...
+                      - generic [ref=f23e104]:
+                        - generic "Edit" [ref=f23e105] [cursor=pointer]
+                        - generic "Delete" [ref=f23e108] [cursor=pointer]
+                - row [ref=f23e111]:
+                  - cell "clclrlore" [ref=f23e112]
+                  - cell "Lore" [ref=f23e113]
+                  - cell [ref=f23e114]:
+                    - generic [ref=f23e115]:
+                      - paragraph [ref=f23e118]:
+                        - strong [ref=f23e119]: "Lore:"
+                        - text: Thanks to long hours of study, a cloistered cleric has a wide range of stray knowledge. He may make a special lore check with a bonus equal to his cloistered cleric level + his Intelligence ...
+                      - generic [ref=f23e120]:
+                        - generic "Edit" [ref=f23e121] [cursor=pointer]
+                        - generic "Delete" [ref=f23e124] [cursor=pointer]
+                - row [ref=f23e127]:
+                  - cell "collegiate-wizard" [ref=f23e128]
+                  - cell "Collegiate Wizard" [ref=f23e129]
+                  - cell [ref=f23e130]:
+                    - generic [ref=f23e131]:
+                      - generic [ref=f23e133]:
+                        - paragraph [ref=f23e134]: You have undergone extensive training in a formal school for wizards.
+                        - heading "Benefit" [level=2] [ref=f23e135]
+                        - paragraph [ref=f23e136]: You begin play with knowledge of six 1st-level spells plus 1 per point of Intelligence modifier. Each time you gain a ...
+                      - generic [ref=f23e137]:
+                        - generic "Edit" [ref=f23e138] [cursor=pointer]
+                        - generic "Delete" [ref=f23e141] [cursor=pointer]
+                - row [ref=f23e144]:
+                  - cell "companion-38-benefit" [ref=f23e145]
+                  - cell "Companion 38 Benefit" [ref=f23e146]
+                  - cell [ref=f23e147]:
+                    - generic [ref=f23e148]:
+                      - paragraph [ref=f23e151]: Benefits granted by Companion 38
+                      - generic [ref=f23e152]:
+                        - generic "Edit" [ref=f23e153] [cursor=pointer]
+                        - generic "Delete" [ref=f23e156] [cursor=pointer]
+                - row [ref=f23e159]:
+                  - cell "companion-41-benefit" [ref=f23e160]
+                  - cell "Companion 41 Benefit" [ref=f23e161]
+                  - cell [ref=f23e162]:
+                    - generic [ref=f23e163]:
+                      - paragraph [ref=f23e166]: Benefits granted by Companion 41
+                      - generic [ref=f23e167]:
+                        - generic "Edit" [ref=f23e168] [cursor=pointer]
+                        - generic "Delete" [ref=f23e171] [cursor=pointer]
+                - row [ref=f23e174]:
+                  - cell "companion-44-benefit" [ref=f23e175]
+                  - cell "Companion 44 Benefit" [ref=f23e176]
+                  - cell [ref=f23e177]:
+                    - generic [ref=f23e178]:
+                      - paragraph [ref=f23e181]: Benefits granted by Companion 44
+                      - generic [ref=f23e182]:
+                        - generic "Edit" [ref=f23e183] [cursor=pointer]
+                        - generic "Delete" [ref=f23e186] [cursor=pointer]
+                - row [ref=f23e189]:
+                  - cell "companion-47-benefit" [ref=f23e190]
+                  - cell "Companion 47 Benefit" [ref=f23e191]
+                  - cell [ref=f23e192]:
+                    - generic [ref=f23e193]:
+                      - paragraph [ref=f23e196]: Benefits granted by Companion 47
+                      - generic [ref=f23e197]:
+                        - generic "Edit" [ref=f23e198] [cursor=pointer]
+                        - generic "Delete" [ref=f23e201] [cursor=pointer]
+                - row [ref=f23e204]:
+                  - cell "companion-50-benefit" [ref=f23e205]
+                  - cell "Companion 50 Benefit" [ref=f23e206]
+                  - cell [ref=f23e207]:
+                    - generic [ref=f23e208]:
+                      - paragraph [ref=f23e211]: Benefits granted by Companion 50
+                      - generic [ref=f23e212]:
+                        - generic "Edit" [ref=f23e213] [cursor=pointer]
+                        - generic "Delete" [ref=f23e216] [cursor=pointer]
+                - row [ref=f23e219]:
+                  - cell "companion-53-benefit" [ref=f23e220]
+                  - cell "Companion 53 Benefit" [ref=f23e221]
+                  - cell [ref=f23e222]:
+                    - generic [ref=f23e223]:
+                      - paragraph [ref=f23e226]: Benefits granted by Companion 53
+                      - generic [ref=f23e227]:
+                        - generic "Edit" [ref=f23e228] [cursor=pointer]
+                        - generic "Delete" [ref=f23e231] [cursor=pointer]
+                - row [ref=f23e234]:
+                  - cell "companion-56-benefit" [ref=f23e235]
+                  - cell "Companion 56 Benefit" [ref=f23e236]
+                  - cell [ref=f23e237]:
+                    - generic [ref=f23e238]:
+                      - paragraph [ref=f23e241]: Benefits granted by Companion 56
+                      - generic [ref=f23e242]:
+                        - generic "Edit" [ref=f23e243] [cursor=pointer]
+                        - generic "Delete" [ref=f23e246] [cursor=pointer]
+                - row [ref=f23e249]:
+                  - cell "companion-59-benefit" [ref=f23e250]
+                  - cell "Companion 59 Benefit" [ref=f23e251]
+                  - cell [ref=f23e252]:
+                    - generic [ref=f23e253]:
+                      - paragraph [ref=f23e256]: Benefits granted by Companion 59
+                      - generic [ref=f23e257]:
+                        - generic "Edit" [ref=f23e258] [cursor=pointer]
+                        - generic "Delete" [ref=f23e261] [cursor=pointer]
+                - row [ref=f23e264]:
+                  - cell "companion-62-benefit" [ref=f23e265]
+                  - cell "Companion 62 Benefit" [ref=f23e266]
+                  - cell [ref=f23e267]:
+                    - generic [ref=f23e268]:
+                      - paragraph [ref=f23e271]: Benefits granted by Companion 62
+                      - generic [ref=f23e272]:
+                        - generic "Edit" [ref=f23e273] [cursor=pointer]
+                        - generic "Delete" [ref=f23e276] [cursor=pointer]
+                - row [ref=f23e279]:
+                  - cell "companion-65-benefit" [ref=f23e280]
+                  - cell "Companion 65 Benefit" [ref=f23e281]
+                  - cell [ref=f23e282]:
+                    - generic [ref=f23e283]:
+                      - paragraph [ref=f23e286]: Benefits granted by Companion 65
+                      - generic [ref=f23e287]:
+                        - generic "Edit" [ref=f23e288] [cursor=pointer]
+                        - generic "Delete" [ref=f23e291] [cursor=pointer]
+                - row [ref=f23e294]:
+                  - cell "companion-benefit" [ref=f23e295]
+                  - cell "Companion Benefits" [ref=f23e296]
+                  - cell [ref=f23e297]:
+                    - generic [ref=f23e298]:
+                      - paragraph [ref=f23e301]: Benefits granted by companions
+                      - generic [ref=f23e302]:
+                        - generic "Edit" [ref=f23e303] [cursor=pointer]
+                        - generic "Delete" [ref=f23e306] [cursor=pointer]
+                - row [ref=f23e309]:
+                  - cell "companion-benefit-19916" [ref=f23e310]
+                  - cell "Companion Benefits" [ref=f23e311]
+                  - cell [ref=f23e312]:
+                    - generic [ref=f23e313]:
+                      - paragraph [ref=f23e316]: Benefits granted by companions
+                      - generic [ref=f23e317]:
+                        - generic "Edit" [ref=f23e318] [cursor=pointer]
+                        - generic "Delete" [ref=f23e321] [cursor=pointer]
+                - row [ref=f23e324]:
+                  - cell "companion-benefit-19919" [ref=f23e325]
+                  - cell "Companion Benefits" [ref=f23e326]
+                  - cell [ref=f23e327]:
+                    - generic [ref=f23e328]:
+                      - paragraph [ref=f23e331]: Benefits granted by companions
+                      - generic [ref=f23e332]:
+                        - generic "Edit" [ref=f23e333] [cursor=pointer]
+                        - generic "Delete" [ref=f23e336] [cursor=pointer]
+                - row [ref=f23e339]:
+                  - cell "companion-benefit-19922" [ref=f23e340]
+                  - cell "Companion Benefits" [ref=f23e341]
+                  - cell [ref=f23e342]:
+                    - generic [ref=f23e343]:
+                      - paragraph [ref=f23e346]: Benefits granted by companions
+                      - generic [ref=f23e347]:
+                        - generic "Edit" [ref=f23e348] [cursor=pointer]
+                        - generic "Delete" [ref=f23e351] [cursor=pointer]
+                - row [ref=f23e354]:
+                  - cell "companion-benefit-19925" [ref=f23e355]
+                  - cell "Companion Benefits" [ref=f23e356]
+                  - cell [ref=f23e357]:
+                    - generic [ref=f23e358]:
+                      - paragraph [ref=f23e361]: Benefits granted by companions
+                      - generic [ref=f23e362]:
+                        - generic "Edit" [ref=f23e363] [cursor=pointer]
+                        - generic "Delete" [ref=f23e366] [cursor=pointer]
+                - row [ref=f23e369]:
+                  - cell "companion-benefit-19928" [ref=f23e370]
+                  - cell "Companion Benefits" [ref=f23e371]
+                  - cell [ref=f23e372]:
+                    - generic [ref=f23e373]:
+                      - paragraph [ref=f23e376]: Benefits granted by companions
+                      - generic [ref=f23e377]:
+                        - generic "Edit" [ref=f23e378] [cursor=pointer]
+                        - generic "Delete" [ref=f23e381] [cursor=pointer]
+            - status [ref=f23e384]
+            - generic [ref=f23e385]:
+              - generic [ref=f23e386]: Showing 1–20 of 150
+              - generic [ref=f23e387]:
+                - generic [ref=f23e388]:
+                  - combobox [ref=f23e389]:
+                    - generic [ref=f23e390]: "20"
+                  - textbox [ref=f23e394]: "20"
+                - button "First" [disabled] [ref=f23e395]
+                - button "< Prev" [disabled] [ref=f23e396]
+                - generic [ref=f23e397]: Page 1 of 8
+                - button "Next >" [ref=f23e398]
+                - button "Last" [ref=f23e399]
+  - generic:
+    - region "Notifications"

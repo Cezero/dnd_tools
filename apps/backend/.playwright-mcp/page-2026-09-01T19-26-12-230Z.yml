@@ -1,0 +1,66 @@
+- generic [active] [ref=f12e1]:
+  - generic [ref=f12e4]:
+    - navigation [ref=f12e5]:
+      - link "DnD Tools" [ref=f12e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f12e8]:
+        - button [ref=f12e10]:
+          - text: Logged in as
+          - strong [ref=f12e11]: cursor
+        - button "Enable dark mode" [ref=f12e12]
+    - generic [ref=f12e15]:
+      - generic [ref=f12e16]:
+        - button "Collapse sidebar to minimal" [ref=f12e18]
+        - navigation [ref=f12e22]:
+          - list [ref=f12e23]:
+            - listitem [ref=f12e24]:
+              - link "Characters" [ref=f12e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f12e29]:
+              - button "Reference" [ref=f12e30]
+            - listitem [ref=f12e36]:
+              - button "DM Tools" [ref=f12e37]
+            - listitem [ref=f12e43]:
+              - button "Admin" [ref=f12e44]
+      - main [ref=f12e51]:
+        - generic [ref=f12e55]:
+          - generic [ref=f12e57]:
+            - heading "Daylight" [level=1] [ref=f12e58]
+            - generic [ref=f12e59]:
+              - paragraph [ref=f12e60]:
+                - strong [ref=f12e61]: "Edition:"
+                - text: D&D 3.5E
+              - paragraph [ref=f12e62]:
+                - strong [ref=f12e63]: "Source:"
+                - text: PHB 216
+          - paragraph [ref=f12e64]: Evocation
+          - paragraph [ref=f12e65]:
+            - strong [ref=f12e66]: "Level:"
+            - text: "2"
+          - paragraph [ref=f12e67]:
+            - strong [ref=f12e68]: "Components:"
+          - paragraph [ref=f12e69]:
+            - strong [ref=f12e70]: "Casting Time:"
+            - text: 1sa
+          - paragraph [ref=f12e71]:
+            - strong [ref=f12e72]: "Range:"
+            - text: Touch
+          - paragraph [ref=f12e73]:
+            - strong [ref=f12e74]: "Duration:"
+            - text: 10 min(D)
+          - paragraph [ref=f12e75]:
+            - strong [ref=f12e76]: "Saving Throw:"
+            - text: None
+          - paragraph [ref=f12e77]:
+            - strong [ref=f12e78]: "Spell Resistance:"
+            - text: "No"
+          - generic [ref=f12e79]:
+            - paragraph [ref=f12e80]:
+              - strong [ref=f12e81]: "Class Levels:"
+            - generic [ref=f12e82]: Adpt 3, Archv 3, Brd 3, ClClr 3, Clr 3, CoG 3, ConHar 2, Drd 3, EoB 3, Fvs 3, GnArt 2, HoLib 3, HotD 3, OcAdp 3, Pal 3, PiTem 3, Shug 3, Sor/Wiz 3, Ssh 3, UrPrst 3
+          - paragraph [ref=f12e85]: The object touched sheds light as bright as full daylight in a 60-foot radius, and dim light for an additional 60 feet beyond that.Creatures that take penalties in bright light also take them while within the radius of this magical light. Despite its name, this spell is not the equivalent of daylight for the purposes of creatures that are damaged or destroyed by bright light (such as vampires). If daylight is cast on a small object that is then placed inside or under a light-proof covering, the spell's effects are blocked until the covering is removed. Daylight brought into an area of magical darkness (or vice versa) is temporarily negated, so that the otherwise prevailing light conditions exist in the overlapping areas of effect. Daylight counters or dispels any dark ness spell of equal or lower level, such as darkness.
+          - generic [ref=f12e86]:
+            - button "Back to Spells" [ref=f12e87]
+            - button "Edit Spell" [ref=f12e88]
+  - generic:
+    - region "Notifications"

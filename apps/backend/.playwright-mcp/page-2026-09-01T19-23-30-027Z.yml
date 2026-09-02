@@ -1,0 +1,244 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e4]:
+    - navigation [ref=f5e5]:
+      - link "DnD Tools" [ref=f5e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f5e8]:
+        - button [ref=f5e10]:
+          - text: Logged in as
+          - strong [ref=f5e11]: cursor
+        - button "Enable dark mode" [ref=f5e12]
+    - generic [ref=f5e15]:
+      - generic [ref=f5e16]:
+        - button "Collapse sidebar to minimal" [ref=f5e18]
+        - navigation [ref=f5e22]:
+          - list [ref=f5e23]:
+            - listitem [ref=f5e24]:
+              - link "Characters" [ref=f5e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f5e29]:
+              - button "Reference" [ref=f5e30]
+            - listitem [ref=f5e36]:
+              - button "DM Tools" [ref=f5e37]
+            - listitem [ref=f5e43]:
+              - button "Admin" [ref=f5e44]
+      - main [ref=f5e51]:
+        - generic [ref=f5e53]:
+          - heading "Feats" [level=1] [ref=f5e54]
+          - button "New Feat" [ref=f5e56]
+          - generic [ref=f5e57]:
+            - table [ref=f5e60]:
+              - rowgroup [ref=f5e61]:
+                - row [ref=f5e62]:
+                  - columnheader [ref=f5e63]:
+                    - button "Feat Name" [ref=f5e66]
+                  - columnheader [ref=f5e68]:
+                    - button "Description" [ref=f5e71]
+                  - columnheader [ref=f5e73]:
+                    - button "Summary" [ref=f5e76]
+              - rowgroup [ref=f5e78]:
+                - row [ref=f5e79]:
+                  - cell "Ability Focus" [ref=f5e80]
+                  - cell [ref=f5e81]:
+                    - paragraph [ref=f5e83]: Choose one of the creature's special attacks. This attack becomes more potent than normal.
+                  - cell [ref=f5e84]:
+                    - generic [ref=f5e85]:
+                      - paragraph [ref=f5e88]: Add +2 to the DC for all saving throws against the special attack on which the creature focuses.
+                      - generic [ref=f5e89]:
+                        - generic "Edit" [ref=f5e90] [cursor=pointer]
+                        - generic "Delete" [ref=f5e93] [cursor=pointer]
+                - row [ref=f5e96]:
+                  - cell "Acrobatic" [ref=f5e97]
+                  - cell [ref=f5e98]:
+                    - paragraph [ref=f5e100]: You have excellent body awareness and coordination.
+                  - cell [ref=f5e101]:
+                    - generic [ref=f5e102]:
+                      - paragraph [ref=f5e105]: You get a +2 bonus on all Jump checks and Tumble checks.
+                      - generic [ref=f5e106]:
+                        - generic "Edit" [ref=f5e107] [cursor=pointer]
+                        - generic "Delete" [ref=f5e110] [cursor=pointer]
+                - row [ref=f5e113]:
+                  - cell "Agile" [ref=f5e114]
+                  - cell [ref=f5e115]:
+                    - paragraph [ref=f5e117]: You are particularly flexible and poised.
+                  - cell [ref=f5e118]:
+                    - generic [ref=f5e119]:
+                      - paragraph [ref=f5e122]: You get a +2 bonus on all Balance checks and Escape Artist checks.
+                      - generic [ref=f5e123]:
+                        - generic "Edit" [ref=f5e124] [cursor=pointer]
+                        - generic "Delete" [ref=f5e127] [cursor=pointer]
+                - row [ref=f5e130]:
+                  - cell "Alertness" [ref=f5e131]
+                  - cell [ref=f5e132]:
+                    - paragraph [ref=f5e134]: You have finely tuned senses.
+                  - cell [ref=f5e135]:
+                    - generic [ref=f5e136]:
+                      - paragraph [ref=f5e139]: You get a +2 bonus on all Listen checks and Spot checks.
+                      - generic [ref=f5e140]:
+                        - generic "Edit" [ref=f5e141] [cursor=pointer]
+                        - generic "Delete" [ref=f5e144] [cursor=pointer]
+                - row [ref=f5e147]:
+                  - cell "Animal Affinity" [ref=f5e148]
+                  - cell [ref=f5e149]:
+                    - paragraph [ref=f5e151]: You are good with animals.
+                  - cell [ref=f5e152]:
+                    - generic [ref=f5e153]:
+                      - paragraph [ref=f5e156]: You get a +2 bonus on all Handle Animal checks and Ride checks.
+                      - generic [ref=f5e157]:
+                        - generic "Edit" [ref=f5e158] [cursor=pointer]
+                        - generic "Delete" [ref=f5e161] [cursor=pointer]
+                - row [ref=f5e164]:
+                  - cell "Armor Proficiency (Heavy)" [ref=f5e165]
+                  - cell [ref=f5e166]:
+                    - paragraph [ref=f5e168]: You are proficient with heavy armor.
+                  - cell [ref=f5e169]:
+                    - generic [ref=f5e170]:
+                      - paragraph [ref=f5e173]: You are proficient with heavy armor.
+                      - generic [ref=f5e174]:
+                        - generic "Edit" [ref=f5e175] [cursor=pointer]
+                        - generic "Delete" [ref=f5e178] [cursor=pointer]
+                - row [ref=f5e181]:
+                  - cell "Armor Proficiency (Light)" [ref=f5e182]
+                  - cell [ref=f5e183]:
+                    - paragraph [ref=f5e185]: You are proficient with light armor.
+                  - cell [ref=f5e186]:
+                    - generic [ref=f5e187]:
+                      - paragraph [ref=f5e190]: You are proficient with light armor.
+                      - generic [ref=f5e191]:
+                        - generic "Edit" [ref=f5e192] [cursor=pointer]
+                        - generic "Delete" [ref=f5e195] [cursor=pointer]
+                - row [ref=f5e198]:
+                  - cell "Armor Proficiency (Medium)" [ref=f5e199]
+                  - cell [ref=f5e200]:
+                    - paragraph [ref=f5e202]: You are proficient with medium armor.
+                  - cell [ref=f5e203]:
+                    - generic [ref=f5e204]:
+                      - paragraph [ref=f5e207]: You are proficient with medium armor.
+                      - generic [ref=f5e208]:
+                        - generic "Edit" [ref=f5e209] [cursor=pointer]
+                        - generic "Delete" [ref=f5e212] [cursor=pointer]
+                - row [ref=f5e215]:
+                  - cell "Athletic" [ref=f5e216]
+                  - cell [ref=f5e217]:
+                    - paragraph [ref=f5e219]: You have a knack for athletic endeavors.
+                  - cell [ref=f5e220]:
+                    - generic [ref=f5e221]:
+                      - paragraph [ref=f5e224]: You get a +2 bonus on all Climb checks and Swim checks.
+                      - generic [ref=f5e225]:
+                        - generic "Edit" [ref=f5e226] [cursor=pointer]
+                        - generic "Delete" [ref=f5e229] [cursor=pointer]
+                - row [ref=f5e232]:
+                  - cell "Augment Summoning" [ref=f5e233]
+                  - cell [ref=f5e234]:
+                    - paragraph [ref=f5e236]: Your summoned creatures are more powerful than normal.
+                  - cell [ref=f5e237]:
+                    - generic [ref=f5e238]:
+                      - paragraph [ref=f5e241]: Each creature you conjure with any summon spell gains a +4 enhancement bonus to Strength and Constitution for the duration of the spell that summoned it.
+                      - generic [ref=f5e242]:
+                        - generic "Edit" [ref=f5e243] [cursor=pointer]
+                        - generic "Delete" [ref=f5e246] [cursor=pointer]
+                - row [ref=f5e249]:
+                  - cell "Awesome Blow" [ref=f5e250]
+                  - cell [ref=f5e251]:
+                    - paragraph [ref=f5e253]: The creature can choose to deliver blows that send its smaller opponents flying like bowling pins.
+                  - cell [ref=f5e254]:
+                    - generic [ref=f5e256]:
+                      - generic "Edit" [ref=f5e257] [cursor=pointer]
+                      - generic "Delete" [ref=f5e260] [cursor=pointer]
+                - row [ref=f5e263]:
+                  - cell "Blind-Fight" [ref=f5e264]
+                  - cell [ref=f5e265]:
+                    - paragraph [ref=f5e267]: You know how to fight in melee without being able to see your foes.
+                  - cell [ref=f5e268]:
+                    - generic [ref=f5e269]:
+                      - paragraph [ref=f5e272]: In melee, every time you miss because of concealment, you can reroll your miss chance percentile roll one time.
+                      - generic [ref=f5e273]:
+                        - generic "Edit" [ref=f5e274] [cursor=pointer]
+                        - generic "Delete" [ref=f5e277] [cursor=pointer]
+                - row [ref=f5e280]:
+                  - cell "Brew Potion" [ref=f5e281]
+                  - cell [ref=f5e282]:
+                    - paragraph [ref=f5e284]: You can create potions, which carry spells within themselves. See the Dungeon Master’s Guide for rules on potions.
+                  - cell [ref=f5e285]:
+                    - generic [ref=f5e286]:
+                      - paragraph [ref=f5e289]: You can create a potion of any 3rd-level or lower spell that you know and that targets one or more creatures.
+                      - generic [ref=f5e290]:
+                        - generic "Edit" [ref=f5e291] [cursor=pointer]
+                        - generic "Delete" [ref=f5e294] [cursor=pointer]
+                - row [ref=f5e297]:
+                  - cell "Cleave" [ref=f5e298]
+                  - cell [ref=f5e299]:
+                    - paragraph [ref=f5e301]: You can follow through with powerful blows.
+                  - cell [ref=f5e302]:
+                    - generic [ref=f5e303]:
+                      - paragraph [ref=f5e306]: If you deal a creature enough damage to make it drop, you get an immediate, extra melee attack against another creature within reach.
+                      - generic [ref=f5e307]:
+                        - generic "Edit" [ref=f5e308] [cursor=pointer]
+                        - generic "Delete" [ref=f5e311] [cursor=pointer]
+                - row [ref=f5e314]:
+                  - cell "Collegiate Wizard" [ref=f5e315]
+                  - cell [ref=f5e316]:
+                    - paragraph [ref=f5e318]: You have undergone extensive training in a formal school for wizards.
+                  - cell [ref=f5e319]:
+                    - generic [ref=f5e320]:
+                      - paragraph [ref=f5e323]: You begin play with knowledge of six 1st-level spells. Each time you gain a wizard level, you may add four spells to your spellbook without additional research.
+                      - generic [ref=f5e324]:
+                        - generic "Edit" [ref=f5e325] [cursor=pointer]
+                        - generic "Delete" [ref=f5e328] [cursor=pointer]
+                - row [ref=f5e331]:
+                  - cell "Combat Casting" [ref=f5e332]
+                  - cell [ref=f5e333]:
+                    - paragraph [ref=f5e335]: You are adept at casting spells in combat.
+                  - cell [ref=f5e336]:
+                    - generic [ref=f5e337]:
+                      - paragraph [ref=f5e340]: You get a +4 bonus on Concentration checks made to cast a spell or use a spell-like ability while on the defensive.
+                      - generic [ref=f5e341]:
+                        - generic "Edit" [ref=f5e342] [cursor=pointer]
+                        - generic "Delete" [ref=f5e345] [cursor=pointer]
+                - row [ref=f5e348]:
+                  - cell "Combat Expertise" [ref=f5e349]
+                  - cell [ref=f5e350]:
+                    - paragraph [ref=f5e352]: You are trained at using your combat skill for defense as well as offense.
+                  - cell [ref=f5e353]:
+                    - generic [ref=f5e355]:
+                      - generic "Edit" [ref=f5e356] [cursor=pointer]
+                      - generic "Delete" [ref=f5e359] [cursor=pointer]
+                - row [ref=f5e362]:
+                  - cell "Combat Reflexes" [ref=f5e363]
+                  - cell [ref=f5e364]:
+                    - paragraph [ref=f5e366]: You can respond quickly and repeatedly to opponents who let their defenses down.
+                  - cell [ref=f5e367]:
+                    - generic [ref=f5e369]:
+                      - generic "Edit" [ref=f5e370] [cursor=pointer]
+                      - generic "Delete" [ref=f5e373] [cursor=pointer]
+                - row [ref=f5e376]:
+                  - cell "Craft Construct" [ref=f5e377]
+                  - cell [ref=f5e378]:
+                    - paragraph [ref=f5e380]: The creature can create golems and other magic automatons that obey its orders. A creature with this feat can repair constructs that have taken damage. In one day of work, the creature can repair up to 20 points of damage by expending 50 gp per point of damage repaired. A newly created construct has average hit points for its Hit Dice.
+                  - cell [ref=f5e381]:
+                    - generic [ref=f5e383]:
+                      - generic "Edit" [ref=f5e384] [cursor=pointer]
+                      - generic "Delete" [ref=f5e387] [cursor=pointer]
+                - row [ref=f5e390]:
+                  - cell "Craft Magic Arms and Armor" [ref=f5e391]
+                  - cell [ref=f5e392]:
+                    - paragraph [ref=f5e394]: You can create magic weapons, armor, and shields.
+                  - cell [ref=f5e395]:
+                    - generic [ref=f5e397]:
+                      - generic "Edit" [ref=f5e398] [cursor=pointer]
+                      - generic "Delete" [ref=f5e401] [cursor=pointer]
+            - status [ref=f5e404]
+            - generic [ref=f5e405]:
+              - generic [ref=f5e406]: Showing 1–20 of 123
+              - generic [ref=f5e407]:
+                - generic [ref=f5e408]:
+                  - combobox [ref=f5e409]:
+                    - generic [ref=f5e410]: "20"
+                  - textbox [ref=f5e414]: "20"
+                - button "First" [disabled] [ref=f5e415]
+                - button "< Prev" [disabled] [ref=f5e416]
+                - generic [ref=f5e417]: Page 1 of 7
+                - button "Next >" [ref=f5e418]
+                - button "Last" [ref=f5e419]
+  - generic:
+    - region "Notifications"

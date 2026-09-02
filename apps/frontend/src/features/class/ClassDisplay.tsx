@@ -157,7 +157,8 @@ export function ClassDisplay({
                     <div className="mt-4">
                         <h3 className="text-lg font-semibold mb-2">Class Feature</h3>
                         {(() => {
-                            const feature = buildClassProgressionFromDetail(features);
+                            const classId = (cls as { id?: number }).id;
+                            const feature = buildClassProgressionFromDetail(features, classId);
                             return (
                                 <ClassProgressionTable
                                     feature={feature}

@@ -36,6 +36,8 @@ The core character definition containing basic information about characters, the
 **Relationships**:
 - **`user`**: Links to the user who owns the character
 - **`race`**: Links to the character's race
+- **`config`**: Optional 1:1 `CharacterConfig` row (variant classes, gestalt, ignore LA)
+- **`wealth`**: Currency and valuables as `CharacterWealth` rows keyed by `currencyId`
 - **`abilityScores`**: Links to character ability scores
 - **`characterItems`**: Links to character equipment
 - **`advancements`**: Links to character level advancements
@@ -46,6 +48,40 @@ The core character definition containing basic information about characters, the
 **Source File**: `prisma/schema.prisma` (UserCharacter model)
 
 ## 🔧 **Integration Models**
+
+### **CharacterConfig Model**
+
+One-to-one settings row for a character. Prisma model name is `CharacterConfig`; table name is `CharacterConfig` (no `@@map`).
+
+**Purpose**: Holds variant-class, gestalt, and level-adjustment flags that used to live as columns on `UserCharacter`. Character save always writes this row (`create` nested on new characters, `upsert` on updates).
+
+**Key Fields**:
+- **`characterId`**: Primary key and foreign key to `UserCharacter.id` (cascade delete)
+- **`allowVariantClasses`**: Whether class variants are allowed
+- **`isGestalt`**: Gestalt multiclassing
+- **`ignoreLevelAdjustment`**: Ignore LA for XP calculation
+
+**Source File**: `prisma/schema.prisma` (`CharacterConfig`)
+
+Production restored from the Jan 2026 dump still had these flags (and coin columns) on `UserCharacter`. Migration `20260901195700_add_character_config_and_wealth` creates this table, backfills from those columns, then drops the leftovers.
+
+### **CharacterWealth Model**
+
+Currency and valuables for a character, replacing `UserCharacter.copper/silver/gold/platinum`.
+
+**Purpose**: One row per currency (or gem/art/other) with quantity and optional value/description. `@CurrencyId` is static data, not a database table.
+
+**Key Fields**:
+- **`id`**: Auto-increment primary key
+- **`characterId`**: Foreign key to `UserCharacter.id` (cascade delete)
+- **`currencyId`**: `@CurrencyId` (Copper=1, Silver=2, Gold=3, Platinum=4, plus gem/art/other)
+- **`quantity`**: Count of that currency or object
+- **`value`**: Optional gp value (used for gems/art)
+- **`description`**: Optional label
+
+**Source File**: `prisma/schema.prisma` (`CharacterWealth`)
+
+Same migration as `CharacterConfig` creates this table and copies non-zero coin columns from `UserCharacter`.
 
 ### **UserCharacterAbilityScore Model**
 
@@ -354,6 +390,23 @@ erDiagram
         string hair
         string gender
         text notes
+        int editionId
+    }
+
+    CharacterConfig {
+        int characterId PK_FK
+        boolean allowVariantClasses
+        boolean isGestalt
+        boolean ignoreLevelAdjustment
+    }
+
+    CharacterWealth {
+        int id PK
+        int characterId FK
+        int currencyId
+        int quantity
+        int value
+        string description
     }
     
     UserCharacterAbilityScore {
@@ -422,6 +475,8 @@ erDiagram
         int featId FK
     }
     
+    UserCharacter ||--o| CharacterConfig : "config"
+    UserCharacter ||--o{ CharacterWealth : "wealth"
     UserCharacter ||--o{ UserCharacterAbilityScore : "has"
     UserCharacter ||--o{ CharacterAdvancement : "advances"
     UserCharacter ||--o{ CharacterFeatureChoice : "chooses"

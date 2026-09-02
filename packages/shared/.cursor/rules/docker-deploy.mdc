@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Docker production deploy
 
-Do not deploy unless the user asks. When they do, use this path only.
+Deploy after a complete, working block (see `deploy-complete-block.mdc`). Use this path only.
 
 1. Run from the **repo root on cyberdev01**.
 2. If Zod/`@shared/schema` changed, STOP until the user has rebuilt that package. Never run `pnpm build` there.

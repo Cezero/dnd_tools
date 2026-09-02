@@ -1,0 +1,278 @@
+- generic [active] [ref=f25e1]:
+  - generic [ref=f25e4]:
+    - navigation [ref=f25e5]:
+      - link "DnD Tools" [ref=f25e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f25e8]:
+        - button [ref=f25e10]:
+          - text: Logged in as
+          - strong [ref=f25e11]: cursor
+        - button "Enable dark mode" [ref=f25e12]
+    - generic [ref=f25e15]:
+      - generic [ref=f25e16]:
+        - button "Collapse sidebar to minimal" [ref=f25e18]
+        - navigation [ref=f25e22]:
+          - list [ref=f25e23]:
+            - listitem [ref=f25e24]:
+              - link "Characters" [ref=f25e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f25e29]:
+              - button "Reference" [ref=f25e30]
+            - listitem [ref=f25e36]:
+              - button "DM Tools" [ref=f25e37]
+            - listitem [ref=f25e43]:
+              - button "Admin" [ref=f25e44]
+      - main [ref=f25e51]:
+        - generic [ref=f25e53]:
+          - heading "Reference Tables" [level=1] [ref=f25e54]
+          - button "New Table" [ref=f25e56]
+          - generic [ref=f25e57]:
+            - table [ref=f25e60]:
+              - rowgroup [ref=f25e61]:
+                - row [ref=f25e62]:
+                  - columnheader [ref=f25e63]:
+                    - button "Name" [ref=f25e66]
+                  - columnheader [ref=f25e68]:
+                    - button "Slug" [ref=f25e71]
+                  - columnheader [ref=f25e73]:
+                    - button "Description" [ref=f25e76]
+                  - columnheader [ref=f25e78]:
+                    - button "Rows" [ref=f25e81]
+                  - columnheader [ref=f25e83]:
+                    - button "Columns" [ref=f25e86]
+              - rowgroup [ref=f25e88]:
+                - row [ref=f25e89]:
+                  - cell "Air Elemental Sizes" [ref=f25e90]
+                  - cell "air-elemental-sizes" [ref=f25e91]
+                  - cell "| Whirlwind" [ref=f25e92]
+                  - cell "6" [ref=f25e93]
+                  - cell "6" [ref=f25e94]:
+                    - generic [ref=f25e95]:
+                      - generic [ref=f25e96]: "6"
+                      - generic [ref=f25e97]:
+                        - generic "Edit" [ref=f25e98] [cursor=pointer]
+                        - generic "Delete" [ref=f25e101] [cursor=pointer]
+                - row [ref=f25e104]:
+                  - cell "Balance Narrow Surface Modifiers" [ref=f25e105]
+                  - cell "balancenarrowmods" [ref=f25e106]
+                  - cell [ref=f25e107]
+                  - cell "6" [ref=f25e108]
+                  - cell "2" [ref=f25e109]:
+                    - generic [ref=f25e110]:
+                      - generic [ref=f25e111]: "2"
+                      - generic [ref=f25e112]:
+                        - generic "Edit" [ref=f25e113] [cursor=pointer]
+                        - generic "Delete" [ref=f25e116] [cursor=pointer]
+                - row [ref=f25e119]:
+                  - cell "Balance Surface Difficulty" [ref=f25e120]
+                  - cell "balancesurface" [ref=f25e121]
+                  - cell [ref=f25e122]
+                  - cell "5" [ref=f25e123]
+                  - cell "4" [ref=f25e124]:
+                    - generic [ref=f25e125]:
+                      - generic [ref=f25e126]: "4"
+                      - generic [ref=f25e127]:
+                        - generic "Edit" [ref=f25e128] [cursor=pointer]
+                        - generic "Delete" [ref=f25e131] [cursor=pointer]
+                - row [ref=f25e134]:
+                  - cell "Bardic Knowledge" [ref=f25e135]
+                  - cell "bardknowledge" [ref=f25e136]
+                  - cell [ref=f25e137]
+                  - cell "4" [ref=f25e138]
+                  - cell "3" [ref=f25e139]:
+                    - generic [ref=f25e140]:
+                      - generic [ref=f25e141]: "3"
+                      - generic [ref=f25e142]:
+                        - generic "Edit" [ref=f25e143] [cursor=pointer]
+                        - generic "Delete" [ref=f25e146] [cursor=pointer]
+                - row [ref=f25e149]:
+                  - cell "Bluff Examples" [ref=f25e150]
+                  - cell "bluffexamples" [ref=f25e151]
+                  - cell [ref=f25e152]
+                  - cell "10" [ref=f25e153]
+                  - cell "2" [ref=f25e154]:
+                    - generic [ref=f25e155]:
+                      - generic [ref=f25e156]: "2"
+                      - generic [ref=f25e157]:
+                        - generic "Edit" [ref=f25e158] [cursor=pointer]
+                        - generic "Delete" [ref=f25e161] [cursor=pointer]
+                - row [ref=f25e164]:
+                  - cell "Chimera Heads" [ref=f25e165]
+                  - cell "chimera-heads" [ref=f25e166]
+                  - cell [ref=f25e167]
+                  - cell "5" [ref=f25e168]
+                  - cell "3" [ref=f25e169]:
+                    - generic [ref=f25e170]:
+                      - generic [ref=f25e171]: "3"
+                      - generic [ref=f25e172]:
+                        - generic "Edit" [ref=f25e173] [cursor=pointer]
+                        - generic "Delete" [ref=f25e176] [cursor=pointer]
+                - row [ref=f25e179]:
+                  - cell "Climb Base DC" [ref=f25e180]
+                  - cell "climbbasedc" [ref=f25e181]
+                  - cell [ref=f25e182]
+                  - cell "8" [ref=f25e183]
+                  - cell "2" [ref=f25e184]:
+                    - generic [ref=f25e185]:
+                      - generic [ref=f25e186]: "2"
+                      - generic [ref=f25e187]:
+                        - generic "Edit" [ref=f25e188] [cursor=pointer]
+                        - generic "Delete" [ref=f25e191] [cursor=pointer]
+                - row [ref=f25e194]:
+                  - cell "Climb Check DC Mods" [ref=f25e195]
+                  - cell "climbdcmods" [ref=f25e196]
+                  - cell [ref=f25e197]
+                  - cell "4" [ref=f25e198]
+                  - cell "2" [ref=f25e199]:
+                    - generic [ref=f25e200]:
+                      - generic [ref=f25e201]: "2"
+                      - generic [ref=f25e202]:
+                        - generic "Edit" [ref=f25e203] [cursor=pointer]
+                        - generic "Delete" [ref=f25e206] [cursor=pointer]
+                - row [ref=f25e209]:
+                  - cell "Common Lycanthropes" [ref=f25e210]
+                  - cell "common-lycanthropes" [ref=f25e211]
+                  - cell [ref=f25e212]
+                  - cell "6" [ref=f25e213]
+                  - cell "4" [ref=f25e214]:
+                    - generic [ref=f25e215]:
+                      - generic [ref=f25e216]: "4"
+                      - generic [ref=f25e217]:
+                        - generic "Edit" [ref=f25e218] [cursor=pointer]
+                        - generic "Delete" [ref=f25e221] [cursor=pointer]
+                - row [ref=f25e224]:
+                  - cell "Concentration DCs" [ref=f25e225]
+                  - cell "concentrationdc" [ref=f25e226]
+                  - cell [ref=f25e227]
+                  - cell "15" [ref=f25e228]
+                  - cell "2" [ref=f25e229]:
+                    - generic [ref=f25e230]:
+                      - generic [ref=f25e231]: "2"
+                      - generic [ref=f25e232]:
+                        - generic "Edit" [ref=f25e233] [cursor=pointer]
+                        - generic "Delete" [ref=f25e236] [cursor=pointer]
+                - row [ref=f25e239]:
+                  - cell "Concentration Example DC" [ref=f25e240]
+                  - cell "concentrationdcs" [ref=f25e241]
+                  - cell [ref=f25e242]
+                  - cell "15" [ref=f25e243]
+                  - cell "2" [ref=f25e244]:
+                    - generic [ref=f25e245]:
+                      - generic [ref=f25e246]: "2"
+                      - generic [ref=f25e247]:
+                        - generic "Edit" [ref=f25e248] [cursor=pointer]
+                        - generic "Delete" [ref=f25e251] [cursor=pointer]
+                - row [ref=f25e254]:
+                  - cell "Craft Skill Item DC" [ref=f25e255]
+                  - cell "craftitemdc" [ref=f25e256]
+                  - cell [ref=f25e257]
+                  - cell "18" [ref=f25e258]
+                  - cell "3" [ref=f25e259]:
+                    - generic [ref=f25e260]:
+                      - generic [ref=f25e261]: "3"
+                      - generic [ref=f25e262]:
+                        - generic "Edit" [ref=f25e263] [cursor=pointer]
+                        - generic "Delete" [ref=f25e266] [cursor=pointer]
+                - row [ref=f25e269]:
+                  - cell "Creating a Celestial Creature" [ref=f25e270]
+                  - cell "creating-a-celestial-creature" [ref=f25e271]
+                  - cell [ref=f25e272]
+                  - cell "4" [ref=f25e273]
+                  - cell "3" [ref=f25e274]:
+                    - generic [ref=f25e275]:
+                      - generic [ref=f25e276]: "3"
+                      - generic [ref=f25e277]:
+                        - generic "Edit" [ref=f25e278] [cursor=pointer]
+                        - generic "Delete" [ref=f25e281] [cursor=pointer]
+                - row [ref=f25e284]:
+                  - cell "Creating a Fiendish Creature" [ref=f25e285]
+                  - cell "creating-a-fiendish-creature" [ref=f25e286]
+                  - cell [ref=f25e287]
+                  - cell "4" [ref=f25e288]
+                  - cell "3" [ref=f25e289]:
+                    - generic [ref=f25e290]:
+                      - generic [ref=f25e291]: "3"
+                      - generic [ref=f25e292]:
+                        - generic "Edit" [ref=f25e293] [cursor=pointer]
+                        - generic "Delete" [ref=f25e296] [cursor=pointer]
+                - row [ref=f25e299]:
+                  - cell "Creating a Half-celestial" [ref=f25e300]
+                  - cell "creating-a-half-celestial" [ref=f25e301]
+                  - cell "HD | Abilities" [ref=f25e302]
+                  - cell "8" [ref=f25e303]
+                  - cell "2" [ref=f25e304]:
+                    - generic [ref=f25e305]:
+                      - generic [ref=f25e306]: "2"
+                      - generic [ref=f25e307]:
+                        - generic "Edit" [ref=f25e308] [cursor=pointer]
+                        - generic "Delete" [ref=f25e311] [cursor=pointer]
+                - row [ref=f25e314]:
+                  - cell "Creating a Half-dragon Breath" [ref=f25e315]
+                  - cell "creating-a-half-dragon-breath" [ref=f25e316]
+                  - cell "Dragon Variety | Breath Weapon" [ref=f25e317]
+                  - cell "8" [ref=f25e318]
+                  - cell "2" [ref=f25e319]:
+                    - generic [ref=f25e320]:
+                      - generic [ref=f25e321]: "2"
+                      - generic [ref=f25e322]:
+                        - generic "Edit" [ref=f25e323] [cursor=pointer]
+                        - generic "Delete" [ref=f25e326] [cursor=pointer]
+                - row [ref=f25e329]:
+                  - cell "Creating a Half-dragon Dmg" [ref=f25e330]
+                  - cell "creating-a-half-dragon-dmg" [ref=f25e331]
+                  - cell [ref=f25e332]
+                  - cell "9" [ref=f25e333]
+                  - cell "3" [ref=f25e334]:
+                    - generic [ref=f25e335]:
+                      - generic [ref=f25e336]: "3"
+                      - generic [ref=f25e337]:
+                        - generic "Edit" [ref=f25e338] [cursor=pointer]
+                        - generic "Delete" [ref=f25e341] [cursor=pointer]
+                - row [ref=f25e344]:
+                  - cell "Creating a Half-dragon Immunity" [ref=f25e345]
+                  - cell "creating-a-half-dragon-immunity" [ref=f25e346]
+                  - cell "Dragon Variety | Immunity" [ref=f25e347]
+                  - cell "9" [ref=f25e348]
+                  - cell "2" [ref=f25e349]:
+                    - generic [ref=f25e350]:
+                      - generic [ref=f25e351]: "2"
+                      - generic [ref=f25e352]:
+                        - generic "Edit" [ref=f25e353] [cursor=pointer]
+                        - generic "Delete" [ref=f25e356] [cursor=pointer]
+                - row [ref=f25e359]:
+                  - cell "Creating a Half-fiend Abilities" [ref=f25e360]
+                  - cell "creating-a-half-fiend-abilities" [ref=f25e361]
+                  - cell "HD | Abilities" [ref=f25e362]
+                  - cell "9" [ref=f25e363]
+                  - cell "2" [ref=f25e364]:
+                    - generic [ref=f25e365]:
+                      - generic [ref=f25e366]: "2"
+                      - generic [ref=f25e367]:
+                        - generic "Edit" [ref=f25e368] [cursor=pointer]
+                        - generic "Delete" [ref=f25e371] [cursor=pointer]
+                - row [ref=f25e374]:
+                  - cell "Creating a Half-fiend Dmg" [ref=f25e375]
+                  - cell "creating-a-half-fiend-dmg" [ref=f25e376]
+                  - cell [ref=f25e377]
+                  - cell "9" [ref=f25e378]
+                  - cell "3" [ref=f25e379]:
+                    - generic [ref=f25e380]:
+                      - generic [ref=f25e381]: "3"
+                      - generic [ref=f25e382]:
+                        - generic "Edit" [ref=f25e383] [cursor=pointer]
+                        - generic "Delete" [ref=f25e386] [cursor=pointer]
+            - status [ref=f25e389]
+            - generic [ref=f25e390]:
+              - generic [ref=f25e391]: Showing 1–20 of 76
+              - generic [ref=f25e392]:
+                - generic [ref=f25e393]:
+                  - combobox [ref=f25e394]:
+                    - generic [ref=f25e395]: "20"
+                  - textbox [ref=f25e399]: "20"
+                - button "First" [disabled] [ref=f25e400]
+                - button "< Prev" [disabled] [ref=f25e401]
+                - generic [ref=f25e402]: Page 1 of 4
+                - button "Next >" [ref=f25e403]
+                - button "Last" [ref=f25e404]
+  - generic:
+    - region "Notifications"

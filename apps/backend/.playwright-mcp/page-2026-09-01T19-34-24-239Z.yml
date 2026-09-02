@@ -1,0 +1,42 @@
+- generic [active] [ref=f24e1]:
+  - generic [ref=f24e5]:
+    - navigation [ref=f24e6]:
+      - link "DnD Tools" [ref=f24e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f24e9]:
+        - button [ref=f24e11]:
+          - text: Logged in as
+          - strong [ref=f24e12]: cursor
+        - button "Enable dark mode" [ref=f24e13]
+    - generic [ref=f24e16]:
+      - generic [ref=f24e17]:
+        - button "Collapse sidebar to minimal" [ref=f24e19]
+        - navigation [ref=f24e23]:
+          - list [ref=f24e24]:
+            - listitem [ref=f24e25]:
+              - link "Characters" [ref=f24e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f24e30]:
+              - button "Reference" [ref=f24e31]
+            - listitem [ref=f24e37]:
+              - button "DM Tools" [ref=f24e38]
+            - listitem [ref=f24e44]:
+              - button "Admin" [ref=f24e45]
+      - main [ref=f24e52]:
+        - generic [ref=f24e53]:
+          - heading "Edition Features Management" [level=1] [ref=f24e54]
+          - paragraph [ref=f24e55]: Manage edition-specific features that apply to all characters with a matching edition. These features typically include feat feature and ability score increases.
+          - generic [ref=f24e57]:
+            - generic [ref=f24e58]: Select Edition
+            - combobox [ref=f24e59]:
+              - generic [ref=f24e60]: Dungeons & Dragons 3.5 Edition
+            - textbox [ref=f24e64]: "5"
+          - generic [ref=f24e65]:
+            - generic [ref=f24e66]:
+              - heading "Dungeons & Dragons 3.5 Edition Features" [level=2] [ref=f24e67]
+              - generic [ref=f24e68]:
+                - button "Associate Existing Feature" [ref=f24e69]
+                - button "Create New Feature" [ref=f24e70]
+            - generic [ref=f24e71]: No edition features configured for Dungeons & Dragons 3.5 Edition. Add features to define feat feature, ability score increases, etc.
+  - generic:
+    - region "Notifications"

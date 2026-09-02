@@ -1,0 +1,81 @@
+- generic [ref=f20e1]:
+  - generic [ref=f20e5]:
+    - navigation [ref=f20e6]:
+      - link "DnD Tools" [ref=f20e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f20e9]:
+        - button [ref=f20e11]:
+          - text: Logged in as
+          - strong [ref=f20e12]: cursor
+        - button "Enable dark mode" [ref=f20e13]
+    - generic [ref=f20e16]:
+      - generic [ref=f20e17]:
+        - button "Collapse sidebar to minimal" [ref=f20e19]
+        - navigation [ref=f20e23]:
+          - list [ref=f20e24]:
+            - listitem [ref=f20e25]:
+              - link "Characters" [ref=f20e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f20e30]:
+              - button "Reference" [ref=f20e31]
+            - listitem [ref=f20e37]:
+              - button "DM Tools" [ref=f20e38]
+            - listitem [ref=f20e44]:
+              - button "Admin" [ref=f20e45]
+      - main [ref=f20e52]:
+        - generic [ref=f20e55]:
+          - navigation [ref=f20e57]:
+            - generic [ref=f20e58]:
+              - button "Abilities & Race" [ref=f20e59]
+              - button "Class" [ref=f20e63]
+              - button "Skills" [ref=f20e67]
+              - button "Feats" [ref=f20e71]
+              - button "Choices" [ref=f20e75]
+              - button "Description" [ref=f20e79]
+              - button "Equipment" [ref=f20e83]
+              - button "Combat" [ref=f20e87]
+              - button "Configuration" [ref=f20e91]
+            - button [ref=f20e96]
+          - generic [ref=f20e444]:
+            - generic [ref=f20e445]: "Class:"
+            - combobox [expanded] [ref=f20e446]:
+              - generic [ref=f20e447]: Select a class...
+            - listbox [ref=f20e452]:
+              - option "Archivist" [active] [ref=f20e453]
+              - option "Artificer" [ref=f20e455]
+              - option "Barbarian" [ref=f20e457]
+              - option "Bard" [ref=f20e459]
+              - option "Beguiler" [ref=f20e461]
+              - option "Cleric" [ref=f20e463]
+              - option "Cloistered Cleric" [ref=f20e465]
+              - option "Disciple of Thrym" [ref=f20e467]
+              - option "Dread Necromancer" [ref=f20e469]
+              - option "Druid" [ref=f20e471]
+              - option "Duskblade" [ref=f20e473]
+              - option "Favored Soul" [ref=f20e475]
+              - option "Fighter" [ref=f20e477]
+              - option "Healer" [ref=f20e479]
+              - option "Hexblade" [ref=f20e481]
+              - option "Monk" [ref=f20e483]
+              - option "Ninja" [ref=f20e485]
+              - option "Paladin" [ref=f20e487]
+              - option "Psion" [ref=f20e489]
+              - option "Psychic Warrior" [ref=f20e491]
+              - option "Ranger" [ref=f20e493]
+              - option "Rogue" [ref=f20e495]
+              - option "Samurai" [ref=f20e497]
+              - option "Scout" [ref=f20e499]
+              - option "Shugenja" [ref=f20e501]
+              - option "Sorcerer" [ref=f20e503]
+              - option "Soulknife" [ref=f20e505]
+              - option "Spellthief" [ref=f20e507]
+              - option "Spirit Shaman" [ref=f20e509]
+              - option "Swashbuckler" [ref=f20e511]
+              - option "Warlock" [ref=f20e513]
+              - option "Warmage" [ref=f20e515]
+              - option "Wilder" [ref=f20e517]
+              - option "Wizard" [ref=f20e519]
+              - option "Wu Jen" [ref=f20e521]
+            - textbox [ref=f20e451]
+  - generic:
+    - region "Notifications"

@@ -1,0 +1,294 @@
+- generic [ref=f20e1]:
+  - generic [ref=f20e5]:
+    - navigation [ref=f20e6]:
+      - link "DnD Tools" [ref=f20e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f20e9]:
+        - button [ref=f20e11]:
+          - text: Logged in as
+          - strong [ref=f20e12]: cursor
+        - button "Enable dark mode" [ref=f20e13]
+    - generic [ref=f20e16]:
+      - generic [ref=f20e17]:
+        - button "Collapse sidebar to minimal" [ref=f20e19]
+        - navigation [ref=f20e23]:
+          - list [ref=f20e24]:
+            - listitem [ref=f20e25]:
+              - link "Characters" [ref=f20e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f20e30]:
+              - button "Reference" [ref=f20e31]
+            - listitem [ref=f20e37]:
+              - button "DM Tools" [ref=f20e38]
+            - listitem [ref=f20e44]:
+              - button "Admin" [ref=f20e45]
+      - main [ref=f20e52]:
+        - generic [ref=f20e55]:
+          - navigation [ref=f20e57]:
+            - generic [ref=f20e58]:
+              - button "Abilities & Race" [ref=f20e59]
+              - button "Class" [ref=f20e63]
+              - button "Skills" [ref=f20e67]
+              - button "Feats" [ref=f20e71]
+              - button "Choices" [ref=f20e75]
+              - button "Description" [ref=f20e79]
+              - button "Equipment" [ref=f20e83]
+              - button "Combat" [ref=f20e87]
+              - button "Configuration" [ref=f20e91]
+            - button [ref=f20e96]
+          - generic [ref=f20e100]:
+            - heading "Abilities & Race" [level=2] [ref=f20e101]
+            - generic [ref=f20e102]:
+              - generic [ref=f20e103]:
+                - heading "Ability Scores" [level=3] [ref=f20e104]
+                - generic [ref=f20e105]:
+                  - generic [ref=f20e107]:
+                    - generic [ref=f20e108]: Generation Method
+                    - combobox [ref=f20e109]:
+                      - generic [ref=f20e110]: Manual
+                    - textbox [ref=f20e114]: "5"
+                  - paragraph [ref=f20e116]: Enter ability scores manually. You can roll individual dice for each ability or type in values directly.
+                - generic [ref=f20e118]:
+                  - generic [ref=f20e119]:
+                    - generic [ref=f20e120]:
+                      - generic [ref=f20e121]: STR
+                      - generic [ref=f20e122]: Strength
+                    - generic [ref=f20e123]:
+                      - generic [ref=f20e124]:
+                        - generic [ref=f20e125]: Base
+                        - spinbutton [ref=f20e127]
+                        - generic [ref=f20e128]:
+                          - button [ref=f20e129]
+                          - button [ref=f20e132]
+                      - generic [ref=f20e135]:
+                        - generic [ref=f20e136]: Race
+                        - generic [ref=f20e137]: "0"
+                      - generic [ref=f20e138]: Score
+                      - generic [ref=f20e141]: Mod
+                      - button "Roll STR" [ref=f20e146]
+                  - generic [ref=f20e147]:
+                    - generic [ref=f20e148]:
+                      - generic [ref=f20e149]: DEX
+                      - generic [ref=f20e150]: Dexterity
+                    - generic [ref=f20e151]:
+                      - generic [ref=f20e152]:
+                        - generic [ref=f20e153]: Base
+                        - spinbutton [ref=f20e155]
+                        - generic [ref=f20e156]:
+                          - button [ref=f20e157]
+                          - button [ref=f20e160]
+                      - generic [ref=f20e163]:
+                        - generic [ref=f20e164]: Race
+                        - generic [ref=f20e165]: "0"
+                      - generic [ref=f20e166]: Score
+                      - generic [ref=f20e169]: Mod
+                      - button "Roll DEX" [ref=f20e174]
+                  - generic [ref=f20e175]:
+                    - generic [ref=f20e176]:
+                      - generic [ref=f20e177]: CON
+                      - generic [ref=f20e178]: Constitution
+                    - generic [ref=f20e179]:
+                      - generic [ref=f20e180]:
+                        - generic [ref=f20e181]: Base
+                        - spinbutton [ref=f20e183]
+                        - generic [ref=f20e184]:
+                          - button [ref=f20e185]
+                          - button [ref=f20e188]
+                      - generic [ref=f20e191]:
+                        - generic [ref=f20e192]: Race
+                        - generic [ref=f20e193]: "0"
+                      - generic [ref=f20e194]: Score
+                      - generic [ref=f20e197]: Mod
+                      - button "Roll CON" [ref=f20e202]
+                  - generic [ref=f20e203]:
+                    - generic [ref=f20e204]:
+                      - generic [ref=f20e205]: INT
+                      - generic [ref=f20e206]: Intelligence
+                    - generic [ref=f20e207]:
+                      - generic [ref=f20e208]:
+                        - generic [ref=f20e209]: Base
+                        - spinbutton [ref=f20e211]
+                        - generic [ref=f20e212]:
+                          - button [ref=f20e213]
+                          - button [ref=f20e216]
+                      - generic [ref=f20e219]:
+                        - generic [ref=f20e220]: Race
+                        - generic [ref=f20e221]: "0"
+                      - generic [ref=f20e222]: Score
+                      - generic [ref=f20e225]: Mod
+                      - button "Roll INT" [ref=f20e230]
+                  - generic [ref=f20e231]:
+                    - generic [ref=f20e232]:
+                      - generic [ref=f20e233]: WIS
+                      - generic [ref=f20e234]: Wisdom
+                    - generic [ref=f20e235]:
+                      - generic [ref=f20e236]:
+                        - generic [ref=f20e237]: Base
+                        - spinbutton [ref=f20e239]
+                        - generic [ref=f20e240]:
+                          - button [ref=f20e241]
+                          - button [ref=f20e244]
+                      - generic [ref=f20e247]:
+                        - generic [ref=f20e248]: Race
+                        - generic [ref=f20e249]: "0"
+                      - generic [ref=f20e250]: Score
+                      - generic [ref=f20e253]: Mod
+                      - button "Roll WIS" [ref=f20e258]
+                  - generic [ref=f20e259]:
+                    - generic [ref=f20e260]:
+                      - generic [ref=f20e261]: CHA
+                      - generic [ref=f20e262]: Charisma
+                    - generic [ref=f20e263]:
+                      - generic [ref=f20e264]:
+                        - generic [ref=f20e265]: Base
+                        - spinbutton [ref=f20e267]
+                        - generic [ref=f20e268]:
+                          - button [ref=f20e269]
+                          - button [ref=f20e272]
+                      - generic [ref=f20e275]:
+                        - generic [ref=f20e276]: Race
+                        - generic [ref=f20e277]: "0"
+                      - generic [ref=f20e278]: Score
+                      - generic [ref=f20e281]: Mod
+                      - button "Roll CHA" [ref=f20e286]
+              - generic [ref=f20e288]:
+                - generic [ref=f20e289]:
+                  - generic [ref=f20e290]: Race
+                  - combobox [active] [ref=f20e291]:
+                    - generic [ref=f20e292]: Human
+                  - textbox [ref=f20e296]: "1"
+                - generic [ref=f20e321]:
+                  - generic [ref=f20e322]:
+                    - generic [ref=f20e323]:
+                      - paragraph [ref=f20e324]:
+                        - strong [ref=f20e325]: "Size:"
+                        - text: Medium
+                      - paragraph [ref=f20e326]:
+                        - strong [ref=f20e327]: "Speed:"
+                        - text: "30"
+                      - paragraph [ref=f20e328]:
+                        - strong [ref=f20e329]: "Level Adjustment:"
+                        - text: "0"
+                      - paragraph [ref=f20e330]:
+                        - strong [ref=f20e331]: "Favored Class:"
+                        - text: Any
+                    - generic [ref=f20e332]:
+                      - paragraph [ref=f20e333]:
+                        - strong [ref=f20e334]: "Automatic Language:"
+                        - text: Common
+                      - paragraph [ref=f20e335]:
+                        - strong [ref=f20e336]: "Bonus Languages:"
+                        - text: Abyssal, Aquan, Auran, Celestial, Draconic, Dwarven, Elven, Giant, Gnoll, Gnome, Goblin, Halfling, Ignan, Infernal, Orc, Sylvan, Terran, Undercommon
+                      - paragraph [ref=f20e337]:
+                        - strong [ref=f20e338]: "Ability Adjustments:"
+                        - text: None
+                  - generic [ref=f20e340]:
+                    - paragraph [ref=f20e341]: Most humans are the descendants of pioneers, conquerors, traders, travelers, refugees, and other people on the move. As a result, human lands are home to a mix of people-physically, culturally, religiously, and politically different. Hardy or fine, light-skinned or dark, showy or austere, primitive or civilized, devout or impious, humans run the gamut.
+                    - paragraph [ref=f20e342]:
+                      - strong [ref=f20e343]: "Personality:"
+                      - text: Humans are the most adaptable, flexible, and ambitious people among the common races. They are diverse in their tastes, morals, customs, and habits. Others accuse them of having little respect for history, but it's only natural that humans, with their relatively short life spans and constantly changing cultures, would have a shorter collective memory than dwarves, elves, gnomes, or halflings.
+                    - paragraph [ref=f20e344]:
+                      - strong [ref=f20e345]: "Physical Description:"
+                      - text: Humans typically stand from 5 feet to a little over 6 feet tall and weigh from 125 to 250 pounds, with men noticeably taller and heavier than women. Thanks to their penchant for migration and conquest, and to their short life spans, humans are more physically diverse than other common races. Their skin shades range from nearly black to very pale, their hair from black to blond (curly, kinky, or straight), and their facial hair (for men) from sparse to thick. Plenty of humans have a dash of nonhuman blood, and they may demonstrate hints of elf, orc, or other lineages. Members of this race are often ostentatious or unorthodox in their grooming and dress, sporting unusual hairstyles, fanciful clothes, tattoos, body piercings, and the like. Humans reach adulthood around age 15 and have relatively short lifespans, rarely living beyond a single century.
+                    - paragraph [ref=f20e346]:
+                      - strong [ref=f20e347]: "Relations:"
+                      - text: Just as readily as they mix with each other, humans mix with members of other races, among which they are known as "everyone's second-best friends." Humans serve as ambassadors,diplomats, magistrates, merchants, and functionaries of all kinds.
+                    - paragraph [ref=f20e348]:
+                      - strong [ref=f20e349]: "Alignment:"
+                      - text: Humans tend toward no particular alignment, not even neutrality. The best and the worst are found among them.
+                    - paragraph [ref=f20e350]:
+                      - strong [ref=f20e351]: "Human Lands:"
+                      - text: Human lands are usually in flux, with new ideas,social changes, innovations, and new leaders constantly coming to the fore. Members of longer-lived races find human culture exciting but eventually a little wearying or even bewildering.
+                    - paragraph [ref=f20e352]: Since humans lead such short lives, their leaders are all young compared to the political, religious, and military leaders among the other races. Even where individual humans are conservative traditionalists, human institutions change with the generations,adapting and evolving faster than parallel institutions among the elves, dwarves, gnomes, and halflings. Individually and as a group,humans are adaptable opportunists, and they stay on top of changing political dynamics.
+                    - paragraph [ref=f20e353]: Human lands generally include relatively large numbers of nonhumans (compared, for instance, to the number of non-dwarves who live in dwarven lands)
+                    - paragraph [ref=f20e354]:
+                      - strong [ref=f20e355]: "Religion:"
+                      - text: Unlike members of the other common races, humans do not have a chief racial deity. Pelor, the sun god, is the most commonly worshiped deity in human lands, but he can claim nothing like the central place that the dwarves give Moradin or the elves give Corellon Larethian in their respective pantheons. Some humans are the most ardent and zealous adherents of a given religion, while others are the most impious people around
+                    - paragraph [ref=f20e356]:
+                      - strong [ref=f20e357]: "Language:"
+                      - text: "Humans speak Common. They typically learn other languages as well, including obscure ones, and they are fond of sprinkling their speech with words borrowed from other tongues: Orc curses, Elven musical expressions, Dwarven military phrases, and so on."
+                    - paragraph [ref=f20e358]:
+                      - strong [ref=f20e359]: "Names:"
+                      - text: Human names vary greatly. Without a unifying deity to give them a touchstone for their culture, and with such a fast breeding cycle, humans mutate socially at a fast rate. Human culture, therefore, is more diverse than other cultures, and no human names are truly typical. Some human parents give their children dwarven or elven names (pronounced more or less correctly)
+                    - paragraph [ref=f20e360]:
+                      - strong [ref=f20e361]: "Adventurers:"
+                      - text: Human adventurers are the most audacious, daring, and ambitious members of an audacious, daring, and ambitious race. A human can earn glory in the eyes of her fellows by amassing power, wealth, and fame. Humans, more than other people, champion causes rather than territories or groups.
+                  - generic [ref=f20e362]:
+                    - heading "Human Racial Features" [level=3] [ref=f20e363]
+                    - generic [ref=f20e364]:
+                      - generic [ref=f20e366]:
+                        - paragraph [ref=f20e368]: Holds racial automatic languages, this discription should never be displayed!
+                        - text: "Automatic Language: Common"
+                      - generic [ref=f20e370]:
+                        - paragraph [ref=f20e372]: Holds racial bonus languages, this discription should never be displayed!
+                        - text: "Bonus Languages: Abyssal, Aquan, Auran, Celestial, Draconic, Dwarven, Elven, Giant, Gnoll, Gnome, Goblin, Halfling, Ignan, Infernal, Orc, Sylvan, Terran, Undercommon"
+                      - generic [ref=f20e374]:
+                        - paragraph [ref=f20e376]: 1 extra feat at 1st level, because humans are quick to master specialized tasks and varied in their talents.
+                        - text: Select Bonus Feat
+                      - generic [ref=f20e378]:
+                        - paragraph [ref=f20e380]:
+                          - text: 4 extra skill points at 1
+                          - superscript [ref=f20e381]: st
+                          - text: level and 1 extra skill point at each additional level, since humans are versatile and capable. (The 4 skill points at 1
+                          - superscript [ref=f20e382]: st
+                          - text: level are added on as a bonus, not multiplied in)
+                        - text: "Bonus Skill Points: (Select 4)"
+                      - generic [ref=f20e384]:
+                        - strong [ref=f20e385]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e387]:
+                        - strong [ref=f20e388]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e390]:
+                        - strong [ref=f20e391]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e393]:
+                        - strong [ref=f20e394]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e396]:
+                        - strong [ref=f20e397]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e399]:
+                        - strong [ref=f20e400]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e402]:
+                        - strong [ref=f20e403]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e405]:
+                        - strong [ref=f20e406]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e408]:
+                        - strong [ref=f20e409]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e411]:
+                        - strong [ref=f20e412]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e414]:
+                        - strong [ref=f20e415]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e417]:
+                        - strong [ref=f20e418]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e420]:
+                        - strong [ref=f20e421]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e423]:
+                        - strong [ref=f20e424]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e426]:
+                        - strong [ref=f20e427]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e429]:
+                        - strong [ref=f20e430]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e432]:
+                        - strong [ref=f20e433]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e435]:
+                        - strong [ref=f20e436]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+                      - generic [ref=f20e438]:
+                        - strong [ref=f20e439]: Bonus Skill Points
+                        - text: "Bonus Skill Points: (Select 1)"
+  - generic:
+    - region "Notifications"

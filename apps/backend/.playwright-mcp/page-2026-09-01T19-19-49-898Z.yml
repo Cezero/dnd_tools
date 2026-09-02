@@ -1,0 +1,10 @@
+- generic [ref=f1e106]:
+  - heading "Login" [level=1] [ref=f1e107]
+  - generic [ref=f1e108]:
+    - textbox "Username" [ref=f1e109]
+    - textbox "Password" [ref=f1e110]
+    - button "Login" [ref=f1e111]
+  - paragraph [ref=f1e112]:
+    - text: Don't have an account?
+    - link "Register" [ref=f1e113] [cursor=pointer]:
+      - /url: /register

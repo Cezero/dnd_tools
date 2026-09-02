@@ -85,25 +85,33 @@ export class GestaltMechanicsResolver {
         const babEntities: Array<{ entity: FeatureEntity; classId: number; feature: FeatureWithRelations }> = [];
         const saveEntities: Array<{ entity: FeatureEntity; saveType: number; classId: number; feature: FeatureWithRelations }> = [];
 
-        for (const feature of resolvedProgressions) {
-            // Filter by sourceType and EntityType instead of feature slug
-            if (feature.sourceType === FeatureSourceType.Class && feature.entities) {
-                // Get class ID from feature
-                const classId = feature.classes?.[0]?.classId;
-                if (!classId) continue;
+        const allHalfClassIds = new Set<number>([
+            ...primaryClassLevels.keys(),
+            ...secondaryClassLevels.keys(),
+        ]);
 
+        for (const feature of resolvedProgressions) {
+            if (feature.sourceType !== FeatureSourceType.Class || !feature.entities) {
+                continue;
+            }
+
+            const matchingClassIds = (feature.classes ?? [])
+                .map(c => c.classId)
+                .filter(classId => allHalfClassIds.has(classId));
+            if (matchingClassIds.length === 0) continue;
+
+            for (const classId of matchingClassIds) {
                 for (const entity of feature.entities) {
-                    // Only process Base type entities with formula params
                     if (entity.type === EntityType.Base && entity.formulaParams) {
                         if (entity.appliesTo === EntityAppliesToType.BaseAttackBonus) {
-                        babEntities.push({ entity, classId, feature });
+                            babEntities.push({ entity, classId, feature });
                         } else if (entity.appliesTo === EntityAppliesToType.SavingThrow) {
-                        saveEntities.push({
-                            entity,
-                            saveType: entity.appliesToId ?? 0,
-                            classId,
-                            feature
-                        });
+                            saveEntities.push({
+                                entity,
+                                saveType: entity.appliesToId ?? 0,
+                                classId,
+                                feature
+                            });
                         }
                     }
                 }
@@ -237,13 +245,7 @@ export class GestaltMechanicsResolver {
         try {
             const calculatedValue = formulaDef.calculate(params);
             if (typeof calculatedValue === 'number') {
-                // Allow 0 values when featureLevelZero is enabled
-                if (calculatedValue === 0 && entity.formulaParams.featureLevelZero === true) {
-                    return 0;
-                }
-                if (calculatedValue > 0) {
-                    return calculatedValue;
-                }
+                return calculatedValue;
             }
         } catch (error) {
             console.error('Error calculating formula value in gestalt resolver:', error);

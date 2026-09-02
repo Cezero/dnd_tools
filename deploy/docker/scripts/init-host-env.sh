@@ -20,6 +20,7 @@ fi
 
 # shellcheck disable=SC1090
 source "${SHARED}"
+MYSQL_NETDATA_PASSWORD="${MYSQL_NETDATA_PASSWORD:-}"
 
 sudo tee /srv/mysql/.env >/dev/null <<EOF
 HOST_IP=${IP}
@@ -30,6 +31,7 @@ MYSQL_REPL_PASSWORD=${MYSQL_REPL_PASSWORD}
 MYSQL_APP_USER=${MYSQL_APP_USER}
 MYSQL_APP_PASSWORD=${MYSQL_APP_PASSWORD}
 MYSQL_DATABASE=${MYSQL_DATABASE}
+MYSQL_NETDATA_PASSWORD=${MYSQL_NETDATA_PASSWORD}
 EOF
 sudo chmod 0640 /srv/mysql/.env
 sudo chown root:mysql /srv/mysql/.env

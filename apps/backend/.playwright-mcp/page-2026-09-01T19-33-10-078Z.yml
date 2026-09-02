@@ -1,0 +1,51 @@
+- generic [ref=f21e1]:
+  - generic [ref=f21e5]:
+    - navigation [ref=f21e6]:
+      - link "DnD Tools" [ref=f21e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f21e9]:
+        - button [ref=f21e11]:
+          - text: Logged in as
+          - strong [ref=f21e12]: cursor
+        - button "Enable dark mode" [ref=f21e13]
+    - generic [ref=f21e16]:
+      - generic [ref=f21e17]:
+        - button "Collapse sidebar to minimal" [ref=f21e19]
+        - navigation [ref=f21e23]:
+          - list [ref=f21e24]:
+            - listitem [ref=f21e25]:
+              - link "Characters" [ref=f21e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f21e30]:
+              - button "Reference" [ref=f21e31]
+            - listitem [ref=f21e37]:
+              - button "DM Tools" [ref=f21e38]
+            - listitem [ref=f21e44]:
+              - button "Admin" [ref=f21e45]
+      - main [ref=f21e52]:
+        - generic [ref=f21e55]:
+          - navigation [ref=f21e57]:
+            - generic [ref=f21e58]:
+              - button "Abilities & Race" [ref=f21e59]
+              - button "Class" [ref=f21e63]
+              - button "Skills" [ref=f21e67]
+              - button "Feats" [active] [ref=f21e71]
+              - button "Choices" [ref=f21e75]
+              - button "Description" [ref=f21e79]
+              - button "Equipment" [ref=f21e83]
+              - button "Combat" [ref=f21e87]
+              - button "Spells" [ref=f21e91]
+              - button "Configuration" [ref=f21e95]
+            - button [ref=f21e100]
+          - generic [ref=f21e806]:
+            - heading "Feats" [level=2] [ref=f21e808]
+            - generic [ref=f21e809]:
+              - generic [ref=f21e810]:
+                - generic [ref=f21e811]:
+                  - heading "Available Feats (0 remaining)" [level=3] [ref=f21e812]
+                  - generic [ref=f21e813]: 0 of 0 feats
+                - textbox "Search feats..." [ref=f21e815]
+                - paragraph [ref=f21e816]: Showing feats you qualify for based on your character's abilities, skills, and level.
+              - generic [ref=f21e817]: No feats available.
+  - generic:
+    - region "Notifications"

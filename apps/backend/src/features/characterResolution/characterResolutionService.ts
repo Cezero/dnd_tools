@@ -155,11 +155,13 @@ class FeatureResolution {
         const [primaryFeatures, secondaryFeatures] = await Promise.all([
             featureSystemService.getFeaturesByClassId(
                 primaryClassId,
-                this.buildCharacterFeatureChoices()
+                this.buildCharacterFeatureChoices(),
+                true
             ),
             featureSystemService.getFeaturesByClassId(
                 secondaryClassId,
-                this.buildCharacterFeatureChoices()
+                this.buildCharacterFeatureChoices(),
+                true
             )
         ]);
 
@@ -497,7 +499,8 @@ class FeatureResolution {
 
         const classProgressions = await featureSystemService.getFeaturesByClassId(
             classId,
-            this.buildCharacterFeatureChoices()
+            this.buildCharacterFeatureChoices(),
+            true
         );
 
         if (!classProgressions || classProgressions.length === 0) {
