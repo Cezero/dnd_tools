@@ -1,0 +1,115 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e4]:
+    - navigation [ref=f7e5]:
+      - link "DnD Tools" [ref=f7e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f7e8]:
+        - button [ref=f7e10]:
+          - text: Logged in as
+          - strong [ref=f7e11]: cursor
+        - button "Enable dark mode" [ref=f7e12]
+    - generic [ref=f7e15]:
+      - generic [ref=f7e16]:
+        - button "Collapse sidebar to minimal" [ref=f7e18]
+        - navigation [ref=f7e22]:
+          - list [ref=f7e23]:
+            - listitem [ref=f7e24]:
+              - link "Characters" [ref=f7e25] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f7e29]:
+              - button "Reference" [ref=f7e30]
+            - listitem [ref=f7e36]:
+              - button "DM Tools" [ref=f7e37]
+            - listitem [ref=f7e43]:
+              - button "Admin" [ref=f7e44]
+      - main [ref=f7e51]:
+        - generic [ref=f7e55]:
+          - generic [ref=f7e57]:
+            - heading "Cat" [level=1] [ref=f7e58]
+            - generic [ref=f7e59]:
+              - paragraph [ref=f7e60]:
+                - strong [ref=f7e61]: "Edition:"
+                - text: D&D 3.5E
+              - paragraph [ref=f7e62]:
+                - strong [ref=f7e63]: "Source:"
+                - text: MM
+          - generic [ref=f7e64]:
+            - paragraph [ref=f7e65]: Tiny Animal
+            - paragraph [ref=f7e66]:
+              - strong [ref=f7e67]: "Hit Dice:"
+              - text: 0.5d8 (2 hp)
+            - paragraph [ref=f7e68]:
+              - strong [ref=f7e69]: "Initiative:"
+              - text: "+2"
+            - paragraph [ref=f7e70]:
+              - strong [ref=f7e71]: "Speed:"
+              - text: 30 ft.
+            - paragraph [ref=f7e72]:
+              - strong [ref=f7e73]: "Armor Class:"
+              - text: 14 (touch 14, flat-footed 12)
+            - paragraph [ref=f7e74]:
+              - strong [ref=f7e75]: "Base Attack/Grapple:"
+              - text: +0/-12
+            - paragraph [ref=f7e76]:
+              - strong [ref=f7e77]: "Attack:"
+              - paragraph [ref=f7e80]: Claw +4 melee (1d2-4)
+            - paragraph [ref=f7e81]:
+              - strong [ref=f7e82]: "Full Attack:"
+              - paragraph [ref=f7e85]: 2 claws +4 melee (1d2-4) and bite -1 melee (1d3-4)
+            - paragraph [ref=f7e86]:
+              - strong [ref=f7e87]: "Space/Reach:"
+              - text: 2 ft.
+            - paragraph [ref=f7e88]:
+              - strong [ref=f7e89]: "Special Qualities:"
+              - text: Low-light vision, scent
+            - paragraph [ref=f7e90]:
+              - strong [ref=f7e91]: "Saves:"
+              - text: Fort +2, Ref +4, Will +1
+            - paragraph [ref=f7e92]:
+              - strong [ref=f7e93]: "Abilities:"
+              - text: Str 3, Dex 15, Con 10, Int 2, Wis 12, Cha 7
+            - paragraph [ref=f7e94]:
+              - strong [ref=f7e95]: "Skills:"
+              - link "Balance" [ref=f7e96] [cursor=pointer]:
+                - /url: /skills/2
+              - text: +10,
+              - link "Climb" [ref=f7e97] [cursor=pointer]:
+                - /url: /skills/4
+              - text: +6,
+              - link "Hide" [ref=f7e98] [cursor=pointer]:
+                - /url: /skills/16
+              - text: +14,
+              - link "Jump" [ref=f7e99] [cursor=pointer]:
+                - /url: /skills/18
+              - text: +10,
+              - link "Listen" [ref=f7e100] [cursor=pointer]:
+                - /url: /skills/29
+              - text: +3,
+              - link "Move Silently" [ref=f7e101] [cursor=pointer]:
+                - /url: /skills/30
+              - text: +6,
+              - link "Spot" [ref=f7e102] [cursor=pointer]:
+                - /url: /skills/40
+              - text: "+3"
+            - paragraph [ref=f7e103]:
+              - strong [ref=f7e104]: "Feats:"
+              - link "Weapon Finesse" [ref=f7e105] [cursor=pointer]:
+                - /url: /feats/309
+            - paragraph [ref=f7e106]:
+              - strong [ref=f7e107]: "Organization:"
+              - paragraph [ref=f7e110]: Domesticated or solitary
+            - paragraph [ref=f7e111]:
+              - strong [ref=f7e112]: "Challenge Rating:"
+              - text: 1/4
+          - paragraph [ref=f7e116]: The statistics presented here describe a common housecat.
+          - generic [ref=f7e117]:
+            - heading "Combat" [level=2] [ref=f7e118]
+            - paragraph [ref=f7e121]: Cats prefer to sneak up on their prey.
+          - paragraph [ref=f7e125]:
+            - strong [ref=f7e126]: Skills (Ex)
+            - text: ": Cats have a +4 racial bonus on Climb, Hide, and Move Silently checks and a +8 racial bonus on Jump checks. Cats have a +8 racial bonus on Balance checks. They use their Dexterity modifier instead of their Strength modifier for Climb and Jump checks. *In areas of tall grass or heavy undergrowth, the Hide bonus rises to +8."
+          - generic [ref=f7e127]:
+            - button "Back to Monsters" [ref=f7e128]
+            - button "Edit Monster" [ref=f7e129]
+  - generic:
+    - region "Notifications"

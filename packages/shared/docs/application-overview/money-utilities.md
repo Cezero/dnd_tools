@@ -26,8 +26,15 @@ interface Money {
     gold: number;
     silver: number;
     copper: number;
+    gem: number;
+    artObject: number;
+    other: number;
 }
 ```
+
+Coin fields convert to gp for purchase and starting-gold math. `gem`, `artObject`, and `other` are counts only (no gp until appraised). `convertGpToMoney` and `addGpToMoney` preserve those counts. `buildWealthFromMoney` writes quantity-only `CharacterWealth` rows and keeps any existing described rows.
+
+**Pending**: replace valuable counts with individual treasure rows (`description` + `value`) so awards such as “pearl 50 gp” and “pearl 100 gp” stay distinct and can be Appraised or sold before a value is known.
 
 ## Functions
 

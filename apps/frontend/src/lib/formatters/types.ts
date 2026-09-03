@@ -318,6 +318,14 @@ export interface FormattedFeat {
     level: number;
 }
 
+/**
+ * Entity fields needed to resolve a saved feature choice to a display name.
+ */
+export interface FeatureChoiceEntityRef {
+    id: number;
+    appliesTo: number | null;
+}
+
 // Formatted feature result
 export interface FormattedFeature {
     featureId: number;

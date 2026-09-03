@@ -249,14 +249,14 @@ The class system integrates with the feature system through consolidated service
 
 The class system integrates with the spellcasting system for class spellcasting capabilities:
 
-**Spellcasting Progression**: Classes can have spellcasting progression with slots
-**Spells Known**: Classes can have spells known progression for spontaneous casters
-**Casting Ability**: Classes specify their primary casting ability
-**Casting Type**: Classes specify their casting type (prepared, spontaneous, etc.)
+**Spellcasting Progression**: Spells-per-day FeatureEntities (`EntityAppliesToType.SpellcastingProgression`)
+**Spells Known**: Spells-known FeatureEntities (`EntityAppliesToType.SpellsKnownProgression`) for SpellsKnown classes
+**Casting Ability / Type**: FeatureEntities (`CastingAbility`, `CastingType`)
+**Class Flag**: `Class.spellsKnown` selects SpellsKnown vs spellbook character UI; runtime caps come from FeatureEntities
 
-**Integration Pattern**: The class service manages spellcasting progression data through the spellcasting system, ensuring proper spell slot progression and spells known calculations for different casting types.
+**Integration Pattern**: Class create/update can still materialize `SpellcastingProgression` rows for authoring, but display and character resolution read formula-backed FeatureEntities (`SpellsKnownProgression` for known caps). See [Spell Scribing](../character-management/spell-scribing.md).
 
-**Related Documentation**: [Spellcasting System](../spell-system/spellcasting-system.md)
+**Related Documentation**: [Spellcasting System](spellcasting-system.md), [Feature Static Data](../feature-system/static-data.md)
 
 ### **Source Attribution**
 
@@ -284,16 +284,9 @@ The class system integrates with the feature system through consolidated service
 
 ### **Spellcasting System Integration**
 
-The class system integrates with the spellcasting system for class spellcasting capabilities:
+See **Spellcasting Integration** above: FeatureEntities for slots (`SpellcastingProgression`) and known caps (`SpellsKnownProgression`), with `Class.spellsKnown` selecting character UI mode.
 
-**Spellcasting Progression**: Classes can have spellcasting progression with slots
-**Spells Known**: Classes can have spells known progression for spontaneous casters
-**Casting Ability**: Classes specify their primary casting ability
-**Casting Type**: Classes specify their casting type (prepared, spontaneous, etc.)
-
-**Integration Pattern**: The class service manages spellcasting progression data through the spellcasting system, ensuring proper spell slot progression and spells known calculations for different casting types.
-
-**Related Documentation**: [Spellcasting System](../spell-system/spellcasting-system.md)
+**Related Documentation**: [Spellcasting System](spellcasting-system.md), [Spell Scribing](../character-management/spell-scribing.md)
 
 ### **Character System Integration**
 

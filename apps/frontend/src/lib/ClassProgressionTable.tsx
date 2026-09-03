@@ -1,6 +1,6 @@
 import ordinal from 'ordinal';
 
-import type { ProgressionRow } from '@/lib/types';
+import type { ClassProgressionTableProps, ProgressionRow } from '@/lib/types';
 
 function hasSpellsAtLevel(feature: ProgressionRow[], spellLevel: number, isSpellsKnown: boolean = false): boolean {
     return feature.some(row => {
@@ -25,12 +25,7 @@ function getMaxSpellLevel(spells: { [spellLevel: number]: string }): number {
     return spellLevels.length > 0 ? Math.max(...spellLevels) : 0;
 }
 
-interface ClassProgressionTableProps {
-    feature: ProgressionRow[];
-    className?: string;
-}
-
-export function ClassProgressionTable({ feature, className = '' }: ClassProgressionTableProps) {
+export function ClassProgressionTable({ feature, className = '', showCombatColumns = true }: ClassProgressionTableProps) {
     if (!feature || feature.length === 0) {
         return null;
     }
@@ -38,6 +33,10 @@ export function ClassProgressionTable({ feature, className = '' }: ClassProgress
     // Check if any row has spells to determine if we need spell columns
     const hasSpells = feature.some(row => row.spells);
     const hasSpellsKnown = feature.some(row => row.spellsKnown);
+
+    if (!showCombatColumns && !hasSpells && !hasSpellsKnown) {
+        return null;
+    }
 
     // Get the maximum spell level that has actual spells
     const maxSpellLevel = hasSpells
@@ -56,18 +55,22 @@ export function ClassProgressionTable({ feature, className = '' }: ClassProgress
                             <th className="border-r border-gray-300 dark:border-gray-500 border-t border-b px-2 py-1 text-left text-sm font-medium align-bottom" rowSpan={2}>
                                 Level
                             </th>
-                            <th className="border-r border-gray-300 dark:border-gray-500 border-t border-b px-2 py-1 text-left text-sm font-medium align-bottom" rowSpan={2}>
-                                Base<br />Attack Bonus
-                            </th>
-                            <th className="border-r border-gray-300 dark:border-gray-500 border-t border-b px-2 py-1 text-center text-sm font-medium align-bottom" rowSpan={2}>
-                                Fort<br />Save
-                            </th>
-                            <th className="border-r border-gray-300 dark:border-gray-500 border-t border-b px-2 py-1 text-center text-sm font-medium align-bottom" rowSpan={2}>
-                                Ref<br />Save
-                            </th>
-                            <th className="border-r border-gray-300 dark:border-gray-500 border-t border-b px-2 py-1 text-center text-sm font-medium align-bottom" rowSpan={2}>
-                                Will<br />Save
-                            </th>
+                            {showCombatColumns && (
+                                <>
+                                    <th className="border-r border-gray-300 dark:border-gray-500 border-t border-b px-2 py-1 text-left text-sm font-medium align-bottom" rowSpan={2}>
+                                        Base<br />Attack Bonus
+                                    </th>
+                                    <th className="border-r border-gray-300 dark:border-gray-500 border-t border-b px-2 py-1 text-center text-sm font-medium align-bottom" rowSpan={2}>
+                                        Fort<br />Save
+                                    </th>
+                                    <th className="border-r border-gray-300 dark:border-gray-500 border-t border-b px-2 py-1 text-center text-sm font-medium align-bottom" rowSpan={2}>
+                                        Ref<br />Save
+                                    </th>
+                                    <th className="border-r border-gray-300 dark:border-gray-500 border-t border-b px-2 py-1 text-center text-sm font-medium align-bottom" rowSpan={2}>
+                                        Will<br />Save
+                                    </th>
+                                </>
+                            )}
                             {hasSpells && (
                                 <th className="border-r border-gray-300 dark:border-gray-500 px-2 py-1 text-center text-sm font-medium align-bottom" colSpan={countSpellLevels(feature)}>
                                     Spells per Day
@@ -139,18 +142,22 @@ export function ClassProgressionTable({ feature, className = '' }: ClassProgress
                             <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
                                 {ordinal(row.level)}
                             </td>
-                            <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
-                                {row.bab}
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
-                                {row.fort}
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
-                                {row.ref}
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
-                                {row.will}
-                            </td>
+                            {showCombatColumns && (
+                                <>
+                                    <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
+                                        {row.bab}
+                                    </td>
+                                    <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
+                                        {row.fort}
+                                    </td>
+                                    <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
+                                        {row.ref}
+                                    </td>
+                                    <td className="border border-gray-300 dark:border-gray-500 px-2 py-1 text-sm text-left whitespace-nowrap">
+                                        {row.will}
+                                    </td>
+                                </>
+                            )}
                             {hasSpells && (
                                 <>
                                     {Array.from({ length: 10 }, (_, i) => {

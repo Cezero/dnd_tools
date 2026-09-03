@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { EntityLink } from '@/components/entity-link';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { CollapsibleSection } from '@/components/widgets/CollapsibleSection';
+import { formatHitDice } from '@/lib/formatHitDice';
 import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
 import { getSkillNameFromCache, useCacheFunctions, getSourceDisplay } from '@/services/cache';
 import {
@@ -221,7 +222,7 @@ export function MonsterDisplayContent({ monster, showHeader = false }: MonsterDi
 
                 {/* Hit Dice */}
                 {monster.hitDiceQty !== null && (
-                    <p><strong>Hit Dice:</strong> {monster.hitDiceQty}{monster.hitDiceType ? `d${monster.hitDiceType}` : ''}{monster.bonusHP ? `+${monster.bonusHP}` : ''}{monster.averageHP !== null ? ` (${monster.averageHP} hp)` : ''}</p>
+                    <p><strong>Hit Dice:</strong> {formatHitDice(monster.hitDiceQty, monster.hitDiceType, monster.bonusHP, monster.averageHP)}</p>
                 )}
 
                 {/* Initiative */}

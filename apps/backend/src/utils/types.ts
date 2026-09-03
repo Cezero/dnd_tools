@@ -23,3 +23,12 @@ export interface ClassMechanics {
     refProgression: ProgressionType | null;
     willProgression: ProgressionType | null;
 }
+
+/**
+ * Inputs for official 3.x max Hit Die at 1st level.
+ */
+export interface ResolveMaxFirstLevelHitPointsArgs {
+    primaryClassId: number;
+    secondaryClassId: number | null;
+    abilityScores: Array<{ abilityId: number; value: number }>;
+}

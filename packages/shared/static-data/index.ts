@@ -16,6 +16,8 @@ export * from './src/FormulaDefinitions';
 export * from './src/GenericList';
 export * from './src/DeityData';
 export * from './src/CompanionData';
+export * from './src/HandleAnimalData';
+export * from './src/AnimalCompanionData';
 export * from './src/DraftData';
 
 // Export DiceData with explicit names to avoid conflicts
@@ -37,3 +39,5 @@ export * as FormulaDefinitions from './src/FormulaDefinitions';
 export * as DeityData from './src/DeityData';
 export * as AttackDefinitionData from './src/AttackDefinitionData';
 export * as CompanionData from './src/CompanionData';
+export * as HandleAnimalData from './src/HandleAnimalData';
+export * as AnimalCompanionData from './src/AnimalCompanionData';

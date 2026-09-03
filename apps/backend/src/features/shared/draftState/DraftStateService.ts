@@ -5,6 +5,11 @@ import { getRedisClient } from '../session/redisClient';
 import type { RedisSessionClient } from '../session/types';
 import { UserSessionService } from '../session/UserSessionService';
 
+function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
 
 /**
  * Generic service for managing draft states in Redis.
@@ -152,6 +157,73 @@ export class DraftStateService {
      * await stateService.setState(DraftType.Class, 1, updatedState, { publish: false });
      * ```
      */
+    /**
+     * Apply a mutation to a draft document with Redis compare-and-set retries.
+     *
+     * Path updates read and write the whole JSON document. Parallel calls from
+     * multiple backend docks otherwise last-write-wins and drop earlier fields
+     * (feature choices, skills, feats, spells known). Save still reads only Redis.
+     *
+     * @param draftType - The draft type (numeric enum value)
+     * @param id - The draft ID
+     * @param mutate - Pure transform of the current parsed state
+     * @param options.publish - Whether to publish the update to pub/sub (default: true)
+     * @returns The mutated state that was stored
+     */
+    async applyAtomicMutation<T>(
+        draftType: DraftType,
+        id: number,
+        mutate: (state: T) => T,
+        options?: { publish?: boolean }
+    ): Promise<T> {
+        const key = this.buildStateKey(draftType, id);
+        const maxAttempts = 32;
+        const shouldPublish = options?.publish !== false;
+
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const raw = await this.redis.get(key);
+            if (!raw) {
+                throw new Error(`State not found for ${draftType}:${id}`);
+            }
+
+            const current = JSON.parse(raw) as T;
+            const next = mutate(current);
+            const nextRaw = JSON.stringify(next);
+
+            if (nextRaw === raw) {
+                await this.redis.expire(key, this.DRAFT_TTL_SECONDS);
+                return next;
+            }
+
+            const swapped = await this.redis.compareAndSetEx(
+                key,
+                raw,
+                nextRaw,
+                this.DRAFT_TTL_SECONDS
+            );
+            if (swapped) {
+                const metaKey = this.buildStateMetaKey(draftType, id);
+                await this.redis.setEx(
+                    metaKey,
+                    this.DRAFT_TTL_SECONDS,
+                    JSON.stringify({ lastUpdated: new Date().toISOString() })
+                );
+                if (shouldPublish) {
+                    try {
+                        await this.pubSub.publish(draftType, id, next);
+                    } catch (publishError) {
+                        console.warn(`Failed to publish draft update for ${draftType}:${id}:`, publishError);
+                    }
+                }
+                return next;
+            }
+
+            await delay(Math.min(10 * (attempt + 1), 100));
+        }
+
+        throw new Error(`Failed to apply atomic draft update for ${draftType}:${id} after ${maxAttempts} attempts`);
+    }
+
     async setState<T>(draftType: DraftType, id: number, state: T, options?: { publish?: boolean }): Promise<void> {
         const key = this.buildStateKey(draftType, id);
         const metaKey = this.buildStateMetaKey(draftType, id);

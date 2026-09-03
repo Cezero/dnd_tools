@@ -23,6 +23,15 @@ export type EntityRefRequest = DraftRefRequest;
 export interface RedisSessionClient {
     get(key: string): Promise<string | null>;
     setEx(key: string, seconds: number, value: string): Promise<string>;
+    /**
+     * Atomically replace `key` only when its current value equals `expected`.
+     *
+     * Used so path-based draft updates across multiple backend docks do not
+     * last-write-wins overwrite each other.
+     *
+     * @returns true when the compare-and-set succeeded
+     */
+    compareAndSetEx(key: string, expected: string, value: string, seconds: number): Promise<boolean>;
     del(keys: string | string[]): Promise<number>;
     /**
      * Refresh TTL for an existing key.

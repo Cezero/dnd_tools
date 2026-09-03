@@ -4,13 +4,14 @@
 
 ## 📋 **Overview**
 
-The spell scribing feature provides comprehensive spell management for spellbook-using classes (e.g., Wizard) and spellsKnown classes (e.g., Sorcerer, Bard). It supports free spell grants during level-up, ad-hoc scribing from scrolls or found spellbooks, and feature-based 0th level spell grants.
+The spell scribing feature provides comprehensive spell management for spellbook-using classes (e.g., Wizard) and spellsKnown classes (e.g., Sorcerer, Bard). Spellbook classes use free spell grants and ad-hoc scribing; SpellsKnown classes use Learn/Forget against FeatureEntity-derived max-known caps (`SpellsKnownProgression` → `maxSpellsKnownByLevel`). Feature-based 0th level grants apply to spellbook classes only.
 
 **Key Features**:
-- Free spell grant calculation from resolved progressions
+- Free spell grant calculation from resolved progressions (spellbook only)
 - Formula-based spell grants (ability-based, static per level)
 - Feature-based 0th level spell grants for spellbook classes
-- Ad-hoc scribing with spell level validation
+- Feature-based spells-known caps for SpellsKnown classes (`maxSpellsKnownByLevel`)
+- Ad-hoc scribing with spell level validation (spellbook)
 - Integration with character resolution sessions
 - Frontend-backend state synchronization
 

@@ -12,6 +12,13 @@ export interface ProgressionRow {
     spellsKnown?: { [spellLevel: number]: string };
 }
 
+export interface ClassProgressionTableProps {
+    feature: ProgressionRow[];
+    className?: string;
+    /** When false, hide BAB and saving throw columns (spell tables only). Defaults to true. */
+    showCombatColumns?: boolean;
+}
+
 export interface ClassProgressionConfig {
     features: FeatureWithRelations[];
     classId?: number;

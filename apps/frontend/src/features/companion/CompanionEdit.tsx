@@ -47,6 +47,7 @@ export function CompanionEdit() {
         type: CompanionType.Familiar,
         monsterId: undefined,
         minLevel: undefined,
+        levelAdjustment: undefined,
     });
 
     const form = useValidatedForm(
@@ -78,6 +79,7 @@ export function CompanionEdit() {
                         type: fetchedCompanion.type,
                         monsterId: fetchedCompanion.monsterId,
                         minLevel: fetchedCompanion.minLevel || undefined,
+                        levelAdjustment: fetchedCompanion.levelAdjustment ?? undefined,
                     });
 
                     // Use feature features from companion response
@@ -344,6 +346,15 @@ export function CompanionEdit() {
                             label="Minimum Level"
                             type="number"
                             placeholder="Enter minimum character level"
+                            componentExtraClassName="flex items-center gap-4"
+                            labelExtraClassName="w-32 flex-shrink-0"
+                            inputExtraClassName="flex-1"
+                        />
+                        <ValidatedInput
+                            field="levelAdjustment"
+                            label="Level Adjustment"
+                            type="number"
+                            placeholder="Subtracted from effective companion level"
                             componentExtraClassName="flex items-center gap-4"
                             labelExtraClassName="w-32 flex-shrink-0"
                             inputExtraClassName="flex-1"

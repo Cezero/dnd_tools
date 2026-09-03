@@ -53,13 +53,14 @@ The core character definition containing basic information about characters, the
 
 One-to-one settings row for a character. Prisma model name is `CharacterConfig`; table name is `CharacterConfig` (no `@@map`).
 
-**Purpose**: Holds variant-class, gestalt, and level-adjustment flags that used to live as columns on `UserCharacter`. Character save always writes this row (`create` nested on new characters, `upsert` on updates).
+**Purpose**: Holds variant-class, gestalt, level-adjustment, and 1st-level HP flags that used to live as columns on `UserCharacter`. Character save always writes this row (`create` nested on new characters, `upsert` on updates). These are character-level stand-ins until campaign settings exist.
 
 **Key Fields**:
 - **`characterId`**: Primary key and foreign key to `UserCharacter.id` (cascade delete)
 - **`allowVariantClasses`**: Whether class variants are allowed
 - **`isGestalt`**: Gestalt multiclassing
 - **`ignoreLevelAdjustment`**: Ignore LA for XP calculation
+- **`maxHpAtFirstLevel`**: When true, 1st-level HD is maximum. Default is false (opt-in). Applies to D&D 3.0, 3.5, and 3.0/3.5 combined. Unchecked means the user rolls or enters 1st-level HP. Existing rows were backfilled to false in `20260902211800_backfill_max_hp_at_first_level_false` after the add-column default of true.
 
 **Source File**: `prisma/schema.prisma` (`CharacterConfig`)
 
@@ -82,6 +83,8 @@ Currency and valuables for a character, replacing `UserCharacter.copper/silver/g
 **Source File**: `prisma/schema.prisma` (`CharacterWealth`)
 
 Same migration as `CharacterConfig` creates this table and copies non-zero coin columns from `UserCharacter`.
+
+The editor currently stores one quantity-only row per `@CurrencyId` (coins plus Gem / Art Object / Other). `value` and `description` are reserved for a pending individual-treasure feature: track each awarded gem or art object separately (for example “pearl 50 gp” vs “pearl 100 gp”) so the player can Appraise or attempt to sell before the DM reveals a value. Quantity buckets must not collapse those into a single count.
 
 ### **UserCharacterAbilityScore Model**
 
@@ -398,6 +401,7 @@ erDiagram
         boolean allowVariantClasses
         boolean isGestalt
         boolean ignoreLevelAdjustment
+        boolean maxHpAtFirstLevel
     }
 
     CharacterWealth {

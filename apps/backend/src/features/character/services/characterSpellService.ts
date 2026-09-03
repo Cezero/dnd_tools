@@ -680,8 +680,8 @@ export const characterSpellService = {
     },
 
     async getMaxCastableSpellLevel(classId: number, characterLevel: number): Promise<number> {
-        // First, try to resolve spell slots from FeatureEntity formulas (new spellcasting model)
-        const classFeatures = await featureSystemService.getFeaturesByClassId(classId);
+        // Feature-based slots need FeatureClassMap populated so empty `classes` is not treated as a skip.
+        const classFeatures = await featureSystemService.getFeaturesByClassId(classId, undefined, true);
 
         const featureBasedMax = ResolvedFeatureService.getMaxCastableSpellLevelFromFeaturesForClass(
             classFeatures,

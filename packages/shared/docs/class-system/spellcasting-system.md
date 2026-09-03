@@ -212,29 +212,42 @@ Different classes have different patterns of spell access.
 
 Spellcasting is integrated with the feature system, enabling unified resolution for gestalt and multiclass characters.
 
-**FeatureProgression Links:**
-- `SpellcastingProgression` linked to classes via `FeatureProgression` entities
-- Feature entities with `EntityAppliesToType.SpellcastingProgression` reference spellcasting progressions
-- Casting ability and type also stored as feature entities
-- Enables automatic resolution through feature system
+**One feature per table:**
+Slots and spells known live on shared table features, not on a 20-row per-level copy. Each table is one `Feature` (`level = 1`, `displayInCharacterSheet = false`) with one `EntityType.Base` entity per spell level 0–9. Gain-level offset is on the entity (`CONDITIONAL_SCALING` thresholds), not on the feature. Entities use `displayInDetail = false`.
 
-**Benefits:**
-- **Unified Resolution**: Spellcasting resolved through feature system like other mechanics
-- **Gestalt Support**: Multiple spellcasting progressions automatically resolved (Wizard + Cleric)
-- **Multiclass Support**: Each class's spellcasting tracked independently
-- **Variant Support**: Variants can share or fork spellcasting progressions
+- `appliesTo` = `SpellcastingProgression` (38) or `SpellsKnownProgression` (46)
+- `appliesToId` = spell level 0–9 (never a leftover `SpellcastingProgression` row id)
+- Wizard and Cleric do **not** share a slots table. Cleric and Druid share `divine-spells-per-day`. Paladin and Ranger share `half-caster-spells-per-day`.
 
-**Migration:**
-- Existing `SpellcastingProgression.classId` links being migrated to `FeatureProgression` links
-- Both patterns supported during transition period
-- See [Migration Guide](migration-guide.md) for details
+**Shared table slugs (3.5 PHB):**
+- `wizard-spells-per-day` → Wizard 27
+- `sorcerer-spells-per-day` / `sorcerer-spells-known` → Sorcerer 26
+- `divine-spells-per-day` → Cleric 19 + Druid 20 + variants that already share `clericspells` / `druidspells` (e.g. Cloistered Cleric 134; no domain bonus slots)
+- `half-caster-spells-per-day` → Paladin 23 + Ranger 24
+- `bard-spells-per-day` / `bard-spells-known` → Bard 18
+
+Casting ability and type live on the PHB narrative `*spells` feature (`wizardspells`, `clericspells`, …), not on a separate `spellcasting-{class}` stub. Data scripts (run in order): `split-shared-spellcasting.ts`, `merge-spellcasting-chassis.ts`, `cleanup-orphan-spellcasting-features.ts`.
+
+**Formulas:**
+Every slot and spells-known column uses `CONDITIONAL_SCALING` (PHB breakpoints on the entity). Thresholds/values persist as comma-separated strings via [formulaParamTransformers.ts](../../../apps/backend/src/utils/formulaParamTransformers.ts). Formula definitions: `packages/shared/static-data/src/FormulaDefinitions.ts`.
+
+**Class table:**
+`generateClassProgression` / `buildClassProgressionFromDetail` evaluate these entities with `applyFeatureFormula` the same way as BAB/saves. The Detail display strategy is not used for spell columns (`displayInDetail = false` would hide them). See [Class Progression](class-progression.md#display-strategy-and-formatters).
+
+**Runtime slot/known reads:**
+`ResolvedFeatureService.getMaxCastableSpellLevelFromFeaturesForClass` and `getSpellsKnownByLevelFromFeaturesForClass` require a `FeatureClassMap` intersection (empty `classes` skips). Callers must fetch with `includeClassRaceInfo: true`. `appliesToId` outside 0–9 is ignored so leftover table FKs cannot become a spell level.
+
+**Legacy tables:**
+`SpellcastingProgression` / `SpellcastingSlot` remain as a fallback when no formula-backed slot entities resolve. Domain bonus slots and prestige “+1 existing caster level” are out of scope.
 
 **Source Files:**
-- Database: `apps/backend/prisma/schema.prisma` (SpellcastingProgression, SpellcastingLink models)
-- Backend: `apps/backend/src/features/featureSystem/featureSystemService.ts`
-- Backend: `apps/backend/src/features/class/classService.ts`
+- Class table: `apps/frontend/src/lib/ClassProgression.ts`
+- Resolution: `apps/backend/src/features/characterResolution/resolvedFeatureService.ts`
+- Max castable fetch: `apps/backend/src/features/character/services/characterSpellService.ts`
+- Data scripts (run in order): `apps/backend/scripts/split-shared-spellcasting.ts`, `merge-spellcasting-chassis.ts`, `cleanup-orphan-spellcasting-features.ts`
 
 **Related Documentation:**
+- [Feature Extraction Patterns](feature-extraction-patterns.md#pattern-5-spell-table-formulas) - Entity shape
 - [Feature System - Spellcasting Integration](../feature-system/README.md#spellcasting-integration) - Feature system integration
 - [Class and Race Feature Refactoring](../application-overview/class-race-feature-refactoring.md) - Complete refactoring overview
 
@@ -272,12 +285,17 @@ Classes can inherit spellcasting from other classes or sources.
 
 ### **Future Enhancements**
 
-**TODO: Future Enhancement - FeatureEntity Formulas for Spellcasting**
+**FeatureEntity formulas for spells known (done for runtime):**
+- `EntityAppliesToType.SpellsKnownProgression` drives class Spells Known columns and `maxSpellsKnownByLevel` in character resolution
+- Free grants remain spellbook-only (`SpellbookSpell`); SpellsKnown classes do not use free grants
+- See [Spell Scribing](../character-management/spell-scribing.md) and [Feature Static Data](../feature-system/static-data.md)
 
-**Status**: Deferred to future phase after Approach 1 (FeatureProgression links) is validated and stable.
+**TODO: Full replacement of SpellcastingProgression/SpellcastingSlot tables**
 
-**Approach 2: FeatureEntity Formulas**
-- Replace `SpellcastingProgression`/`SpellcastingSlot` models entirely with `FeatureEntity` formulas
+**Status**: Prototype on Wizard/Sorcerer — one shared feature per table, all columns `CONDITIONAL_SCALING`. Class Feature table and max-castable / spells-known helpers read those entities. `SpellcastingProgression` / `SpellcastingSlot` remain as fallback and for unmigrated classes. Cleric/Bard/Paladin/Ranger tables are not in this pass.
+
+**Approach 2: FeatureEntity Formulas (slots storage)**
+- Replace remaining `SpellcastingProgression`/`SpellcastingSlot` persistence with FeatureEntity formulas only
 - Complete unification through feature system
 - Maximum flexibility for complex casting patterns
 

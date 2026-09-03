@@ -7,6 +7,15 @@ import type { RedisSessionClient } from './types';
  */
 type InternalRedisClient = RedisClientType | RedisClusterType;
 
+const COMPARE_AND_SET_EX_SCRIPT = `
+local current = redis.call('GET', KEYS[1])
+if current ~= ARGV[1] then
+  return 0
+end
+redis.call('SETEX', KEYS[1], tonumber(ARGV[3]), ARGV[2])
+return 1
+`;
+
 /**
  * Creates an adapter that wraps a Redis client and implements RedisSessionClient.
  * This eliminates the need for type assertions and unions in consuming code.
@@ -35,6 +44,22 @@ function createSessionRedisClient(client: InternalRedisClient): RedisSessionClie
                 console.error(`Redis SETEX error for key ${key}:`, error);
                 if (error instanceof Error) {
                     console.error(`Redis SETEX error details: ${error.message}`, error.stack);
+                }
+                throw error;
+            }
+        },
+
+        async compareAndSetEx(key: string, expected: string, value: string, seconds: number): Promise<boolean> {
+            try {
+                const result = await client.eval(COMPARE_AND_SET_EX_SCRIPT, {
+                    keys: [key],
+                    arguments: [expected, value, String(seconds)],
+                });
+                return result === 1;
+            } catch (error) {
+                console.error(`Redis COMPARE-AND-SET error for key ${key}:`, error);
+                if (error instanceof Error) {
+                    console.error(`Redis COMPARE-AND-SET error details: ${error.message}`, error.stack);
                 }
                 throw error;
             }

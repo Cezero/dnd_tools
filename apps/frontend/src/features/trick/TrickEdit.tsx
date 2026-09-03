@@ -16,6 +16,9 @@ import { EDITION_LIST, SourceType, EditionId } from '@shared/static-data';
 // Type definitions for the form state
 type TrickFormData = CreateTrickRequest | UpdateTrickRequest;
 
+/**
+ * Create or edit a trick definition, including teaching DC, edition, visibility, and source books.
+ */
 export function TrickEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -41,6 +44,8 @@ export function TrickEdit() {
         name: '',
         description: null,
         editionId: 1,
+        dc: 15,
+        maxTimesTrainable: 1,
         isVisible: true,
         sourceBookInfo: [],
         ...(id !== 'new' && { id: parseInt(id) })
@@ -72,6 +77,8 @@ export function TrickEdit() {
                             name: data.name,
                             description: data.description || null,
                             editionId: data.editionId,
+                            dc: data.dc,
+                            maxTimesTrainable: data.maxTimesTrainable,
                             isVisible: data.isVisible,
                             sourceBookInfo: (data as { sourceBookInfo?: Array<{ sourceBookId: number; pageNumber?: number | null }> }).sourceBookInfo || [],
                             ...(id !== 'new' && { id: parseInt(id) })
@@ -171,6 +178,22 @@ export function TrickEdit() {
                             onChange={(value) => setFormData({ ...formData, description: value || null })}
                         />
                     </div>
+
+                    <ValidatedInput
+                        field="dc"
+                        label="DC"
+                        type="number"
+                        placeholder="Teaching DC"
+                        required
+                    />
+
+                    <ValidatedInput
+                        field="maxTimesTrainable"
+                        label="Max Times Trainable"
+                        type="number"
+                        placeholder="Usually 1; Attack is 2"
+                        required
+                    />
 
                     <CustomSelect
                         label="Edition"

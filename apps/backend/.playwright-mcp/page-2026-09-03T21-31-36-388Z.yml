@@ -1,0 +1,70 @@
+- generic [active] [ref=f4e1]:
+  - generic [ref=f4e12]:
+    - navigation [ref=f4e13]:
+      - link "DnD Tools" [ref=f4e15] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f4e16]:
+        - button [ref=f4e18]:
+          - text: Logged in as
+          - strong [ref=f4e19]: cursor
+        - button "Enable dark mode" [ref=f4e20]
+    - generic [ref=f4e23]:
+      - generic [ref=f4e24]:
+        - button "Collapse sidebar to minimal" [ref=f4e26]
+        - navigation [ref=f4e30]:
+          - list [ref=f4e31]:
+            - listitem [ref=f4e32]:
+              - link "Characters" [ref=f4e33] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f4e37]:
+              - button "Reference" [ref=f4e38]
+            - listitem [ref=f4e44]:
+              - button "DM Tools" [ref=f4e45]
+            - listitem [ref=f4e51]:
+              - button "Admin" [ref=f4e52]
+      - main [ref=f4e59]:
+        - generic [ref=f4e61]:
+          - heading "My Characters" [level=1] [ref=f4e62]
+          - button "New Character" [ref=f4e64]
+          - generic [ref=f4e65]:
+            - table [ref=f4e66]:
+              - rowgroup [ref=f4e67]:
+                - row [ref=f4e68]:
+                  - columnheader [ref=f4e69]:
+                    - button "Character Name" [ref=f4e72]
+                  - columnheader [ref=f4e74]:
+                    - button "Race" [ref=f4e77]
+                  - columnheader [ref=f4e79]:
+                    - button "Alignment" [ref=f4e82]
+                  - columnheader [ref=f4e84]:
+                    - button "Class/Level" [ref=f4e87]
+                  - columnheader [ref=f4e89]:
+                    - button "Character Level" [ref=f4e92]
+                  - columnheader [ref=f4e94]:
+                    - button "Notes" [ref=f4e97]
+              - rowgroup [ref=f4e99]:
+                - row [ref=f4e100]:
+                  - cell "CursorSmoke 1788354764727" [ref=f4e101]
+                  - cell "Human" [ref=f4e102]
+                  - cell [ref=f4e103]
+                  - cell "Wiz 1/Wiz 2" [ref=f4e104]
+                  - cell "2" [ref=f4e105]
+                  - cell [ref=f4e106]:
+                    - generic [ref=f4e108]:
+                      - generic "Edit" [ref=f4e109] [cursor=pointer]
+                      - generic "Delete" [ref=f4e112] [cursor=pointer]
+            - status [ref=f4e115]
+            - generic [ref=f4e116]:
+              - generic [ref=f4e117]: Showing 1–1 of 1
+              - generic [ref=f4e118]:
+                - generic [ref=f4e119]:
+                  - combobox [ref=f4e120]:
+                    - generic [ref=f4e121]: "20"
+                  - textbox [aria-hidden] [ref=f4e125]: "20"
+                - button "First" [disabled] [ref=f4e126]
+                - button "< Prev" [disabled] [ref=f4e127]
+                - generic [ref=f4e128]: Page 1 of 1
+                - button "Next >" [disabled] [ref=f4e129]
+                - button "Last" [disabled] [ref=f4e130]
+  - generic:
+    - region "Notifications"

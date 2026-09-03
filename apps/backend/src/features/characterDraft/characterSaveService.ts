@@ -1,10 +1,13 @@
 import { prisma } from '@/lib/prisma';
+import { resolveMaxFirstLevelHitPointsForClasses } from '@/utils/firstLevelHitPoints';
 import type { AdvancementEditState, CharacterEditState } from '@shared/schema';
 import { AdvancementEditStateSchema, CharacterEditStateSchema } from '@shared/schema';
 import { DraftType } from '@shared/static-data';
 
 import { parseDraftState } from '../shared/draftState/draftSaveUtils';
 import { DraftStateService } from '../shared/draftState/DraftStateService';
+
+import { persistCompanionDraftCollections } from './characterCompanionDraftPersist';
 
 /**
  * Persists `CharacterEditState` (draft edit state) into MySQL.
@@ -15,6 +18,14 @@ import { DraftStateService } from '../shared/draftState/DraftStateService';
  * With the introduction of `DraftType.Advancement`, this save is intentionally scoped
  * to **character-core** fields only (race/config/ability scores/disallowed sources).
  * Advancement decisions are persisted via `AdvancementSaveService` instead.
+ *
+ * `isGestalt` is taken from the character draft, and forced true when the
+ * paired advancement has a `secondaryClassId` (gestalt UI can set the class
+ * pair even if the config flag never reached Redis).
+ *
+ * When `maxHpAtFirstLevel` is true, level-1 `hitPoints` is set to max HD + CON
+ * (gestalt uses the better hit die). Advancement save must apply the same rule
+ * so a later advancement persist does not overwrite with the draft's 0.
  */
 export class CharacterSaveService {
     async saveSessionToMySQL(
@@ -54,7 +65,10 @@ export class CharacterSaveService {
                 throw new Error('Advancement draft state not found for create save');
             }
 
-            const advancementDraft: AdvancementEditState = parseDraftState(AdvancementEditStateSchema.parse, advancementDraftRaw);
+            const advancementDraft: AdvancementEditState = parseDraftState(
+                AdvancementEditStateSchema.parse,
+                advancementDraftRaw
+            );
 
             if (advancementDraft.characterId !== characterId) {
                 throw new Error('Advancement draft does not match character draft id');
@@ -64,6 +78,22 @@ export class CharacterSaveService {
             }
             if (advancementDraft.classId < 1) {
                 throw new Error('Cannot save character: classId is required.');
+            }
+
+            const hasSecondaryClass =
+                advancementDraft.secondaryClassId !== null && advancementDraft.secondaryClassId > 0;
+            const isGestalt = validatedState.isGestalt || hasSecondaryClass;
+
+            let level1HitPoints = advancementDraft.hitPoints;
+            if (validatedState.maxHpAtFirstLevel) {
+                const computedHitPoints = await resolveMaxFirstLevelHitPointsForClasses({
+                    primaryClassId: advancementDraft.classId,
+                    secondaryClassId: advancementDraft.secondaryClassId,
+                    abilityScores: validatedState.abilityScores,
+                });
+                if (computedHitPoints !== null) {
+                    level1HitPoints = computedHitPoints;
+                }
             }
 
             const createdCharacterId = await prisma.$transaction(async (tx) => {
@@ -85,8 +115,9 @@ export class CharacterSaveService {
                         config: {
                             create: {
                                 allowVariantClasses: validatedState.allowVariantClasses,
-                                isGestalt: validatedState.isGestalt,
+                                isGestalt,
                                 ignoreLevelAdjustment: validatedState.ignoreLevelAdjustment,
+                                maxHpAtFirstLevel: validatedState.maxHpAtFirstLevel,
                             },
                         },
                     },
@@ -148,6 +179,13 @@ export class CharacterSaveService {
                     });
                 }
 
+                await persistCompanionDraftCollections(
+                    tx,
+                    createdCharacter.id,
+                    validatedState.companions,
+                    validatedState.selectedForms
+                );
+
                 // Disallowed sources
                 const uniqueSourceBookIds = Array.from(
                     new Set(validatedState.disallowedSources.map((s) => s.sourceBookId))
@@ -169,7 +207,7 @@ export class CharacterSaveService {
                         version: 1,
                         classId: advancementDraft.classId,
                         secondaryClassId: advancementDraft.secondaryClassId ?? null,
-                        hitPoints: advancementDraft.hitPoints,
+                        hitPoints: level1HitPoints,
                         abilityId: advancementDraft.abilityId ?? null,
                         notes: advancementDraft.notes ?? null,
                         skills: advancementDraft.skills.length > 0 ? { create: advancementDraft.skills } : undefined,
@@ -199,6 +237,24 @@ export class CharacterSaveService {
             });
 
             return createdCharacterId;
+        }
+
+        let level1HitPointsUpdate: { id: number; hitPoints: number } | null = null;
+        if (validatedState.maxHpAtFirstLevel) {
+            const level1Advancement = await prisma.characterAdvancement.findFirst({
+                where: { characterId, level: 1 },
+                select: { id: true, classId: true, secondaryClassId: true },
+            });
+            if (level1Advancement && level1Advancement.classId > 0) {
+                const computedHitPoints = await resolveMaxFirstLevelHitPointsForClasses({
+                    primaryClassId: level1Advancement.classId,
+                    secondaryClassId: level1Advancement.secondaryClassId,
+                    abilityScores: validatedState.abilityScores,
+                });
+                if (computedHitPoints !== null) {
+                    level1HitPointsUpdate = { id: level1Advancement.id, hitPoints: computedHitPoints };
+                }
+            }
         }
 
         await prisma.$transaction(async (tx) => {
@@ -232,20 +288,38 @@ export class CharacterSaveService {
                 }
             });
 
+            const gestaltAdvancement = await tx.characterAdvancement.findFirst({
+                where: {
+                    characterId,
+                    secondaryClassId: { gt: 0 },
+                },
+                select: { id: true },
+            });
+            const isGestalt = validatedState.isGestalt || gestaltAdvancement !== null;
+
             await tx.characterConfig.upsert({
                 where: { characterId },
                 create: {
                     characterId,
                     allowVariantClasses: validatedState.allowVariantClasses,
-                    isGestalt: validatedState.isGestalt,
+                    isGestalt,
                     ignoreLevelAdjustment: validatedState.ignoreLevelAdjustment,
+                    maxHpAtFirstLevel: validatedState.maxHpAtFirstLevel,
                 },
                 update: {
                     allowVariantClasses: validatedState.allowVariantClasses,
-                    isGestalt: validatedState.isGestalt,
+                    isGestalt,
                     ignoreLevelAdjustment: validatedState.ignoreLevelAdjustment,
+                    maxHpAtFirstLevel: validatedState.maxHpAtFirstLevel,
                 },
             });
+
+            if (level1HitPointsUpdate !== null) {
+                await tx.characterAdvancement.update({
+                    where: { id: level1HitPointsUpdate.id },
+                    data: { hitPoints: level1HitPointsUpdate.hitPoints },
+                });
+            }
 
             if (validatedState.wealth) {
                 await tx.characterWealth.deleteMany({ where: { characterId } });
@@ -350,6 +424,13 @@ export class CharacterSaveService {
                     });
                 }
             }
+
+            await persistCompanionDraftCollections(
+                tx,
+                characterId,
+                validatedState.companions,
+                validatedState.selectedForms
+            );
         });
 
         return characterId;

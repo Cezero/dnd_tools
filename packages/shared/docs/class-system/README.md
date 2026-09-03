@@ -198,10 +198,13 @@ The spellcasting system tracks how magical abilities develop as characters gain 
 
 **Key Features**:
 - **Level-based Progression**: Spellcasting abilities that scale with class level
-- **Slot Management**: Tracking spells per day for each spell level
+- **Slot Management**: Tracking spells per day for each spell level via `SpellcastingProgression` FeatureEntities
+- **Spells Known**: Max known per spell level via `SpellsKnownProgression` FeatureEntities (enforced as `maxSpellsKnownByLevel` in character resolution)
 - **Feature Integration**: Spellcasting through class features
 - **Inheritance**: Spellcasting abilities from other classes
 - **Spell Lists**: Class-specific spell availability
+
+**Related**: [Spellcasting System](spellcasting-system.md), [Spell Scribing](../character-management/spell-scribing.md)
 
 ### **Feature Integration**
 Classes integrate deeply with the feature system, allowing for complex class abilities that scale with level and provide various mechanical benefits.

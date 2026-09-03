@@ -8,6 +8,8 @@ import type {
 } from '@shared/schema';
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
+import { companionSyncService } from '../../companion/companionSyncService';
+
 
 /**
  * Service for managing character advancements.
@@ -73,11 +75,14 @@ export const characterAdvancementService = {
             }
         });
 
+        await companionSyncService.syncFromFeatureChoices(advancementData.characterId);
         return { id: result.id.toString(), message: 'Character advancement created successfully' };
     },
 
     async updateAdvancement(id: number, data: UpdateAdvancementRequest): Promise<UpdateResponse> {
         const { skills, feats, featureChoices, ...advancementData } = data;
+
+        let characterId = 0;
 
         // Handle nested updates: delete existing and create new
         await prisma.$transaction(async (tx) => {
@@ -90,6 +95,7 @@ export const characterAdvancementService = {
             if (!advancement) {
                 throw new Error(`Advancement with id ${id} not found`);
             }
+            characterId = advancement.characterId;
 
             // Update the advancement itself
             await tx.characterAdvancement.update({
@@ -144,13 +150,23 @@ export const characterAdvancementService = {
             }
         });
 
+        if (characterId > 0) {
+            await companionSyncService.syncFromFeatureChoices(characterId);
+        }
         return { message: 'Character advancement updated successfully' };
     },
 
     async deleteAdvancement(id: number): Promise<UpdateResponse> {
+        const existing = await prisma.characterAdvancement.findUnique({
+            where: { id },
+            select: { characterId: true },
+        });
         await prisma.characterAdvancement.delete({
             where: { id },
         });
+        if (existing) {
+            await companionSyncService.syncFromFeatureChoices(existing.characterId);
+        }
 
         return { message: 'Character advancement deleted successfully' };
     },

@@ -120,6 +120,13 @@ function deepCloneJsonObject(obj: JsonObject): JsonObject {
     return JSON.parse(JSON.stringify(obj)) as JsonObject;
 }
 
+/**
+ * Nested collections are selected with `.byId.<id>`, so the missing parent must be an array.
+ */
+function shouldCreateArrayForNextSegment(nextSegment: string | number | undefined): boolean {
+    return typeof nextSegment === 'number' || nextSegment === 'byId';
+}
+
 function resolveSelectorKeyField(arrayFieldName: string | null): string {
     if (!arrayFieldName) {
         return 'id';
@@ -205,12 +212,7 @@ export function updateValueAtPath(
             }
             
             if (current[segment] === null || current[segment] === undefined) {
-                // Create appropriate type for next segment
-                if (typeof nextSegment === 'number') {
-                    current[segment] = [];
-                } else {
-                    current[segment] = {};
-                }
+                current[segment] = shouldCreateArrayForNextSegment(nextSegment) ? [] : {};
             }
             
             current = (current as unknown[])[segment];
@@ -220,7 +222,7 @@ export function updateValueAtPath(
                 // Create new object
                 const parent = current as Record<string, unknown> | null;
                 if (parent && typeof segment === 'string') {
-                    parent[segment] = typeof nextSegment === 'number' ? [] : ({} as JsonObject);
+                    parent[segment] = shouldCreateArrayForNextSegment(nextSegment) ? [] : ({} as JsonObject);
                     current = parent[segment];
                 } else {
                     throw new Error(`Cannot access property "${segment}" on non-object at path "${segments.slice(0, i + 1).join('.')}"`);
@@ -229,7 +231,7 @@ export function updateValueAtPath(
                 const objCurrent = current as Record<string, unknown>;
                 if (!(segment in objCurrent) || objCurrent[segment] === null || objCurrent[segment] === undefined) {
                     // Create appropriate type for next segment
-                    objCurrent[segment] = typeof nextSegment === 'number' ? [] : ({} as JsonObject);
+                    objCurrent[segment] = shouldCreateArrayForNextSegment(nextSegment) ? [] : ({} as JsonObject);
                 }
                 current = objCurrent[segment];
             }
@@ -388,7 +390,7 @@ export function applyDraftActionAtPath(
                 arr.push(null);
             }
             if (arr[segment] === null || arr[segment] === undefined) {
-                arr[segment] = typeof nextSegment === 'number' ? [] : {};
+                arr[segment] = shouldCreateArrayForNextSegment(nextSegment) ? [] : {};
             }
             current = arr[segment];
             currentArrayFieldName = null;
@@ -526,7 +528,7 @@ export function applyDraftActionAtPath(
 
         // Intermediate: create if missing
         if (!(segment in objCurrent) || objCurrent[segment] === null || objCurrent[segment] === undefined) {
-            objCurrent[segment] = typeof nextSegment === 'number' ? [] : {};
+            objCurrent[segment] = shouldCreateArrayForNextSegment(nextSegment) ? [] : {};
         }
 
         current = objCurrent[segment];

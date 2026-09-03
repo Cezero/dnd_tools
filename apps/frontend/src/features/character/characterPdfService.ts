@@ -9,7 +9,8 @@ import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
-import { displayStrategyFactory, formatSpellSchool, formatSpellComponents } from '@/lib/formatters';
+import { collectFeatureChoices, displayStrategyFactory, formatFeatureNameWithChoices, formatSpellComponents, formatSpellSchool } from '@/lib/formatters';
+import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { formatSignedModifier } from '@/lib/formatters/modifier-utils';
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
 import { hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes, getSkillSubtypeName } from '@/lib/skill-utils';
@@ -19,10 +20,13 @@ import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, 
 import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, CurrencyId, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
+import { appendAnimalsPages } from './characterPdfAnimals';
 import { CharacterQueryHooks } from './CharacterQueryHooks';
 
 /**
- * Generate a PDF character sheet for a character matching the D&D 3.5 character sheet format
+ * Generate a PDF character sheet matching the D&D 3.5 sheet format.
+ * After the portrait sheet (and landscape spell pages, if any), appends packed
+ * portrait Animals & Pets pages for companions, pets, and selected wild-shape forms.
  */
 export async function generateCharacterPdf(
     character: CharacterWithAllDetailsResponse,
@@ -2526,6 +2530,7 @@ export async function generateCharacterPdf(
 
     // Format and display abilities
     if (formattedCharacter) {
+        const featureChoices = collectFeatureChoices(character);
         let abilitiesY = rightColY + 10;
         doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'bold');
@@ -2540,6 +2545,7 @@ export async function generateCharacterPdf(
             if (
                 feature.sourceType === FeatureSourceType.Race &&
                 feature.level <= character.advancements.length && // Only show features active at current level
+                FeatureDisplayFilter.shouldListFeatureInCharacterView(feature) &&
                 !raceFeatureMap.has(feature.id) // Deduplicate by feature ID
             ) {
                 raceFeatureMap.set(feature.id, feature);
@@ -2573,7 +2579,7 @@ export async function generateCharacterPdf(
             for (const feature of Array.from(raceFeatureMap.values())) {
                 // Get feature name and summary from feature (FeatureWithRelations is now the unified Feature model)
                 // If not available, try to get from formattedCharacter.features as fallback
-                let featureName = feature.name || '';
+                let featureName = formatFeatureNameWithChoices(feature, featureChoices);
                 let summary = feature.summary || '';
 
                 // Fallback: if feature object isn't loaded, try to get from formattedCharacter
@@ -2648,7 +2654,8 @@ export async function generateCharacterPdf(
             if (
                 feature.sourceType === FeatureSourceType.Class &&
                 // FeatureWithRelations is now the unified Feature model, so feature data is always present
-                feature.classes && feature.classes.length > 0 // Must have classes linked
+                feature.classes && feature.classes.length > 0 &&
+                FeatureDisplayFilter.shouldListFeatureInCharacterView(feature)
             ) {
                 // Process each class linked to this feature
                 for (const classLink of feature.classes) {
@@ -2680,7 +2687,7 @@ export async function generateCharacterPdf(
                 abilitiesY += 8;
                 doc.setFontSize(6);
                 for (const feature of Array.from(classFeatures.values())) {
-                    const featureName = feature.name || '';
+                    const featureName = formatFeatureNameWithChoices(feature, featureChoices);
                     const summary = feature.summary || '';
                     if (featureName || summary) {
                         // Format as "feature.name: feature.summary"
@@ -3053,9 +3060,9 @@ export async function generateCharacterPdf(
         getCoin(CurrencyId.Gold).toString(),
         getCoin(CurrencyId.Silver).toString(),
         getCoin(CurrencyId.Copper).toString(),
-        '',
-        '',
-        '',
+        getCoin(CurrencyId.ArtObject).toString(),
+        getCoin(CurrencyId.Gem).toString(),
+        getCoin(CurrencyId.Other).toString(),
     ];
 
     let currentMoneyY = moneyTableY;
@@ -3233,6 +3240,8 @@ export async function generateCharacterPdf(
             }
         }
     }
+
+    await appendAnimalsPages(doc, character.id, character.name, queryClient);
 
     // Save PDF
     const filename = `${character.name.replace(/[^a-z0-9]/gi, '_')}_CharacterSheet.pdf`;

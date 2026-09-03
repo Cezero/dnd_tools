@@ -1,6 +1,6 @@
 import { Menu } from '@base-ui-components/react/menu';
 import {
-    UserIcon, ShieldCheckIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, Bars3Icon, BoltIcon
+    UserIcon, ShieldCheckIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, Bars3Icon, BoltIcon, HeartIcon
 } from '@heroicons/react/24/outline';
 import { useQueryClient } from '@tanstack/react-query';
 import isEqual from 'lodash/isEqual';
@@ -22,6 +22,7 @@ import { CurrencyId, DisplayType } from '@shared/static-data';
 import { CharacterDetailQueryHooks } from './CharacterDetailQueryHooks';
 import { generateCharacterPdf } from './characterPdfService';
 import { CharacterQueryHooks } from './CharacterQueryHooks';
+import { AnimalsPetsTab } from './detail-tabs/AnimalsPetsTab';
 import { DescriptionTab } from './detail-tabs/DescriptionTab';
 import { EquipmentTab } from './detail-tabs/EquipmentTab';
 import { FeaturesTab } from './detail-tabs/FeaturesTab';
@@ -612,8 +613,20 @@ export function CharacterDetail(): React.JSX.Element {
             baseTabs.splice(2, 0, { id: 'spells', label: 'Spells', icon: BoltIcon, component: SpellsTab });
         }
 
+        const hasAnimals = (resolvedData?.resolvedCharacter?.resolvedCompanions?.length ?? 0) > 0
+            || (resolvedData?.resolvedCharacter?.resolvedSelectedForms?.length ?? 0) > 0;
+        if (hasAnimals) {
+            const featuresIndex = baseTabs.findIndex((tab) => tab.id === 'features');
+            baseTabs.splice(featuresIndex + 1, 0, {
+                id: 'animals-pets',
+                label: 'Animals & Pets',
+                icon: HeartIcon,
+                component: AnimalsPetsTab,
+            });
+        }
+
         return baseTabs;
-    }, [hasSpellcastingClasses]);
+    }, [hasSpellcastingClasses, resolvedData?.resolvedCharacter?.resolvedCompanions, resolvedData?.resolvedCharacter?.resolvedSelectedForms]);
 
     const currentTab = tabs.find(tab => tab.id === activeTab);
     const CurrentTabComponent = currentTab?.component;
@@ -661,6 +674,8 @@ export function CharacterDetail(): React.JSX.Element {
         state,
         updateState,
         resolution: viewModeResolution,
+        resolvedCompanions: resolvedData?.resolvedCharacter?.resolvedCompanions ?? [],
+        resolvedSelectedForms: resolvedData?.resolvedCharacter?.resolvedSelectedForms ?? [],
     };
 
     return (

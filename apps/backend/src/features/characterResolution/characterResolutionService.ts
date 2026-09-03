@@ -134,9 +134,11 @@ class FeatureResolution {
 
     /**
      * Resolves gestalt multiclassing by merging primary and secondary classes.
-     * 
-     * Uses GestaltClassService to merge class features according to gestalt rules,
-     * then processes the merged class features.
+     *
+     * Fetches both class feature lists, merges them, and adds the secondary half
+     * to `resolvedProgressions`. The merged object has no class id, so features
+     * must be applied directly — `resolveClassFeatures` would re-fetch by id and
+     * drop Druid (etc.) features.
      */
     async resolveGestaltMerging(): Promise<void> {
         if (!this.context.classDetails || !this.context.secondaryClassDetails) {
@@ -174,8 +176,11 @@ class FeatureResolution {
         // Update context with merged class
         this.context.effectiveClassDetails = mergedClass;
 
-        // Process merged features
-        await this.resolveClassFeatures(mergedClass);
+        // The merged class has no database id. Do not call resolveClassFeatures() —
+        // that re-fetches by id and would drop secondary-class features (or no-op).
+        // Primary features are already in resolvedProgressions from phase 1; dedupe
+        // so we only add the secondary half.
+        this.addApplicableProgressions(mergedClass.features ?? [], { dedupeById: true });
     }
 
     /**

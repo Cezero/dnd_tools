@@ -1,5 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 
+import { createClientId } from '@/lib/createClientId';
+
 import { LogPanelContext } from './LogPanelContext';
 import type { LogEntry, LogPanelContextType } from './types';
 
@@ -19,7 +21,7 @@ export function LogPanelProvider({ children, maxEntries = 500 }: LogPanelProvide
     const addLogEntry = useCallback((entry: Omit<LogEntry, 'id' | 'timestamp'>) => {
         const newEntry: LogEntry = {
             ...entry,
-            id: crypto.randomUUID(),
+            id: createClientId(),
             timestamp: new Date(),
         };
 

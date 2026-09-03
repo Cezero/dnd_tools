@@ -13,6 +13,7 @@ import {
     CharacterCompanionIdParamSchema,
     CharacterCompanionCharacterIdParamSchema,
     GetAllCharacterCompanionsResponseSchema,
+    GetResolvedCharacterCompanionsResponseSchema,
 } from '@shared/schema';
 
 
@@ -136,14 +137,28 @@ const deleteCharacterCompanionConfig = createQueryHooks({
     queryKey: 'character-companions',
 });
 
+const getResolvedCharacterCompanionsConfig = createQueryHooks({
+    path: '/companions/character/:characterId/resolved',
+    method: 'GET',
+    paramsSchema: CharacterCompanionCharacterIdParamSchema,
+    responseSchema: GetResolvedCharacterCompanionsResponseSchema,
+    queryKey: 'character-companions',
+    queryKeyBuilder: (params) => {
+        const typedParams = params as { pathParams?: { characterId?: number } } | undefined;
+        return ['character-companions', 'resolved', typedParams?.pathParams?.characterId];
+    },
+});
+
 export const CharacterCompanionQueryHooks = {
     useGetCharacterCompanions: getCharacterCompanionsConfig.useQuery,
+    useGetResolvedCharacterCompanions: getResolvedCharacterCompanionsConfig.useQuery,
     useCreateCharacterCompanion: createCharacterCompanionConfig.useMutation,
     useUpdateCharacterCompanion: updateCharacterCompanionConfig.useMutation,
     useDeleteCharacterCompanion: deleteCharacterCompanionConfig.useMutation,
 
     // Add imperative methods
     getCharacterCompanions: (characterId: number) => getCharacterCompanionsConfig.fetch({ pathParams: { characterId } }),
+    getResolvedCharacterCompanions: (characterId: number) => getResolvedCharacterCompanionsConfig.fetch({ pathParams: { characterId } }),
     createCharacterCompanion: (data: unknown) => createCharacterCompanionConfig.mutate({ requestData: data }),
     updateCharacterCompanion: (id: number, data: unknown) => updateCharacterCompanionConfig.mutate({
         requestData: data,
@@ -155,5 +170,7 @@ export const CharacterCompanionQueryHooks = {
 
     // Expose query functions for advanced usage
     getCharacterCompanionsQueryFn: getCharacterCompanionsConfig.queryFn,
+    getResolvedCharacterCompanionsQueryFn: getResolvedCharacterCompanionsConfig.queryFn,
     getCharacterCompanionsQueryKey: (characterId: number) => getCharacterCompanionsConfig.queryKeyBuilder({ pathParams: { characterId } }),
+    getResolvedCharacterCompanionsQueryKey: (characterId: number) => getResolvedCharacterCompanionsConfig.queryKeyBuilder({ pathParams: { characterId } }),
 };

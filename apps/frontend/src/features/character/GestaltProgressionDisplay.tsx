@@ -3,10 +3,18 @@ import React, { useMemo } from 'react';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsExtractor';
+import type { ProgressionRow } from '@/lib/types';
+import type { DnDClass, FeatureWithRelations } from '@shared/schema';
 import { ProgressionType, RPG_DICE } from '@shared/static-data';
 
 import type { GestaltProgressionDisplayProps } from './types';
 
+/**
+ * Combined class progression view for gestalt characters.
+ * Either class may have null `spellcastingProgression` or `spellsKnownProgression`
+ * (non-casters such as Fighter); all reads of those fields must be null-safe.
+ * Spell slots are tracked per class, so each caster gets its own spell table.
+ */
 export function GestaltProgressionDisplay({
     primaryClass,
     secondaryClass,
@@ -45,22 +53,28 @@ export function GestaltProgressionDisplay({
         };
     }, [secondaryClass, secondaryFeatures]);
 
-    // Create gestalt feature by combining both classes' feature features
-    // The feature generator will calculate the better BAB/saves at each level
     const primaryClassId = (primaryClass as { id?: number }).id;
     const secondaryClassId = (secondaryClass as { id?: number }).id;
-    const combinedProgressions = [
-        ...primaryFeatures,
-        ...secondaryFeatures
-    ];
 
-    const gestaltProgression = generateClassProgression({
-        features: combinedProgressions,
-        // For gestalt, we calculate BAB/saves from both classes and take the better
-        // This is handled in the feature generator by finding the best value at each level
-        spellcastingProgression: primaryClass.spellcastingProgression,
-        spellsKnownProgression: primaryClass.spellsKnownProgression,
-    });
+    const gestaltProgression = useMemo(
+        () => withoutSpellColumns(generateClassProgression({
+            features: [...primaryFeatures, ...secondaryFeatures],
+        })),
+        [primaryFeatures, secondaryFeatures]
+    );
+
+    const primarySpellProgression = useMemo(
+        () => generateClassSpellProgression(primaryClass, primaryFeatures, primaryClassId),
+        [primaryClass, primaryFeatures, primaryClassId]
+    );
+
+    const secondarySpellProgression = useMemo(
+        () => generateClassSpellProgression(secondaryClass, secondaryFeatures, secondaryClassId),
+        [secondaryClass, secondaryFeatures, secondaryClassId]
+    );
+
+    const primaryHasSpells = hasSpellColumns(primarySpellProgression);
+    const secondaryHasSpells = hasSpellColumns(secondarySpellProgression);
 
     return (
         <div className="mt-4">
@@ -82,17 +96,37 @@ export function GestaltProgressionDisplay({
                     className="mt-2"
                 />
 
-                {/* Spellcasting Note for Gestalt */}
-                {(primaryClass.spellcastingProgression.length > 0 || secondaryClass.spellcastingProgression.length > 0) && (
+                {(primaryHasSpells || secondaryHasSpells) && (
                     <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-md">
                         <h5 className="font-semibold text-sm text-purple-700 dark:text-purple-300 mb-2">
                             Gestalt Spellcasting
                         </h5>
                         <p className="text-xs text-purple-600 dark:text-purple-400">
-                            <strong>Note:</strong> Gestalt characters with spellcasting classes get spells from both classes.
-                            The feature table above shows {primaryClass.name} spells.
-                            {secondaryClass.spellcastingProgression.length > 0 && ` You also gain ${secondaryClass.name} spells.`}
+                            <strong>Note:</strong> Gestalt characters gain spells from each spellcasting class separately.
+                            Spell tables below are listed per class.
                         </p>
+                    </div>
+                )}
+
+                {primaryHasSpells && (
+                    <div className="mt-4">
+                        <h5 className="text-sm font-semibold mb-2">{primaryClass.name} Spells</h5>
+                        <ClassProgressionTable
+                            feature={primarySpellProgression}
+                            className="mt-2"
+                            showCombatColumns={false}
+                        />
+                    </div>
+                )}
+
+                {secondaryHasSpells && (
+                    <div className="mt-4">
+                        <h5 className="text-sm font-semibold mb-2">{secondaryClass.name} Spells</h5>
+                        <ClassProgressionTable
+                            feature={secondarySpellProgression}
+                            className="mt-2"
+                            showCombatColumns={false}
+                        />
                     </div>
                 )}
             </div>
@@ -105,7 +139,7 @@ export function GestaltProgressionDisplay({
                         Hit Die: {primaryMechanics.hitDie ? RPG_DICE[primaryMechanics.hitDie]?.name : 'N/A'}<br />
                         BAB: {primaryMechanics.babProgression === ProgressionType.good ? 'Good' : primaryMechanics.babProgression === ProgressionType.average ? 'Medium' : 'Poor'}<br />
                         Saves: {primaryMechanics.fortProgression === ProgressionType.good ? 'Good' : 'Poor'} Fort, {primaryMechanics.refProgression === ProgressionType.good ? 'Good' : 'Poor'} Ref, {primaryMechanics.willProgression === ProgressionType.good ? 'Good' : 'Poor'} Will<br />
-                        {primaryClass.spellcastingProgression && primaryClass.spellcastingProgression.length > 0 && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
+                        {primaryHasSpells && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
                     </p>
                 </div>
                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
@@ -114,10 +148,46 @@ export function GestaltProgressionDisplay({
                         Hit Die: {secondaryMechanics.hitDie ? RPG_DICE[secondaryMechanics.hitDie]?.name : 'N/A'}<br />
                         BAB: {secondaryMechanics.babProgression === ProgressionType.good ? 'Good' : secondaryMechanics.babProgression === ProgressionType.average ? 'Medium' : 'Poor'}<br />
                         Saves: {secondaryMechanics.fortProgression === ProgressionType.good ? 'Good' : 'Poor'} Fort, {secondaryMechanics.refProgression === ProgressionType.good ? 'Good' : 'Poor'} Ref, {secondaryMechanics.willProgression === ProgressionType.good ? 'Good' : 'Poor'} Will<br />
-                        {secondaryClass.spellcastingProgression && secondaryClass.spellcastingProgression.length > 0 && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
+                        {secondaryHasSpells && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
                     </p>
                 </div>
             </div>
         </div>
     );
+}
+
+/**
+ * True when any progression row has spells-per-day or spells-known columns.
+ */
+function hasSpellColumns(rows: ProgressionRow[]): boolean {
+    return rows.some(row => row.spells !== undefined || row.spellsKnown !== undefined);
+}
+
+/**
+ * Combined gestalt table shows BAB/saves only; spell slots are rendered per class.
+ */
+function withoutSpellColumns(rows: ProgressionRow[]): ProgressionRow[] {
+    return rows.map((row) => ({
+        level: row.level,
+        bab: row.bab,
+        fort: row.fort,
+        ref: row.ref,
+        will: row.will,
+    }));
+}
+
+/**
+ * Build a class-scoped progression so formula and legacy table slots stay on that class.
+ */
+function generateClassSpellProgression(
+    cls: DnDClass,
+    features: FeatureWithRelations[],
+    classId?: number
+): ProgressionRow[] {
+    return generateClassProgression({
+        features,
+        classId,
+        spellcastingProgression: cls.spellcastingProgression ?? undefined,
+        spellsKnownProgression: cls.spellsKnownProgression ?? undefined,
+    });
 }

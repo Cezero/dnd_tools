@@ -11,6 +11,7 @@ import { getSkillSummaryById, getSkillSelectFull, getFeatNameFromCache, getItemN
 import type { FeatureWithRelations, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
 import { EntityAppliesToType, EntityType, AbilityId, FeatureSourceType, CalculationMethodType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
 
+import { resolveFeatureChoiceDisplayName } from './choiceDisplayName';
 import { conditionLabelerRegistry } from './condition-labeler-registry';
 import { conditionValueFormatterRegistry } from './condition-value-formatter-registry';
 import { DisplayStrategyBase } from './displayStrategyBase';
@@ -1492,118 +1493,39 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         context?: DisplayContext,
         domainMap?: Map<number, string>
     ): string | null {
-        if (!choice.appliesToId) {
-            return null;
+        const resolvedName = resolveFeatureChoiceDisplayName(choice, entity);
+        if (resolvedName) {
+            return resolvedName;
         }
 
-        switch (entity.appliesTo) {
-            case EntityAppliesToType.Domain: {
-                if (!choice.appliesToId) {
-                    return null;
-                }
-
-                // First, check the domainMap built from resolvedProgressions
-                if (domainMap && domainMap.has(choice.appliesToId)) {
-                    return domainMap.get(choice.appliesToId)!;
-                }
-
-                // Check if domain data is available in context
-                if (context?.domains) {
-                    const domain = context.domains.find(d => d.id === choice.appliesToId);
-                    if (domain) {
-                        return domain.name;
-                    }
-                }
-
-                // Look for features with matching domainId in resolvedProgressions
-                // These are the domain-granted features that were added when the domain was selected
-                const domainProgressions = resolvedProgressions.filter(
-                    prog => prog.domainId === choice.appliesToId
-                );
-
-                if (domainProgressions.length > 0) {
-                    // Try to get domain name from entities in domain features
-                    for (const prog of domainProgressions) {
-                        if (prog.entities) {
-                            for (const ent of prog.entities) {
-                                if (ent.appliesTo === EntityAppliesToType.Domain &&
-                                    ent.appliesToId === choice.appliesToId) {
-                                    const domainName = getDomainNameFromCache(choice.appliesToId);
-                                    if (domainName) {
-                                        return domainName;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return null;
+        // Domain names can also come from resolved domain progressions or context
+        // when the companions/domain cache is not yet populated.
+        if (entity.appliesTo === EntityAppliesToType.Domain && choice.appliesToId) {
+            if (domainMap?.has(choice.appliesToId)) {
+                return domainMap.get(choice.appliesToId) ?? null;
             }
-
-            case EntityAppliesToType.Feat: {
-                // Use cache helper for feat name
-                const featName = getFeatNameFromCache(choice.appliesToId);
-                if (featName) {
-                    return featName;
+            if (context?.domains) {
+                const domain = context.domains.find(d => d.id === choice.appliesToId);
+                if (domain) {
+                    return domain.name;
                 }
-                return null;
             }
-
-            case EntityAppliesToType.Feature: {
-                // Check if feature data is in resolved features
-                for (const prog of resolvedProgressions) {
-                    if (prog.id === choice.featureId) {
-                        return prog.name;
-                    }
-                    if (prog.entities) {
-                        for (const ent of prog.entities) {
-                            if (ent.appliesTo === EntityAppliesToType.Feature &&
-                                ent.appliesToId === choice.appliesToId) {
-                                const featureName = getFeatureNameFromCache(choice.appliesToId);
-                                if (featureName) {
-                                    return featureName;
-                                }
-                            }
-                        }
-                    }
-                }
-                return null;
+            const domainProgressions = resolvedProgressions.filter(
+                prog => prog.domainId === choice.appliesToId
+            );
+            if (domainProgressions.length > 0) {
+                return getDomainNameFromCache(choice.appliesToId);
             }
-
-            case EntityAppliesToType.Skill: {
-                // Use cache to get skill name
-                const skill = getSkillSummaryById(choice.appliesToId);
-                if (skill) {
-                    return skill.name;
-                }
-                return null;
-            }
-
-            case EntityAppliesToType.Spell: {
-                // Check if spell data is in resolved features
-                for (const prog of resolvedProgressions) {
-                    if (prog.entities) {
-                        for (const ent of prog.entities) {
-                            if (ent.appliesTo === EntityAppliesToType.Spell &&
-                                ent.appliesToId === choice.appliesToId) {
-                                const spellName = getSpellNameFromCache(choice.appliesToId);
-                                if (spellName) {
-                                    return spellName;
-                                }
-                            }
-                        }
-                    }
-                }
-                return null;
-            }
-
-            default:
-                return null;
         }
+
+        return null;
     }
 
     /**
-     * Format proficiencies using features
+     * Format proficiencies using features.
+     *
+     * Gestalt (and any other overlapping grants) is a de-duplicated union:
+     * the same proficiency from two classes appears once.
      */
     private formatProficiencies(
         resolvedProgressions: FeatureWithRelations[],
@@ -1627,9 +1549,19 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         // Extract proficiencies from individualEntities (CharacterSheetDisplayResult uses individualEntities, not levelEntries)
         if (displayResult.individualEntities && displayResult.individualEntities.length > 0) {
+            const seenValues = new Set<string>();
             for (const entity of displayResult.individualEntities) {
+                const formattedValue = entity.formattedValue?.trim();
+                if (!formattedValue) {
+                    continue;
+                }
+                const dedupeKey = formattedValue.toLowerCase();
+                if (seenValues.has(dedupeKey)) {
+                    continue;
+                }
+                seenValues.add(dedupeKey);
                 proficiencies.push({
-                    formattedValue: entity.formattedValue,
+                    formattedValue,
                     breakdown: entity.breakdown,
                     level: entity.level
                 });

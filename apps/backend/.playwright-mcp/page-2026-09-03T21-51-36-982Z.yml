@@ -1,0 +1,54 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e5]:
+    - navigation [ref=f1e6]:
+      - link "DnD Tools" [ref=f1e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f1e9]:
+        - button [ref=f1e11]:
+          - text: Logged in as
+          - strong [ref=f1e12]: cursor
+        - button "Enable dark mode" [ref=f1e13]
+    - generic [ref=f1e16]:
+      - generic [ref=f1e17]:
+        - button "Collapse sidebar to minimal" [ref=f1e19]
+        - navigation [ref=f1e23]:
+          - list [ref=f1e24]:
+            - listitem [ref=f1e25]:
+              - link "Characters" [ref=f1e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f1e30]:
+              - button "Reference" [ref=f1e31]
+            - listitem [ref=f1e37]:
+              - button "DM Tools" [ref=f1e38]
+            - listitem [ref=f1e44]:
+              - button "Admin" [ref=f1e45]
+      - main [ref=f1e52]:
+        - generic [ref=f1e56]:
+          - generic [ref=f1e57]:
+            - generic [ref=f1e58]:
+              - heading "Description" [level=2] [ref=f1e59]
+              - paragraph [ref=f1e60]: The animal attacks apparent enemies. You may point to a particular creature that you wish the animal to attack, and it will comply if able. Normally, an animal will attack only humanoids, monstrous humanoids, giants, or other animals. Teaching an animal to attack all creatures (including such unnatural creatures as undead and aberrations) counts as two tricks.
+            - generic [ref=f1e61]:
+              - heading "Details" [level=2] [ref=f1e62]
+              - generic [ref=f1e63]:
+                - generic [ref=f1e64]:
+                  - term [ref=f1e65]: DC
+                  - definition [ref=f1e66]: "20"
+                - generic [ref=f1e67]:
+                  - term [ref=f1e68]: Max Times Trainable
+                  - definition [ref=f1e69]: "2"
+                - generic [ref=f1e70]:
+                  - term [ref=f1e71]: Edition
+                  - definition [ref=f1e72]: D&D 3.5E
+                - generic [ref=f1e73]:
+                  - term [ref=f1e74]: Visible
+                  - definition [ref=f1e75]: "Yes"
+                - generic [ref=f1e76]:
+                  - term [ref=f1e77]: Source
+                  - definition [ref=f1e78]: PHB 75, PHB 74
+          - button "Delete Trick" [ref=f1e80]
+          - generic [ref=f1e81]:
+            - button "Back to Tricks" [ref=f1e82]
+            - button "Edit Trick" [ref=f1e83]
+  - generic:
+    - region "Notifications"

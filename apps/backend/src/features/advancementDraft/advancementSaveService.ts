@@ -1,5 +1,8 @@
 import { prisma } from '@/lib/prisma';
+import { resolveMaxFirstLevelHitPointsForClasses } from '@/utils/firstLevelHitPoints';
 import { AdvancementEditStateSchema } from '@shared/schema';
+
+import { companionSyncService } from '../companion/companionSyncService';
 
 /**
  * Save service for Advancement draft sessions.
@@ -18,6 +21,9 @@ export class AdvancementSaveService {
      * @param advancementDraftId - Draft id (negative) or persisted advancement id (positive)
      * @param state - Draft state object (validated via shared schema)
      * @param _userId - User id (reserved for future permission checks)
+     *
+     * Level 1 with `maxHpAtFirstLevel` writes max HD + CON so a draft value of 0
+     * does not persist after character save already applied the official 1st-level HP.
      */
     async saveSessionToMySQL(
         advancementDraftId: number,
@@ -25,6 +31,28 @@ export class AdvancementSaveService {
         _userId: number
     ): Promise<number> {
         const parsed = AdvancementEditStateSchema.parse(state);
+
+        let hitPoints = parsed.hitPoints;
+        if (parsed.level === 1 && parsed.classId > 0 && parsed.characterId > 0) {
+            const config = await prisma.characterConfig.findUnique({
+                where: { characterId: parsed.characterId },
+                select: { maxHpAtFirstLevel: true },
+            });
+            if (config?.maxHpAtFirstLevel ?? false) {
+                const abilityScores = await prisma.characterAbilityScore.findMany({
+                    where: { characterId: parsed.characterId },
+                    select: { abilityId: true, value: true },
+                });
+                const computedHitPoints = await resolveMaxFirstLevelHitPointsForClasses({
+                    primaryClassId: parsed.classId,
+                    secondaryClassId: parsed.secondaryClassId,
+                    abilityScores,
+                });
+                if (computedHitPoints !== null) {
+                    hitPoints = computedHitPoints;
+                }
+            }
+        }
 
         // Drafts created during character creation reference a draft-only (negative) characterId.
         // We intentionally do not allow persisting an Advancement without a persisted character.
@@ -44,7 +72,7 @@ export class AdvancementSaveService {
                     data: {
                         classId: parsed.classId,
                         secondaryClassId: parsed.secondaryClassId ?? null,
-                        hitPoints: parsed.hitPoints,
+                        hitPoints,
                         abilityId: parsed.abilityId ?? null,
                         notes: parsed.notes ?? null,
                     },
@@ -107,6 +135,7 @@ export class AdvancementSaveService {
                 // Note: currentAdvancementId was removed from the schema; current advancement is computed.
             });
 
+            await companionSyncService.syncFromFeatureChoices(parsed.characterId);
             return advancementDraftId;
         }
 
@@ -119,7 +148,7 @@ export class AdvancementSaveService {
                     version: parsed.version ?? 1,
                     classId: parsed.classId,
                     secondaryClassId: parsed.secondaryClassId ?? null,
-                    hitPoints: parsed.hitPoints,
+                    hitPoints,
                     abilityId: parsed.abilityId ?? null,
                     notes: parsed.notes ?? null,
                     skills: parsed.skills.length > 0 ? { create: parsed.skills } : undefined,
@@ -148,6 +177,7 @@ export class AdvancementSaveService {
             return created.id;
         });
 
+        await companionSyncService.syncFromFeatureChoices(parsed.characterId);
         return createdId;
     }
 }

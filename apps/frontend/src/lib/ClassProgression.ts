@@ -1,10 +1,12 @@
 import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
-import { displayStrategyFactory } from '@/lib/formatters';
 import type { CharacterWithAllDetailsResponse, FeatureWithRelations } from '@shared/schema';
-import { DisplayType, EntityAppliesToType, EntityType, FeatureSourceType, SavingThrowId } from '@shared/static-data';
+import { EntityAppliesToType, EntityType, FeatureSourceType, SavingThrowId } from '@shared/static-data';
 
 import { formatSignedModifier } from './formatters/modifier-utils';
 import type { ClassProgressionConfig, MinimalCharacterForFormula, ProgressionRow } from './types';
+
+const SPELL_LEVEL_MIN = 0;
+const SPELL_LEVEL_MAX = 9;
 
 /**
  * True when the feature is linked to classId, or has no class map (already fetched for this class).
@@ -75,6 +77,119 @@ function findSaveEntity(
     }
 
     return matches.find(m => m.entity.formulaParams) ?? matches[0] ?? null;
+}
+
+/**
+ * True when appliesToId is a spell level (0–9), not a leftover SpellcastingProgression row id.
+ */
+function isSpellLevelId(appliesToId: number | null | undefined): appliesToId is number {
+    return appliesToId !== null && appliesToId !== undefined
+        && appliesToId >= SPELL_LEVEL_MIN && appliesToId <= SPELL_LEVEL_MAX;
+}
+
+/**
+ * Find a spells-per-day or spells-known entity for one spell level.
+ * Prefers a formula-backed entity; skips leftover table-FK entities (appliesToId outside 0–9).
+ */
+function findSpellTableEntity(
+    features: FeatureWithRelations[],
+    level: number,
+    appliesTo: EntityAppliesToType,
+    spellLevel: number,
+    classId?: number
+) {
+    const matches: Array<{ entity: NonNullable<FeatureWithRelations['entities']>[number]; feature: FeatureWithRelations }> = [];
+
+    for (const feature of features) {
+        if (feature.sourceType !== FeatureSourceType.Class) continue;
+        if (!featureMatchesClass(feature, classId)) continue;
+        if (feature.level > level) continue;
+        if (feature.slug === 'class-mechanics') continue;
+
+        const spellEntity = feature.entities?.find(
+            e => e.type === EntityType.Base &&
+                e.appliesTo === appliesTo &&
+                e.appliesToId === spellLevel &&
+                isSpellLevelId(e.appliesToId)
+        );
+        if (spellEntity) {
+            matches.push({ entity: spellEntity, feature });
+        }
+    }
+
+    return matches.find(m => m.entity.formulaParams) ?? matches[0] ?? null;
+}
+
+/**
+ * Evaluate spells-per-day or spells-known cells for one class level via feature formulas.
+ */
+function calculateSpellColumnsForLevel(
+    features: FeatureWithRelations[],
+    level: number,
+    appliesTo: EntityAppliesToType,
+    classId?: number
+): { [spellLevel: number]: string } {
+    const mockCharacter = {
+        abilityScores: [],
+        advancements: [],
+    } as MinimalCharacterForFormula as CharacterWithAllDetailsResponse;
+
+    const columns: { [spellLevel: number]: string } = {};
+
+    for (let spellLevel = SPELL_LEVEL_MIN; spellLevel <= SPELL_LEVEL_MAX; spellLevel++) {
+        const spellData = findSpellTableEntity(features, level, appliesTo, spellLevel, classId);
+        if (!spellData) {
+            continue;
+        }
+
+        const spellValue = applyFeatureFormula(spellData.entity, mockCharacter, level);
+        if (spellValue === null || spellValue === undefined) {
+            continue;
+        }
+
+        columns[spellLevel] = spellValue > 0 ? String(spellValue) : '—';
+    }
+
+    return columns;
+}
+
+/**
+ * Slots per day for one class at one class level, from FeatureEntity formulas.
+ * Used by the character view Spells tab (`getClassById` no longer returns table progression).
+ */
+export function getSpellsPerDayMap(
+    features: FeatureWithRelations[],
+    classLevel: number,
+    classId: number
+): Map<number, number> {
+    const mockCharacter = {
+        abilityScores: [],
+        advancements: [],
+    } as MinimalCharacterForFormula as CharacterWithAllDetailsResponse;
+
+    const slots = new Map<number, number>();
+
+    for (let spellLevel = SPELL_LEVEL_MIN; spellLevel <= SPELL_LEVEL_MAX; spellLevel += 1) {
+        const spellData = findSpellTableEntity(
+            features,
+            classLevel,
+            EntityAppliesToType.SpellcastingProgression,
+            spellLevel,
+            classId
+        );
+        if (!spellData) {
+            continue;
+        }
+
+        const spellValue = applyFeatureFormula(spellData.entity, mockCharacter, classLevel);
+        if (spellValue === null || spellValue === undefined || spellValue <= 0) {
+            continue;
+        }
+
+        slots.set(spellLevel, spellValue);
+    }
+
+    return slots;
 }
 
 /**
@@ -185,7 +300,10 @@ function calculateSaveForLevel(
 }
 
 /**
- * Generates feature data for a class from level 1 to 20 using feature features
+ * Generates class progression rows for levels 1–20.
+ * BAB, saves, spells per day, and spells known come from feature formulas
+ * (`applyFeatureFormula`). Legacy SpellcastingProgression tables are used only
+ * when no formula-backed slot/known entities exist.
  */
 export function generateClassProgression(config: ClassProgressionConfig): ProgressionRow[] {
     const feature: ProgressionRow[] = [];
@@ -199,8 +317,15 @@ export function generateClassProgression(config: ClassProgressionConfig): Progre
             will: String(calculateSaveForLevel(config.features, level, SavingThrowId.Will, config.classId)),
         };
 
-        // Add spellcasting data if available
-        if (config.spellcastingProgression) {
+        const formulaSpells = calculateSpellColumnsForLevel(
+            config.features,
+            level,
+            EntityAppliesToType.SpellcastingProgression,
+            config.classId
+        );
+        if (Object.keys(formulaSpells).length > 0) {
+            row.spells = formulaSpells;
+        } else if (config.spellcastingProgression) {
             const spellProgression = config.spellcastingProgression.find(p => p.classLevel === level);
             if (spellProgression && spellProgression.slots) {
                 const spells: { [spellLevel: number]: string } = {};
@@ -211,8 +336,15 @@ export function generateClassProgression(config: ClassProgressionConfig): Progre
             }
         }
 
-        // Add spells known data if available
-        if (config.spellsKnownProgression) {
+        const formulaSpellsKnown = calculateSpellColumnsForLevel(
+            config.features,
+            level,
+            EntityAppliesToType.SpellsKnownProgression,
+            config.classId
+        );
+        if (Object.keys(formulaSpellsKnown).length > 0) {
+            row.spellsKnown = formulaSpellsKnown;
+        } else if (config.spellsKnownProgression) {
             const spellsKnownProgression = config.spellsKnownProgression.find(p => p.classLevel === level);
             if (spellsKnownProgression && spellsKnownProgression.slots) {
                 const spellsKnown: { [spellLevel: number]: string } = {};
@@ -242,10 +374,9 @@ export interface SpellSlotsGridFromDetail {
 /**
  * Build a class progression table from feature formulas.
  *
- * BAB and saves come from generateClassProgression (applyFeatureFormula).
- * The Detail display strategy hides displayInDetail=false mechanics entities,
- * so it cannot drive those columns. Spell columns still overlay from Detail
- * until spellcasting is migrated the same way.
+ * BAB, saves, spells per day, and spells known all come from
+ * generateClassProgression (applyFeatureFormula). Shared table features use
+ * displayInDetail = false so they stay out of the narrative feature list.
  */
 export function buildClassProgressionFromDetail(
     features: FeatureWithRelations[],
@@ -253,56 +384,7 @@ export function buildClassProgressionFromDetail(
 ): ProgressionRow[] {
     const mechanicsRows = generateClassProgression({ features, classId });
 
-    const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-    const result = strategy.format(
-        features,
-        { includeNonTransitionLevels: true },
-        false
-    );
-
     return mechanicsRows.map((row) => {
-        const levelEntry = result.levelEntries?.find(entry => entry.level === row.level);
-        const components = (levelEntry?.items ?? []).flatMap(item => item.breakdown?.components ?? []);
-
-        const getTotalBySourceType = (sourceType: EntityAppliesToType, sourceId?: number): number | null => {
-            const matching = components.filter(component => {
-                if (component.sourceType !== sourceType) {
-                    return false;
-                }
-                if (sourceId !== undefined && component.sourceId !== sourceId) {
-                    return false;
-                }
-                return true;
-            });
-
-            if (matching.length === 0) {
-                return null;
-            }
-
-            const first = matching[0];
-            if (typeof first.value === 'number') {
-                return first.value;
-            }
-            const numeric = Number(first.value);
-            return Number.isNaN(numeric) ? null : numeric;
-        };
-
-        const spells: { [spellLevel: number]: string } = {};
-        for (let spellLevel = 0; spellLevel <= 9; spellLevel++) {
-            const total = getTotalBySourceType(EntityAppliesToType.SpellcastingProgression, spellLevel);
-            if (total !== null) {
-                spells[spellLevel] = total > 0 ? String(total) : '—';
-            }
-        }
-
-        const spellsKnown: { [spellLevel: number]: string } = {};
-        for (let spellLevel = 0; spellLevel <= 9; spellLevel++) {
-            const total = getTotalBySourceType(EntityAppliesToType.SpellsKnownProgression, spellLevel);
-            if (total !== null) {
-                spellsKnown[spellLevel] = total > 0 ? String(total) : '—';
-            }
-        }
-
         const built: ProgressionRow = {
             level: row.level,
             bab: row.bab,
@@ -311,11 +393,11 @@ export function buildClassProgressionFromDetail(
             will: formatSignedModifier(Number(row.will)),
         };
 
-        if (Object.keys(spells).length > 0) {
-            built.spells = spells;
+        if (row.spells && Object.keys(row.spells).length > 0) {
+            built.spells = row.spells;
         }
-        if (Object.keys(spellsKnown).length > 0) {
-            built.spellsKnown = spellsKnown;
+        if (row.spellsKnown && Object.keys(row.spellsKnown).length > 0) {
+            built.spellsKnown = row.spellsKnown;
         }
 
         return built;

@@ -37,6 +37,7 @@ export function buildCharacterEditState(
         allowVariantClasses: character.config?.allowVariantClasses ?? false,
         isGestalt: character.config?.isGestalt ?? false,
         ignoreLevelAdjustment: character.config?.ignoreLevelAdjustment ?? false,
+        maxHpAtFirstLevel: character.config?.maxHpAtFirstLevel ?? false,
 
         abilityScores: character.abilityScores?.map((a) => ({ abilityId: a.abilityId, value: a.value })) ?? [],
         disallowedSources: character.disallowedSources?.map((ds) => ({ sourceBookId: ds.sourceBookId })) ?? [],
@@ -45,5 +46,7 @@ export function buildCharacterEditState(
         characterItems: character.characterItems ?? [],
         attackDefinitions: character.attackDefinitions ?? [],
         characterLanguages: character.characterLanguages ?? [],
+        companions: character.companions ?? [],
+        selectedForms: character.selectedForms ?? [],
     };
 }

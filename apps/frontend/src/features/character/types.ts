@@ -1,7 +1,7 @@
 import React from 'react';
 
 import type { FormattedCharacterResult } from '@/lib/formatters';
-import type { FeatureWithRelations, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterFeatureChoice, CharacterDisallowedSource, FeatWithFeatureInfo, FeatInQueryResponse, PendingChoice, SkillBonus, ClassSpellSelection, ItemWithDetails } from '@shared/schema';
+import type { FeatureWithRelations, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterCompanionDraft, CharacterFeatureChoice, CharacterDisallowedSource, CharacterSelectedFormDraft, FeatWithFeatureInfo, FeatInQueryResponse, PendingChoice, ResolvedCharacterCompanionDraft, ResolvedSelectedFormDraft, SkillBonus, ClassSpellSelection, ItemWithDetails } from '@shared/schema';
 import { PROFICIENCY_TYPE_ENUM, ResolutionStepType, CoreComponent, SpellSlotType } from '@shared/static-data';
 
 import { useCharacterResolution } from './useCharacterResolution';
@@ -88,6 +88,8 @@ export interface ClassTabState {
     allowVariantClasses: boolean;
     /** Whether to ignore level adjustment from race/template */
     ignoreLevelAdjustment: boolean;
+    /** Official 3.x: max Hit Die at 1st level */
+    maxHpAtFirstLevel: boolean;
     /** Source books that are disallowed for this character */
     disallowedSources: CharacterDisallowedSource[];
 }
@@ -267,7 +269,7 @@ export interface EquipmentItem {
  * Represents the character's currency holdings.
  * 
  * Frontend-specific type for tracking money during character editing.
- * Maps to the platinum/gold/silver/copper fields in the Character schema.
+ * Quantity-only rows in `CharacterWealth` (value and description null).
  */
 export interface Money {
     /** Platinum pieces (1 pp = 10 gp) */
@@ -278,6 +280,47 @@ export interface Money {
     silver: number;
     /** Copper pieces (1 sp = 10 cp) */
     copper: number;
+    /** Count of gems (not appraised individually yet) */
+    gem: number;
+    /** Count of art objects (not appraised individually yet) */
+    artObject: number;
+    /** Count of other valuables */
+    other: number;
+}
+
+/** Zeroed coin and valuable quantities. */
+export const EMPTY_MONEY: Money = {
+    platinum: 0,
+    gold: 0,
+    silver: 0,
+    copper: 0,
+    gem: 0,
+    artObject: 0,
+    other: 0,
+};
+
+/**
+ * Quantity-only or described `CharacterWealth` row written to the character draft.
+ */
+export interface WealthDraftEntry {
+    id: number;
+    characterId: number;
+    currencyId: number;
+    quantity: number;
+    value: number | null;
+    description: string | null;
+}
+
+/**
+ * API or draft wealth row before nulls are normalized.
+ */
+export interface WealthRowInput {
+    id: number;
+    characterId: number;
+    currencyId: number;
+    quantity: number;
+    value?: number | null;
+    description?: string | null;
 }
 
 // ============================================================================
@@ -640,6 +683,27 @@ export interface UseResolvedFeaturesProps {
 // ============================================================================
 
 /**
+ * Draft-only character + advancement ids after Redis resume or re-init.
+ *
+ * Used when `/characters/:id/edit` is opened with a minted negative character id
+ * (refresh, deploy, or expired TTL). The character id stays the URL value;
+ * advancement is the session draft or a newly minted create draft.
+ */
+export interface DraftOnlyEditSession {
+    characterId: number;
+    advancementDraftId: number;
+}
+
+/**
+ * Context required to mint or re-initialize a draft-only advancement (`mode: 'create'`).
+ */
+export interface AdvancementCreateContext {
+    characterId: number;
+    level: number;
+    mode: 'create';
+}
+
+/**
  * Centralized state for CharacterEdit component that eliminates per-tab state management
  * and provides a single source of truth for all character data.
  */
@@ -666,6 +730,7 @@ export interface CharacterEditState {
     editionId: number | null;
     allowVariantClasses: boolean;
     ignoreLevelAdjustment: boolean;
+    maxHpAtFirstLevel: boolean;
     disallowedSources: CharacterDisallowedSource[];
 
     // User Choices (ChoicesTab inputs)
@@ -721,6 +786,10 @@ export interface CharacterEditState {
 
     // Combat Tab UI State
     attackDefinitions: AttackDefinition[];
+
+    // Animals & Pets Tab UI State
+    companions: CharacterCompanionDraft[];
+    selectedForms: CharacterSelectedFormDraft[];
 }
 
 /**
@@ -764,7 +833,10 @@ export enum CharacterEditStateUpdateType {
     SET_CURRENT_ADVANCEMENT_ID = 34,
     SET_ATTACK_DEFINITIONS = 35,
     SET_SELECTED_BONUS_LANGUAGES = 36,
-    SET_SPELLS_KNOWN = 37
+    SET_SPELLS_KNOWN = 37,
+    SET_MAX_HP_AT_FIRST_LEVEL = 38,
+    SET_COMPANIONS = 39,
+    SET_SELECTED_FORMS = 40
 }
 
 export type CharacterEditStateUpdate =
@@ -780,6 +852,7 @@ export type CharacterEditStateUpdate =
     | { type: CharacterEditStateUpdateType.SET_EDITION; payload: { editionId: number | null } }
     | { type: CharacterEditStateUpdateType.SET_ALLOW_VARIANT_CLASSES; payload: { allowVariantClasses: boolean } }
     | { type: CharacterEditStateUpdateType.SET_IGNORE_LEVEL_ADJUSTMENT; payload: { ignoreLevelAdjustment: boolean } }
+    | { type: CharacterEditStateUpdateType.SET_MAX_HP_AT_FIRST_LEVEL; payload: { maxHpAtFirstLevel: boolean } }
     | { type: CharacterEditStateUpdateType.SET_DISALLOWED_SOURCES; payload: { disallowedSources: CharacterDisallowedSource[] } }
     | { type: CharacterEditStateUpdateType.SET_FEATURE_CHOICES; payload: { featureChoices: CharacterFeatureChoice[] } }
     | { type: CharacterEditStateUpdateType.SET_SKILL_RANKS; payload: { skillRanks: SkillRank[] } }
@@ -813,7 +886,9 @@ export type CharacterEditStateUpdate =
     | { type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID; payload: { currentAdvancementId: number | null } }
     | { type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS; payload: { attackDefinitions: AttackDefinition[] } }
     | { type: CharacterEditStateUpdateType.SET_SELECTED_BONUS_LANGUAGES; payload: { selectedBonusLanguages: number[] } }
-    | { type: CharacterEditStateUpdateType.SET_SPELLS_KNOWN; payload: { spellsKnown: Array<{ spellId: number; isFreeGrant: boolean }> } };
+    | { type: CharacterEditStateUpdateType.SET_SPELLS_KNOWN; payload: { spellsKnown: Array<{ spellId: number; isFreeGrant: boolean }> } }
+    | { type: CharacterEditStateUpdateType.SET_COMPANIONS; payload: { companions: CharacterCompanionDraft[] } }
+    | { type: CharacterEditStateUpdateType.SET_SELECTED_FORMS; payload: { selectedForms: CharacterSelectedFormDraft[] } };
 
 /**
  * Props interface for tab components using the centralized state system.
@@ -833,6 +908,8 @@ export interface TabComponentProps {
         /** List of feats the character qualifies for, filtered by prerequisites, proficiencies, owned feats, etc. Answers "Which feats can you select from?" */
         qualifiedFeats: FeatInQueryResponse[];
         spellSelection?: Record<string, ClassSpellSelection>;
+        resolvedCompanions: ResolvedCharacterCompanionDraft[];
+        resolvedSelectedForms: ResolvedSelectedFormDraft[];
     };
     isLoading: boolean;
     triggerFeatureResolution: () => Promise<void>;

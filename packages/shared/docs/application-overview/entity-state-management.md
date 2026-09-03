@@ -112,6 +112,8 @@ The request body is validated by `UpdateStateValueSchema` (`packages/shared/sche
 - **value**: scalar (`string | number | boolean | null`)
 - **action**: optional `DraftAction` (defaults to Update)
 
+Each `updateValue` reads and writes the **whole** draft JSON document. Multiple backend docks applying those writes without coordination last-write-wins and drop earlier fields (the failure mode that left advancement `featureChoices` empty in Redis). `StateUpdateService` therefore applies each path update through `DraftStateService.applyAtomicMutation`, which compare-and-sets the raw Redis string and retries on conflict. Save still reads only Redis; the browser is not a second source of truth.
+
 ### **New drafts: minted negative ids**
 
 New drafts are created with a **minted negative id** to avoid collisions and to keep the draft id consistent with the draft state's internal id fields:
@@ -125,6 +127,8 @@ New drafts are created with a **minted negative id** to avoid collisions and to 
   - Race drafts: `state.raceId === negativeDraftId`
 
 After minting, **all subsequent draft operations** (`update-value`, `save`, `cancel`) must use the **minted negative id**.
+
+Refreshing an edit URL that still has that negative id must call `startEditing` again with the minted id (not `id = 0`). If the Redis key is gone, `startEditing` re-initializes `getInitialCreateState` under the same id. Advancement drafts still send `{ characterId, level, mode }` in `context`. Do not mint a new id unless the session has no advancement draft to resume.
 
 ### **Save behavior: create vs update**
 

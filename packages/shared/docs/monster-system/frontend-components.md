@@ -25,7 +25,7 @@ Reusable component for displaying monster information without navigation or page
   - Skill names (synchronous cache lookup using `getSkillNameFromCache`)
 - Displays complete monster statblock:
   - Basic information (name, edition, source, size, type, subtypes)
-  - Combat statistics (hit dice, initiative, speed, armor class, base attack/grapple, attack, full attack, space/reach)
+  - Combat statistics (hit dice resolved via `@RpgDice` / `RPG_DICE`, initiative, speed, armor class, base attack/grapple, attack, full attack, space/reach)
   - Special abilities (special attacks, special qualities)
   - Saves, abilities, skills, feats
   - Organization, challenge rating, treasure, alignment, advancement, level adjustment
@@ -124,6 +124,21 @@ Monster-related components use cache-based lookups for efficient entity name res
 
 **Source**: `frontend/src/services/cache/IdMapHelpers.ts`
 
+### Hit Dice Display
+
+`hitDiceType` stores an `@RpgDice` enum id (`D4=0`, `D6=1`, `D8=2`, …), not die faces. Display must look up `RPG_DICE[id].name` (`d8`). Interpolating the integer produces the wrong die (`2` → `d2`).
+
+**Source**: `frontend/src/lib/formatHitDice.ts`
+
+Used by:
+
+- **MonsterDisplayContent**: full line (`1d8+2 (6 hp)`)
+- **MonsterColumns**: list HD column (`0.5d8`)
+- **buildRevisedStatBlock**: companion/revised HP calculation, including extra hit dice
+- **WildShapeSection**: form picker labels
+
+`0` is D4 — treat it as a valid id, not falsy.
+
 ## Design Decisions
 
 1. **Reusable Display Component**: `MonsterDisplayContent` is used in both detail pages and tooltips for consistency
@@ -132,6 +147,7 @@ Monster-related components use cache-based lookups for efficient entity name res
 4. **EntityLink for Spells**: Spell links in "Prepared Spells" section use `EntityLink` for tooltip support, while markdown content is handled automatically
 5. **Collapsible Sections**: Description, combat, and extra descriptions use collapsible sections for better UX
 6. **Cache-Based Lookups**: Uses cache-based lookups for efficient synchronous access to entity names
+7. **RpgDice Lookup for HD**: Hit dice type is an enum id; `formatHitDice` / `formatHitDiceNotation` resolve it through `RPG_DICE` so D8 displays as `d8`, not `d2`
 
 ## Related Documentation
 

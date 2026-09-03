@@ -24,7 +24,7 @@ import { getTotalGoldInGp, getItemCostInGp, convertGpToMoney } from '../utils/mo
 function deductCost(money: Money, costInGp: number): Money {
     const totalGp = getTotalGoldInGp(money);
     const remainingGp = Math.max(0, totalGp - costInGp);
-    return convertGpToMoney(remainingGp);
+    return convertGpToMoney(remainingGp, money);
 }
 
 export function EquipmentPurchaseDialog({

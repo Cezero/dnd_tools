@@ -2,6 +2,12 @@ import React from 'react';
 
 import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
+import {
+    collectFeatureChoices,
+    formatFeatNameWithSubtype,
+    formatFeatureNameWithChoices,
+} from '@/lib/formatters/choiceDisplayName';
+import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { getQueryClient } from '@/lib/formatters/utils/queryClientAccessor';
 import { getClassNameFromCache, getFeatSummaryById, getRaceSummaryById } from '@/services/cache';
 import type { Feat, FeatureWithRelations } from '@shared/schema';
@@ -11,7 +17,12 @@ import type { FeaturesTabProps } from './types';
 
 /**
  * FeaturesTab displays race/class features, feats, proficiencies, and languages.
- * Follows the same filtering and display logic as characterPdfService.ts
+ *
+ * Features and feats that have a saved player choice append that choice to the
+ * title (for example `Animal Companion: Dog`, `Weapon Focus (Longsword)`).
+ * Chassis features (BAB, class skills, proficiency wrappers) are omitted via
+ * `FeatureDisplayFilter.shouldListFeatureInCharacterView`. Proficiencies are a
+ * de-duplicated union. Follows the same filtering as characterPdfService.ts
  */
 export function FeaturesTab({ character, formattedCharacter, resolvedProgressions }: FeaturesTabProps): React.JSX.Element {
     // Calculate class levels per class for multi-class support
@@ -37,6 +48,7 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
             if (
                 feature.sourceType === FeatureSourceType.Race &&
                 feature.level <= character.advancements.length &&
+                FeatureDisplayFilter.shouldListFeatureInCharacterView(feature) &&
                 !raceFeatureMap.has(feature.id)
             ) {
                 raceFeatureMap.set(feature.id, feature);
@@ -53,7 +65,8 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
         for (const feature of resolvedProgressions) {
             if (
                 feature.sourceType === FeatureSourceType.Class &&
-                feature.classes && feature.classes.length > 0
+                feature.classes && feature.classes.length > 0 &&
+                FeatureDisplayFilter.shouldListFeatureInCharacterView(feature)
             ) {
                 // Process each class linked to this feature
                 for (const classLink of feature.classes) {
@@ -74,6 +87,8 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
 
         return classFeaturesMap;
     }, [resolvedProgressions, classLevelCounts]);
+
+    const featureChoices = React.useMemo(() => collectFeatureChoices(character), [character]);
 
     // Get all character feats for categorization
     const allCharacterFeats = React.useMemo(() => {
@@ -250,7 +265,7 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                     </h3>
                     <div className="space-y-2">
                         {raceFeatures.map((feature) => {
-                            const featureName = feature.name || '';
+                            const featureName = formatFeatureNameWithChoices(feature, featureChoices);
                             const summary = feature.summary || '';
                             if (!featureName && !summary) return null;
 
@@ -288,7 +303,7 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                         </h3>
                         <div className="space-y-2">
                             {features.map((feature) => {
-                                const featureName = feature.name || '';
+                                const featureName = formatFeatureNameWithChoices(feature, featureChoices);
                                 const summary = feature.summary || '';
                                 if (!featureName && !summary) return null;
 
@@ -326,15 +341,19 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                                     </h4>
                                 )}
                                 <div className={category.header !== 'Regular Feats' ? 'pl-4' : ''}>
-                                    {category.feats.map(({ feat }) => {
+                                    {category.feats.map(({ feat, characterFeat }) => {
                                         // Get full feat data using getFeatById
                                         const fullFeat = featDetailsMap.get(feat.featId);
 
                                         // Get feat name from fullFeat if available, otherwise try cache, then formattedCharacter
-                                        const featName = fullFeat?.name
+                                        const baseFeatName = fullFeat?.name
                                             || getFeatSummaryById(feat.featId)?.name
                                             || feat.featName
                                             || `Feat ${feat.featId}`;
+                                        const featSubId = characterFeat?.featSubId
+                                            ?? allCharacterFeats.find((entry) => entry.featId === feat.featId)?.featSubId
+                                            ?? null;
+                                        const featName = formatFeatNameWithSubtype(baseFeatName, featSubId);
 
                                         // Get feat summary from the associated Feature via features
                                         // The feat summary is stored in the Feature table, not the Feat table

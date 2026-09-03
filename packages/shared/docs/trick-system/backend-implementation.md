@@ -4,7 +4,7 @@
 
 ## 📋 **Overview**
 
-The trick system backend implementation provides the API layer for managing tricks, which are abilities that can be taught to animal companions. The system supports edition-based filtering, visibility management, and source book attribution through transaction-based source book mapping.
+The trick system backend implementation provides the API layer for managing tricks, which are abilities that can be taught to animal companions. Each trick stores a Handle Animal teaching DC (`dc`). The system also supports edition-based filtering, visibility management, and source book attribution through transaction-based source book mapping.
 
 The backend implementation follows the shared [Backend Implementation Patterns](../application-overview/backend-implementation.md) with trick-specific business logic and integration patterns.
 
@@ -35,6 +35,7 @@ The trick system uses a service-oriented architecture following the shared [Serv
 ### **Key Design Principles**
 
 **Trick Definitions**: Admin-managed trick templates for animal companions
+**Teaching DC**: Required `dc` integer — the Handle Animal DC to teach the trick (typically 15, or 20 for tricks such as Attack)
 **Source Attribution**: Source book mapping for trick attribution
 **Edition Support**: Edition-based filtering for multi-edition support
 **Visibility Control**: Visibility flag for hiding/showing tricks
@@ -85,6 +86,8 @@ The central service for all trick management operations.
 
 **Returns**: GetTrickResponse with complete trick data including source book information, or null if not found
 
+The frontend detail page (`/tricks/:id`) parses this as `GetTrickResponseSchema` and renders source books with `getSourceDisplay` (same helper as spells, feats, classes, and races).
+
 **Business Logic**:
 1. Queries trick by ID
 2. Includes related source book information (sourceBookId, pageNumber)
@@ -98,7 +101,7 @@ The central service for all trick management operations.
 
 **Architecture Decision**: Uses transaction to ensure atomic creation of trick and source book mappings. Uses delete/recreate pattern for source book mappings to ensure data consistency.
 
-**Parameters**: CreateTrickRequest with trick data and optional sourceBookInfo array
+**Parameters**: CreateTrickRequest with trick data (including required teaching `dc`) and optional sourceBookInfo array
 
 **Returns**: CreateResponse with created trick ID
 
@@ -315,6 +318,17 @@ Tricks integrate with the source book system:
 - **Benefits**: Multi-edition support, better organization
 - **Limitations**: Requires edition assignment for all tricks
 
+### **Why Teaching DC on Trick**
+
+**Decision**: Each trick stores a required `dc` integer for the Handle Animal check to teach that trick.
+
+**Rationale**:
+- **Rules Accuracy**: 3.5e Handle Animal lists a teaching DC per trick
+- **Companion Training**: Character companion flows can show the DC without encoding it in description text
+- **Simplicity**: A single integer matches the published table (15 for most tricks, 20 for Attack and similar)
+
+**Source**: Prisma `Trick.dc` in `apps/backend/prisma/schema.prisma`; Zod `TrickSchema.dc` in `packages/shared/schema/src/trick.ts`
+
 ### **Why Visibility Flag**
 
 **Decision**: Tricks include isVisible flag for hiding unpublished content.
@@ -343,6 +357,7 @@ Tricks integrate with the source book system:
 The trick system backend implementation provides a robust, flexible, and efficient foundation for trick management. The implementation follows established patterns, provides comprehensive error handling, and ensures data integrity through proper validation, transaction management, and source book attribution.
 
 Key strengths include:
+- **Teaching DC**: Required Handle Animal DC stored on each trick
 - **Source Book Attribution**: Proper source attribution with page numbers
 - **Edition Filtering**: Multi-edition support with filtering
 - **Visibility Management**: Content management through visibility flag

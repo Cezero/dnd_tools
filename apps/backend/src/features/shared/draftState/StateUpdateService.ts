@@ -18,9 +18,9 @@ import { applyDraftActionAtPath, type JsonObject } from '../utils';
  * 
  * **Update Flow**:
  * 1. Check draft lock (must be locked by requesting user)
- * 2. Retrieve current state from Redis
- * 3. Update value at specified path using path parser
- * 4. Persist updated state back to Redis
+ * 2. Atomically get-modify-set the Redis document (compare-and-set retries)
+ * 3. Apply the path update against the current snapshot
+ * 4. Persist only if Redis still matches that snapshot
  * 
  * @see DraftStateService - For generic state storage
  * @see DraftLockService - For lock management
@@ -99,32 +99,26 @@ export class StateUpdateService {
             throw new Error(`Draft ${draftType}:${lockEntityId} is locked by another user`);
         }
 
-        // Get current state
-        const currentState = await this.draftStateService.getState<JsonObject>(
+        let mintedId: number | undefined;
+        const updatedState = await this.draftStateService.applyAtomicMutation<JsonObject>(
             draftType,
-            lockEntityId
+            lockEntityId,
+            (currentState) => {
+                const applyResult = applyDraftActionAtPath(
+                    currentState,
+                    path,
+                    value as string | number | boolean | null,
+                    action ?? DraftAction.Update,
+                    { draftType, draftId: lockEntityId }
+                );
+                mintedId = applyResult.id;
+                return applyResult.updated;
+            }
         );
-
-        if (!currentState) {
-            throw new Error(`State not found for ${draftType}:${lockEntityId}`);
-        }
-
-        // Update value at path (DraftAction default is Update)
-        const applyResult = applyDraftActionAtPath(
-            currentState,
-            path,
-            value as string | number | boolean | null,
-            action ?? DraftAction.Update,
-            { draftType, draftId: lockEntityId }
-        );
-        const updatedState = applyResult.updated;
-
-        // Persist updated state
-        await this.draftStateService.setState(draftType, lockEntityId, updatedState);
 
         return {
             updatedState,
-            ...(applyResult.id !== undefined && { id: applyResult.id }),
+            ...(mintedId !== undefined && { id: mintedId }),
         };
     }
 }

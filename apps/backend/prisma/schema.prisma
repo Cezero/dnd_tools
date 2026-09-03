@@ -119,12 +119,13 @@ model Feature {
 
   // Relationships
   prerequisites       FeaturePrerequisite[]
-  transformationForms TransformationFormEligibility[]
-  spellcasting        SpellcastingLink?
+  transformationForms    TransformationFormEligibility[]
+  spellcasting           SpellcastingLink?
   characterFeatureChoice CharacterFeatureChoice[]
-  entities            FeatureEntity[]
-  displayConditions   FeatureCondition[]
-  characterFeatureUses CharacterFeatureUses[]
+  entities               FeatureEntity[]
+  displayConditions      FeatureCondition[]
+  characterFeatureUses   CharacterFeatureUses[]
+  selectedForms          CharacterSelectedForm[]
 
   @@index([featId])
   @@index([companionId])
@@ -133,8 +134,9 @@ model Feature {
 
 // Junction table for many-to-many class-feature relationship
 model FeatureClassMap {
-  featureId Int
-  classId   Int
+  featureId    Int
+  classId      Int
+  levelDivisor Int @default(1) // 1 = full class level; 2 = ranger animal companion (half level)
 
   feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
   class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
@@ -201,8 +203,8 @@ model FeatureFormulaParams {
   // Starting value for formulas that need a different starting value than the increment (e.g., EVERY_N_LEVELS)
   startingValue Int? // Starting value (defaults to entity.value if null)
 
-  // Max value / cap for formulas that have an upper bound (e.g., SPELL_SLOTS_TRIANGULAR, SPELL_SLOTS_LINEAR)
-  maxValue Int? // Cap (max slots); when null, spell-slot formulas fall back to entity.value for backward compatibility
+  // Max value / cap for formulas that have an upper bound
+  maxValue Int?
 
   featureEntity FeatureEntity[]
 }
@@ -345,9 +347,10 @@ model Skill {
   doubleArmorPenalty Boolean              @default(false) // true for Swim (double armor check penalty)
   sourceBookInfo     SkillSourceBookMap[]
 
-  advSkills AdvancementSkill[]
-  monsters  MonsterSkillMap[]
-  subtypes  SkillSubtype[]
+  advSkills               AdvancementSkill[]
+  monsters                MonsterSkillMap[]
+  subtypes                SkillSubtype[]
+  characterCompanionSkills CharacterCompanionSkill[]
 }
 
 model SkillSourceBookMap {
@@ -394,6 +397,7 @@ model Feat {
   monsters                   MonsterFeatMap[]
   features                   Feature[]
   characterSpellPreparations CharacterSpellPreparation[]
+  characterCompanionFeats    CharacterCompanionFeat[]
 }
 
 model FeatSourceBookMap {
@@ -631,6 +635,7 @@ model SourceBook {
   domains                    DomainSourceMap[] // NEW: Domain source references
   deities                    DeitySourceMap[] // NEW: Deity source references
   tricks                     TrickSourceMap[] // NEW: Trick source references
+  trickPurposes              TrickPurposeSourceMap[]
   characterDisallowedSources CharacterDisallowedSource[] // NEW: Character disallowed sources relationship
   skillSourceBookInfo        SkillSourceBookMap[]
   featSourceBookInfo         FeatSourceBookMap[]
@@ -723,6 +728,7 @@ model Character {
   characterItems     CharacterItem[]
   attackDefinitions  CharacterAttackDefinition[]
   companions         CharacterCompanion[]
+  selectedForms      CharacterSelectedForm[]
   advancements       CharacterAdvancement[]
   preparedSpells     CharacterSpellPreparation[]
   disallowedSources  CharacterDisallowedSource[] // NEW: Disallowed sources relationship
@@ -741,6 +747,8 @@ model CharacterConfig {
   allowVariantClasses   Boolean @default(false) // Allow class variants
   isGestalt             Boolean @default(false) // Gestalt multiclassing
   ignoreLevelAdjustment Boolean @default(false) // Ignore LA for XP calculation
+  /// Official 3.0/3.5: max Hit Die at 1st level. Unchecked = roll (or enter) 1st-level HP. Lives on the character until campaign settings exist.
+  maxHpAtFirstLevel     Boolean @default(false)
 
   character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }
@@ -1190,6 +1198,7 @@ model Monster {
   transformationForms TransformationFormEligibility[]
   companions          Companion[]
   characterCompanions CharacterCompanion[]
+  selectedForms       CharacterSelectedForm[]
 }
 
 model MonsterTypeMap {
@@ -1378,14 +1387,15 @@ model MonsterExtraDescription {
 // =================
 
 model Companion {
-  id        Int  @id @default(autoincrement())
-  type      Int // CompanionType enum
-  monsterId Int // Link to Monster for base statistics (required)
-  minLevel  Int? // Minimum character level required (for Alternative Companions and Improved Familiars)
+  id              Int  @id @default(autoincrement())
+  type            Int // CompanionType enum
+  monsterId       Int // Link to Monster for base statistics (required)
+  minLevel        Int? // Minimum character level required (for Alternative Companions and Improved Familiars)
+  levelAdjustment Int? // PHB alternative-list penalty (3 / 6 / 9 / 12 / 15)
 
   monster             Monster              @relation(fields: [monsterId], references: [id])
   characterCompanions CharacterCompanion[]
-  features             Feature[] // Features for companion benefits
+  features            Feature[] // Features for companion benefits
 
   @@unique([type, monsterId, minLevel])
   @@index([type])
@@ -1393,39 +1403,51 @@ model Companion {
 }
 
 model CharacterCompanion {
-  id            Int  @id @default(autoincrement())
-  characterId   Int
-  monsterId     Int // Direct reference to Monster (not through Companion)
-  companionId   Int? // Optional reference to Companion for familiars with benefits
-  levelAcquired Int?
-  hitPoints     Int? // Current/max hit points (defaults to Monster.averageHP, can be rolled)
-  wounds        Int  @default(0) // Current damage taken (for combat tracking)
+  id             Int     @id @default(autoincrement())
+  characterId    Int
+  monsterId      Int // Direct reference to Monster (not through Companion)
+  companionId    Int? // Optional reference to Companion for familiars with benefits
+  trickPurposeId Int? // Handle Animal general purpose (at most one)
+  name           String? // Player-given name
+  levelAcquired  Int?
+  hitPoints      Int? // Current/max hit points (defaults to Monster.averageHP, can be rolled)
+  wounds         Int     @default(0) // Current damage taken (for combat tracking)
 
-  character Character                 @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  monster   Monster                   @relation(fields: [monsterId], references: [id])
-  companion Companion?                @relation(fields: [companionId], references: [id])
-  tricks    CharacterCompanionTrick[]
+  character    Character                 @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  monster      Monster                   @relation(fields: [monsterId], references: [id])
+  companion    Companion?                @relation(fields: [companionId], references: [id])
+  trickPurpose TrickPurpose?             @relation(fields: [trickPurposeId], references: [id])
+  tricks       CharacterCompanionTrick[]
+  skills       CharacterCompanionSkill[]
+  feats        CharacterCompanionFeat[]
 
   @@index([characterId])
   @@index([monsterId])
   @@index([companionId])
+  @@index([trickPurposeId])
 }
 
 model Trick {
-  id          Int     @id @default(autoincrement())
-  name        String
-  description String? @db.Text
-  editionId   Int
-  isVisible   Boolean @default(true)
+  id                 Int     @id @default(autoincrement())
+  name               String
+  description        String? @db.Text
+  editionId          Int
+  dc                 Int
+  maxTimesTrainable  Int     @default(1) // Attack is 2; others 1
+  isVisible          Boolean @default(true)
 
   characterCompanionTricks CharacterCompanionTrick[]
+  purposeTricks            TrickPurposeTrick[]
   sourceBookInfo           TrickSourceMap[]
 }
 
 model CharacterCompanionTrick {
-  id                   Int @id @default(autoincrement())
+  id                   Int     @id @default(autoincrement())
   characterCompanionId Int
   trickId              Int
+  timesTrained         Int     @default(1) // Slot cost; 2 = Attack trained vs all creatures
+  isBonus              Boolean @default(false) // PHB bonus tricks do not count against Int limit
+  fromPurpose          Boolean @default(false) // Granted by the selected general purpose
 
   characterCompanion CharacterCompanion @relation(fields: [characterCompanionId], references: [id], onDelete: Cascade)
   trick              Trick              @relation(fields: [trickId], references: [id], onDelete: Cascade)
@@ -1444,6 +1466,97 @@ model TrickSourceMap {
   sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
 
   @@id([trickId, sourceBookId])
+}
+
+model TrickPurpose {
+  id                Int     @id @default(autoincrement())
+  name              String
+  description       String? @db.Text
+  dc                Int
+  trainingWeeks     Int
+  editionId         Int
+  isVisible         Boolean @default(true)
+  replacesPurposeId Int? // e.g. Combat Riding replaces Riding
+
+  replacesPurpose     TrickPurpose?            @relation("TrickPurposeReplacement", fields: [replacesPurposeId], references: [id])
+  replacedBy          TrickPurpose[]           @relation("TrickPurposeReplacement")
+  tricks              TrickPurposeTrick[]
+  characterCompanions CharacterCompanion[]
+  sourceBookInfo      TrickPurposeSourceMap[]
+
+  @@index([editionId])
+  @@index([replacesPurposeId])
+}
+
+model TrickPurposeTrick {
+  id           Int @id @default(autoincrement())
+  purposeId    Int
+  trickId      Int
+  timesTrained Int @default(1)
+
+  purpose TrickPurpose @relation(fields: [purposeId], references: [id], onDelete: Cascade)
+  trick   Trick        @relation(fields: [trickId], references: [id], onDelete: Cascade)
+
+  @@unique([purposeId, trickId])
+  @@index([purposeId])
+  @@index([trickId])
+}
+
+model TrickPurposeSourceMap {
+  trickPurposeId Int
+  sourceBookId   Int
+  pageNumber     Int?
+
+  trickPurpose TrickPurpose @relation(fields: [trickPurposeId], references: [id], onDelete: Cascade)
+  sourceBook   SourceBook   @relation(fields: [sourceBookId], references: [id])
+
+  @@id([trickPurposeId, sourceBookId])
+}
+
+model CharacterCompanionSkill {
+  id                   Int  @id @default(autoincrement())
+  characterCompanionId Int
+  skillId              Int
+  skillSubId           Int?
+  ranks                Int
+
+  characterCompanion CharacterCompanion @relation(fields: [characterCompanionId], references: [id], onDelete: Cascade)
+  skill              Skill              @relation(fields: [skillId], references: [id])
+
+  @@unique([characterCompanionId, skillId, skillSubId])
+  @@index([characterCompanionId])
+  @@index([skillId])
+}
+
+model CharacterCompanionFeat {
+  id                   Int     @id @default(autoincrement())
+  characterCompanionId Int
+  featId               Int
+  notes                String? @db.VarChar(128)
+
+  characterCompanion CharacterCompanion @relation(fields: [characterCompanionId], references: [id], onDelete: Cascade)
+  feat               Feat               @relation(fields: [featId], references: [id])
+
+  @@unique([characterCompanionId, featId, notes])
+  @@index([characterCompanionId])
+  @@index([featId])
+}
+
+model CharacterSelectedForm {
+  id         Int @id @default(autoincrement())
+  characterId Int
+  featureId  Int
+  monsterId  Int
+  sortOrder  Int @default(0)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  feature   Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  monster   Monster   @relation(fields: [monsterId], references: [id])
+
+  @@unique([characterId, featureId, monsterId])
+  @@index([characterId])
+  @@index([featureId])
+  @@index([monsterId])
 }
 
 // =================

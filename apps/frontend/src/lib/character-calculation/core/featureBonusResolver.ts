@@ -26,6 +26,10 @@ export function resolveFeatureBonuses(
             // Check if entity applies to the requested type
             if (entity.appliesTo !== appliesTo) continue;
 
+            // Base values (race speed, BAB, etc.) are extracted separately.
+            // Including them here double-counts (e.g. Human 30 ft + 30 ft = 60).
+            if (entity.type === EntityType.Base) continue;
+
             // Skip entities with conditions - these are conditional modifiers and should not be included in regular bonuses
             if (entity.conditions && entity.conditions.length > 0) {
                 continue;

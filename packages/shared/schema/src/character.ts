@@ -3,8 +3,10 @@ import { EntityAppliesToType } from '@shared/static-data';
 import { AbilityId, AlignmentId, CurrencyId, SpellSlotType } from '@shared/static-data';
 import { QueryResponseSchema } from './query.js';
 import { numericParam, commonValidations } from './common.js';
-import { FeatureWithRelationsSchema } from './feature.js';
+import { CharacterCompanionDraftSchema, ResolvedCharacterCompanionDraftSchema } from './companion.js';
 import { FeatInQueryResponseSchema } from './feat.js';
+import { FeatureWithRelationsSchema } from './feature.js';
+import { CharacterSelectedFormDraftSchema, ResolvedSelectedFormDraftSchema } from './selectedForm.js';
 import { CharacterSpellSelectionEntrySchema } from './spell.js';
 import { ValidationErrorResponseSchema } from './validation.js';
 
@@ -112,6 +114,8 @@ export const CharacterConfigSchema = z.object({
     allowVariantClasses: z.boolean().default(false),
     isGestalt: z.boolean().default(false),
     ignoreLevelAdjustment: z.boolean().default(false),
+    /** Official 3.0/3.5: max Hit Die at 1st level. Character-level until campaign settings exist. */
+    maxHpAtFirstLevel: z.boolean().default(false),
 });
 
 export const CharacterWealthSchema = z.object({
@@ -276,6 +280,8 @@ export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
     characterLanguages: z.array(CharacterLanguageMapSchema).optional(),
     characterItems: z.array(CharacterItemSchema).optional(),
     attackDefinitions: z.array(CharacterAttackDefinitionSchema).optional(),
+    companions: z.array(CharacterCompanionDraftSchema).optional(),
+    selectedForms: z.array(CharacterSelectedFormDraftSchema).optional(),
 });
 
 /**
@@ -334,6 +340,7 @@ export const CharacterEditStateSchema = BaseCharacterSchema.omit({
     allowVariantClasses: z.boolean(),
     isGestalt: z.boolean(),
     ignoreLevelAdjustment: z.boolean(),
+    maxHpAtFirstLevel: z.boolean().default(false),
     // Character wealth entries (coins and valuables).
     wealth: z.array(
         CharacterWealthSchema.omit({ id: true, characterId: true }).extend({
@@ -354,6 +361,8 @@ export const CharacterEditStateSchema = BaseCharacterSchema.omit({
     characterItems: z.array(CharacterItemDraftSchema).optional(),
     attackDefinitions: z.array(CharacterAttackDefinitionDraftSchema).optional(),
     characterLanguages: z.array(CharacterLanguageDraftSchema).optional(),
+    companions: z.array(CharacterCompanionDraftSchema).optional(),
+    selectedForms: z.array(CharacterSelectedFormDraftSchema).optional(),
 });
 
 export const GetAllCharactersResponseSchema = QueryResponseSchema.extend({
@@ -749,6 +758,10 @@ export const ResolvedCharacterResultSchema = z.object({
     spellSelection: z.record(z.string(), ClassSpellSelectionSchema).optional(),
     /** Map of entity IDs to resolved formula values. Keyed by entity ID (or composite key). Used for BAB, saves, and other formula-based mechanics. */
     resolvedFormulaValues: z.record(z.string(), z.number()).optional(),
+    /** Pets, familiars, and animal companions with computed stat blocks from the current draft. */
+    resolvedCompanions: z.array(ResolvedCharacterCompanionDraftSchema).optional(),
+    /** Selected wild-shape forms with computed Alternate Form sheets from the current draft. */
+    resolvedSelectedForms: z.array(ResolvedSelectedFormDraftSchema).optional(),
     warnings: z.array(z.string()),
     errors: z.array(z.string())
 });

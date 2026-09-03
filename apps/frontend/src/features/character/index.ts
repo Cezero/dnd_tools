@@ -4,6 +4,7 @@ export { routes, navigation } from './CharacterConfig';
 export { CharacterDetail } from './CharacterDetail';
 export { CharacterEdit } from './CharacterEdit';
 export { CharacterList } from './CharacterList';
+export { ensureDraftOnlyEditSession } from './ensureDraftOnlyEditSession';
 export { FeatureEntityHandlers } from './FeatureEntityHandlers';
 export { GestaltClassService } from './GestaltClassService';
 export { GestaltProgressionDisplay } from './GestaltProgressionDisplay';

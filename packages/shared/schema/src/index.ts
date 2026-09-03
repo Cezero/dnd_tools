@@ -22,4 +22,6 @@ export * from './domain.js';
 export * from './deity.js';
 export * from './monster.js';
 export * from './trick.js';
+export * from './trickPurpose.js';
+export * from './selectedForm.js';
 export * from './validation.js';

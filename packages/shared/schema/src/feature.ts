@@ -183,6 +183,17 @@ export const FeatureEntitySchema = z.object({
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
 });
 
+export const FeatureClassMapSchema = z.object({
+    featureId: z.number().int(),
+    classId: z.number().int(),
+    levelDivisor: z.number().int().min(1).default(1),
+});
+
+export const FeatureRaceMapSchema = z.object({
+    featureId: z.number().int(),
+    raceId: z.number().int(),
+});
+
 // Feature Schema with relations
 // This is the main schema used for feature operations
 export const FeatureWithRelationsSchema = FeatureSchema.extend({
@@ -191,14 +202,8 @@ export const FeatureWithRelationsSchema = FeatureSchema.extend({
     // NOTE: These arrays are typically excluded from API responses to reduce payload size.
     // They are only included in character resolution responses, and even then are filtered
     // to only include classes/races the character is actually associated with.
-    classes: z.array(z.object({
-        featureId: z.number().int(),
-        classId: z.number().int(),
-    })).optional(),
-    races: z.array(z.object({
-        featureId: z.number().int(),
-        raceId: z.number().int(),
-    })).optional(),
+    classes: z.array(FeatureClassMapSchema).optional(),
+    races: z.array(FeatureRaceMapSchema).optional(),
     entities: z.array(FeatureEntitySchema).optional(),
     spellcasting: SpellcastingLinkSchema.optional(),
     displayConditions: z.array(FeatureConditionSchema).optional(),
@@ -376,6 +381,8 @@ export type DeleteOrphanedFeaturesResponse = z.infer<typeof DeleteOrphanedFeatur
 export type FeatureIdParam = z.input<typeof FeatureIdParamSchema>;
 export type FeaturePrerequisite = z.infer<typeof FeaturePrerequisiteSchema>;
 export type FeatureWithRelations = z.infer<typeof FeatureWithRelationsSchema>;
+export type FeatureClassMap = z.infer<typeof FeatureClassMapSchema>;
+export type FeatureRaceMap = z.infer<typeof FeatureRaceMapSchema>;
 export type CreateFeatureRequest = z.infer<typeof CreateFeatureRequestSchema>;
 export type CreateFeatureFormRequest = z.infer<typeof CreateFeatureFormSchema>;
 export type FeatureEntity = z.infer<typeof FeatureEntitySchema>;
@@ -492,13 +499,11 @@ export const FeatureDraftStateSchema = FeatureWithRelationsSchema.extend({
     prerequisites: z.array(FeaturePrerequisiteDraftSchema).optional(),
     entities: z.array(FeatureEntityDraftSchema).optional(),
     displayConditions: z.array(FeatureConditionDraftSchema).optional(),
-    classes: z.array(z.object({
+    classes: z.array(FeatureClassMapSchema.extend({
         featureId: DraftIdSchema,
-        classId: z.number().int(),
     })).optional(),
-    races: z.array(z.object({
+    races: z.array(FeatureRaceMapSchema.extend({
         featureId: DraftIdSchema,
-        raceId: z.number().int(),
     })).optional(),
 });
 

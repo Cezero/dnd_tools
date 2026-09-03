@@ -26,7 +26,7 @@ Deploy when a block of work is complete and would not leave the docks in a known
 **Before deploying:**
 
 - If Zod types in `@shared/schema` changed, the operator must rebuild that package (`pnpm build` in `packages/shared/schema`). Agents must not run that build.
-- If Prisma schema changed, the operator must migrate the database. Agents must not migrate or `db push`.
+- If Prisma schema changed, the operator must apply migrations. Use `pnpm exec prisma migrate deploy` from `apps/backend` until the [Prisma migrate baseline](#high-priority-todo-prisma-migrate-baseline) is done. Do not use `prisma migrate dev` yet. Agents must not migrate or `db push`.
 - The LAN registry must answer `http://192.168.0.83:5000/v2/`. If it does not, start it with [`init-registry.sh`](../../../../deploy/docker/scripts/init-registry.sh). Do not re-run [`configure-insecure-registry.sh`](../../../../deploy/docker/scripts/configure-insecure-registry.sh) for a normal deploy.
 
 **Command:**
@@ -128,6 +128,28 @@ That dump still has the pre-merge `Feature` + `FeatureProgression` schema. After
 
 The dump also still stores variant/gestalt/LA flags and coin amounts as columns on `UserCharacter`. Prisma expects `CharacterConfig` (1:1) and `CharacterWealth` (one row per `@CurrencyId`). Without [`20260901195700_add_character_config_and_wealth`](../../../../apps/backend/prisma/migrations/20260901195700_add_character_config_and_wealth/migration.sql), character create-save returns Prisma `P2021` (`CharacterConfig` does not exist). From cyberdev01, `cd apps/backend && pnpm exec prisma migrate deploy`. `DATABASE_URL` in `apps/backend/.env` (gitignored) must be the GR app user (`MYSQL_APP_USER` / `MYSQL_APP_PASSWORD` from any dock `/srv/mysql/.env`) at `cybersql.local.cyberdeck.org:3306` so HAProxy can pick a live Router. The old cybersql `root` / `dndtools` passwords in that file will fail.
 
+## Prisma migrations (current)
+
+`prisma migrate deploy` applies pending SQL to the live `cyberdnd` database. That is the supported path today.
+
+`prisma migrate dev` is **not** usable yet. It creates an empty shadow database (`prisma_migrate_shadow_db_%`) and replays every file under `apps/backend/prisma/migrations/`. The oldest files (`20251217150155_add_advancement_skill_id`, `20251217163121_add_item_size_id`) are `ALTER`s against tables that only exist because the Jan 2026 dump was restored. Replay fails with P3006 / 1146 (`AdvancementSkill` does not exist). The app user already has `GRANT ALL` on `prisma_migrate_shadow_db_%`; the missing piece is a baseline `CREATE` history.
+
+Until the TODO below is done: after a schema change, write `migration.sql` by hand (same pattern as the recent HP and trick DC files) and apply with `migrate deploy`. Do not ask an agent to invent a workaround for `migrate dev`.
+
+### HIGH PRIORITY TODO: Prisma migrate baseline
+
+**Goal:** Operators and agents use Prisma’s own tools (`prisma migrate dev`) to create and apply migrations. Stop writing `migration.sql` by hand.
+
+**Work:**
+
+1. Add an initial baseline migration that `CREATE`s the full schema as it existed **before** `20251217150155_add_advancement_skill_id` (the dump schema, not today’s schema).
+2. Keep the later incremental migrations as-is so replay matches production.
+3. Confirm `prisma migrate dev` can create a shadow DB, replay the full history, and emit a new migration from a `schema.prisma` change.
+4. Confirm `migrate deploy` on production is a no-op (baseline already represented in `_prisma_migrations` / the dump). Do not rewrite checksums of applied migrations without a plan.
+5. Update this section and [Database Schema Patterns](database-schema.md#data-migration) when `migrate dev` is the default.
+
+**Why it matters:** Schema changes currently burn agent time on handwritten SQL because `migrate dev` cannot replay history. That is infra debt, not an acceptable workflow.
+
 ## HAProxy
 
 Existing MQTT `:1883` and dashboard `:18083` frontends stay. Add `192.168.0.93` as a third server.
@@ -159,7 +181,7 @@ If 1129 returns: confirm `performance_schema.host_cache` has no `192.168.0.92` r
 
 Remote users (`mysql_native_password` so GUI clients and GR recovery work without TLS):
 
-- `'dndtools'@'%'` — `GRANT ALL` on `cyberdnd` only
+- `'dndtools'@'%'` — `GRANT ALL` on `cyberdnd`, plus `GRANT ALL` on `prisma_migrate_shadow_db_%` so `prisma migrate dev` can create its temporary shadow database
 - `'cyberro'@'%'` — `SELECT` on `cyberdnd` only (MCP / read-only clients)
 - `'root'@'%'` — `WITH GRANT OPTION` on `*.*`
 - `'haproxy'@'%'` — `USAGE` only, empty password (HAProxy `mysql-check`)

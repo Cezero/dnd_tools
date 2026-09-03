@@ -1,0 +1,19 @@
+---
+description: Browser verification uses the cursor Playwright account
+alwaysApply: true
+---
+
+# Playwright / browser login
+
+UI verification on the live app uses the dedicated `cursor` user.
+
+Credentials live in the **repo-root** `.env` (gitignored):
+
+- `PLAYWRIGHT_BASE_URL`
+- `PLAYWRIGHT_USERNAME` (`cursor`)
+- `PLAYWRIGHT_EMAIL`
+- `PLAYWRIGHT_PASSWORD`
+
+Read that file when you need to log in. Do not ask the user for the password. Do not print the password in chat or commit it into rules.
+
+Auto-review still classifies login/token MCP calls as credentials. `autoRun.allow_instructions` in repo-root `.cursor/permissions.json` only steers the classifier. To skip it entirely, add these tools to the MCP allowlist in Cursor Settings > Agents > Approvals & Execution (or `mcpAllowlist` in `permissions.json`): `Playwright:browser_fill_form`, `Playwright:browser_type`, `Playwright:browser_evaluate`. Allowlisted MCP tools run immediately.

@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     CompanionIdParamSchema,
@@ -8,6 +6,7 @@ import {
     CreateCharacterCompanionSchema,
     UpdateCharacterCompanionSchema,
     CharacterCompanionIdParamSchema,
+    CharacterCompanionCharacterIdParamSchema,
 } from '@shared/schema';
 
 import {
@@ -18,6 +17,7 @@ import {
     UpdateCompanion,
     DeleteCompanion,
     GetCharacterCompanions,
+    GetResolvedCharacterCompanions,
     CreateCharacterCompanion,
     UpdateCharacterCompanion,
     DeleteCharacterCompanion,
@@ -43,8 +43,10 @@ put('/:id', requireAdmin, { params: CompanionIdParamSchema, body: UpdateCompanio
 deleteRoute('/:id', requireAdmin, { params: CompanionIdParamSchema }, DeleteCompanion);
 
 // Character Companion Routes (authenticated, ownership validated in controller)
+// GET /api/companions/character/:characterId/resolved - Resolved stat blocks
+get('/character/:characterId/resolved', requireAuth, { params: CharacterCompanionCharacterIdParamSchema }, GetResolvedCharacterCompanions);
 // GET /api/companions/character/:characterId - Get all companions for a character
-get('/character/:characterId', { params: z.object({ characterId: z.string().transform((val: string) => parseInt(val)) }) }, GetCharacterCompanions);
+get('/character/:characterId', { params: CharacterCompanionCharacterIdParamSchema }, GetCharacterCompanions);
 // POST /api/companions/character - Create character companion (ownership validated)
 post('/character', requireAuth, { body: CreateCharacterCompanionSchema }, CreateCharacterCompanion);
 // PUT /api/companions/character/:id - Update character companion (ownership validated)

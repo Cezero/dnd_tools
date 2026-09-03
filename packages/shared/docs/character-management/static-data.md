@@ -139,6 +139,14 @@ The ability score integration system for determining character capabilities and 
 
 **Source File**: `shared/static-data/src/CommonData.ts` (Ability score integration)
 
+### **Edition Advanced Options**
+
+`ADVANCED_OPTIONS_EDITION_MAP` lists character-config checkboxes that appear for a given `@EditionId`. D&D 3.0 (`DND_3E`), 3.5 (`DND_3_5E`), and 3.0/3.5 combined (`DND_3x`) currently share: `allowVariantClasses`, `isGestalt`, `ignoreLevelAdjustment`, and `maxHpAtFirstLevel`.
+
+Helpers `getAdvancedOptionsForEdition`, `hasAdvancedOptions`, and `isAdvancedOptionAvailable` drive `ConfigurationTab`. `maxHpAtFirstLevel` is the official 3.x max Hit Die at 1st level (character-level until campaign settings exist).
+
+**Source File**: `shared/static-data/src/CommonData.ts`
+
 ## 🔗 **Integration with Other Systems**
 
 ### **Class System Integration**

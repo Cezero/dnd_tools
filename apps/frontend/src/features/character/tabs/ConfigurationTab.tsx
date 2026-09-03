@@ -128,11 +128,14 @@ export function ConfigurationTab({
         updateState({ type: CharacterEditStateUpdateType.SET_DISALLOWED_SOURCES, payload: { disallowedSources: updatedDisallowedSources } });
     };
 
-    const handleExclusionToggle = (setting: Setting, isExcluded: boolean) => {
-        if (!state.editionId) return;
+    const handleExclusionToggle = (setting: Setting, isExcluded: boolean, editionId: number | null = state.editionId) => {
+        if (!editionId) return;
 
-        const settingSources = getSourceBooksBySetting(setting, state.editionId as EditionId);
+        const settingSources = getSourceBooksBySetting(setting, editionId as EditionId);
         const settingIds = settingSources.map(s => s.id);
+        if (isExcluded && settingIds.length === 0) {
+            return;
+        }
 
         let newDisallowed: number[];
         if (isExcluded) {
@@ -170,6 +173,15 @@ export function ConfigurationTab({
             }
             if (!newAdvancedOptions.includes('ignoreLevelAdjustment')) {
                 updateState({ type: CharacterEditStateUpdateType.SET_IGNORE_LEVEL_ADJUSTMENT, payload: { ignoreLevelAdjustment: false } });
+            }
+            if (!newAdvancedOptions.includes('maxHpAtFirstLevel')) {
+                updateState({ type: CharacterEditStateUpdateType.SET_MAX_HP_AT_FIRST_LEVEL, payload: { maxHpAtFirstLevel: false } });
+            }
+            if (excludeForgottenRealms) {
+                handleExclusionToggle(Setting.ForgottenRealms, true, editionId);
+            }
+            if (excludeEberron) {
+                handleExclusionToggle(Setting.Eberron, true, editionId);
             }
         }
     };
@@ -210,7 +222,7 @@ export function ConfigurationTab({
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
                         {isAdvancedOptionAvailable(state.editionId!, 'allowVariantClasses') && (
                             <label className="flex items-center">
                                 <input
@@ -254,6 +266,22 @@ export function ConfigurationTab({
                                 <div>
                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                         Ignore Level Adjustment
+                                    </span>
+                                </div>
+                            </label>
+                        )}
+
+                        {isAdvancedOptionAvailable(state.editionId!, 'maxHpAtFirstLevel') && (
+                            <label className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    checked={state.maxHpAtFirstLevel}
+                                    onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_MAX_HP_AT_FIRST_LEVEL, payload: { maxHpAtFirstLevel: e.target.checked } })}
+                                    className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                                <div>
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Max HP at 1st Level
                                     </span>
                                 </div>
                             </label>

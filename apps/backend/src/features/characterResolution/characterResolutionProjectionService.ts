@@ -4,6 +4,7 @@ import type { AdvancementEditState, CharacterEditState, CharacterWithAllDetailsR
 import { DraftType } from '@shared/static-data';
 
 import { AvailableFeatService } from './availableFeatService';
+import { attachResolvedAnimals } from './characterAnimalsResolution';
 import { calculateSpellSelection, filterInvalidAppliesToEntities } from './characterResolutionController';
 import { CharacterResolutionService } from './characterResolutionService';
 import { CharacterResolvedResultsService } from './characterResolvedResultsService';
@@ -144,6 +145,7 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
             allowVariantClasses: characterState.allowVariantClasses,
             isGestalt: characterState.isGestalt,
             ignoreLevelAdjustment: characterState.ignoreLevelAdjustment,
+            maxHpAtFirstLevel: characterState.maxHpAtFirstLevel,
         },
         abilityScores: characterState.abilityScores.map((a) => ({
             id: 0,
@@ -162,6 +164,8 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
         characterLanguages:
             characterState.characterLanguages?.map((l) => ({ characterId, languageId: l.languageId })) ??
             effectiveCharacter.characterLanguages,
+        companions: characterState.companions ?? effectiveCharacter.companions,
+        selectedForms: characterState.selectedForms ?? effectiveCharacter.selectedForms,
     };
 
     const targetLevel =
@@ -259,7 +263,7 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
         );
     }
 
-    return {
+    return attachResolvedAnimals({
         resolvedProgressions: enrichedProgressions,
         pendingChoices: resolutionResult.pendingChoices,
         classSkills,
@@ -272,7 +276,7 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
         ...(Object.keys(resolvedFormulaValues).length > 0 && { resolvedFormulaValues }),
         warnings: resolutionResult.warnings,
         errors: resolutionResult.errors
-    };
+    }, resolvedCharacter);
 }
 
 async function computeFromAdvancementDraft(characterId: number, advancementDraftState: AdvancementEditState): Promise<ResolvedCharacterResult> {
@@ -375,7 +379,7 @@ async function computeFromAdvancementDraft(characterId: number, advancementDraft
         );
     }
 
-    return {
+    return attachResolvedAnimals({
         resolvedProgressions: enrichedProgressions,
         pendingChoices: resolutionResult.pendingChoices,
         classSkills,
@@ -388,7 +392,7 @@ async function computeFromAdvancementDraft(characterId: number, advancementDraft
         ...(Object.keys(resolvedFormulaValues).length > 0 && { resolvedFormulaValues }),
         warnings: resolutionResult.warnings,
         errors: resolutionResult.errors
-    };
+    }, effectiveCharacter);
 }
 
 async function computeFromCreateDraft(
@@ -417,6 +421,7 @@ async function computeFromCreateDraft(
             allowVariantClasses: characterDraftState.allowVariantClasses,
             isGestalt: characterDraftState.isGestalt,
             ignoreLevelAdjustment: characterDraftState.ignoreLevelAdjustment,
+            maxHpAtFirstLevel: characterDraftState.maxHpAtFirstLevel,
         },
         wealth: characterDraftState.wealth ?? [],
         xp: 0,
@@ -475,6 +480,8 @@ async function computeFromCreateDraft(
             characterId: characterDraftState.characterId,
             languageId: l.languageId,
         })) ?? [],
+        companions: characterDraftState.companions ?? [],
+        selectedForms: characterDraftState.selectedForms ?? [],
     } as unknown as CharacterWithAllDetailsResponse;
 
     const raceDetails = characterDraftState.raceId ? await raceService.getRaceById({ id: characterDraftState.raceId }) : null;
@@ -568,7 +575,7 @@ async function computeFromCreateDraft(
         );
     }
 
-    return {
+    return attachResolvedAnimals({
         resolvedProgressions: enrichedProgressions,
         pendingChoices: resolutionResult.pendingChoices,
         classSkills,
@@ -581,7 +588,7 @@ async function computeFromCreateDraft(
         ...(Object.keys(resolvedFormulaValues).length > 0 && { resolvedFormulaValues }),
         warnings: resolutionResult.warnings,
         errors: resolutionResult.errors
-    };
+    }, character);
 }
 
 /**

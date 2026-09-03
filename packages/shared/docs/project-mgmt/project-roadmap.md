@@ -116,6 +116,12 @@
 
 ## Critical Issues
 
+### 🔴 **HIGH: Prisma migrate baseline missing**
+**Issue**: `prisma migrate dev` cannot replay history. The oldest migrations are ALTERs against dump-restored tables (`AdvancementSkill`, `Item`), so the empty shadow database fails (P3006 / 1146). Schema changes require handwritten `migration.sql` plus `migrate deploy`.
+**Impact**: Cannot use Prisma’s migration tools; agents write SQL instead of `migrate dev`.
+**Effort**: Medium — add a pre-December-2025 baseline `CREATE` migration and verify shadow replay plus production no-op.
+**Priority**: HIGH — unblocks normal Prisma workflow. Details: [Docker Deployment — Prisma migrate baseline](../application-overview/docker-deployment.md#high-priority-todo-prisma-migrate-baseline).
+
 ### 🔴 **CRITICAL: Formatter System Integration Failure**
 **Issue**: Display strategies not using pure formatters, system shows raw numbers instead of formatted output
 **Impact**: All feature display currently broken, shows "Level X (Level X)" instead of proper formatting

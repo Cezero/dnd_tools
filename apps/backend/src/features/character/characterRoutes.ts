@@ -40,6 +40,10 @@ import {
     FeatureUsesParamSchema,
     CharacterItemIdParamSchema,
     GetAvailableFeatsResponseSchema,
+    CreateCharacterSelectedFormSchema,
+    UpdateCharacterSelectedFormSchema,
+    CharacterSelectedFormIdParamSchema,
+    EligibleFormsQuerySchema,
 } from '@shared/schema';
 
 import {
@@ -100,6 +104,14 @@ import {
     GetAvailableFeats,
 } from './characterController';
 import { requireAuth, requireAdmin } from '../../middleware/authMiddleware.js';
+import {
+    GetSelectedForms,
+    GetResolvedSelectedForms,
+    GetEligibleForms,
+    CreateSelectedForm,
+    UpdateSelectedForm,
+    DeleteSelectedForm,
+} from '../selectedForm';
 
 const { router: CharacterRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
@@ -173,5 +185,12 @@ post('/:id/advancements/:advancementId/spells-known/sync', requireAuth, { params
 
 // Get Available Feats
 get('/:id/available-feats', requireAuth, { params: CharacterIdParamSchema }, GetAvailableFeats);
+
+get('/:id/selected-forms/resolved', requireAuth, { params: CharacterIdParamSchema }, GetResolvedSelectedForms);
+get('/:id/selected-forms', requireAuth, { params: CharacterIdParamSchema }, GetSelectedForms);
+get('/:id/eligible-forms', requireAuth, { params: CharacterIdParamSchema, query: EligibleFormsQuerySchema }, GetEligibleForms);
+post('/:id/selected-forms', requireAuth, { params: CharacterIdParamSchema, body: CreateCharacterSelectedFormSchema }, CreateSelectedForm);
+put('/selected-forms/:id', requireAuth, { params: CharacterSelectedFormIdParamSchema, body: UpdateCharacterSelectedFormSchema }, UpdateSelectedForm);
+deleteRoute('/selected-forms/:id', requireAuth, { params: CharacterSelectedFormIdParamSchema }, DeleteSelectedForm);
 
 export { CharacterRouter };

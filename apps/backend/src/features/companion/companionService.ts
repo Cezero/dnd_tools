@@ -1,18 +1,21 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@shared/prisma-client';
 import {
     CompanionIdParamRequest,
+    CompanionCacheResponse,
     CreateCompanionRequest,
-    UpdateCompanionRequest,
+    CreateCharacterCompanionRequest,
+    CreateResponse,
+    GetAllCharacterCompanionsResponse,
     GetAllCompanionsResponse,
     GetCompanionResponse,
-    CreateResponse,
-    UpdateResponse,
-    CreateCharacterCompanionRequest,
+    GetResolvedCharacterCompanionsResponse,
     UpdateCharacterCompanionRequest,
-    GetAllCharacterCompanionsResponse,
-    CompanionCacheResponse,
+    UpdateCompanionRequest,
+    UpdateResponse,
 } from '@shared/schema';
 
+import { companionAdvancementService } from './companionAdvancementService';
 import type { CompanionService } from './types';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 
@@ -156,21 +159,17 @@ export const companionService: CompanionService = {
             prisma.characterCompanion.findMany({
                 where: { characterId },
                 include: {
-                    companion: {
-                        select: {
-                            id: true,
-                            type: true,
-                            monsterId: true,
-                            minLevel: true,
-                        }
-                    },
+                    companion: true,
+                    trickPurpose: true,
                     tricks: {
                         include: {
-                            trick: true
-                        }
-                    }
+                            trick: true,
+                        },
+                    },
+                    skills: true,
+                    feats: true,
                 },
-                orderBy: { levelAcquired: 'asc' }
+                orderBy: { levelAcquired: 'asc' },
             }),
             prisma.characterCompanion.count({ where: { characterId } }),
         ]);
@@ -180,8 +179,16 @@ export const companionService: CompanionService = {
             results: companions.map(companion => ({
                 ...companion,
                 companion: companion.companion ?? undefined,
+                trickPurpose: companion.trickPurpose ?? undefined,
             })),
         };
+    },
+
+    /**
+     * Resolved companions with computed stat blocks, progression, and trick/skill/feat budgets.
+     */
+    async getResolvedCharacterCompanions(characterId: number): Promise<GetResolvedCharacterCompanionsResponse> {
+        return companionAdvancementService.getResolvedCharacterCompanions(characterId);
     },
 
     /**
@@ -203,38 +210,76 @@ export const companionService: CompanionService = {
      * @see Trick system for trick associations
      */
     async createCharacterCompanion(data: CreateCharacterCompanionRequest): Promise<CreateResponse> {
-        const { tricks, ...companionData } = data;
+        const { tricks, skills, feats, ...companionData } = data;
 
-        // Get monster averageHP if hitPoints not provided
+        await companionAdvancementService.validateCompanionWrite({
+            monsterId: companionData.monsterId,
+            companionId: companionData.companionId,
+            characterId: companionData.characterId,
+            trickPurposeId: companionData.trickPurposeId,
+            tricks,
+            skills,
+            feats,
+        });
+
         let hitPoints = companionData.hitPoints;
         if (!hitPoints) {
             const monster = await prisma.monster.findUnique({
                 where: { id: companionData.monsterId },
-                select: { averageHP: true }
+                select: { averageHP: true },
             });
             hitPoints = monster?.averageHP || null;
         }
 
         const result = await prisma.$transaction(async (tx) => {
-            // Create the character companion
             const characterCompanion = await tx.characterCompanion.create({
                 data: {
                     characterId: companionData.characterId,
                     monsterId: companionData.monsterId,
                     companionId: companionData.companionId || null,
+                    trickPurposeId: companionData.trickPurposeId || null,
+                    name: companionData.name || null,
                     levelAcquired: companionData.levelAcquired || null,
                     hitPoints: hitPoints,
                     wounds: companionData.wounds || 0,
-                }
+                },
             });
 
-            // Create trick associations if provided
+            if (companionData.trickPurposeId) {
+                await applyTrickPurpose(tx, characterCompanion.id, null, companionData.trickPurposeId);
+            }
+
             if (tricks && tricks.length > 0) {
                 await tx.characterCompanionTrick.createMany({
-                    data: tricks.map((trickId) => ({
+                    data: tricks.map((trick) => ({
                         characterCompanionId: characterCompanion.id,
-                        trickId: trickId,
-                    }))
+                        trickId: trick.trickId,
+                        timesTrained: trick.timesTrained ?? 1,
+                        isBonus: trick.isBonus ?? false,
+                        fromPurpose: false,
+                    })),
+                    skipDuplicates: true,
+                });
+            }
+
+            if (skills && skills.length > 0) {
+                await tx.characterCompanionSkill.createMany({
+                    data: skills.map((skill) => ({
+                        characterCompanionId: characterCompanion.id,
+                        skillId: skill.skillId,
+                        skillSubId: skill.skillSubId ?? null,
+                        ranks: skill.ranks,
+                    })),
+                });
+            }
+
+            if (feats && feats.length > 0) {
+                await tx.characterCompanionFeat.createMany({
+                    data: feats.map((feat) => ({
+                        characterCompanionId: characterCompanion.id,
+                        featId: feat.featId,
+                        notes: feat.notes ?? null,
+                    })),
                 });
             }
 
@@ -264,35 +309,116 @@ export const companionService: CompanionService = {
      * @see Trick system for trick association management
      */
     async updateCharacterCompanion(data: UpdateCharacterCompanionRequest, query: { id: number }): Promise<UpdateResponse> {
-        const { tricks, ...companionData } = data;
+        const { tricks, skills, feats, ...companionData } = data;
+
+        const existing = await prisma.characterCompanion.findUnique({
+            where: { id: query.id },
+        });
+        if (!existing) {
+            throw new Error('Character companion not found');
+        }
+
+        const monsterId = companionData.monsterId ?? existing.monsterId;
+        const companionId = companionData.companionId !== undefined ? companionData.companionId : existing.companionId;
+        const trickPurposeId = companionData.trickPurposeId !== undefined
+            ? companionData.trickPurposeId
+            : existing.trickPurposeId;
+
+        await companionAdvancementService.validateCompanionWrite({
+            monsterId,
+            companionId,
+            characterId: existing.characterId,
+            trickPurposeId,
+            tricks,
+            skills,
+            feats,
+        });
+
+        const updateData: Prisma.CharacterCompanionUpdateInput = {};
+        if (companionData.monsterId !== undefined) {
+            updateData.monster = { connect: { id: companionData.monsterId } };
+        }
+        if (companionData.companionId !== undefined) {
+            updateData.companion = companionData.companionId
+                ? { connect: { id: companionData.companionId } }
+                : { disconnect: true };
+        }
+        if (companionData.trickPurposeId !== undefined) {
+            updateData.trickPurpose = companionData.trickPurposeId
+                ? { connect: { id: companionData.trickPurposeId } }
+                : { disconnect: true };
+        }
+        if (companionData.name !== undefined) {
+            updateData.name = companionData.name;
+        }
+        if (companionData.levelAcquired !== undefined) {
+            updateData.levelAcquired = companionData.levelAcquired;
+        }
+        if (companionData.hitPoints !== undefined) {
+            updateData.hitPoints = companionData.hitPoints;
+        }
+        if (companionData.wounds !== undefined) {
+            updateData.wounds = companionData.wounds;
+        }
 
         await prisma.$transaction(async (tx) => {
-            // Update the character companion
-            await tx.characterCompanion.update({
-                where: { id: query.id },
-                data: {
-                    monsterId: companionData.monsterId,
-                    companionId: companionData.companionId,
-                    levelAcquired: companionData.levelAcquired,
-                    hitPoints: companionData.hitPoints,
-                    wounds: companionData.wounds,
-                }
-            });
-
-            // Update tricks if provided
-            if (tricks !== undefined) {
-                // Delete existing tricks
-                await tx.characterCompanionTrick.deleteMany({
-                    where: { characterCompanionId: query.id }
+            if (Object.keys(updateData).length > 0) {
+                await tx.characterCompanion.update({
+                    where: { id: query.id },
+                    data: updateData,
                 });
+            }
 
-                // Create new tricks
+            if (companionData.trickPurposeId !== undefined
+                && companionData.trickPurposeId !== existing.trickPurposeId) {
+                await applyTrickPurpose(tx, query.id, existing.trickPurposeId, companionData.trickPurposeId);
+            }
+
+            if (tricks !== undefined) {
+                await tx.characterCompanionTrick.deleteMany({
+                    where: { characterCompanionId: query.id, fromPurpose: false },
+                });
                 if (tricks.length > 0) {
                     await tx.characterCompanionTrick.createMany({
-                        data: tricks.map((trickId) => ({
+                        data: tricks.map((trick) => ({
                             characterCompanionId: query.id,
-                            trickId: trickId,
-                        }))
+                            trickId: trick.trickId,
+                            timesTrained: trick.timesTrained ?? 1,
+                            isBonus: trick.isBonus ?? false,
+                            fromPurpose: false,
+                        })),
+                        skipDuplicates: true,
+                    });
+                }
+            }
+
+            if (skills !== undefined) {
+                await tx.characterCompanionSkill.deleteMany({
+                    where: { characterCompanionId: query.id },
+                });
+                if (skills.length > 0) {
+                    await tx.characterCompanionSkill.createMany({
+                        data: skills.map((skill) => ({
+                            characterCompanionId: query.id,
+                            skillId: skill.skillId,
+                            skillSubId: skill.skillSubId ?? null,
+                            ranks: skill.ranks,
+                        })),
+                    });
+                }
+            }
+
+            if (feats !== undefined) {
+                await tx.characterCompanionFeat.deleteMany({
+                    where: { characterCompanionId: query.id },
+                });
+                if (feats.length > 0) {
+                    await tx.characterCompanionFeat.createMany({
+                        data: feats.map((feat) => ({
+                            characterCompanionId: query.id,
+                            featId: feat.featId,
+                            notes: feat.notes ?? null,
+                        })),
                     });
                 }
             }
@@ -343,6 +469,7 @@ export const companionService: CompanionService = {
             type: companion.type,
             monsterId: companion.monsterId,
             minLevel: companion.minLevel,
+            levelAdjustment: companion.levelAdjustment,
             name: companion.monster.name,
         }));
 
@@ -352,4 +479,52 @@ export const companionService: CompanionService = {
         };
     },
 };
+
+/**
+ * Applies or clears a Handle Animal purpose package.
+ * Combat Riding replacing Riding deletes every known trick first; other switches
+ * drop only `fromPurpose` rows.
+ */
+async function applyTrickPurpose(
+    tx: Prisma.TransactionClient,
+    characterCompanionId: number,
+    previousPurposeId: number | null,
+    nextPurposeId: number | null
+): Promise<void> {
+    const nextPurpose = nextPurposeId
+        ? await tx.trickPurpose.findUnique({
+            where: { id: nextPurposeId },
+            include: { tricks: true },
+        })
+        : null;
+
+    const wipeAll = nextPurpose?.replacesPurposeId != null
+        && previousPurposeId != null
+        && nextPurpose.replacesPurposeId === previousPurposeId;
+
+    if (wipeAll) {
+        await tx.characterCompanionTrick.deleteMany({
+            where: { characterCompanionId },
+        });
+    } else {
+        await tx.characterCompanionTrick.deleteMany({
+            where: { characterCompanionId, fromPurpose: true },
+        });
+    }
+
+    if (!nextPurpose || nextPurpose.tricks.length === 0) {
+        return;
+    }
+
+    await tx.characterCompanionTrick.createMany({
+        data: nextPurpose.tricks.map((row) => ({
+            characterCompanionId,
+            trickId: row.trickId,
+            timesTrained: row.timesTrained,
+            isBonus: false,
+            fromPurpose: true,
+        })),
+        skipDuplicates: true,
+    });
+}
 

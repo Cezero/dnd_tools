@@ -7,13 +7,13 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
 import { TabComponentProps, CharacterEditStateUpdateType } from '@/features/character/types';
 import { canSplitItem, getOccupiedLocations, getSplitTargetLocation, getSplitTargetLocationName, calculateSplitQuantities } from '@/features/character/utils/equipmentUtils';
-import { getTotalGoldInGp, convertGpToMoney, addGpToMoney, getItemCostInGp } from '@/features/character/utils/moneyUtils';
+import { addGpToMoney, convertGpToMoney, CURRENCY_TO_MONEY_KEY, getItemCostInGp, getTotalGoldInGp } from '@/features/character/utils/moneyUtils';
 import { useStartingGold } from '@/features/character/utils/startingGold';
 import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { formatCostAsCurrency } from '@/features/item/utils';
 import { extractProficiencies } from '@/lib/attack-calculation';
 import type { ItemWithDetails } from '@shared/schema';
-import { CURRENCY_LIST, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, DAMAGE_TYPES, FilterType, LOCATION_ENUM, LOCATION_LIST } from '@shared/static-data';
+import { ARMOR_CATEGORIES, CURRENCY_LIST, DAMAGE_TYPES, FilterType, ITEM_TYPE_LIST, ITEM_TYPES, LOCATION_ENUM, LOCATION_LIST, WEAPON_CATEGORIES, WEAPON_TYPES } from '@shared/static-data';
 
 import { EquipmentList } from '../components/EquipmentList';
 import type { EquipmentItem } from '../types';
@@ -52,22 +52,15 @@ export function EquipmentTab({
 
         try {
             const totalGp = await generateRandomGold(state.classId);
-            const money = convertGpToMoney(totalGp);
+            const money = convertGpToMoney(totalGp, state.money);
             updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money } });
         } catch (error) {
             console.error('Error generating random gold:', error);
         }
-    }, [state.classId, isDiceReady, generateRandomGold, convertGpToMoney, updateState]);
+    }, [state.classId, state.money, isDiceReady, generateRandomGold, convertGpToMoney, updateState]);
 
     const handleMoneyChange = (currencyId: number, value: number) => {
-        // Map currency ID to Money property name
-        const currencyMap: Record<number, keyof typeof state.money> = {
-            1: 'copper',
-            2: 'silver',
-            3: 'gold',
-            4: 'platinum',
-        };
-        const property = currencyMap[currencyId];
+        const property = CURRENCY_TO_MONEY_KEY[currencyId];
         if (property) {
             const newMoney = { ...state.money, [property]: value };
             updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
@@ -647,6 +640,18 @@ export function EquipmentTab({
 
     const canGenerateGold = state.classId !== null && isDiceReady;
 
+    const coinCurrencies = CURRENCY_LIST.filter((currency) => currency.gpValue > 0);
+    const valuableCurrencies = CURRENCY_LIST.filter((currency) => currency.gpValue === 0);
+
+    /**
+     * Coin and valuable quantities live on `state.money`. Generate Starting Gold
+     * only replaces coins.
+     */
+    const getDisplayedQuantity = (currencyId: number): number => {
+        const property = CURRENCY_TO_MONEY_KEY[currencyId];
+        return property ? state.money[property] : 0;
+    };
+
     return (
         <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -672,37 +677,46 @@ export function EquipmentTab({
                 </div>
             )}
 
-            {/* Money */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 mb-6">
-                <div className="flex items-center gap-6">
-                    {CURRENCY_LIST.map((currency) => (
+            {/* Money: coins + generate on the first row; valuables on the second. */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 mb-6 space-y-3">
+                <div className="flex flex-wrap items-center gap-6">
+                    {coinCurrencies.map((currency) => (
                         <div key={currency.id} className="flex items-center gap-2">
                             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                                 {currency.name} ({currency.abbreviation}):
                             </label>
                             <input
                                 type="number"
-                                value={
-                                    currency.id === 1 ? state.money.copper :
-                                        currency.id === 2 ? state.money.silver :
-                                            currency.id === 3 ? state.money.gold :
-                                                currency.id === 4 ? state.money.platinum : 0
-                                }
+                                value={getDisplayedQuantity(currency.id)}
                                 onChange={(e) => handleMoneyChange(currency.id, parseInt(e.target.value) || 0)}
                                 className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 min="0"
                             />
                         </div>
                     ))}
-                    <div className="ml-auto">
-                        <button
-                            onClick={handleGenerateRandomGold}
-                            disabled={!canGenerateGold}
-                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                        >
-                            Generate Starting Gold
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleGenerateRandomGold}
+                        disabled={!canGenerateGold}
+                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                        Generate Starting Gold
+                    </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-6">
+                    {valuableCurrencies.map((currency) => (
+                        <div key={currency.id} className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                {currency.name} ({currency.abbreviation}):
+                            </label>
+                            <input
+                                type="number"
+                                value={getDisplayedQuantity(currency.id)}
+                                onChange={(e) => handleMoneyChange(currency.id, parseInt(e.target.value) || 0)}
+                                className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                min="0"
+                            />
+                        </div>
+                    ))}
                 </div>
             </div>
 

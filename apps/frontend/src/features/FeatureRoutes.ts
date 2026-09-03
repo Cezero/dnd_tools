@@ -13,6 +13,7 @@ import { routes as raceRoutes } from '@/features/race/RaceConfig';
 import { routes as skillRoutes } from '@/features/skill/SkillConfig';
 import { routes as spellRoutes } from '@/features/spell/SpellConfig';
 import { trickRoutes } from '@/features/trick';
+import { trickPurposeRoutes } from '@/features/trick-purpose';
 import { RouteConfig } from '@/types';
 
 export const FeatureRoutes: RouteConfig[] = [
@@ -26,6 +27,7 @@ export const FeatureRoutes: RouteConfig[] = [
     ...itemRoutes,
     ...domainRoutes,
     ...trickRoutes,
+    ...trickPurposeRoutes,
     ...companionRoutes,
     ...deityRoutes,
     ...featureSystemRoutes,

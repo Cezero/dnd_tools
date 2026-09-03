@@ -1,11 +1,11 @@
 import {
-    TrickIdParamSchema,
-    UpdateTrickSchema,
-    UpdateResponseSchema,
     CreateResponseSchema,
-    GetAllTricksResponseSchema,
-    TrickSchema,
     CreateTrickSchema,
+    GetAllTricksResponseSchema,
+    GetTrickResponseSchema,
+    TrickIdParamSchema,
+    UpdateResponseSchema,
+    UpdateTrickSchema,
 } from '@shared/schema';
 
 import { createQueryHooks } from './QueryHooksFactory';
@@ -23,7 +23,7 @@ const trickByIdConfig = createQueryHooks({
     path: '/tricks/:id',
     method: 'GET',
     paramsSchema: TrickIdParamSchema,
-    responseSchema: TrickSchema,
+    responseSchema: GetTrickResponseSchema,
     queryKey: 'tricks',
     queryKeyBuilder: (params) => {
         const typedParams = params as { pathParams?: { id?: number } } | undefined;

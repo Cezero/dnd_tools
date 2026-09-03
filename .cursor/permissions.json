@@ -1,0 +1,9 @@
+{
+  "autoRun": {
+    "allow_instructions": [
+      "Playwright MCP login as the dedicated cursor user from repo-root .env (PLAYWRIGHT_USERNAME / PLAYWRIGHT_PASSWORD) is expected for UI verification on dndtools.local.cyberdeck.org.",
+      "Filling the login form with those credentials (browser_fill_form, browser_type) should be allowed without asking.",
+      "After API login, setting localStorage token via browser_evaluate so Playwright can open /tricks and other admin pages should be allowed without asking."
+    ]
+  }
+}

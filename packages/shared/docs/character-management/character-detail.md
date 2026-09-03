@@ -67,6 +67,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 - **SkillsTab**: Skill list with modifiers, conditional modifiers, and dice buttons
 - **SpellsTab**: Spell lists with preparation interface and cast tracking
 - **FeaturesTab**: Features, feats, and proficiencies grouped by level
+- **AnimalsPetsTab**: Companions, pets, and selected wild-shape forms as Alexandrian short revised stat blocks (shown when any exist)
 - **EquipmentTab**: Money editing, item lists, and equipped items by slot
 - **NotesTab**: Editable notes field with character counter
 
@@ -96,6 +97,8 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 
 **Key Implementation Details**:
 - Uses `FormattedCharacterResult` from `CharacterSheetDisplayStrategy` for all calculated values
+- Character level is `character.characterLevel` (max advancement level). Do not sum per-class levels — gestalt Ftr/Dru 1 is character level 1.
+- Speed uses race-mechanics `EntityType.Base` as the base value only; `resolveFeatureBonuses` skips Base so Human 30 ft is not counted twice.
 - `ValueTooltip` components display breakdown information for all values
 - `DiceButton` components enable quick dice rolls
 - Wounds are editable and sync with backend via `CharacterDetailQueryHooks.updateWounds`
@@ -153,6 +156,8 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 **Source File**: `apps/frontend/src/features/character/detail-tabs/SpellsTab.tsx`
 
 **Key Implementation Details**:
+- Casting ability and spells per day come from resolved class features (`CastingAbility`, `getSpellsPerDayMap`). `getClassById` returns `spellcastingProgression: null`.
+- Gestalt characters only show secondary-class spells after resolution applies the merged feature list (not a re-fetch of the primary class id).
 - Fetches spell preparations using `CharacterDetailQueryHooks.getSpellPreparations`
 - Stores preparations in a `Map` keyed by `${classId}-${spellId}-${spellLevel}` for efficient lookup
 - Uses mutations for create/update/delete spell preparations with 500ms debouncing
@@ -170,20 +175,34 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 **Purpose**: Display character features, feats, and proficiencies grouped by level.
 
 **Features**:
-- **Features**: All character features with breakdown tooltips
-- **Feats**: All character feats with breakdown tooltips
-- **Proficiencies**: All character proficiencies with breakdown tooltips
-- **Uses Tracking**: Feature uses displayed with current/max and increment/decrement buttons
-- **Grouping**: Features grouped by character level
-- **Scrollable List**: Uses `ScrollableCategorizedList` for efficient display
+- **Features**: Race and class features. Saved choices are appended to the title (`Animal Companion: Dog`).
+- **Feats**: Character feats. Feat subtypes are appended (`Weapon Focus (Longsword)`).
+- **Proficiencies**: De-duplicated union of granted proficiencies (gestalt overlap appears once)
+- **Languages**: Languages from `character.characterLanguages`
 
 **Source File**: `apps/frontend/src/features/character/detail-tabs/FeaturesTab.tsx`
 
 **Key Implementation Details**:
-- Fetches feature uses using `CharacterDetailQueryHooks.getCharacterUses`
-- Uses mutations for updating feature uses
-- Features are formatted using `CharacterSheetDisplayStrategy`
-- Uses are displayed with frequency information (PER_DAY, PER_WEEK, etc.)
+- Display names come from `formatFeatureNameWithChoices` / `formatFeatNameWithSubtype` in `apps/frontend/src/lib/formatters/choiceDisplayName.ts`
+- Choice names resolve from `CharacterFeatureChoice.appliesToId` (companion, feat, domain, and other choice types)
+- Narrative list uses `FeatureDisplayFilter.shouldListFeatureInCharacterView`: `displayInCharacterSheet` hides BAB/saves/HD; `displayInDetail` hides chassis entities; class-skill and proficiency wrappers are omitted because they already appear on Skills and in the Proficiencies section
+- The PDF special-abilities column uses the same helpers
+
+### **Animals & Pets Tab**
+
+**Purpose**: Show companions, familiars, pets, and selected wild-shape forms as Alexandrian short revised 3.5 stat blocks, with purpose/tricks/specials/notes after the stats.
+
+**Source Files**:
+- Viewer: `apps/frontend/src/features/character/detail-tabs/AnimalsPetsTab.tsx`
+- Shared renderer: `apps/frontend/src/features/character/stat-block/`
+- PDF packing: `apps/frontend/src/features/character/characterPdfAnimals.ts`
+
+**Key Implementation Details**:
+- Creature name links to the monster entry; trick names link to `/tricks/:id` and show the description on hover
+- PDF export appends extra **portrait** Animals & Pets pages after the character sheet and any landscape spell pages
+- Multiple blocks share a page; a new page starts only when the next block will not fit
+- Blocks are grouped Class Companions, then Pets, then Wild Shape Forms
+- Characters with no animals get no extra PDF pages
 
 ### **Equipment Tab**
 

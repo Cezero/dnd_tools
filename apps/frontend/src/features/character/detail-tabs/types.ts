@@ -1,6 +1,7 @@
 import type { FormattedCharacterResult } from '@/lib/formatters/types';
-import type { CharacterWithAllDetailsResponse, DnDClass, Spell, FeatureWithRelations } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, DnDClass, Spell, FeatureWithRelations, ResolvedCharacterCompanionDraft, ResolvedSelectedFormDraft } from '@shared/schema';
 
+import type { RevisedStatBlockLookups } from '../stat-block/types';
 import type { CharacterDetailState, CharacterDetailStateUpdate, CharacterResolutionReturn } from '../types';
 
 /**
@@ -101,4 +102,21 @@ export interface FeaturesTabProps {
     formattedCharacter: FormattedCharacterResult;
     resolvedProgressions: FeatureWithRelations[];
     characterId: number;
+}
+
+/**
+ * Props for the Animals & Pets viewer tab.
+ */
+export interface AnimalsPetsTabProps {
+    resolvedCompanions: ResolvedCharacterCompanionDraft[];
+    resolvedSelectedForms: ResolvedSelectedFormDraft[];
+}
+
+/**
+ * Props for one companion or pet revised-stat-block card.
+ */
+export interface CompanionBlockProps {
+    companion: ResolvedCharacterCompanionDraft;
+    lookups: RevisedStatBlockLookups;
+    monsterName?: string;
 }

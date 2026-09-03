@@ -154,15 +154,21 @@ function getStateUpdateService(): StateUpdateService {
 
 /**
  * Start editing a draft.
- * 
+ *
  * Acquires a lock on the draft, adds it to the user's editing list, and
  * initializes/loads the draft state.
- * 
- * **Type Safety Note**: 
+ *
+ * - `id = 0`: mint a new negative draft id and write `getInitialCreateState`.
+ * - `id > 0`: load Redis, or initialize from MySQL via `getInitialState`.
+ * - `id < 0`: resume a minted draft. If Redis expired (TTL / unused after deploy),
+ *   re-write `getInitialCreateState` under the same id so edit URLs stay stable.
+ *   Advancement resumes still need `{ characterId, level, mode }` in `context`.
+ *
+ * **Type Safety Note**:
  * - Uses `ValidatedBodyT` from `@/util/validated-types` for proper type safety with `buildValidatedRouter`
  * - NEVER manually type `Request<>` - always use validated types from `@/util/validated-types`
  * - The body type `DraftRefRequest` comes from `@shared/schema` and matches `DraftRefRequestSchema`
- * 
+ *
  * @param req - Express request with validated draftType and id in body
  * @param res - Express response
  * @param _next - Express next function
@@ -272,18 +278,25 @@ export async function StartDraftEditing(
             // Get or initialize draft state
             let entityState = await stateService.getState(draftType, entityId);
             if (!entityState) {
-                // Draft-only (negative) IDs must already exist in Redis; do not initialize them from DB.
                 if (entityId < 0) {
-                    await lockService.releaseLock(draftType, entityId, userId);
-                    await userSessionService.clearEditingEntity(userId, draftType, entityId);
-                    res.status(404).json({ error: `Draft type ${draftType} state not found` });
-                    return;
+                    // Resume a minted draft after Redis TTL expiry. Do not load from MySQL.
+                    try {
+                        const initialState = await draftConfig.getInitialCreateState(entityId, userId, context);
+                        await stateService.setState(draftType, entityId, initialState);
+                        entityState = initialState;
+                    } catch (error) {
+                        await lockService.releaseLock(draftType, entityId, userId);
+                        await userSessionService.clearEditingEntity(userId, draftType, entityId);
+                        res.status(400).json({
+                            error: error instanceof Error ? error.message : 'Failed to initialize draft state',
+                        });
+                        return;
+                    }
+                } else {
+                    const initialState = await draftConfig.getInitialState(entityId);
+                    await stateService.setState(draftType, entityId, initialState);
+                    entityState = initialState;
                 }
-
-                // Initialize from database using draft config's getInitialState
-                const initialState = await draftConfig.getInitialState(entityId);
-                await stateService.setState(draftType, entityId, initialState);
-                entityState = initialState;
             }
 
             // Optional draft-specific side effects (e.g., character resolution publish).
@@ -465,7 +478,7 @@ export async function SaveDraftState(
             return;
         }
 
-        // Validate state against draft config's editStateSchema
+        // Redis is the session source of truth. Save never overlays browser collections.
         let validatedState: unknown;
         try {
             validatedState = draftConfig.editStateSchema.parse(entityStateRaw);

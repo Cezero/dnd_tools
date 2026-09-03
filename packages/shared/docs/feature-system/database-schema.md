@@ -24,7 +24,7 @@ The unified feature model that combines feature definitions with progression inf
 - **`name`**: Human-readable feature name
 - **`description`**: Detailed feature description and mechanics
 - **`summary`**: Optional summary text that can contain template placeholders
-- **`displayInCharacterSheet`**: Whether to display this feature in character sheets (default: true)
+- **`displayInCharacterSheet`**: Whether to display this feature on the character viewer Features list and PDF special abilities (default: true). Shared chassis features (`good-bab`, save progressions, hit dice) are `false`.
 - **`sourceType`**: Type of source (Race, Class, Template, ClassVariant, Domain, Feat, Companion, Edition) - references @FeatureSourceType enum
 - **`level`**: Character level when feature is granted
 - **`domainId`**: Reference to domain (if domain-granted)
@@ -75,7 +75,7 @@ The unified model that handles all types of feature effects including modifiers,
 - **`type`**: Type of entity (Bonus, Quantity, Replacement, Base, Other, Choice, Allocation) - references @EntityType enum. Note: Class and race mechanics use EntityType.Base. Proficiencies use EntityType.Other with appliesTo = EntityAppliesToType.Proficiency
 - **`value`**: Numerical value of the entity (if applicable)
 - **`bonusType`**: Bonus type for stacking rules (if applicable)
-- **`displayInDetail`**: Whether to display this entity in detailed views (default: true)
+- **`displayInDetail`**: Whether to display this entity in class/race detail narrative lists (default: true). Chassis formula entities (BAB, saves, spells per day) are `false`. The character viewer Features list omits a feature when every entity is hidden this way.
 - **`showFullProgression`**: When true, progression previews show every level from formula start to 20 instead of only transition levels (default: false)
 - **`filterType`**: Type of filtering for choice options (if applicable)
 
@@ -130,7 +130,7 @@ Defines mathematical formulas for feature progression, including intervals, thre
 - **`divisor`**: Divisor value for division-based formulas (e.g., floor(level / divisor))
 - **`baseValue`**: Base value to add for division-based formulas (e.g., floor(level / divisor) + baseValue)
 - **`startingValue`**: Starting value for formulas that need a different starting value than the increment (e.g., EVERY_N_LEVELS). Defaults to entity.value if null.
-- **`maxValue`**: Cap (maximum value) for formulas with an upper bound (e.g., SPELL_SLOTS_TRIANGULAR, SPELL_SLOTS_LINEAR). When null, spell-slot formulas fall back to entity.value for backward compatibility.
+- **`maxValue`**: Optional cap for formulas that have an upper bound. Unused by spell-table `CONDITIONAL_SCALING` columns.
 
 **Relationships**:
 - **`featureEntity`**: Links to feature entities using this formula

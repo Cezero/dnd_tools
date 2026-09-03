@@ -72,7 +72,7 @@ export class ChoiceResolver {
                             continue;
                         }
 
-                        const choice = await this.createPendingChoice(entity, feature, editionId, allFeats);
+                        const choice = await this.createPendingChoice(entity, feature, editionId, allFeats, classLevels);
                         if (choice) {
                             choices.push(choice);
                         }
@@ -401,7 +401,8 @@ export class ChoiceResolver {
         entity: FeatureEntity,
         feature: FeatureWithRelations,
         editionId?: number,
-        allFeats?: FeatInQueryResponse[]
+        allFeats?: FeatInQueryResponse[],
+        classLevels?: Map<number, number>
     ): Promise<PendingChoice | null> {
         if (!entity.appliesTo) {
             return null;
@@ -440,7 +441,7 @@ export class ChoiceResolver {
             choiceName = `${source}: Make a Choice`;
         }
 
-        const optionIds = await this.getChoiceOptions(entity, feature, editionId, allFeats);
+        const optionIds = await this.getChoiceOptions(entity, feature, editionId, allFeats, classLevels);
         // Filter out invalid options (ID must be > 0 per Zod schema)
         const validOptionIds = optionIds.filter(id => id > 0);
 
@@ -468,9 +469,10 @@ export class ChoiceResolver {
      */
     private static async getChoiceOptions(
         entity: FeatureEntity,
-        _progression: FeatureWithRelations,
+        feature: FeatureWithRelations,
         editionId?: number,
-        allFeats?: FeatInQueryResponse[]
+        allFeats?: FeatInQueryResponse[],
+        classLevels?: Map<number, number>
     ): Promise<number[]> {
         const options: number[] = [];
 
@@ -547,24 +549,44 @@ export class ChoiceResolver {
             case EntityAppliesToType.AnimalCompanion:
             case EntityAppliesToType.Familiar:
                 if (entity.appliesToId) {
-                    // Specific companion choice - just return the ID
                     if (entity.appliesToId > 0) {
                         options.push(entity.appliesToId);
                     }
                 } else {
-                    // General companion choice - get all companion IDs by type
                     try {
                         const typeFilter = entity.appliesTo === EntityAppliesToType.Familiar
-                            ? CompanionType.Familiar
-                            : CompanionType.AnimalCompanion;
-                        const companionIds = await prisma.companion.findMany({
-                            where: { type: typeFilter },
-                            select: { id: true }
-                        });
-                        companionIds.forEach(companion => {
-                            if (companion.id > 0) {
-                                options.push(companion.id);
+                            ? [CompanionType.Familiar, CompanionType.ImprovedFamiliar]
+                            : [CompanionType.AnimalCompanion, CompanionType.AlternativeAnimalCompanion];
+
+                        let effectiveLevel = 0;
+                        if (classLevels && feature.classes) {
+                            const contributing = new Set<number>();
+                            for (const classMap of feature.classes) {
+                                if (contributing.has(classMap.classId)) {
+                                    continue;
+                                }
+                                const classLevel = classLevels.get(classMap.classId) ?? 0;
+                                if (classLevel <= 0) {
+                                    continue;
+                                }
+                                contributing.add(classMap.classId);
+                                const divisor = classMap.levelDivisor >= 1 ? classMap.levelDivisor : 1;
+                                effectiveLevel += Math.floor(classLevel / divisor);
                             }
+                        }
+
+                        const companions = await prisma.companion.findMany({
+                            where: { type: { in: typeFilter } },
+                            select: { id: true, minLevel: true, levelAdjustment: true },
+                        });
+                        companions.forEach((companion) => {
+                            if (companion.id <= 0) {
+                                return;
+                            }
+                            if (companion.minLevel != null && effectiveLevel < companion.minLevel) {
+                                return;
+                            }
+                            options.push(companion.id);
                         });
                     } catch (error) {
                         console.error('Error fetching companion IDs:', error);

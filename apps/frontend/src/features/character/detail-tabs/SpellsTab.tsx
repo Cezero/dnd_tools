@@ -7,6 +7,7 @@ import { ScrollableCategorizedList } from '@/components/scrollable-categorized-l
 import { CharacterDetailStateUpdateType } from '@/features/character/types';
 import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
 import { getSpellcastingClasses } from '@/features/character/utils/spellcastingUtils';
+import { getSpellsPerDayMap } from '@/lib/ClassProgression';
 import { formatSpellSchool, formatSpellComponents } from '@/lib/formatters';
 import { useCacheFunctions, formatSourceFromObject } from '@/services/cache';
 import type { CharacterSpellPreparationResponse, Spell } from '@shared/schema';
@@ -266,9 +267,14 @@ export function SpellsTab({ character, classDetailsMap, resolvedProgressions, ch
         const abilityModifier = GetAbilityModifier(abilityScore);
         const baseSpellSaveDC = 10 + abilityModifier;
 
-        // Get spells per day
-        const spellsPerDay = new Map<number, number>();
-        if (selectedClass.class.spellcastingProgression) {
+        // Slots come from FeatureEntity formulas. getClassById leaves spellcastingProgression null.
+        let spellsPerDay = getSpellsPerDayMap(
+            resolvedProgressions ?? [],
+            classLevel,
+            selectedClass.classId
+        );
+        if (spellsPerDay.size === 0 && selectedClass.class.spellcastingProgression) {
+            spellsPerDay = new Map<number, number>();
             for (const feature of selectedClass.class.spellcastingProgression) {
                 if (feature.classLevel <= classLevel) {
                     for (const slot of feature.slots || []) {

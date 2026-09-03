@@ -14,6 +14,7 @@ The component integrates seamlessly with other systems, particularly the Dice Bo
 - [LogEntry.tsx](../../../apps/frontend/src/components/log-panel/LogEntry.tsx) - Individual log entry rendering component
 - [LogPanelHooks.ts](../../../apps/frontend/src/components/log-panel/LogPanelHooks.ts) - React hook for accessing log panel functionality
 - [types.ts](../../../apps/frontend/src/components/log-panel/types.ts) - TypeScript type definitions and interfaces
+- [createClientId.ts](../../../apps/frontend/src/lib/createClientId.ts) - Secure-context-safe ID helper used for log entry IDs
 
 ## 🏗️ **Component Architecture**
 
@@ -39,6 +40,7 @@ The Log Panel provides a centralized logging system that any component can acces
 
 **Universal Access**: Any component can add log entries using the `useLogPanel` hook
 **Automatic Timestamping**: All log entries are automatically timestamped
+**Entry IDs**: Each entry gets an ID from `createClientId` (`frontend/src/lib/createClientId.ts`). That helper avoids `crypto.randomUUID`, which is missing on HTTP LAN origins used by the docks.
 **Entry Management**: Maintains a configurable number of entries with automatic cleanup
 **Type Support**: Supports different log types (info, success, warning, error) with appropriate styling
 

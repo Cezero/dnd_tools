@@ -1,0 +1,109 @@
+- generic [active] [ref=f6e1]:
+  - generic [ref=f6e5]:
+    - navigation [ref=f6e6]:
+      - link "DnD Tools" [ref=f6e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f6e9]:
+        - button [ref=f6e11]:
+          - text: Logged in as
+          - strong [ref=f6e12]: cursor
+        - button "Enable dark mode" [ref=f6e13]
+    - generic [ref=f6e16]:
+      - generic [ref=f6e17]:
+        - button "Collapse sidebar to minimal" [ref=f6e19]
+        - navigation [ref=f6e23]:
+          - list [ref=f6e24]:
+            - listitem [ref=f6e25]:
+              - link "Characters" [ref=f6e26] [cursor=pointer]:
+                - /url: /characters
+            - listitem [ref=f6e30]:
+              - button "Reference" [ref=f6e31]
+            - listitem [ref=f6e37]:
+              - button "DM Tools" [ref=f6e38]
+            - listitem [ref=f6e44]:
+              - button "Admin" [ref=f6e45]
+      - main [ref=f6e52]:
+        - generic [ref=f6e56]:
+          - generic [ref=f6e57]:
+            - heading "Dog" [level=1] [ref=f6e58]
+            - generic [ref=f6e59]:
+              - paragraph [ref=f6e60]:
+                - strong [ref=f6e61]: "Edition:"
+                - text: D&D 3.5E
+              - paragraph [ref=f6e62]:
+                - strong [ref=f6e63]: "Source:"
+                - text: MM
+          - generic [ref=f6e64]:
+            - paragraph [ref=f6e65]: Small Animal
+            - paragraph [ref=f6e66]:
+              - strong [ref=f6e67]: "Hit Dice:"
+              - text: 1d8+2 (6 hp)
+            - paragraph [ref=f6e68]:
+              - strong [ref=f6e69]: "Initiative:"
+              - text: "+3"
+            - paragraph [ref=f6e70]:
+              - strong [ref=f6e71]: "Speed:"
+              - text: 40 ft.
+            - paragraph [ref=f6e72]:
+              - strong [ref=f6e73]: "Armor Class:"
+              - text: 15 (touch 14, flat-footed 12)
+            - paragraph [ref=f6e74]:
+              - strong [ref=f6e75]: "Base Attack/Grapple:"
+              - text: +0/-3
+            - paragraph [ref=f6e76]:
+              - strong [ref=f6e77]: "Attack:"
+              - paragraph [ref=f6e80]: Bite +2 melee (1d4+1)
+            - paragraph [ref=f6e81]:
+              - strong [ref=f6e82]: "Full Attack:"
+              - paragraph [ref=f6e85]: Bite +2 melee (1d4+1)
+            - paragraph [ref=f6e86]:
+              - strong [ref=f6e87]: "Space/Reach:"
+              - text: 5 ft./5 ft.
+            - paragraph [ref=f6e88]:
+              - strong [ref=f6e89]: "Special Qualities:"
+              - text: Low-light vision, scent
+            - paragraph [ref=f6e90]:
+              - strong [ref=f6e91]: "Saves:"
+              - text: Fort +4, Ref +5, Will +1
+            - paragraph [ref=f6e92]:
+              - strong [ref=f6e93]: "Abilities:"
+              - text: Str 13, Dex 17, Con 15, Int 2, Wis 12, Cha 6
+            - paragraph [ref=f6e94]:
+              - strong [ref=f6e95]: "Skills:"
+              - link "Jump" [ref=f6e96] [cursor=pointer]:
+                - /url: /skills/18
+              - text: +7,
+              - link "Listen" [ref=f6e97] [cursor=pointer]:
+                - /url: /skills/29
+              - text: +5,
+              - link "Spot" [ref=f6e98] [cursor=pointer]:
+                - /url: /skills/40
+              - text: +5,
+              - link "Survival" [ref=f6e99] [cursor=pointer]:
+                - /url: /skills/41
+              - text: "+1"
+            - paragraph [ref=f6e100]:
+              - strong [ref=f6e101]: "Feats:"
+              - link "Alertness" [ref=f6e102] [cursor=pointer]:
+                - /url: /feats/3
+              - text: ","
+              - link "Track (bonus)" [ref=f6e103] [cursor=pointer]:
+                - /url: /feats/297
+            - paragraph [ref=f6e104]:
+              - strong [ref=f6e105]: "Organization:"
+              - paragraph [ref=f6e108]: Solitary or pack (5-12)
+            - paragraph [ref=f6e109]:
+              - strong [ref=f6e110]: "Challenge Rating:"
+              - text: 1/3
+          - paragraph [ref=f6e114]: The statistics presented here describe a fairly small dog of about 20 to 50 pounds in weight. They also can be used for small wild canines such as coyotes, jackals, and African wild dogs.
+          - generic [ref=f6e115]:
+            - heading "Combat" [level=2] [ref=f6e116]
+            - paragraph [ref=f6e119]: Dogs generally hunt in packs, chasing and exhausting prey until they can drag it down.
+          - paragraph [ref=f6e123]:
+            - strong [ref=f6e124]: Skills (Ex)
+            - text: ": Dogs have a +4 racial bonus on Jump checks. *Dogs have a +4 racial bonus on Survival checks when tracking by scent."
+          - generic [ref=f6e125]:
+            - button "Back to Monsters" [ref=f6e126]
+            - button "Edit Monster" [ref=f6e127]
+  - generic:
+    - region "Notifications"

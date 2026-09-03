@@ -65,6 +65,7 @@ Comprehensive editing interface for creating and modifying characters. This comp
 - **Character Validation**: Real-time validation with user-friendly error messages
 - **Character Complex Data**: Handle complex nested data like ability scores, race selection, and alignment
 - **Character User Guidance**: Guide users through the character creation/editing process
+- **Draft-only resume**: `/characters/new/create` mints Character + Advancement drafts and redirects to `/characters/<negativeId>/edit`. Opening that edit URL (including refresh) calls `ensureDraftOnlyEditSession` so Redis/session exist even after TTL expiry; expired field values are not recovered.
 
 **User Workflow**:
 1. **Enter Basic Info**: Fill in character name, race, alignment, and basic attributes
@@ -120,10 +121,16 @@ All character edit tabs follow a consistent pattern for synchronizing state chan
 **State Fields with Automatic Sync**:
 - `state.classId` and `state.secondaryClassId` → `SET_CLASS` / `SET_SECONDARY_CLASS` updates
 - `state.raceId` → `SET_RACE` updates
+- `state.isGestalt`, `state.allowVariantClasses`, `state.ignoreLevelAdjustment`, `state.maxHpAtFirstLevel`, `state.editionId` → character draft config fields (required for save; Redis defaults are `false` / 3.5)
+- `state.disallowedSources` → loaded from the character on edit; written on first sync after `characterId` is set; save awaits each source write so setting exclusions (Eberron/FR) are not a partial Redis list
 - `state.level` → `SET_LEVEL` updates
 - `state.skillRanks` → `SET_SKILL_RANK` updates (for each skill rank)
-- `state.featureChoices` → `MAKE_CHOICE` updates (for each choice)
-- `state.spellsKnown` → `syncSpellsKnown()` API + `refreshState()` (uses lodash/isEqual for comparison, same pattern as spellPreparations in CharacterDetail)
+- `state.featureChoices` → sequential `featureChoices.byId` writes (queued) into the Redis advancement draft. The backend applies each `updateValue` with Redis compare-and-set so parallel docks cannot last-write-wins an empty `featureChoices` array. Save persists Redis to MySQL only. Advancement save errors are no longer swallowed.
+- `state.spellsKnown` → sequential `spellsKnown.byId` writes to the same Redis draft, then save reads Redis
+
+**Redis is the session source of truth**: Editor changes must land in Redis as they happen so a reload or dropped client can restore from `state:{draftType}:{id}`. Save does not accept React collections as an overlay. Opening an existing character for edit starts the character and advancement drafts, then GET `/characters/:id` overlays locked Redis drafts onto the MySQL snapshot.
+
+**Save and cache**: Persisted-character save used to navigate to the view immediately and skip query invalidation. The details query uses a 5-minute `staleTime`, so the view and the next edit showed pre-save HP, edition, and config flags even though MySQL was updated. Save now invalidates and removes the details/resolve cache, then navigates. The editor hydrates with `staleTime: 0`. User preferred edition is applied only when `editionId` is unset.
 
 **Adding a New Tab**:
 1. Create tab component that receives `state` and `updateState` props
@@ -196,6 +203,8 @@ All character detail tabs follow a consistent pattern for synchronizing state ch
 - ❌ Forgetting to add useEffect hook in CharacterDetail for new state fields
 - ❌ Not using refs to track previous values (causes initial sync on mount)
 - ❌ Frontend diffing arrays instead of sending full arrays to backend
+
+The Features & Feats viewer tab (`detail-tabs/FeaturesTab.tsx`) appends saved player choices to feature and feat titles via `choiceDisplayName.ts` (for example `Animal Companion: Dog`). It omits chassis features (BAB, class skills, proficiency wrappers) and shows a de-duplicated proficiency union.
 
 **Source Files**:
 - CharacterDetail: `frontend/src/features/character/CharacterDetail.tsx`
@@ -287,6 +296,8 @@ Component for managing character equipment and items.
 **Character-Specific Features**:
 - **Equipment Display**: Show character equipment and items
 - **Equipment Management**: Add, remove, and modify character equipment
+- **Currency**: Coins (cp/sp/gp/pp) and **Generate Starting Gold** on the first row; Gem, Art Object, and Other on the second. Generate only rolls starting coin. Valuable counts live on `state.money` and persist as quantity-only `CharacterWealth` rows (value and description null).
+- **Pending — individual treasure**: Quantity buckets are a stopgap. Players are often awarded a mix of gems and art objects and must Appraise or sell them before learning a value, so the editor will need distinct rows such as “pearl 50 gp” vs “pearl 100 gp” using `CharacterWealth.description` and `CharacterWealth.value`. Do not treat two pearls of different values as the same stack.
 - **Equipment Properties**: Manage equipment properties and enhancements
 - **Equipment Effects**: Show equipment effects on character statistics
 
@@ -307,6 +318,7 @@ Component for managing character class progression and advancement.
 - **Class Progression**: Manage character level advancement
 - **Class Features**: Display class features and abilities
 - **Multiclass Support**: Handle multiclass character progression
+- **Gestalt Display**: When both primary and secondary classes are selected, renders `GestaltProgressionDisplay`. The combined table shows the better BAB and saves only. Each class that has spell slots or spells known gets its own spell table (formula entities or legacy `spellcastingProgression` / `spellsKnownProgression`). Non-casters (for example Fighter) have null progressions; those fields are treated as optional.
 
 **User Workflow**:
 1. **View Classes**: See current character classes and levels
@@ -314,7 +326,19 @@ Component for managing character class progression and advancement.
 3. **View Features**: See class features and abilities
 4. **Manage Multiclass**: Handle multiclass character progression
 
-**Source File**: `frontend/src/features/character/tabs/ClassTab.tsx`
+**Source Files**:
+- `frontend/src/features/character/tabs/ClassTab.tsx`
+- `frontend/src/features/character/GestaltProgressionDisplay.tsx`
+
+### **ConfigurationTab Component**
+
+Edition, advanced options, and source exclusions for the character being edited.
+
+**Character-Specific Features**:
+- **Edition**: Selects the ruleset. Advanced options come from `ADVANCED_OPTIONS_EDITION_MAP` in `shared/static-data/src/CommonData.ts`.
+- **Max HP at 1st Level**: Shown for D&D 3.0, 3.5, and 3.0/3.5 combined. Default off. Synced to the character draft; when checked, save applies max HD + CON to the level-1 advancement (gestalt uses the better hit die). Unchecked leaves 1st-level HP as entered.
+
+**Source File**: `frontend/src/features/character/tabs/ConfigurationTab.tsx`
 
 ### **DescriptionTab Component**
 
@@ -342,24 +366,26 @@ Component for managing character spell selection (known spells, spellbook spells
 - **Spell Display**: Show available spells for character's spellcasting classes
 - **Spell Selection**: Add and remove spells from character's known spells or spellbook
 - **Spellbook Management**: Manage spellbook spells for spellbook classes (Wizard, etc.)
-- **Free Spell Grants**: Track and manage free spell grants for spellbook classes during level-up
+- **Free Spell Grants**: Track and manage free spell grants for spellbook classes during level-up (not used for SpellsKnown classes)
+- **Spells-Known Limits**: For `Class.spellsKnown` classes, enforce per-level caps from `resolvedData.spellSelection[classId].maxSpellsKnownByLevel` (derived from `SpellsKnownProgression` FeatureEntities)
 - **Spell Validation**: Validate spell level and availability based on character advancement
 
 **State Management Pattern**:
 - Follows the standardized state → useEffect → API + refreshState pattern
-- Updates `state.spellsKnown` via `updateState()` when spells are added/removed
+- Updates `state.spellsKnown` via `updateState()` when spells are added/removed (stores which spells are known)
 - CharacterEdit component automatically syncs state changes to backend using `syncSpellsKnown()` API
 - Uses lodash/isEqual for deep comparison of spellsKnown array (same pattern as spellPreparations in CharacterDetail)
 - Backend handles diffing and determines create/update/delete operations
 
 **User Workflow**:
 1. **View Spells**: See available spells for selected spellcasting class
-2. **Select Spells**: Add spells to character's known spells or spellbook
+2. **Select Spells**: Add spells to character's known spells or spellbook (SpellsKnown: Learn until per-level max; spellbook: free-grant / scribing flows)
 3. **Remove Spells**: Remove spells from character's known spells or spellbook
-4. **Track Free Grants**: View and manage free spell grants for spellbook classes
-5. **Validate Selection**: System validates spell level and availability
+4. **Track Free Grants**: View and manage free spell grants for spellbook classes only
+5. **Validate Selection**: System validates spell level, availability, and (for SpellsKnown) max known per level
 
 **Source File**: `frontend/src/features/character/tabs/SpellSelectionTab.tsx`
+**Related Documentation**: [Spell Scribing Feature](./spell-scribing.md)
 
 ## 🔌 **API Integration**
 

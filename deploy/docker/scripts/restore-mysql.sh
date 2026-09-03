@@ -26,6 +26,7 @@ CREATE DATABASE IF NOT EXISTS \\\`\$MYSQL_DATABASE\\\`;
 CREATE USER IF NOT EXISTS '\''\$MYSQL_APP_USER'\''@'\''%'\'' IDENTIFIED WITH mysql_native_password BY '\''\$MYSQL_APP_PASSWORD'\'';
 ALTER USER '\''\$MYSQL_APP_USER'\''@'\''%'\'' IDENTIFIED WITH mysql_native_password BY '\''\$MYSQL_APP_PASSWORD'\'';
 GRANT ALL ON \\\`\$MYSQL_DATABASE\\\`.* TO '\''\$MYSQL_APP_USER'\''@'\''%'\'';
+GRANT ALL ON \\\`prisma_migrate_shadow_db_%\\\`.* TO '\''\$MYSQL_APP_USER'\''@'\''%'\'';
 CREATE USER IF NOT EXISTS '\''root'\''@'\''%'\'' IDENTIFIED WITH mysql_native_password BY '\''\$MYSQL_ROOT_PASSWORD'\'';
 ALTER USER '\''root'\''@'\''%'\'' IDENTIFIED WITH mysql_native_password BY '\''\$MYSQL_ROOT_PASSWORD'\'';
 GRANT ALL ON *.* TO '\''root'\''@'\''%'\'' WITH GRANT OPTION;

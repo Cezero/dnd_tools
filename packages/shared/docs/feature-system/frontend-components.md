@@ -167,9 +167,7 @@ For `EntityType.Base` entities with `EntityAppliesToType.SpellcastingProgression
 | `SpellcastingProgression` (38) | Spells per day (slots) at that spell level | Spells per Day |
 | `SpellsKnownProgression` (46) | Maximum spells known at that spell level | Spells Known |
 
-For spell-slot formulas (Triangular/Linear) on SpellcastingProgression, the **cap** (max slots) is set in Formula Parameters as **Max Slots (cap)** (`formulaParams.maxValue`). Existing data without `maxValue` falls back to the stored entity value for backward compatibility.
-
-Authoring sources: `AppliesToSelector.tsx`, `FeatureDetailEdit/utils.ts` (formula-required sets for both applies-to values).
+Slot and known columns use `CONDITIONAL_SCALING` (thresholds/values = PHB breakpoints). Authoring sources: `AppliesToSelector.tsx`, `FeatureDetailEdit/utils.ts` (formula-required sets for both applies-to values).
 
 ### **FeatureDisplay**
 

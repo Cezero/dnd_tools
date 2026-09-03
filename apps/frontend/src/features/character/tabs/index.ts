@@ -3,6 +3,7 @@ export { ClassTab } from './ClassTab';
 export { SkillsTab } from './SkillsTab';
 export { FeatsTab } from './FeatsTab';
 export { ChoicesTab } from './ChoicesTab';
+export { AnimalsPetsTab } from './animals-pets';
 export { DescriptionTab } from './DescriptionTab';
 export { EquipmentTab } from './EquipmentTab';
 export { CombatTab } from './CombatTab';

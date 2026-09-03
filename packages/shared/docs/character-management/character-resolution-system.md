@@ -36,7 +36,7 @@ Main service orchestrating the complete feature resolution process.
 
 **Resolution Phases**:
 1. **Base Features**: Resolves racial and class features
-2. **Gestalt Merging**: Merges primary and secondary classes if applicable
+2. **Gestalt Merging**: Fetches both class feature lists, merges them, and adds the secondary half to resolved features (deduped). The merged class has no database id, so features are applied directly — re-fetching by id would drop the secondary class.
 3. **Pending Choice Identification**: Scans for choices requiring user input
 4. **User Choice Resolution**: Processes user selections
 5. **Granted Feature Resolution**: Handles cascading feature grants
@@ -393,8 +393,17 @@ Spell add/remove operations (`addSpellKnown`/`removeSpellKnown`) integrate with 
 - No `AdvancementSpell` records are created for 0th level spells in spellbook classes
 - Non-spellbook classes (Sorcerer, Bard) continue to select and store 0th level spells in `AdvancementSpell` records
 
+**Spells-Known Caps (SpellsKnown classes)**:
+- During `calculateSpellSelection`, the resolver calls `ResolvedFeatureService.getSpellsKnownByLevelFromFeaturesForClass`
+- Entities: `EntityType.Base` (or Quantity) + `EntityAppliesToType.SpellsKnownProgression`, `appliesToId` = spell level, with formula params
+- Result attached as `spellSelection[classId].maxSpellsKnownByLevel` (string keys `"0"`–`"9"`)
+- Free-grant fields (`availableFreeSpells`, etc.) remain spellbook-only; SpellsKnown classes do not use free grants
+- Frontend Learn/Forget uses those caps; `Class.spellsKnown` only selects the UI mode
+
 **Source Files**:
 - Backend: `apps/backend/src/features/character/characterService.ts` (`addSpellKnown`, `removeSpellKnown` methods)
+- Backend: `apps/backend/src/features/characterResolution/resolvedFeatureService.ts` (`getSpellsKnownByLevelFromFeaturesForClass`)
+- Backend: `apps/backend/src/features/characterResolution/characterResolutionController.ts` (`calculateSpellSelection`)
 - Frontend: `apps/frontend/src/features/character/tabs/SpellSelectionTab.tsx`
 - Frontend Hook: `apps/frontend/src/features/character/useCharacterResolution.ts`
 - Related Documentation: [Spell Scribing Feature](./spell-scribing.md) - Comprehensive spell scribing documentation
@@ -426,7 +435,7 @@ The resolution system uses class data for feature resolution:
 
 - **Class Features**: Loads class details via `classService.getClassById()`
 - **Class Progressions**: Processes class feature progressions
-- **Gestalt Merging**: Uses `GestaltClassService` for multiclass merging
+- **Gestalt Merging**: Uses `GestaltClassService` to combine feature lists, then `addApplicableProgressions` with `dedupeById` so both halves appear in the resolved result
 
 **Related Documentation**: [Class System Documentation](../class-system/)
 
@@ -466,7 +475,7 @@ The frontend uses the resolution API through:
 - **React Hook**: `useCharacterResolution` manages session lifecycle
 - **Character Edit**: `CharacterEdit.tsx` uses the hook for all resolution
 - **Character Explorer**: Uses API directly for read-only resolution
-- **PDF Service**: Uses resolved progressions from API
+- **PDF Service**: Uses resolved progressions from the API, and `GET /characters/:id/resolve` for companion, pet, and selected-form Animals pages
 - **Spell Selection Tab**: Uses `updateResolvedCharacter()` method to sync state after spell operations
 
 **Session Initialization**:

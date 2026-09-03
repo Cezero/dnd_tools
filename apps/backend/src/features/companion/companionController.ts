@@ -1,5 +1,6 @@
 import { Response } from 'express';
 
+import { BadRequestError } from '@/errors/BadRequestError';
 import { prisma } from '@/lib/prisma';
 import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
 import {
@@ -12,6 +13,7 @@ import {
     UpdateCharacterCompanionRequest,
     GetAllCharacterCompanionsResponse,
     CompanionCacheResponse,
+    GetResolvedCharacterCompanionsResponse,
 } from '@shared/schema';
 
 import { companionService } from './companionService.js';
@@ -86,6 +88,14 @@ export async function GetCharacterCompanions(req: ValidatedParamsT<{ characterId
 }
 
 /**
+ * Fetches resolved companions with computed stat blocks for a character.
+ */
+export async function GetResolvedCharacterCompanions(req: ValidatedParamsT<{ characterId: number }, GetResolvedCharacterCompanionsResponse>, res: Response) {
+    const companions = await companionService.getResolvedCharacterCompanions(req.params.characterId);
+    res.json(companions);
+}
+
+/**
  * Creates a new character companion with ownership validation.
  * 
  * Verifies that the authenticated user owns the character before allowing companion creation.
@@ -125,8 +135,16 @@ export async function CreateCharacterCompanion(req: ValidatedBodyT<CreateCharact
         return;
     }
 
-    const companion = await companionService.createCharacterCompanion(req.body);
-    res.status(201).json(companion);
+    try {
+        const companion = await companionService.createCharacterCompanion(req.body);
+        res.status(201).json(companion);
+    } catch (error) {
+        if (error instanceof BadRequestError) {
+            res.status(400).json({ error: error.message });
+            return;
+        }
+        throw error;
+    }
 }
 
 /**
@@ -175,8 +193,16 @@ export async function UpdateCharacterCompanion(req: ValidatedParamsBodyT<{ id: n
         return;
     }
 
-    const companion = await companionService.updateCharacterCompanion(req.body, req.params);
-    res.json(companion);
+    try {
+        const companion = await companionService.updateCharacterCompanion(req.body, req.params);
+        res.json(companion);
+    } catch (error) {
+        if (error instanceof BadRequestError) {
+            res.status(400).json({ error: error.message });
+            return;
+        }
+        throw error;
+    }
 }
 
 /**

@@ -30,6 +30,8 @@ Entity storage:
 - **Speed**: `EntityAppliesToType.MovementSpeed` with speed value in `value`
 - **Favored Class**: `EntityAppliesToType.FavoredClass` with class ID in `appliesToId`
 - **Level Adjustment**: `EntityAppliesToType.LevelAdjustment` with LA value in `value`
+- **Spells per Day**: `EntityAppliesToType.SpellcastingProgression` with `appliesToId` = spell level and formula params
+- **Spells Known**: `EntityAppliesToType.SpellsKnownProgression` with `appliesToId` = spell level and formula params (SpellsKnown classes)
 
 ### Many-to-Many Relationships
 
@@ -233,6 +235,19 @@ Used for saving throw progressions with formula-based calculations:
 ```
 
 **Note**: The old pattern using `appliesToSubId` with `ProgressionType` enum has been migrated to this formula-based approach.
+
+### Pattern 5: Spell Table Formulas
+
+Used for spells-per-day and spells-known. One **feature per table**, `level = 1`, `displayInCharacterSheet = false`. One `EntityType.Base` entity per spell level 0–9; `displayInDetail = false`. Offset when a spell level is gained lives on the entity (`formulaStartLevel` or `CONDITIONAL_SCALING` thresholds).
+
+- **Spells per Day**: `EntityAppliesToType.SpellcastingProgression`, `appliesToId` = spell level
+- **Spells Known**: `EntityAppliesToType.SpellsKnownProgression`, `appliesToId` = spell level
+
+Do not treat leftover `appliesToId` values outside 0–9 as a spell level (those were `SpellcastingProgression` row ids). Wizard and Cleric do not share a slots table.
+
+Every column is `CONDITIONAL_SCALING` (PHB breakpoints). Table slugs: `wizard-spells-per-day`, `sorcerer-spells-per-day`, `sorcerer-spells-known`, `divine-spells-per-day` (Cleric + Druid), `half-caster-spells-per-day` (Paladin + Ranger), `bard-spells-per-day`, `bard-spells-known`. Casting ability/type live on the class `*spells` narrative feature.
+
+Class Feature table columns come from `applyFeatureFormula` in `apps/frontend/src/lib/ClassProgression.ts`, not from the Detail display strategy. See [Spellcasting System](spellcasting-system.md#feature-based-spellcasting).
 
 ## Usage Examples
 

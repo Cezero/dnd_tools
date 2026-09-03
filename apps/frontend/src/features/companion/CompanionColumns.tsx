@@ -73,6 +73,19 @@ export const useCompanionColumns = (): ColumnDef<CompanionWithRelations, unknown
                 return minLevel ? minLevel.toString() : '-';
             },
         },
+        {
+            id: 'levelAdjustment',
+            accessorKey: 'levelAdjustment',
+            header: 'Level Adj.',
+            enableSorting: true,
+            enableColumnFilter: false,
+            enableResizing: true,
+            size: 110,
+            cell: ({ row }) => {
+                const levelAdjustment = row.original.levelAdjustment;
+                return levelAdjustment ? levelAdjustment.toString() : '-';
+            },
+        },
     ];
 };
 

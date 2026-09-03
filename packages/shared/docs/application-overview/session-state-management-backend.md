@@ -25,7 +25,7 @@ This document describes the current backend implementation and replaces older, a
 Every draft operation identifies the target draft using:
 
 - `draftType`: numeric enum value (e.g. Class, Race, Feature, Character)
-- `id`: the entity id being edited (or a backend-minted negative id for new drafts)
+- `id`: the entity id being edited (or a backend-minted negative id for new drafts). `id = 0` mints a new negative id. `id < 0` resumes that minted draft and, if Redis state is missing, re-initializes create state under the same id (not from MySQL).
 
 ### Locks
 
@@ -43,14 +43,14 @@ The request body is validated by `UpdateStateValueSchema` in `packages/shared/sc
 
 **Critical — value is scalar-only.** The schema allows only `string | number | boolean | null`. **Do not send objects or arrays as `value`.** If you send an object (e.g. a whole `formulaParams` object), the request will fail validation and the update will not be applied. To update nested structures, send **one request per leaf field** with a scalar value. For example, to update feature entity formula params, send separate updates for `entities.byId.<id>.formulaParams.formulaId`, `entities.byId.<id>.formulaParams.maxValue`, `entities.byId.<id>.formulaParams.baseValue`, `entities.byId.<id>.formulaParams.formulaStartLevel`, etc., each with a number or null. The backend will create or merge into the intermediate `formulaParams` object as needed. Correct pattern: see `apps/frontend/src/components/feature-system/FeatureEditForm/FeatureEditForm.tsx` (entity sync, formulaParams per-field updates).
 
-The implementation applies the change via `applyDraftActionAtPath` and persists the updated draft back to Redis.
+The implementation applies the change via `applyDraftActionAtPath` inside `DraftStateService.applyAtomicMutation`. That compare-and-sets the raw Redis JSON string and retries on conflict so parallel `updateValue` calls across docks cannot last-write-wins drop fields. Save validates and persists the Redis document only; it does not merge browser collections over the draft.
 
 ### Redis client adapter and TTL refresh
 
 Draft state, draft locks, and user sessions all use a shared Redis client adapter:
 
 - `apps/backend/src/features/shared/session/redisClient.ts` – creates the underlying `redis` client (standalone or cluster) and wraps it in a narrow `RedisSessionClient` interface
-- `apps/backend/src/features/shared/session/types.ts` – defines `RedisSessionClient` with only the operations required by backend session/draft services (`get`, `setEx`, `del`, `expire`, `keys`, `flushAll`, `quit`)
+- `apps/backend/src/features/shared/session/types.ts` – defines `RedisSessionClient` with only the operations required by backend session/draft services (`get`, `setEx`, `compareAndSetEx`, `del`, `expire`, `keys`, `flushAll`, `quit`)
 
 TTL behavior is implemented using Redis `EXPIRE` and `SETEX`:
 
@@ -69,10 +69,11 @@ This adapter-based design ensures:
 flowchart TD
     ClientRequest[ClientRequest] --> CheckLock[CheckDraftLock]
     CheckLock -->|NotOwner| LockError[LockError]
-    CheckLock -->|OwnerOrUnlocked| LoadState[LoadDraftStateFromRedis]
-    LoadState --> ApplyPathUpdate[ApplyDraftActionAtPath]
-    ApplyPathUpdate --> SaveState[SaveDraftStateToRedis]
-    SaveState --> PublishUpdate[PublishDraftUpdate]
+    CheckLock -->|OwnerOrUnlocked| AtomicUpdate[ApplyAtomicMutation]
+    AtomicUpdate --> ApplyPathUpdate[ApplyDraftActionAtPath]
+    ApplyPathUpdate --> CompareAndSet[RedisCompareAndSet]
+    CompareAndSet -->|Conflict| AtomicUpdate
+    CompareAndSet -->|Stored| PublishUpdate[PublishDraftUpdate]
     PublishUpdate --> ClientResponse[ReturnSuccess]
 ```
 

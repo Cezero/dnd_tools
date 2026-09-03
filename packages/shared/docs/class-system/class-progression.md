@@ -29,12 +29,13 @@ The progression system calculates character advancement across multiple dimensio
 
 The class progression grid is built by `buildClassProgressionFromDetail` in `frontend/src/lib/ClassProgression.ts`.
 
-- **BAB and saves** come from `generateClassProgression`, which evaluates each class feature’s formula entities via `applyFeatureFormula`. Shared features such as `poor-bab` and `good-will-save` use `displayInDetail = false` so they stay out of the narrative feature list; the Detail display strategy therefore cannot populate those columns.
-- **Spell columns** are filled from the Detail display strategy breakdowns (`includeNonTransitionLevels: true`):
-  - **Spells per Day** ← totals for `EntityAppliesToType.SpellcastingProgression` by spell level
-  - **Spells Known** ← totals for `EntityAppliesToType.SpellsKnownProgression` by spell level
+- **BAB, saves, spells per day, and spells known** come from `generateClassProgression`, which evaluates each class feature’s formula entities via `applyFeatureFormula`. Shared features (`poor-bab`, `wizard-spells-per-day`, and so on) use `displayInDetail = false` so they stay out of the narrative feature list.
+- **Spells per Day** ← `EntityAppliesToType.SpellcastingProgression` with `appliesToId` = spell level 0–9
+- **Spells Known** ← `EntityAppliesToType.SpellsKnownProgression` with `appliesToId` = spell level 0–9
 
-`buildClassProgressionFromDetail` writes those values onto each `ProgressionRow` (`spells` / `spellsKnown`). `ClassProgressionTable` renders the columns when any row has data.
+`buildClassProgressionFromDetail` copies those values onto each `ProgressionRow`. `ClassProgressionTable` renders the columns when any row has data. See [Spellcasting System](spellcasting-system.md#feature-based-spellcasting).
+
+Gestalt characters on the Class tab use the same generators in `GestaltProgressionDisplay`: one combined BAB/saves table, then a spell-only table per class that actually has slots or spells known. Spell columns are never merged across the two halves. `ClassProgressionTable` accepts `showCombatColumns={false}` for those per-class spell tables.
 
 Source: [`apps/frontend/src/lib/ClassProgression.ts`](../../../apps/frontend/src/lib/ClassProgression.ts).
 

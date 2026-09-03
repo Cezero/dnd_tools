@@ -196,7 +196,7 @@ Schema for character advancement with all related data.
 Character configuration flags that affect resolution behavior.
 
 - Stored as a 1:1 row with Character (`CharacterConfig.characterId`)
-- Fields: `allowVariantClasses`, `isGestalt`, `ignoreLevelAdjustment`
+- Fields: `allowVariantClasses`, `isGestalt`, `ignoreLevelAdjustment`, `maxHpAtFirstLevel` (default `false`; 3.0 / 3.5 / 3.0+3.5 combined)
 
 Source: `packages/shared/schema/src/character.ts` (`CharacterConfigSchema`)
 
@@ -209,13 +209,15 @@ Represents both coinage and valuables.
   - `quantity`: integer count
   - `value` / `description`: optional fields for non-coin valuables depending on currency semantics
 
+The editor writes quantity-only rows today (null `value` and `description`) for coins and for Gem / Art Object / Other counts. Individual appraised items (“pearl 50 gp” vs “pearl 100 gp”) are a pending feature that will use `description` and `value` on separate rows.
+
 Source: `packages/shared/schema/src/character.ts` (`CharacterWealthSchema`)
 
 ## 🧩 **Draft edit state schemas**
 
 ### **CharacterEditStateSchema**
 
-Draft-safe shape for editing **character-core** fields and collections (race, ability scores, config flags, wealth, items, attacks, languages, disallowed sources).
+Draft-safe shape for editing **character-core** fields and collections (race, ability scores, config flags including `maxHpAtFirstLevel`, wealth, items, attacks, languages, disallowed sources). Existing drafts without the flag parse as `false`.
 
 Source: `packages/shared/schema/src/character.ts` (`CharacterEditStateSchema`)
 

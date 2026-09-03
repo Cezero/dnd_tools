@@ -370,12 +370,7 @@ export class ResolvedFeatureService {
                         // Calculate if level is at or after the formula start level, or if featureLevelZero is enabled
                         // (featureLevelZero allows formula to return 0 for levels below formulaStartLevel)
                         if (level >= formulaStartLevel || entity.formulaParams.featureLevelZero === true) {
-                            // Spell-slot formulas use formulaParams.maxValue (cap); others use entity.value
-                            const isSpellSlots = entity.formulaParams.formulaId === FormulaId.SPELL_SLOTS_TRIANGULAR ||
-                                entity.formulaParams.formulaId === FormulaId.SPELL_SLOTS_LINEAR;
-                            const scalingValue = isSpellSlots
-                                ? (entity.formulaParams.maxValue ?? entity.value ?? 1)
-                                : (entity.value !== null && entity.value !== undefined ? entity.value : 1);
+                            const scalingValue = entity.value !== null && entity.value !== undefined ? entity.value : 1;
 
                             const params: FormulaCalculationParams = {
                                 ...entity.formulaParams,
@@ -460,7 +455,10 @@ export class ResolvedFeatureService {
         for (const feature of features) {
             // Only consider class features that apply to this class (via many-to-many)
             if (feature.sourceType === FeatureSourceType.Class) {
-                if (!feature.classes || !feature.classes.some(c => c.classId === classId)) {
+                if (!feature.classes || feature.classes.length === 0) {
+                    continue;
+                }
+                if (!feature.classes.some(c => c.classId === classId)) {
                     continue;
                 }
             }
@@ -473,7 +471,7 @@ export class ResolvedFeatureService {
                 // Spells-known entities:
                 // - type is Base or Quantity
                 // - appliesTo is SpellsKnownProgression
-                // - appliesToId is the spell level (0–9)
+                // - appliesToId is the spell level (0–9); leftover table FKs are ignored
                 // - formulaParams is defined for level-scaling
                 if (!entity.formulaParams) {
                     continue;
@@ -482,7 +480,9 @@ export class ResolvedFeatureService {
                     (entity.type !== EntityType.Base && entity.type !== EntityType.Quantity) ||
                     entity.appliesTo !== EntityAppliesToType.SpellsKnownProgression ||
                     entity.appliesToId === null ||
-                    entity.appliesToId === undefined
+                    entity.appliesToId === undefined ||
+                    entity.appliesToId < 0 ||
+                    entity.appliesToId > 9
                 ) {
                     continue;
                 }
@@ -541,7 +541,7 @@ export class ResolvedFeatureService {
 
     /**
      * Compute the highest spell level that is castable for a given class at a given class level,
-     * using FeatureEntity formulas (SPELL_SLOTS_TRIANGULAR, SPELL_SLOTS_LINEAR, CONDITIONAL_SCALING, etc.).
+     * using FeatureEntity formulas (CONDITIONAL_SCALING, etc.).
      *
      * This is the FeatureEntity-first replacement for table-based SpellcastingProgression/SpellcastingSlot
      * for classes that model spell slots via EntityType.Base/Quantity + EntityAppliesToType.SpellcastingProgression
@@ -572,7 +572,10 @@ export class ResolvedFeatureService {
         for (const feature of features) {
             // Only consider class features that apply to this class (via many-to-many)
             if (feature.sourceType === FeatureSourceType.Class) {
-                if (!feature.classes || !feature.classes.some(c => c.classId === classId)) {
+                if (!feature.classes || feature.classes.length === 0) {
+                    continue;
+                }
+                if (!feature.classes.some(c => c.classId === classId)) {
                     continue;
                 }
             }
@@ -585,7 +588,7 @@ export class ResolvedFeatureService {
                 // Spell slot entities:
                 // - type is Base or Quantity
                 // - appliesTo is SpellcastingProgression
-                // - appliesToId is the spell level (0–9)
+                // - appliesToId is the spell level (0–9); leftover table FKs are ignored
                 // - formulaParams is defined (FeatureEntity formula-based modeling)
                 if (!entity.formulaParams) {
                     continue;
@@ -594,7 +597,9 @@ export class ResolvedFeatureService {
                     (entity.type !== EntityType.Base && entity.type !== EntityType.Quantity) ||
                     entity.appliesTo !== EntityAppliesToType.SpellcastingProgression ||
                     entity.appliesToId === null ||
-                    entity.appliesToId === undefined
+                    entity.appliesToId === undefined ||
+                    entity.appliesToId < 0 ||
+                    entity.appliesToId > 9
                 ) {
                     continue;
                 }
@@ -611,12 +616,7 @@ export class ResolvedFeatureService {
                     continue;
                 }
 
-                // Spell-slot formulas use formulaParams.maxValue (cap); others use entity.value
-                const isSpellSlots = entity.formulaParams.formulaId === FormulaId.SPELL_SLOTS_TRIANGULAR ||
-                    entity.formulaParams.formulaId === FormulaId.SPELL_SLOTS_LINEAR;
-                const scalingValue = isSpellSlots
-                    ? (entity.formulaParams.maxValue ?? entity.value ?? 1)
-                    : (entity.value !== null && entity.value !== undefined ? entity.value : 1);
+                const scalingValue = entity.value !== null && entity.value !== undefined ? entity.value : 1;
 
                 const params: FormulaCalculationParams = {
                     ...entity.formulaParams,
@@ -872,12 +872,7 @@ export class ResolvedFeatureService {
             }
         }
 
-        // Spell-slot formulas use formulaParams.maxValue (cap); others use entity.value
-        const isSpellSlots = entity.formulaParams.formulaId === FormulaId.SPELL_SLOTS_TRIANGULAR ||
-            entity.formulaParams.formulaId === FormulaId.SPELL_SLOTS_LINEAR;
-        const scalingValue = isSpellSlots
-            ? (entity.formulaParams.maxValue ?? entity.value ?? 1)
-            : (entity.value !== null && entity.value !== undefined ? entity.value : 1);
+        const scalingValue = entity.value !== null && entity.value !== undefined ? entity.value : 1;
 
         const params: FormulaCalculationParams = {
             ...entity.formulaParams,

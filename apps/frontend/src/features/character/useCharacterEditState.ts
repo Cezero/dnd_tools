@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 
-import type { CharacterEditState, CharacterEditStateUpdate } from './types';
-import { CharacterEditStateUpdateType } from './types';
+import { CharacterEditStateUpdateType, EMPTY_MONEY, type CharacterEditState, type CharacterEditStateUpdate } from './types';
 
 /**
  * Custom hook for managing centralized character edit state.
@@ -28,6 +27,7 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
         editionId: null,
         allowVariantClasses: false,
         ignoreLevelAdjustment: false,
+        maxHpAtFirstLevel: false,
         disallowedSources: [],
 
         // User Choices
@@ -71,10 +71,14 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
 
         // Equipment Tab UI State
         equipment: [],
-        money: { platinum: 0, gold: 0, silver: 0, copper: 0 },
+        money: { ...EMPTY_MONEY },
 
         // Combat Tab UI State
         attackDefinitions: [],
+
+        // Animals & Pets Tab UI State
+        companions: [],
+        selectedForms: [],
 
         // Apply any initial state overrides
         ...initialState
@@ -107,6 +111,8 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
                     return { ...prev, allowVariantClasses: update.payload.allowVariantClasses };
                 case CharacterEditStateUpdateType.SET_IGNORE_LEVEL_ADJUSTMENT:
                     return { ...prev, ignoreLevelAdjustment: update.payload.ignoreLevelAdjustment };
+                case CharacterEditStateUpdateType.SET_MAX_HP_AT_FIRST_LEVEL:
+                    return { ...prev, maxHpAtFirstLevel: update.payload.maxHpAtFirstLevel };
                 case CharacterEditStateUpdateType.SET_DISALLOWED_SOURCES:
                     return { ...prev, disallowedSources: update.payload.disallowedSources };
                 case CharacterEditStateUpdateType.SET_FEATURE_CHOICES:
@@ -162,6 +168,10 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
                     return { ...prev, attackDefinitions: update.payload.attackDefinitions };
                 case CharacterEditStateUpdateType.SET_SELECTED_BONUS_LANGUAGES:
                     return { ...prev, selectedBonusLanguages: update.payload.selectedBonusLanguages };
+                case CharacterEditStateUpdateType.SET_COMPANIONS:
+                    return { ...prev, companions: update.payload.companions };
+                case CharacterEditStateUpdateType.SET_SELECTED_FORMS:
+                    return { ...prev, selectedForms: update.payload.selectedForms };
                 default:
                     return prev;
             }

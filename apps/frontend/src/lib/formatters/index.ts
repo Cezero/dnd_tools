@@ -1,4 +1,10 @@
 // Export the factory for direct strategy access
+export {
+    collectFeatureChoices,
+    formatFeatNameWithSubtype,
+    formatFeatureNameWithChoices,
+    resolveFeatureChoiceDisplayName,
+} from './choiceDisplayName';
 export { displayStrategyFactory } from './display-strategies';
 export { DisplayStrategyBase } from './displayStrategyBase';
 

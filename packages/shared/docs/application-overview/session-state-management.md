@@ -119,10 +119,9 @@ sequenceDiagram
     
     ResolutionHook->>API: updateDraftValue(draftType, id, path, value)
     API->>DraftController: UpdateDraftValue handler
-    DraftController->>DraftStateService: getState(draftType, id)
-    DraftStateService-->>DraftController: Draft state
-    DraftController->>DraftStateService: setState(draftType, id, updatedState)
-    DraftStateService-->>DraftController: Success
+    DraftController->>DraftStateService: applyAtomicMutation(draftType, id, path update)
+    Note over DraftStateService: Redis GET + mutate + compare-and-set (retry on conflict)
+    DraftStateService-->>DraftController: Updated draft
     DraftController-->>API: { success: true }
     API-->>ResolutionHook: Updated state
     ResolutionHook->>ResolutionHook: Update local state
@@ -134,8 +133,8 @@ sequenceDiagram
 The system is unified around `DraftType` (shared enum) and a small set of generic draft operations:
 
 - **Start editing**: acquire lock and load/initialize draft state
-- **Update value**: apply a path-based change to draft JSON
-- **Save**: validate draft state and persist to MySQL via a draft-type specific save service
+- **Update value**: apply a path-based change to the Redis draft (atomic compare-and-set)
+- **Save**: validate the Redis draft and persist to MySQL via a draft-type specific save service. Save does not merge browser collections over Redis.
 - **Cancel**: release lock and stop editing (draft state may remain cached for a period)
 
 The backend selects the correct validation and persistence strategy via the draft registry:

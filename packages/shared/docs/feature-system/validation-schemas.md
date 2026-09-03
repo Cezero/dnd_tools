@@ -376,7 +376,7 @@ Schema for formula parameters, defining mathematical progression calculations.
 - **`divisor`**: Optional positive integer for division-based formulas (e.g., floor(level / divisor))
 - **`baseValue`**: Optional integer for base value in division-based formulas (e.g., floor(level / divisor) + baseValue)
 - **`startingValue`**: Optional integer for starting value in formulas that need a different starting value than the increment (e.g., @FormulaId.EVERY_N_LEVELS). Defaults to entity.value if not set.
-- **`maxValue`**: Optional integer for the cap (max value) in formulas with an upper bound (e.g., @FormulaId.SPELL_SLOTS_TRIANGULAR, @FormulaId.SPELL_SLOTS_LINEAR). When null, spell-slot formulas use entity.value for backward compatibility.
+- **`maxValue`**: Optional integer cap for formulas that have an upper bound. Unused by spell-table `CONDITIONAL_SCALING` columns.
 
 **Formula Types and Usage Patterns**:
 

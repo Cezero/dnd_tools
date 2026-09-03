@@ -17,6 +17,7 @@ import type { AlignmentId as AlignmentIdType } from '@shared/static-data'; // TO
 import type { CurrencyId as CurrencyIdType } from '@shared/static-data'; // TODO don't import with a type alias
 
 import { characterResolutionProjectionService } from '../../characterResolution/characterResolutionProjectionService';
+import { companionSyncService } from '../../companion/companionSyncService';
 import { DraftLockService } from '../../shared/draftState/DraftLockService';
 import { DraftStateService } from '../../shared/draftState/DraftStateService';
 import { UserSessionService } from '../../shared/session/UserSessionService';
@@ -97,12 +98,15 @@ interface DraftCharacterState {
     allowVariantClasses?: unknown;
     isGestalt?: unknown;
     ignoreLevelAdjustment?: unknown;
+    maxHpAtFirstLevel?: unknown;
     abilityScores?: unknown;
     wealth?: unknown;
     disallowedSources?: unknown;
     characterLanguages?: unknown;
     characterItems?: unknown;
     attackDefinitions?: unknown;
+    companions?: unknown;
+    selectedForms?: unknown;
 }
 
 interface DraftAdvancementState {
@@ -146,6 +150,221 @@ function asIntOrNull(value: unknown): number | null {
 
 function asArray(value: unknown): unknown[] {
     return Array.isArray(value) ? value : [];
+}
+
+/**
+ * Map a Redis advancement draft's collections onto the API row shape.
+ *
+ * Used for draft-only characters and for overlaying a locked edit session
+ * onto a persisted character so reload restores Redis, not MySQL.
+ */
+function mapDraftAdvancementCollections(
+    draft: DraftAdvancementState,
+    characterId: number,
+    advancementId: number
+): {
+    skills: Array<{
+        advancementId: number;
+        skillId: number;
+        skillSubId: number | null;
+        pointsSpent: number;
+        customSubtype: string | null;
+    }>;
+    feats: Array<{
+        advancementId: number;
+        featId: number;
+        featSubId: number | null;
+    }>;
+    spellsKnown: Array<{
+        advancementId: number;
+        spellId: number;
+        isFreeGrant: boolean;
+    }>;
+    featureChoices: Array<{
+        id: number;
+        characterId: number;
+        featureId: number;
+        advancementId: number;
+        featureEntityId: number;
+        appliesToId: number;
+        appliesToSubId: number | null;
+        choiceIndex: number | null;
+        choiceGroupId: string | null;
+        choiceData: unknown;
+        linkedChoiceGroupId: string | null;
+    }>;
+} {
+    return {
+        skills: asArray(draft.skills).filter(isRecord).map((s) => ({
+            advancementId,
+            skillId: asInt(s.skillId) ?? 0,
+            skillSubId: asIntOrNull(s.skillSubId),
+            pointsSpent: asInt(s.pointsSpent) ?? 0,
+            customSubtype: asStringOrNull(s.customSubtype),
+        })),
+        feats: asArray(draft.feats).filter(isRecord).map((f) => ({
+            advancementId,
+            featId: asInt(f.featId) ?? 0,
+            featSubId: asIntOrNull(f.featSubId),
+        })),
+        spellsKnown: asArray(draft.spellsKnown).filter(isRecord).map((sp) => ({
+            advancementId,
+            spellId: asInt(sp.spellId) ?? 0,
+            isFreeGrant: asBool(sp.isFreeGrant) ?? false,
+        })),
+        featureChoices: asArray(draft.featureChoices).filter(isRecord).map((c) => ({
+            id: asInt(c.id) ?? 0,
+            characterId,
+            featureId: asInt(c.featureId) ?? 0,
+            advancementId,
+            featureEntityId: asInt(c.featureEntityId) ?? 0,
+            appliesToId: asInt(c.appliesToId) ?? 0,
+            appliesToSubId: asIntOrNull(c.appliesToSubId),
+            choiceIndex: asIntOrNull(c.choiceIndex),
+            choiceGroupId: asStringOrNull(c.choiceGroupId),
+            choiceData: c.choiceData ?? null,
+            linkedChoiceGroupId: asStringOrNull(c.linkedChoiceGroupId),
+        })),
+    };
+}
+
+function hasOwn(obj: object, key: string): boolean {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+/**
+ * Maps persisted or draft companion rows onto the character-edit draft shape.
+ */
+function mapDraftCompanions(value: unknown, characterId: number): CharacterWithAllDetailsResponse['companions'] {
+    return asArray(value).filter(isRecord).map((row) => ({
+        id: asInt(row.id) ?? 0,
+        characterId: asInt(row.characterId) ?? characterId,
+        monsterId: asInt(row.monsterId) ?? 0,
+        companionId: asIntOrNull(row.companionId),
+        trickPurposeId: asIntOrNull(row.trickPurposeId),
+        name: asStringOrNull(row.name),
+        levelAcquired: asIntOrNull(row.levelAcquired),
+        hitPoints: asIntOrNull(row.hitPoints),
+        wounds: asInt(row.wounds) ?? 0,
+        tricks: asArray(row.tricks).filter(isRecord).map((trick) => ({
+            id: asInt(trick.id) ?? 0,
+            trickId: asInt(trick.trickId) ?? 0,
+            timesTrained: asInt(trick.timesTrained) ?? 1,
+            isBonus: asBool(trick.isBonus) ?? false,
+            fromPurpose: asBool(trick.fromPurpose) ?? false,
+        })),
+        skills: asArray(row.skills).filter(isRecord).map((skill) => ({
+            id: asInt(skill.id) ?? 0,
+            skillId: asInt(skill.skillId) ?? 0,
+            skillSubId: asIntOrNull(skill.skillSubId),
+            ranks: asInt(skill.ranks) ?? 0,
+        })),
+        feats: asArray(row.feats).filter(isRecord).map((feat) => ({
+            id: asInt(feat.id) ?? 0,
+            featId: asInt(feat.featId) ?? 0,
+            notes: asStringOrNull(feat.notes),
+        })),
+    }));
+}
+
+/**
+ * Maps persisted or draft selected-form rows onto the character-edit draft shape.
+ */
+function mapDraftSelectedForms(value: unknown, characterId: number): CharacterWithAllDetailsResponse['selectedForms'] {
+    return asArray(value).filter(isRecord).map((row) => ({
+        id: asInt(row.id) ?? 0,
+        characterId: asInt(row.characterId) ?? characterId,
+        featureId: asInt(row.featureId) ?? 0,
+        monsterId: asInt(row.monsterId) ?? 0,
+        sortOrder: asInt(row.sortOrder) ?? 0,
+    }));
+}
+
+/**
+ * Overlay Redis drafts onto a persisted character when this user holds the edit locks.
+ *
+ * View-mode (no lock) stays MySQL. Edit-mode reload must restore the session draft.
+ */
+async function overlayLockedDraftsOnCharacter(
+    character: CharacterWithAllDetailsResponse,
+    userId: number
+): Promise<CharacterWithAllDetailsResponse> {
+    const characterLockedBy = await draftLockService.checkLock(DraftType.Character, character.id);
+    let next: CharacterWithAllDetailsResponse = character;
+
+    if (characterLockedBy === userId) {
+        const rawCharacterDraft = await draftStateService.getState<unknown>(DraftType.Character, character.id);
+        if (rawCharacterDraft && isRecord(rawCharacterDraft)) {
+            const draft = rawCharacterDraft as unknown as DraftCharacterState;
+            next = {
+                ...next,
+                name: typeof draft.name === 'string' ? draft.name : next.name,
+                raceId: asIntOrNull(draft.raceId) ?? next.raceId,
+                alignmentId: coerceAlignmentId(asIntOrNull(draft.alignmentId)) ?? next.alignmentId,
+                deityId: asIntOrNull(draft.deityId) ?? next.deityId,
+                age: asIntOrNull(draft.age) ?? next.age,
+                height: asIntOrNull(draft.height) ?? next.height,
+                weight: asIntOrNull(draft.weight) ?? next.weight,
+                eyes: asStringOrNull(draft.eyes) ?? next.eyes,
+                hair: asStringOrNull(draft.hair) ?? next.hair,
+                gender: asStringOrNull(draft.gender) ?? next.gender,
+                notes: asStringOrNull(draft.notes) ?? next.notes,
+                editionId: asInt(draft.editionId) ?? next.editionId,
+                wealth: asArray(draft.wealth).length > 0
+                    ? asArray(draft.wealth).filter(isRecord).map((w) => ({
+                        id: asInt(w.id) ?? 0,
+                        characterId: character.id,
+                        currencyId: coerceCurrencyId(asInt(w.currencyId) ?? CurrencyId.Gold),
+                        quantity: asInt(w.quantity) ?? 0,
+                        value: asIntOrNull(w.value),
+                        description: asStringOrNull(w.description),
+                    }))
+                    : next.wealth,
+                config: next.config
+                    ? {
+                        ...next.config,
+                        allowVariantClasses: asBool(draft.allowVariantClasses) ?? next.config.allowVariantClasses,
+                        isGestalt: asBool(draft.isGestalt) ?? next.config.isGestalt,
+                        ignoreLevelAdjustment: asBool(draft.ignoreLevelAdjustment) ?? next.config.ignoreLevelAdjustment,
+                        maxHpAtFirstLevel: asBool(draft.maxHpAtFirstLevel) ?? next.config.maxHpAtFirstLevel,
+                    }
+                    : next.config,
+                companions: hasOwn(draft, 'companions')
+                    ? mapDraftCompanions(draft.companions, character.id)
+                    : next.companions,
+                selectedForms: hasOwn(draft, 'selectedForms')
+                    ? mapDraftSelectedForms(draft.selectedForms, character.id)
+                    : next.selectedForms,
+            };
+        }
+    }
+
+    const advancements = await Promise.all(next.advancements.map(async (adv) => {
+        const lockedBy = await draftLockService.checkLock(DraftType.Advancement, adv.id);
+        if (lockedBy !== userId) {
+            return adv;
+        }
+        const rawAdvDraft = await draftStateService.getState<unknown>(DraftType.Advancement, adv.id);
+        if (!rawAdvDraft || !isRecord(rawAdvDraft)) {
+            return adv;
+        }
+        const draft = rawAdvDraft as unknown as DraftAdvancementState;
+        const collections = mapDraftAdvancementCollections(draft, character.id, adv.id);
+        return {
+            ...adv,
+            classId: asInt(draft.classId) ?? adv.classId,
+            secondaryClassId: Object.prototype.hasOwnProperty.call(draft, 'secondaryClassId')
+                ? asIntOrNull(draft.secondaryClassId)
+                : adv.secondaryClassId,
+            hitPoints: asInt(draft.hitPoints) ?? adv.hitPoints,
+            ...collections,
+        };
+    }));
+
+    return {
+        ...next,
+        advancements,
+    };
 }
 
 async function getDraftCharacterWithAllDetails(args: {
@@ -225,6 +444,7 @@ async function getDraftCharacterWithAllDetails(args: {
     const allowVariantClasses = asBool(characterState.allowVariantClasses) ?? false;
     const isGestalt = asBool(characterState.isGestalt) ?? false;
     const ignoreLevelAdjustment = asBool(characterState.ignoreLevelAdjustment) ?? false;
+    const maxHpAtFirstLevel = asBool(characterState.maxHpAtFirstLevel) ?? false;
 
     const abilityScores = asArray(characterState.abilityScores)
         .map((row): { id: number; characterId: number; abilityId: number; value: number } | null => {
@@ -316,36 +536,11 @@ async function getDraftCharacterWithAllDetails(args: {
                 abilityId: asIntOrNull(bestAdvancement.abilityId),
                 notes: asStringOrNull(bestAdvancement.notes),
                 createdAt,
-                skills: asArray(bestAdvancement.skills).filter(isRecord).map((s) => ({
-                    advancementId: asInt(bestAdvancement.advancementId) ?? 0,
-                    skillId: asInt(s.skillId) ?? 0,
-                    skillSubId: asIntOrNull(s.skillSubId),
-                    pointsSpent: asInt(s.pointsSpent) ?? 0,
-                    customSubtype: asStringOrNull(s.customSubtype),
-                })),
-                feats: asArray(bestAdvancement.feats).filter(isRecord).map((f) => ({
-                    advancementId: asInt(bestAdvancement.advancementId) ?? 0,
-                    featId: asInt(f.featId) ?? 0,
-                    featSubId: asIntOrNull(f.featSubId),
-                })),
-                spellsKnown: asArray(bestAdvancement.spellsKnown).filter(isRecord).map((sp) => ({
-                    advancementId: asInt(bestAdvancement.advancementId) ?? 0,
-                    spellId: asInt(sp.spellId) ?? 0,
-                    isFreeGrant: asBool(sp.isFreeGrant) ?? false,
-                })),
-                featureChoices: asArray(bestAdvancement.featureChoices).filter(isRecord).map((c) => ({
-                    id: asInt(c.id) ?? 0,
-                    characterId: draftCharacterId,
-                    featureId: asInt(c.featureId) ?? 0,
-                    advancementId: asInt(bestAdvancement.advancementId) ?? 0,
-                    featureEntityId: asInt(c.featureEntityId) ?? 0,
-                    appliesToId: asInt(c.appliesToId) ?? 0,
-                    appliesToSubId: asIntOrNull(c.appliesToSubId),
-                    choiceIndex: asIntOrNull(c.choiceIndex),
-                    choiceGroupId: asStringOrNull(c.choiceGroupId),
-                    choiceData: (c as Record<string, unknown>).choiceData ?? null,
-                    linkedChoiceGroupId: asStringOrNull(c.linkedChoiceGroupId),
-                })),
+                ...mapDraftAdvancementCollections(
+                    bestAdvancement,
+                    draftCharacterId,
+                    asInt(bestAdvancement.advancementId) ?? 0
+                ),
             },
         ]
         : [];
@@ -376,12 +571,15 @@ async function getDraftCharacterWithAllDetails(args: {
             allowVariantClasses,
             isGestalt,
             ignoreLevelAdjustment,
+            maxHpAtFirstLevel,
         },
         wealth,
         disallowedSources,
         characterLanguages,
         characterItems,
         attackDefinitions,
+        companions: mapDraftCompanions(characterState.companions, draftCharacterId),
+        selectedForms: mapDraftSelectedForms(characterState.selectedForms, draftCharacterId),
         characterLevel,
         classLevelString: '',
     };
@@ -600,6 +798,16 @@ export const characterCrudService = {
                 characterItems: true,
                 attackDefinitions: true,
                 characterLanguages: true,
+                companions: {
+                    include: {
+                        tricks: true,
+                        skills: true,
+                        feats: true,
+                    },
+                },
+                selectedForms: {
+                    orderBy: { sortOrder: 'asc' },
+                },
             },
         });
 
@@ -629,15 +837,23 @@ export const characterCrudService = {
             slotType: prep.slotType as SpellSlotType,
         }));
 
-        return {
+        const response: CharacterWithAllDetailsResponse = {
             ...character,
             alignmentId: coerceAlignmentId(character.alignmentId),
             wealth: character.wealth.map((w) => ({ ...w, currencyId: coerceCurrencyId(w.currencyId) })),
             advancements: advancementsWithoutNested,
             preparedSpells,
+            companions: mapDraftCompanions(character.companions, character.id),
+            selectedForms: mapDraftSelectedForms(character.selectedForms, character.id),
             characterLevel,
             classLevelString,
         };
+
+        if (typeof userId === 'number') {
+            return overlayLockedDraftsOnCharacter(response, userId);
+        }
+
+        return response;
     },
 
     async createCharacter(data: CreateCharacterRequest): Promise<CreateResponse> {
@@ -656,9 +872,9 @@ export const characterCrudService = {
         // Extract nested data
         const { abilityScores, advancement, equipment, attackDefinitions, characterLanguages, ...characterData } = data;
 
-        return await prisma.$transaction(async (tx) => {
-            let finalCharacterId = characterId;
+        let finalCharacterId = characterId;
 
+        const result = await prisma.$transaction(async (tx) => {
             // Create or update character
             if (!finalCharacterId) {
                 // Create new character - ensure required fields are present
@@ -693,11 +909,16 @@ export const characterCrudService = {
                 });
             }
 
+            if (finalCharacterId === null) {
+                throw new Error('Character ID is required after create or update');
+            }
+            const persistedCharacterId = finalCharacterId;
+
             // Handle ability scores if provided
             if (abilityScores !== undefined) {
                 // Get existing ability scores
                 const existingScores = await tx.characterAbilityScore.findMany({
-                    where: { characterId: finalCharacterId },
+                    where: { characterId: persistedCharacterId },
                 });
 
                 const existingMap = new Map(existingScores.map(score => [score.abilityId, score]));
@@ -716,7 +937,7 @@ export const characterCrudService = {
                     } else {
                         await tx.characterAbilityScore.create({
                             data: {
-                                characterId: finalCharacterId,
+                                characterId: persistedCharacterId,
                                 abilityId: abilityScore.abilityId,
                                 value: abilityScore.value,
                             },
@@ -740,7 +961,7 @@ export const characterCrudService = {
                 // Check if advancement exists for this character and level
                 const existingAdvancement = await tx.characterAdvancement.findFirst({
                     where: {
-                        characterId: finalCharacterId,
+                        characterId: persistedCharacterId,
                         level: advancement.level,
                     },
                 });
@@ -753,7 +974,7 @@ export const characterCrudService = {
                         where: { id: existingAdvancement.id },
                         data: {
                             ...advancementData,
-                            characterId: finalCharacterId,
+                            characterId: persistedCharacterId,
                         },
                     });
 
@@ -796,7 +1017,7 @@ export const characterCrudService = {
                             await tx.characterFeatureChoice.createMany({
                                 data: featureChoices.map(choice => ({
                                     ...choice,
-                                    characterId: finalCharacterId,
+                                    characterId: persistedCharacterId,
                                     advancementId: existingAdvancement.id,
                                 })),
                             });
@@ -809,7 +1030,7 @@ export const characterCrudService = {
                     const newAdvancement = await tx.characterAdvancement.create({
                         data: {
                             ...advancementData,
-                            characterId: finalCharacterId,
+                            characterId: persistedCharacterId,
                             version: 1,
                             skills: skills ? {
                                 create: skills
@@ -822,7 +1043,7 @@ export const characterCrudService = {
                                     // advancementId is not in the choice type - Prisma sets it automatically via the relationship
                                     return {
                                         ...choice,
-                                        characterId: finalCharacterId,
+                                        characterId: persistedCharacterId,
                                     };
                                 })
                             } : undefined,
@@ -839,7 +1060,7 @@ export const characterCrudService = {
             if (equipment !== undefined) {
                 // Get existing equipment
                 const existingEquipment = await tx.characterItem.findMany({
-                    where: { characterId: finalCharacterId },
+                    where: { characterId: persistedCharacterId },
                 });
 
                 // Create multiple maps for flexible matching:
@@ -872,7 +1093,7 @@ export const characterCrudService = {
                 // Delete all existing equipment
                 if (existingEquipment.length > 0) {
                     await tx.characterItem.deleteMany({
-                        where: { characterId: finalCharacterId },
+                        where: { characterId: persistedCharacterId },
                     });
                 }
 
@@ -882,7 +1103,7 @@ export const characterCrudService = {
                         equipment.map(async (item) => {
                             const created = await tx.characterItem.create({
                                 data: {
-                                    characterId: finalCharacterId,
+                                    characterId: persistedCharacterId,
                                     name: item.name,
                                     quantity: item.quantity ?? null,
                                     location: item.location ?? null,
@@ -928,13 +1149,13 @@ export const characterCrudService = {
             if (attackDefinitions !== undefined) {
                 // Get existing attack definitions
                 const existingAttackDefinitions = await tx.characterAttackDefinition.findMany({
-                    where: { characterId: finalCharacterId },
+                    where: { characterId: persistedCharacterId },
                 });
 
                 // Delete all existing attack definitions
                 if (existingAttackDefinitions.length > 0) {
                     await tx.characterAttackDefinition.deleteMany({
-                        where: { characterId: finalCharacterId },
+                        where: { characterId: persistedCharacterId },
                     });
                 }
 
@@ -942,7 +1163,7 @@ export const characterCrudService = {
                 if (attackDefinitions.length > 0) {
                     // Get all current character items to validate references
                     const currentItems = await tx.characterItem.findMany({
-                        where: { characterId: finalCharacterId },
+                        where: { characterId: persistedCharacterId },
                     });
                     const validItemIds = new Set(currentItems.map(item => item.id));
 
@@ -965,7 +1186,7 @@ export const characterCrudService = {
                             }
 
                             return {
-                                characterId: finalCharacterId,
+                                characterId: persistedCharacterId,
                                 attackSlot: def.attackSlot ?? null,
                                 mainHandCharacterItemId: mainHandItemId,
                                 offHandCharacterItemId: offHandItemId,
@@ -979,13 +1200,13 @@ export const characterCrudService = {
             if (characterLanguages !== undefined) {
                 // Delete existing languages
                 await tx.characterLanguageMap.deleteMany({
-                    where: { characterId: finalCharacterId },
+                    where: { characterId: persistedCharacterId },
                 });
                 // Create new languages
                 if (characterLanguages.length > 0) {
                     await tx.characterLanguageMap.createMany({
                         data: characterLanguages.map(lang => ({
-                            characterId: finalCharacterId,
+                            characterId: persistedCharacterId,
                             languageId: lang.languageId,
                         })),
                     });
@@ -995,9 +1216,14 @@ export const characterCrudService = {
             if (characterId) {
                 return { message: 'Character saved successfully' };
             } else {
-                return { id: finalCharacterId.toString(), message: 'Character created successfully' };
+                return { id: persistedCharacterId.toString(), message: 'Character created successfully' };
             }
         });
+
+        if (finalCharacterId !== null) {
+            await companionSyncService.syncFromFeatureChoices(finalCharacterId);
+        }
+        return result;
     },
 
     async deleteCharacter(query: CharacterIdParamRequest): Promise<UpdateResponse> {

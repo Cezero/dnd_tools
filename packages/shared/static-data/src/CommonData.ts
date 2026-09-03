@@ -323,9 +323,9 @@ export const EDITION_LIST = Object.values(EDITION_MAP);
 
 // NEW: Advanced options mapping by edition
 export const ADVANCED_OPTIONS_EDITION_MAP = {
-    [EditionId.DND_3E]: ['allowVariantClasses', 'isGestalt', 'ignoreLevelAdjustment'],
-    [EditionId.DND_3_5E]: ['allowVariantClasses', 'isGestalt', 'ignoreLevelAdjustment'],
-    [EditionId.DND_3x]: ['allowVariantClasses', 'isGestalt', 'ignoreLevelAdjustment'],
+    [EditionId.DND_3E]: ['allowVariantClasses', 'isGestalt', 'ignoreLevelAdjustment', 'maxHpAtFirstLevel'],
+    [EditionId.DND_3_5E]: ['allowVariantClasses', 'isGestalt', 'ignoreLevelAdjustment', 'maxHpAtFirstLevel'],
+    [EditionId.DND_3x]: ['allowVariantClasses', 'isGestalt', 'ignoreLevelAdjustment', 'maxHpAtFirstLevel'],
     // Future editions can have their own advanced options
     // [EditionId.DND_4E]: ['some4EOption'],
     // [EditionId.DND_5E]: ['some5EOption'],

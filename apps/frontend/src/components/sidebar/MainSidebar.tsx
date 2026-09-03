@@ -116,12 +116,12 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         className={`flex items-center w-full px-4 py-2 rounded 
                                                     text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
                                                     ${isExpanded ? 'justify-start' : 'justify-center'}
-                                                    ${location.pathname.startsWith('/spells') || location.pathname.startsWith('/classes') || location.pathname.startsWith('/races') || location.pathname.startsWith('/skills') || location.pathname.startsWith('/feats') || location.pathname.startsWith('/items') || location.pathname.startsWith('/domains') || location.pathname.startsWith('/deities') || location.pathname.startsWith('/companions') || location.pathname.startsWith('/tricks') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                                    ${location.pathname.startsWith('/spells') || location.pathname.startsWith('/classes') || location.pathname.startsWith('/races') || location.pathname.startsWith('/skills') || location.pathname.startsWith('/feats') || location.pathname.startsWith('/items') || location.pathname.startsWith('/domains') || location.pathname.startsWith('/deities') || location.pathname.startsWith('/companions') || location.pathname.startsWith('/tricks') || location.pathname.startsWith('/trick-purposes') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
                                     >
-                                        <BookOpenIcon className={`${location.pathname.startsWith('/spells') || location.pathname.startsWith('/classes') || location.pathname.startsWith('/races') || location.pathname.startsWith('/skills') || location.pathname.startsWith('/feats') || location.pathname.startsWith('/items') || location.pathname.startsWith('/domains') || location.pathname.startsWith('/deities') || location.pathname.startsWith('/companions') || location.pathname.startsWith('/tricks') ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
+                                        <BookOpenIcon className={`${location.pathname.startsWith('/spells') || location.pathname.startsWith('/classes') || location.pathname.startsWith('/races') || location.pathname.startsWith('/skills') || location.pathname.startsWith('/feats') || location.pathname.startsWith('/items') || location.pathname.startsWith('/domains') || location.pathname.startsWith('/deities') || location.pathname.startsWith('/companions') || location.pathname.startsWith('/tricks') || location.pathname.startsWith('/trick-purposes') ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
                                         {isExpanded && (
                                             <>
-                                                <span className={`ml-3 ${location.pathname.startsWith('/spells') || location.pathname.startsWith('/classes') || location.pathname.startsWith('/races') || location.pathname.startsWith('/skills') || location.pathname.startsWith('/feats') || location.pathname.startsWith('/items') || location.pathname.startsWith('/domains') || location.pathname.startsWith('/deities') || location.pathname.startsWith('/companions') || location.pathname.startsWith('/tricks') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference</span>
+                                                <span className={`ml-3 ${location.pathname.startsWith('/spells') || location.pathname.startsWith('/classes') || location.pathname.startsWith('/races') || location.pathname.startsWith('/skills') || location.pathname.startsWith('/feats') || location.pathname.startsWith('/items') || location.pathname.startsWith('/domains') || location.pathname.startsWith('/deities') || location.pathname.startsWith('/companions') || location.pathname.startsWith('/tricks') || location.pathname.startsWith('/trick-purposes') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference</span>
                                                 <ChevronDownIcon className="ml-auto w-4 h-4" />
                                             </>
                                         )}
@@ -202,11 +202,20 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm
                                                         text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
-                                                        ${location.pathname.startsWith('/tricks') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                                        ${location.pathname === '/tricks' || location.pathname.startsWith('/tricks/') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
                                             href="/tricks"
                                         >
-                                            <SparklesIcon className={`${location.pathname.startsWith('/tricks') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
-                                            <span className={`${location.pathname.startsWith('/tricks') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Tricks</span>
+                                            <SparklesIcon className={`${location.pathname === '/tricks' || location.pathname.startsWith('/tricks/') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
+                                            <span className={`${location.pathname === '/tricks' || location.pathname.startsWith('/tricks/') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Tricks</span>
+                                        </CustomLink>
+                                        <CustomLink
+                                            className={`flex items-center px-4 py-2 text-sm
+                                                        text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
+                                                        ${location.pathname.startsWith('/trick-purposes') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                            href="/trick-purposes"
+                                        >
+                                            <SparklesIcon className={`${location.pathname.startsWith('/trick-purposes') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
+                                            <span className={`${location.pathname.startsWith('/trick-purposes') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Trick Purposes</span>
                                         </CustomLink>
                                         <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm

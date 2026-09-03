@@ -32,8 +32,11 @@ export function OverviewTab({ character, formattedCharacter, state, updateState,
     // Use wounds from centralized state
     const wounds = state.wounds;
 
-    // Calculate total character level from class levels
-    const totalLevel = formattedCharacter.classLevels.reduce((sum, cl) => sum + cl.level, 0);
+    // Gestalt lists both classes at the same level; summing those is multiclass HD.
+    // Persisted characterLevel is max advancement.level (Ftr/Dru 1 → 1).
+    const totalLevel = character.characterLevel > 0
+        ? character.characterLevel
+        : Math.max(0, ...formattedCharacter.classLevels.map((cl) => cl.level));
 
     // Get race name from cache
     const raceName = character.raceId ? getRaceNameFromCache(character.raceId) : null;

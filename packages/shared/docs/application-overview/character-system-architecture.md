@@ -51,10 +51,11 @@ When creating a new character, the frontend uses the generic draft API to mint a
 
 **Reload durability**:
 - The create route (`/characters/new/create`) is a launcher that redirects to `/characters/<draftId>/edit`.
-- The edit route (`/characters/:id/edit`) can accept **negative** ids and uses the same “load character → populate form” path.
+- Opening `/characters/:id/edit` with a **negative** id calls `startEditing` for that character id (and the paired advancement draft) before loading the form. If Redis expired (30‑minute TTL, unused after deploy), the backend re-writes empty create state under the **same** minted id so the URL stays stable.
 - Backend overload: `GET /characters/:id/details`
   - `id > 0`: loads persisted character data from MySQL
   - `id < 0`: loads draft state from Redis (requires lock ownership) and returns the same response shape (`CharacterWithAllDetailsResponse`)
+- Unsaved field values that already expired from Redis cannot be recovered; the form starts empty but further edits sync again.
 
 ### SpellSelectionTab Pattern
 

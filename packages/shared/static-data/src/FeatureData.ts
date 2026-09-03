@@ -32,6 +32,44 @@ export const COMPANION_TYPES: BaseMap<CoreComponent> = {
 export const COMPANION_TYPE_LIST = Object.values(COMPANION_TYPES);
 export const COMPANION_TYPE_MAP: Record<number, CoreComponent> = COMPANION_TYPES;
 
+/**
+ * Role of a CharacterCompanion row. Pets have no Companion template (`companionId` null).
+ * Class-linked rows reuse @CompanionType values.
+ */
+export const CharacterCompanionRole = {
+    Pet: 0,
+    Familiar: CompanionType.Familiar,
+    AnimalCompanion: CompanionType.AnimalCompanion,
+    AlternativeAnimalCompanion: CompanionType.AlternativeAnimalCompanion,
+    ImprovedFamiliar: CompanionType.ImprovedFamiliar,
+} as const;
+
+export type CharacterCompanionRole = typeof CharacterCompanionRole[keyof typeof CharacterCompanionRole];
+
+export const CHARACTER_COMPANION_ROLES: BaseMap<CoreComponent> = {
+    [CharacterCompanionRole.Pet]: { id: CharacterCompanionRole.Pet, name: 'Pet' },
+    [CharacterCompanionRole.Familiar]: COMPANION_TYPES[CompanionType.Familiar],
+    [CharacterCompanionRole.AnimalCompanion]: COMPANION_TYPES[CompanionType.AnimalCompanion],
+    [CharacterCompanionRole.AlternativeAnimalCompanion]: COMPANION_TYPES[CompanionType.AlternativeAnimalCompanion],
+    [CharacterCompanionRole.ImprovedFamiliar]: COMPANION_TYPES[CompanionType.ImprovedFamiliar],
+};
+
+export const CHARACTER_COMPANION_ROLE_LIST = Object.values(CHARACTER_COMPANION_ROLES);
+
+/**
+ * Familiars and improved familiars use the familiar ability table, not Handle Animal.
+ */
+export function isFamiliarCompanionType(type: number | null | undefined): boolean {
+    return type === CompanionType.Familiar || type === CompanionType.ImprovedFamiliar;
+}
+
+/**
+ * Handle Animal purposes and tricks apply to pets and animal companions only.
+ */
+export function usesHandleAnimal(type: number | null | undefined): boolean {
+    return !isFamiliarCompanionType(type);
+}
+
 export const FEATURE_SOURCE_TYPES: BaseMap<CoreComponent> = {
     [FeatureSourceType.Race]: { id: FeatureSourceType.Race, name: 'Race' },
     [FeatureSourceType.Class]: { id: FeatureSourceType.Class, name: 'Class' },
@@ -126,6 +164,7 @@ export const EntityAppliesToType = {
     FavoredClass: 44,            // Favored class (for race)
     LevelAdjustment: 45,         // Level adjustment (for race)
     SpellsKnownProgression: 46,  // Spells-known progression reference (per class level, per spell level)
+    CompanionBonusTricks: 47,    // Animal companion bonus tricks from class progression
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -186,6 +225,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     // Speed (43) removed - use MovementSpeed (8) instead
     [EntityAppliesToType.FavoredClass]: { id: EntityAppliesToType.FavoredClass, name: 'Favored Class', displayName: 'Favored Class' },
     [EntityAppliesToType.LevelAdjustment]: { id: EntityAppliesToType.LevelAdjustment, name: 'Level Adjustment', displayName: 'LA' },
+    [EntityAppliesToType.CompanionBonusTricks]: { id: EntityAppliesToType.CompanionBonusTricks, name: 'Companion Bonus Tricks', displayName: 'Bonus Tricks' },
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
@@ -216,6 +256,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.Damage, // For dice quantities
         EntityAppliesToType.Healing, // Healing per day
         EntityAppliesToType.SpellResistance, // Spell Resistance (SR)
+        EntityAppliesToType.CompanionBonusTricks,
     ],
     [EntityType.Replacement]: [
         EntityAppliesToType.Damage,

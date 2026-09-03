@@ -22,6 +22,7 @@ import { sourcebookRoutes } from '../features/sourcebook';
 import { spellRoutes } from '../features/spell';
 import { TransformationFormRouter } from '../features/transformationForm';
 import { TrickRouter } from '../features/trick';
+import { TrickPurposeRouter } from '../features/trickPurpose';
 import { userProfileRoutes } from '../features/userProfile';
 
 const router = Router();
@@ -34,6 +35,7 @@ router.use('/deities', DeityRouter);
 router.use('/domains', DomainRouter);
 router.use('/companions', CompanionRouter);
 router.use('/tricks', TrickRouter);
+router.use('/trick-purposes', TrickPurposeRouter);
 router.use('/transformation-forms', TransformationFormRouter);
 router.use('/dicebox', diceBoxRoutes);
 router.use('/feats', featRoutes);

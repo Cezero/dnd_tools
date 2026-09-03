@@ -157,17 +157,26 @@ The feature system integrates with the spellcasting system to enable feature-bas
 - Spellcasting progressions linked to classes through features (via `FeatureClassMap`)
 - Enables automatic resolution for gestalt and multiclass characters
 
-**TODO: Future Enhancement - FeatureEntity Formulas:**
-- Consider replacing `SpellcastingProgression`/`SpellcastingSlot` with `FeatureEntity` formulas
-- Status: Deferred to future phase after Approach 1 is validated and stable
+**FeatureEntity applies-to (current):**
+- `EntityAppliesToType.SpellcastingProgression` (38) — spells per day / slots; `appliesToId` = spell level
+- `EntityAppliesToType.SpellsKnownProgression` (46) — max spells known per spell level for SpellsKnown classes; same editing pattern
+- Character resolution exposes SpellsKnown caps as `ClassSpellSelection.maxSpellsKnownByLevel`
+- See [Static Data](./static-data.md) and [Frontend Components](./frontend-components.md#spellcasting-features)
+
+**TODO: Future Enhancement - Full Formula Replacement of Slot Tables:**
+- Consider replacing remaining `SpellcastingProgression`/`SpellcastingSlot` storage with FeatureEntity formulas only
+- Status: Partial — formulas already drive display and SpellsKnown enforcement; table models may still be authored for legacy class edit flows
 - See: [Spellcasting System Analysis](../class-system/spellcasting-system.md#future-enhancements) for details
 
 **Source Files:**
+- Static data: `packages/shared/static-data/src/FeatureData.ts`
 - Database: `apps/backend/prisma/schema.prisma` (SpellcastingProgression, SpellcastingLink models)
 - Backend: `apps/backend/src/features/featureSystem/featureSystemService.ts`
+- Backend resolution: `apps/backend/src/features/characterResolution/resolvedFeatureService.ts`
 
 **Related Documentation:**
 - [Spellcasting System](../class-system/spellcasting-system.md) - Complete spellcasting documentation
+- [Spell Scribing](../character-management/spell-scribing.md) - SpellsKnown vs spellbook enforcement
 
 ### **Formula System**
 

@@ -1,5 +1,5 @@
 import type { FeatureWithRelations, Feature, FeatureCondition, CharacterWithAllDetailsResponse } from '@shared/schema';
-import { FeatureEntityConditionType } from '@shared/static-data';
+import { EntityAppliesToType, FeatureEntityConditionType } from '@shared/static-data';
 
 /**
  * Filters features based on display flags and conditions
@@ -27,6 +27,40 @@ export class FeatureDisplayFilter {
             if (!shouldDisplay) {
                 return false;
             }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether a feature belongs on the character viewer Features list (and PDF special abilities).
+     *
+     * `displayInCharacterSheet` hides the whole feature (BAB, saves, hit dice).
+     * `displayInDetail` hides chassis entities. If every entity is hidden, the
+     * feature is omitted. Class-skill and proficiency wrappers stay off this
+     * list because they already appear on the Skills tab and Proficiencies section.
+     */
+    static shouldListFeatureInCharacterView(feature: FeatureWithRelations): boolean {
+        if (feature.displayInCharacterSheet === false) {
+            return false;
+        }
+
+        const entities = feature.entities ?? [];
+        if (entities.length === 0) {
+            return true;
+        }
+
+        const visibleEntities = entities.filter((entity) => entity.displayInDetail !== false);
+        if (visibleEntities.length === 0) {
+            return false;
+        }
+
+        if (visibleEntities.every((entity) => entity.appliesTo === EntityAppliesToType.Skill)) {
+            return false;
+        }
+
+        if (visibleEntities.every((entity) => entity.appliesTo === EntityAppliesToType.Proficiency)) {
+            return false;
         }
 
         return true;

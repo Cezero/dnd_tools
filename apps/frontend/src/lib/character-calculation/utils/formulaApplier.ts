@@ -1,5 +1,5 @@
 import type { FeatureEntity, FormulaParamsData, CharacterWithAllDetailsResponse } from '@shared/schema';
-import { FORMULA_MAP, FormulaId } from '@shared/static-data';
+import { FORMULA_MAP } from '@shared/static-data';
 
 /**
  * Apply a feature formula to get the calculated value
@@ -19,11 +19,7 @@ export function applyFeatureFormula(
     }
 
     const startLevel = entity.formulaParams.formulaStartLevel ?? 1;
-    const isSpellSlots = entity.formulaParams.formulaId === FormulaId.SPELL_SLOTS_TRIANGULAR ||
-        entity.formulaParams.formulaId === FormulaId.SPELL_SLOTS_LINEAR;
-    const scalingValue = isSpellSlots
-        ? (entity.formulaParams.maxValue ?? entity.value ?? 1)
-        : (entity.value !== null && entity.value !== undefined ? entity.value : 1);
+    const scalingValue = entity.value !== null && entity.value !== undefined ? entity.value : 1;
     const params = {
         ...entity.formulaParams,
         level,

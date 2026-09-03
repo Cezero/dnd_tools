@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
+import { formatHitDiceNotation } from '@/lib/formatHitDice';
 import { getSourceDisplay } from '@/services/cache';
 import { Monster } from '@shared/schema';
 import {
@@ -129,9 +130,7 @@ export const useMonsterColumns = (): ColumnDef<Monster, unknown>[] => {
             cell: info => {
                 const qty = info.row.original.hitDiceQty;
                 const type = info.row.original.hitDiceType;
-                if (qty === null || qty === undefined) return '';
-                const diceType = type ? `d${type}` : '';
-                return `${qty}${diceType}`;
+                return formatHitDiceNotation(qty, type);
             },
         },
         {

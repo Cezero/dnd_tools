@@ -1,7 +1,7 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import { Menu } from '@base-ui-components/react/menu';
 import {
-    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon, BoltIcon, Bars3Icon
+    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon, BoltIcon, Bars3Icon, HeartIcon
 } from '@heroicons/react/24/outline';
 import { useQueryClient } from '@tanstack/react-query';
 import isEqual from 'lodash/isEqual';
@@ -12,7 +12,7 @@ import { useAuthAuto } from '@/components/auth';
 import { useLogPanel } from '@/components/log-panel';
 import { useToast } from '@/components/toast/useToast';
 import { useCharacterEditState } from '@/features/character';
-import { CharacterEditStateUpdateType, type EquipmentItem, type SkillRank, type TabConfig, type TabComponentProps } from '@/features/character/types';
+import { CharacterEditStateUpdateType, type EquipmentItem, type SkillRank, type TabComponentProps, type TabConfig, type WealthDraftEntry } from '@/features/character/types';
 import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
 import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
 import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
@@ -26,14 +26,18 @@ import { hasNoMaxRanks } from '@/lib/skill-utils';
 import { DraftApi } from '@/services/api/EntityApi';
 import { UserSessionApi } from '@/services/api/UserSessionApi';
 import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatWithFeatureInfo, ItemWithDetails, FeatureWithRelations } from '@shared/schema';
-import { CurrencyId, DraftAction as DraftActionEnum, DraftType, EditionId, DisplayType, EntityAppliesToType, EntityType } from '@shared/static-data';
+import { DraftAction as DraftActionEnum, DraftType, EditionId, DisplayType, EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
 import { CharacterQueryHooks } from './CharacterQueryHooks';
-import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab, SpellSelectionTab } from './tabs';
+import { ensureDraftOnlyEditSession } from './ensureDraftOnlyEditSession';
+import { AbilitiesRaceTab, AnimalsPetsTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab, SpellSelectionTab } from './tabs';
 import { useAdvancementDraft } from './useAdvancementDraft';
 import { useCharacterResolution } from './useCharacterResolution';
+import { enqueueAdvancementDraftWrite, flushAdvancementCollectionsToDraft, syncFeatureChoicesToDraft } from './utils/advancementDraftSync';
+import { enqueueCharacterDraftWrite, syncCompanionsToDraft } from './utils/companionDraftSync';
 import { createStableDraftRowId } from './utils/draftKeyUtils';
+import { buildWealthFromMoney, isQuantityOnlyWealth, normalizeWealthRows, wealthToMoney } from './utils/moneyUtils';
 
 let pendingCreateRoutePromise: Promise<void> | null = null;
 
@@ -65,6 +69,7 @@ let pendingCreateRoutePromise: Promise<void> | null = null;
  * **useEffect Hooks**:
  * - Class changes: Watches `state.classId` and `state.secondaryClassId`
  * - Race changes: Watches `state.raceId`
+ * - Config flags: Watches `state.isGestalt`, `allowVariantClasses`, `ignoreLevelAdjustment`, `maxHpAtFirstLevel`, `editionId`
  * - Skill ranks: Watches `state.skillRanks` array
  * - Feature choices: Watches `state.featureChoices` array
  * - Spells known: Watches `state.spellsKnown` array
@@ -119,17 +124,17 @@ export function CharacterEdit(): React.JSX.Element {
     const [allFeats, setAllFeats] = useState<FeatWithFeatureInfo[]>([]);
     const [isLoadingFeats, setIsLoadingFeats] = useState(false);
 
-    // Initialize from user preferences
+    // Default edition only when none is set. Do not overwrite a loaded character's edition.
     useEffect(() => {
-        if (!isAuthLoading && user) {
-            const userPreferredEdition = (user as { preferredEditionId?: number | null })?.preferredEditionId;
-            if (userPreferredEdition) {
-                updateState({ type: CharacterEditStateUpdateType.SET_EDITION, payload: { editionId: userPreferredEdition } });
-            } else {
-                updateState({ type: CharacterEditStateUpdateType.SET_EDITION, payload: { editionId: EditionId.DND_3_5E } });
-            }
+        if (isAuthLoading || !user || state.editionId) {
+            return;
         }
-    }, [user, isAuthLoading, updateState]);
+        const userPreferredEdition = (user as { preferredEditionId?: number | null })?.preferredEditionId;
+        updateState({
+            type: CharacterEditStateUpdateType.SET_EDITION,
+            payload: { editionId: userPreferredEdition ?? EditionId.DND_3_5E },
+        });
+    }, [user, isAuthLoading, state.editionId, updateState]);
 
     // Use imperative API for race, class, and secondary class details
     const [raceDetailsData, setRaceDetailsData] = useState<(Race & { features?: FeatureWithRelations[] }) | null>(null);
@@ -144,7 +149,8 @@ export function CharacterEdit(): React.JSX.Element {
      * - resumes an existing draft-only character edit session (negative id) and navigates to `/characters/:id/edit`, or
      * - mints fresh Character+Advancement drafts and navigates to `/characters/:id/edit`.
      *
-     * This makes refresh/reload durable because the “real” edit URL contains the draft id.
+     * Refresh of `/characters/:id/edit` with a negative id re-runs startEditing
+     * (see `ensureDraftOnlyEditSession`) so Redis is restored if the TTL expired.
      */
     useEffect(() => {
         const run = async (): Promise<void> => {
@@ -261,6 +267,8 @@ export function CharacterEdit(): React.JSX.Element {
                 availableFighterBonusFeats: 0,
                 qualifiedFeats: [],
                 spellSelection: undefined,
+                resolvedCompanions: [],
+                resolvedSelectedForms: [],
             };
         }
 
@@ -288,6 +296,8 @@ export function CharacterEdit(): React.JSX.Element {
             availableFighterBonusFeats: characterDraft.resolvedCharacter.availableFighterBonusFeats,
             qualifiedFeats: characterDraft.resolvedCharacter.qualifiedFeats || [],
             spellSelection: characterDraft.resolvedCharacter.spellSelection,
+            resolvedCompanions: characterDraft.resolvedCharacter.resolvedCompanions ?? [],
+            resolvedSelectedForms: characterDraft.resolvedCharacter.resolvedSelectedForms ?? [],
         };
     }, [characterDraft.resolvedCharacter]);
 
@@ -301,8 +311,11 @@ export function CharacterEdit(): React.JSX.Element {
     const prevDisallowedSourcesRef = useRef<typeof state.disallowedSources | null>(null);
     const prevSkillRanksRef = useRef<typeof state.skillRanks | null>(null);
     const prevFeatureChoicesRef = useRef<typeof state.featureChoices | null>(null);
+    const prevCompanionsRef = useRef<typeof state.companions | null>(null);
+    const hydratedCharacterIdRef = useRef<number | null>(null);
     const prevSpellsKnownRef = useRef<typeof state.spellsKnown | null>(null);
     const prevSelectedFeatsRef = useRef<{ selectedFeats: number[]; featSubIds: Record<number, number | null> } | null>(null);
+    const describedWealthRef = useRef<WealthDraftEntry[]>([]);
 
     // Debounced values for text fields
     const debouncedName = useDebounce(state.name, 500);
@@ -318,6 +331,7 @@ export function CharacterEdit(): React.JSX.Element {
     // Reset initialization flag for languages sync when characterId changes
     useEffect(() => {
         hasInitializedLanguagesSyncRef.current = false;
+        prevDisallowedSourcesRef.current = null;
     }, [state.characterId]);
 
     /**
@@ -550,6 +564,14 @@ export function CharacterEdit(): React.JSX.Element {
         const current = state.disallowedSources;
         if (prevDisallowedSourcesRef.current === null) {
             prevDisallowedSourcesRef.current = current;
+            // Init skip would drop sources chosen before characterId was set (Eberron, etc.).
+            for (const source of current) {
+                characterDraft
+                    .updateValue(`disallowedSources.byId.${source.sourceBookId}.sourceBookId`, source.sourceBookId)
+                    .catch((error) => {
+                        console.error('Failed to add disallowed source to character draft:', error);
+                    });
+            }
             return;
         }
 
@@ -630,6 +652,106 @@ export function CharacterEdit(): React.JSX.Element {
     });
 
     /**
+     * Sync configuration flags to the character draft.
+     *
+     * These live on CharacterConfig in MySQL. Save reads Redis, not React state,
+     * so they must be written here or they persist as the create-state defaults.
+     */
+    useDraftSync({
+        value: state.isGestalt,
+        draft: characterDraft,
+        path: 'isGestalt',
+        characterId: state.characterId,
+        errorMessage: 'Failed to sync isGestalt to character draft',
+    });
+
+    useDraftSync({
+        value: state.allowVariantClasses,
+        draft: characterDraft,
+        path: 'allowVariantClasses',
+        characterId: state.characterId,
+        errorMessage: 'Failed to sync allowVariantClasses to character draft',
+    });
+
+    useDraftSync({
+        value: state.ignoreLevelAdjustment,
+        draft: characterDraft,
+        path: 'ignoreLevelAdjustment',
+        characterId: state.characterId,
+        errorMessage: 'Failed to sync ignoreLevelAdjustment to character draft',
+    });
+
+    useDraftSync({
+        value: state.editionId,
+        draft: characterDraft,
+        path: 'editionId',
+        characterId: state.characterId,
+        errorMessage: 'Failed to sync editionId to character draft',
+    });
+
+    useDraftSync({
+        value: state.maxHpAtFirstLevel,
+        draft: characterDraft,
+        path: 'maxHpAtFirstLevel',
+        characterId: state.characterId,
+        errorMessage: 'Failed to sync maxHpAtFirstLevel to character draft',
+    });
+
+    /**
+     * Sync editor money (coins and valuable counts) to draft `wealth`.
+     * Described rows (pending individual treasure) are preserved from load.
+     */
+    useDraftSync({
+        value: state.money,
+        draft: characterDraft,
+        path: 'wealth',
+        characterId: state.characterId,
+        transformValue: (money) => buildWealthFromMoney(
+            state.characterId ?? 0,
+            money,
+            describedWealthRef.current
+        ),
+        errorMessage: 'Failed to sync money to character draft',
+    });
+
+    /**
+     * Sync companions as sequential scalar byId updates.
+     * The draft update API rejects arrays, so useDraftSync(path: 'companions') never persisted.
+     */
+    useEffect(() => {
+        if (!state.characterId) {
+            return;
+        }
+        if (prevCompanionsRef.current === null) {
+            prevCompanionsRef.current = [];
+            if (state.companions.length === 0) {
+                return;
+            }
+        }
+        if (isEqual(prevCompanionsRef.current, state.companions)) {
+            return;
+        }
+        const previous = prevCompanionsRef.current;
+        const next = state.companions;
+        const characterId = state.characterId;
+        const writer = { updateValue: characterDraft.updateValue };
+        enqueueCharacterDraftWrite(characterId, async () => {
+            await syncCompanionsToDraft(writer, previous, next);
+            prevCompanionsRef.current = next;
+        }).catch((error) => {
+            console.error('Failed to sync companions to character draft:', error);
+        });
+    }, [state.characterId, state.companions, characterDraft.updateValue]);
+
+    useDraftSync({
+        value: state.selectedForms,
+        draft: characterDraft,
+        path: 'selectedForms',
+        characterId: state.characterId,
+        errorMessage: 'Failed to sync selected forms to character draft',
+    });
+
+    /**
      * Sync skill rank changes to resolution session.
      * 
      * This useEffect hook automatically syncs skill rank changes to the resolution session
@@ -696,22 +818,11 @@ export function CharacterEdit(): React.JSX.Element {
     }, [state.characterId, state.skillRanks, advancementDraft.draftId, advancementDraft.updateValue]);
 
     /**
-     * Sync feature choice changes to resolution session.
-     * 
-     * This useEffect hook automatically syncs feature choice changes to the resolution session
-     * when the featureChoices array in state changes. It follows the standardized pattern where
-     * tabs update state and CharacterEdit automatically handles the sync.
-     * 
-     * **Pattern**: State → useEffect → updateValue
-     * - Tab updates state.featureChoices via updateState()
-     * - This useEffect detects the change
-     * - Automatically calls resolution.updateValue() with the entire featureChoices array
-     * - Backend handles diffing and updates
-     * 
-     * **Why refs are used**: The prevFeatureChoicesRef tracks the previous array state to avoid
-     * syncing on initial mount and to detect actual changes.
-     * 
-     * @see CharacterEdit component JSDoc for overall sync pattern documentation
+     * Sync feature choices to the advancement draft.
+     *
+     * Writes are queued and applied as sequential byId scalars. Parallel updateValue
+     * calls race on the Redis document and drop new rows (animal companion, domains).
+     * A choice made before draftId exists is still flushed on the first ready run.
      */
     useEffect(() => {
         // Only sync if session is initialized and we have a character ID
@@ -719,45 +830,30 @@ export function CharacterEdit(): React.JSX.Element {
             return;
         }
 
-        // Initialize ref on first session availability (don't send update on initial sync)
+        // First run: treat previous as empty so a choice made before draftId was ready still syncs.
         if (prevFeatureChoicesRef.current === null) {
-            prevFeatureChoicesRef.current = state.featureChoices;
+            prevFeatureChoicesRef.current = [];
+            if (state.featureChoices.length === 0) {
+                return;
+            }
+        }
+
+        if (isEqual(prevFeatureChoicesRef.current, state.featureChoices)) {
             return;
         }
 
-        // Check if feature choices changed; apply scalar-only diffs to advancement draft.
-        if (!isEqual(prevFeatureChoicesRef.current, state.featureChoices)) {
-            const prev = prevFeatureChoicesRef.current;
+        const previous = prevFeatureChoicesRef.current;
+        const next = state.featureChoices;
+        const characterId = state.characterId;
+        const draftId = advancementDraft.draftId;
+        const writer = { updateValue: advancementDraft.updateValue };
 
-            const prevIds = new Set<number>(
-                prev.map((c) => createStableDraftRowId(`choice:${c.featureId}:${c.featureEntityId}`))
-            );
-            const nextIds = new Set<number>(
-                state.featureChoices.map((c) => createStableDraftRowId(`choice:${c.featureId}:${c.featureEntityId}`))
-            );
-
-            for (const c of state.featureChoices) {
-                const rowId = createStableDraftRowId(`choice:${c.featureId}:${c.featureEntityId}`);
-                advancementDraft.updateValue(`featureChoices.byId.${rowId}.characterId`, state.characterId ?? 0).catch(() => undefined);
-                advancementDraft.updateValue(`featureChoices.byId.${rowId}.advancementId`, advancementDraft.draftId ?? 0).catch(() => undefined);
-                advancementDraft.updateValue(`featureChoices.byId.${rowId}.featureId`, c.featureId).catch(() => undefined);
-                advancementDraft.updateValue(`featureChoices.byId.${rowId}.featureEntityId`, c.featureEntityId).catch(() => undefined);
-                advancementDraft.updateValue(`featureChoices.byId.${rowId}.appliesToId`, c.appliesToId).catch(() => undefined);
-                advancementDraft.updateValue(`featureChoices.byId.${rowId}.appliesToSubId`, c.appliesToSubId ?? null).catch(() => undefined);
-                advancementDraft.updateValue(`featureChoices.byId.${rowId}.choiceIndex`, c.choiceIndex ?? null).catch((error) => {
-                    console.error('Failed to sync feature choice to advancement draft:', error);
-                });
-            }
-
-            for (const rowId of prevIds) {
-                if (!nextIds.has(rowId)) {
-                    advancementDraft.updateValue(`featureChoices.byId.${rowId}`, null, DraftActionEnum.Remove).catch((error) => {
-                        console.error('Failed to remove feature choice from advancement draft:', error);
-                    });
-                }
-            }
-        }
-        prevFeatureChoicesRef.current = state.featureChoices;
+        enqueueAdvancementDraftWrite(draftId, async () => {
+            await syncFeatureChoicesToDraft(writer, previous, next, characterId, draftId);
+            prevFeatureChoicesRef.current = next;
+        }).catch((error) => {
+            console.error('Failed to sync feature choice to advancement draft:', error);
+        });
     }, [state.characterId, state.featureChoices, advancementDraft.draftId, advancementDraft.updateValue]);
 
     /**
@@ -1059,13 +1155,69 @@ export function CharacterEdit(): React.JSX.Element {
             if (isNaN(characterId)) return;
 
             try {
+                // Do not re-hydrate from a later MySQL snapshot; Redis is the session.
+                if (hydratedCharacterIdRef.current === characterId) {
+                    return;
+                }
+
                 setIsLoadingCharacter(true);
-                const character = await queryClient.fetchQuery({
-                    queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
-                    queryFn: () => CharacterQueryHooks.getCharacterWithAllDetailsQueryFn({ pathParams: { id: characterId } }),
-                    staleTime: 5 * 60 * 1000, // 5 minutes
-                    gcTime: 10 * 60 * 1000, // 10 minutes
-                }) as CharacterWithAllDetailsResponse;
+
+                // Draft-only URLs are not in MySQL. Re-run startEditing so Redis + session
+                // exist after refresh, deploy, or TTL expiry — same setup as “new character”.
+
+                if (characterId < 0) {
+                    const draftSession = await ensureDraftOnlyEditSession(characterId);
+                    updateState({
+                        type: CharacterEditStateUpdateType.SET_CHARACTER_ID,
+                        payload: { characterId: draftSession.characterId },
+                    });
+                    updateState({
+                        type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID,
+                        payload: { currentAdvancementId: draftSession.advancementDraftId },
+                    });
+                    await queryClient.invalidateQueries({
+                        queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
+                    });
+                }
+
+                const detailsQueryKey = CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId);
+                const fetchCharacterDetails = async (): Promise<CharacterWithAllDetailsResponse> => {
+                    return queryClient.fetchQuery({
+                        queryKey: detailsQueryKey,
+                        queryFn: () => CharacterQueryHooks.getCharacterWithAllDetailsQueryFn({ pathParams: { id: characterId } }),
+                        staleTime: 0,
+                        gcTime: 10 * 60 * 1000,
+                    }) as Promise<CharacterWithAllDetailsResponse>;
+                };
+
+                let character = await fetchCharacterDetails();
+
+                // Acquire edit locks before hydrating so GET overlays Redis session state.
+                if (characterId > 0) {
+                    const characterStart = await DraftApi.startEditing(DraftType.Character, characterId);
+                    if (!characterStart.success) {
+                        throw new Error('Failed to start character draft');
+                    }
+                    const advancement = character.advancements.reduce((best, adv) => {
+                        if (!best) {
+                            return adv;
+                        }
+                        if (adv.level !== best.level) {
+                            return adv.level > best.level ? adv : best;
+                        }
+                        const bestVersion = best.version ?? 0;
+                        const nextVersion = adv.version ?? 0;
+                        return nextVersion >= bestVersion ? adv : best;
+                    }, character.advancements[0] ?? null);
+                    if (advancement) {
+                        const advancementStart = await DraftApi.startEditing(DraftType.Advancement, advancement.id);
+                        if (!advancementStart.success) {
+                            throw new Error('Failed to start advancement draft');
+                        }
+                    }
+                    queryClient.removeQueries({ queryKey: detailsQueryKey });
+                    character = await fetchCharacterDetails();
+                }
                 setCharacterData(character);
 
                 // Determine current advancement (highest level, then highest version)
@@ -1112,25 +1264,24 @@ export function CharacterEdit(): React.JSX.Element {
                     type: CharacterEditStateUpdateType.SET_IGNORE_LEVEL_ADJUSTMENT,
                     payload: { ignoreLevelAdjustment: character.config?.ignoreLevelAdjustment ?? false },
                 });
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_MAX_HP_AT_FIRST_LEVEL,
+                    payload: { maxHpAtFirstLevel: character.config?.maxHpAtFirstLevel ?? false },
+                });
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_DISALLOWED_SOURCES,
+                    payload: { disallowedSources: character.disallowedSources ?? [] },
+                });
 
                 // Load ability scores
                 updateState({ type: CharacterEditStateUpdateType.SET_ABILITY_SCORES, payload: { abilityScores: character.abilityScores } });
 
-                // Load money
-                const wealth = character.wealth ?? [];
-                const getCoin = (currencyId: number): number =>
-                    wealth.find((w) => w.currencyId === currencyId && w.value === null && w.description === null)
-                        ?.quantity ?? 0;
+                // Load money (quantity-only wealth rows, including valuables)
+                const wealth = normalizeWealthRows(character.wealth ?? []);
+                describedWealthRef.current = wealth.filter((entry) => !isQuantityOnlyWealth(entry));
                 updateState({
                     type: CharacterEditStateUpdateType.SET_MONEY,
-                    payload: {
-                        money: {
-                            platinum: getCoin(CurrencyId.Platinum),
-                            gold: getCoin(CurrencyId.Gold),
-                            silver: getCoin(CurrencyId.Silver),
-                            copper: getCoin(CurrencyId.Copper),
-                        },
-                    },
+                    payload: { money: wealthToMoney(wealth) },
                 });
 
                 // Load equipment
@@ -1164,6 +1315,15 @@ export function CharacterEdit(): React.JSX.Element {
                         },
                     });
                 }
+
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_COMPANIONS,
+                    payload: { companions: character.companions ?? [] },
+                });
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_SELECTED_FORMS,
+                    payload: { selectedForms: character.selectedForms ?? [] },
+                });
 
                 // Load advancement data if it exists
                 if (advancement) {
@@ -1210,6 +1370,8 @@ export function CharacterEdit(): React.JSX.Element {
                     // No advancement for current level
                     updateState({ type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID, payload: { currentAdvancementId: null } });
                 }
+
+                hydratedCharacterIdRef.current = characterId;
 
                 // Languages will be loaded and separated in a useEffect when resolvedData is available
             } catch (error) {
@@ -1314,6 +1476,22 @@ export function CharacterEdit(): React.JSX.Element {
             const isPersistedCharacter = state.characterId !== null && state.characterId > 0;
             const isDraftOnlyCharacter = state.characterId !== null && state.characterId < 0;
 
+            if (state.characterId && state.characterId !== 0) {
+                await characterDraft.updateValue('editionId', state.editionId);
+                await characterDraft.updateValue('isGestalt', state.isGestalt);
+                await characterDraft.updateValue('allowVariantClasses', state.allowVariantClasses);
+                await characterDraft.updateValue('ignoreLevelAdjustment', state.ignoreLevelAdjustment);
+                await characterDraft.updateValue('maxHpAtFirstLevel', state.maxHpAtFirstLevel);
+                // Setting exclusions fire many path updates; await them so save does not
+                // persist a partial Redis list (Wade kept 4 of 9 Eberron books).
+                for (const source of state.disallowedSources) {
+                    await characterDraft.updateValue(
+                        `disallowedSources.byId.${source.sourceBookId}.sourceBookId`,
+                        source.sourceBookId
+                    );
+                }
+            }
+
             // Build the complete character object with nested data (legacy save endpoint).
             const saveData = {
                 userId: user.id,
@@ -1335,6 +1513,7 @@ export function CharacterEdit(): React.JSX.Element {
                 allowVariantClasses: state.allowVariantClasses,
                 isGestalt: state.isGestalt,
                 ignoreLevelAdjustment: state.ignoreLevelAdjustment,
+                maxHpAtFirstLevel: state.maxHpAtFirstLevel,
                 // Include money
                 platinum: state.money.platinum,
                 gold: state.money.gold,
@@ -1406,32 +1585,54 @@ export function CharacterEdit(): React.JSX.Element {
                 })) : undefined,
             };
 
+            // Flush advancement collections into Redis before save. Parallel byId
+            // updates race and drop rows (Wade's Druid animal companion never landed).
+            if (state.characterId && advancementDraft.draftId) {
+                await flushAdvancementCollectionsToDraft({
+                    writer: { updateValue: advancementDraft.updateValue },
+                    draftId: advancementDraft.draftId,
+                    characterId: state.characterId,
+                    featureChoices: state.featureChoices,
+                    previousFeatureChoices: prevFeatureChoicesRef.current ?? [],
+                    skillRanks: state.skillRanks,
+                    selectedFeats: state.selectedFeats,
+                    featSubIds: state.featSubIds,
+                    spellsKnown: state.spellsKnown,
+                });
+                prevFeatureChoicesRef.current = state.featureChoices;
+            }
+
+            if (state.characterId) {
+                await enqueueCharacterDraftWrite(state.characterId, async () => {
+                    await syncCompanionsToDraft(
+                        { updateValue: characterDraft.updateValue },
+                        prevCompanionsRef.current ?? [],
+                        state.companions
+                    );
+                    prevCompanionsRef.current = state.companions;
+                });
+            }
+
             // Persist drafts for existing characters (character core + current advancement).
             if (isPersistedCharacter) {
-                try {
-                    await characterDraft.save();
-                } catch (error) {
-                    console.error('Failed to save character draft:', error);
+                await characterDraft.save();
+                if (!advancementDraft.draftId) {
+                    throw new Error('Cannot save: advancement draft is not ready');
                 }
-
-                try {
-                    if (advancementDraft.draftId) {
-                        const savedAdvancementId = await advancementDraft.save();
-                        updateState({
-                            type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID,
-                            payload: { currentAdvancementId: savedAdvancementId },
-                        });
-                    }
-                } catch (error) {
-                    console.error('Failed to save advancement draft:', error);
-                }
+                const savedAdvancementId = await advancementDraft.save();
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID,
+                    payload: { currentAdvancementId: savedAdvancementId },
+                });
             }
 
             if (isDraftOnlyCharacter) {
                 const saveResult = await DraftApi.save(
                     DraftType.Character,
                     state.characterId!,
-                    { advancementDraftId: state.currentAdvancementId }
+                    {
+                        advancementDraftId: state.currentAdvancementId,
+                    }
                 );
 
                 if (!saveResult.success) {
@@ -1444,16 +1645,11 @@ export function CharacterEdit(): React.JSX.Element {
                     throw new Error('Character save did not return a persisted id');
                 }
 
+                await queryClient.invalidateQueries({ queryKey: ['characters'] });
                 navigate(`/characters/${createdId}`);
                 return;
             }
 
-            if (isPersistedCharacter) {
-                navigate(`/characters/${state.characterId}`);
-                return;
-            }
-
-            // Show success notifications
             const successMessage = `Character "${characterName}" saved successfully`;
             toastManager?.add({
                 title: 'Character Saved',
@@ -1466,8 +1662,23 @@ export function CharacterEdit(): React.JSX.Element {
                 source: 'character-editor',
             });
 
-            // Invalidate queries to ensure fresh data on next load
+            // Drop cached details/resolve before leaving the editor. Navigating first
+            // left the 5-minute cache in place, so view and the next edit showed pre-save data.
             await queryClient.invalidateQueries({ queryKey: ['characters'] });
+            if (state.characterId) {
+                const detailsKey = CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(state.characterId);
+                const resolvedKey = CharacterQueryHooks.getCharacterResolvedQueryKey(state.characterId);
+                await queryClient.invalidateQueries({ queryKey: detailsKey });
+                await queryClient.invalidateQueries({ queryKey: resolvedKey });
+                queryClient.removeQueries({ queryKey: detailsKey });
+                queryClient.removeQueries({ queryKey: resolvedKey });
+            }
+
+            if (isPersistedCharacter) {
+                navigate(`/characters/${state.characterId}`);
+                return;
+            }
+
             if (state.characterId) {
                 await queryClient.invalidateQueries({ queryKey: ['characters', 'item', state.characterId] });
                 await queryClient.invalidateQueries({ queryKey: ['characters', 'details', state.characterId] });
@@ -1508,6 +1719,15 @@ export function CharacterEdit(): React.JSX.Element {
                                 },
                             });
                         }
+
+                        updateState({
+                            type: CharacterEditStateUpdateType.SET_COMPANIONS,
+                            payload: { companions: updatedCharacter.companions ?? [] },
+                        });
+                        updateState({
+                            type: CharacterEditStateUpdateType.SET_SELECTED_FORMS,
+                            payload: { selectedForms: updatedCharacter.selectedForms ?? [] },
+                        });
 
                         // Resolution will be re-initialized when characterId changes
                         // No need to manually trigger resolution
@@ -1872,6 +2092,7 @@ export function CharacterEdit(): React.JSX.Element {
             { id: 'skills', label: 'Skills', icon: ShieldCheckIcon, component: SkillsTab },
             { id: 'feats', label: 'Feats', icon: SparklesIcon, component: FeatsTab },
             { id: 'choices', label: 'Choices', icon: ListBulletIcon, component: ChoicesTab },
+            { id: 'animals-pets', label: 'Animals & Pets', icon: HeartIcon, component: AnimalsPetsTab },
             { id: 'description', label: 'Description', icon: DocumentTextIcon, component: DescriptionTab },
             { id: 'equipment', label: 'Equipment', icon: BriefcaseIcon, component: EquipmentTab },
             { id: 'combat', label: 'Combat', icon: BoltIcon, component: CombatTab },

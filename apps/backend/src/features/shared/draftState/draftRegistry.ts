@@ -20,6 +20,7 @@ import { characterService } from '../../character/characterService';
 import { AdvancementSaveService } from '../../advancementDraft/advancementSaveService';
 import { CharacterSaveService } from '../../characterDraft/characterSaveService';
 import { AvailableFeatService } from '../../characterResolution/availableFeatService';
+import { attachResolvedAnimals } from '../../characterResolution/characterAnimalsResolution';
 import { buildCharacterEditState } from '../../characterResolution/characterEditStateBuilder';
 import { calculateSpellSelection, filterInvalidAppliesToEntities } from '../../characterResolution/characterResolutionController';
 import { characterResolutionProjectionService } from '../../characterResolution/characterResolutionProjectionService';
@@ -419,6 +420,7 @@ async function computeResolvedCharacterResult(
                       allowVariantClasses: characterState.allowVariantClasses,
                       isGestalt: characterState.isGestalt,
                       ignoreLevelAdjustment: characterState.ignoreLevelAdjustment,
+                      maxHpAtFirstLevel: characterState.maxHpAtFirstLevel,
                   },
                   wealth: characterState.wealth ?? effectiveCharacter.wealth,
                   characterItems: characterState.characterItems ?? effectiveCharacter.characterItems,
@@ -426,6 +428,8 @@ async function computeResolvedCharacterResult(
                   characterLanguages:
                       characterState.characterLanguages?.map((l) => ({ characterId, languageId: l.languageId })) ??
                       effectiveCharacter.characterLanguages,
+                  companions: characterState.companions ?? effectiveCharacter.companions,
+                  selectedForms: characterState.selectedForms ?? effectiveCharacter.selectedForms,
               }
             : effectiveCharacter;
 
@@ -517,7 +521,7 @@ async function computeResolvedCharacterResult(
         );
     }
 
-    return {
+    return attachResolvedAnimals({
         resolvedProgressions: enrichedProgressions,
         pendingChoices: resolutionResult.pendingChoices,
         classSkills,
@@ -530,7 +534,7 @@ async function computeResolvedCharacterResult(
         ...(Object.keys(resolvedFormulaValues).length > 0 && { resolvedFormulaValues }),
         warnings: resolutionResult.warnings,
         errors: resolutionResult.errors
-    };
+    }, resolvedCharacter);
 }
 
 /**
@@ -584,6 +588,7 @@ draftRegistry.set(DraftType.Character, {
             isGestalt: false,
             allowVariantClasses: false,
             ignoreLevelAdjustment: false,
+            maxHpAtFirstLevel: false,
             wealth: [
                 {
                     id: CurrencyId.Platinum,
@@ -617,11 +622,37 @@ draftRegistry.set(DraftType.Character, {
                     value: null,
                     description: null,
                 },
+                {
+                    id: CurrencyId.Gem,
+                    characterId: draftId,
+                    currencyId: CurrencyId.Gem,
+                    quantity: 0,
+                    value: null,
+                    description: null,
+                },
+                {
+                    id: CurrencyId.ArtObject,
+                    characterId: draftId,
+                    currencyId: CurrencyId.ArtObject,
+                    quantity: 0,
+                    value: null,
+                    description: null,
+                },
+                {
+                    id: CurrencyId.Other,
+                    characterId: draftId,
+                    currencyId: CurrencyId.Other,
+                    quantity: 0,
+                    value: null,
+                    description: null,
+                },
             ],
             disallowedSources: [],
             characterItems: [],
             attackDefinitions: [],
             characterLanguages: [],
+            companions: [],
+            selectedForms: [],
         };
     },
             onStateUpdate: async (id, state, userId, _update) => {

@@ -71,8 +71,8 @@ The central service for all character management operations, providing comprehen
 - **Returns**: Complete character object with race information or null
 
 **getCharacterWithAllDetails**: Retrieves a character with complete details including advancements, abilities, and equipment
-- **Parameters**: Character ID
-- **Business Logic**: Loads character with all related data including advancements, ability scores, spell preparation, and equipment
+- **Parameters**: Character ID and, for draft-only loads, the authenticated user id
+- **Business Logic**: `id > 0` loads from MySQL. `id < 0` loads Character + Advancement drafts from Redis (lock owner only). `startEditing` with a missing negative id re-initializes empty create state under that id so a refresh of `/characters/<draftId>/edit` can succeed after TTL expiry.
 - **Returns**: Complete character object with all relationships or null
 
 **createCharacter**: Creates a new character with validation and relationship management
@@ -91,6 +91,15 @@ The central service for all character management operations, providing comprehen
 - **Returns**: Success message
 
 **Source File**: `src/features/character/characterService.ts`
+
+### **CharacterSaveService / AdvancementSaveService**
+
+Draft persist into MySQL. Character save writes `CharacterConfig`, including `maxHpAtFirstLevel` (default false). When that flag is on, level-1 `hitPoints` is set to max class HD + CON modifier (minimum 1). Gestalt uses the hit die with more sides. Create applies this while writing the level-1 advancement; update reapplies it on the persisted level-1 row. Advancement save applies the same rule for level 1 so a draft value of 0 does not overwrite the computed HP.
+
+**Source Files**:
+- `src/features/characterDraft/characterSaveService.ts`
+- `src/features/advancementDraft/advancementSaveService.ts`
+- `src/utils/firstLevelHitPoints.ts`
 
 ## 🎯 **Controller Layer**
 

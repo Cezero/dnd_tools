@@ -63,7 +63,7 @@ Comprehensive display component for viewing complete class information. Shows lo
 - **Lock Status Display**: Shows "Currently locked by User {userId}" when locked by another user
 - **Edit Button Disabled**: Edit button is disabled when locked by another user
 - **Database Data**: Always displays data from database (via TanStack Query cache)
-- **Class progression grid**: BAB and saves come from feature formulas via `buildClassProgressionFromDetail(features, classId)`. Spell columns still overlay from the Detail display strategy. See [Class Progression](class-progression.md#display-strategy-and-formatters).
+- **Class progression grid**: BAB, saves, spells per day, and spells known come from feature formulas via `buildClassProgressionFromDetail(features, classId)`. See [Class Progression](class-progression.md#display-strategy-and-formatters).
 
 **Source File**: `frontend/src/features/class/ClassDisplay.tsx`
 
@@ -359,7 +359,7 @@ Class mechanics (BAB, saves, and spellcasting) are surfaced in the **Basic Info*
   - `EntityAppliesToType.CastingType` → `appliesToId` points to the casting chassis (prepared, spontaneous, etc.).
   - The `ClassDisplay` header scans all class-linked features for these entities and shows the first configured values.
 - **Spell Progression**: Spells-per-day uses `SpellcastingProgression` entities; spells-known uses `SpellsKnownProgression` entities (see [Feature System Frontend Components](../feature-system/frontend-components.md#spellcasting-features)).
-- **Progression Table**: Read-only PHB-style table (levels 1–20, BAB/saves, **Spells per Day**, **Spells Known**) built via `buildClassProgressionFromDetail(features, classId)` and rendered with `ClassProgressionTable`; see [Class Progression](class-progression.md#display-strategy-and-formatters).
+- **Progression Table**: Read-only PHB-style table (levels 1–20, BAB/saves, **Spells per Day**, **Spells Known**) built from feature formulas via `buildClassProgressionFromDetail(features, classId)` and rendered with `ClassProgressionTable`; see [Class Progression](class-progression.md#display-strategy-and-formatters).
 
 **Source File**: `frontend/src/features/class/tabs/BasicInfoTab.tsx`
 
