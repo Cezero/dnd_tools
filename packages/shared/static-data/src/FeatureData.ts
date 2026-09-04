@@ -606,7 +606,7 @@ export type SpecialType = typeof SpecialType[keyof typeof SpecialType];
 
 export const SPECIAL_TYPES: BaseMap<CoreComponent> = {
     [SpecialType.casting_defensively]: { id: SpecialType.casting_defensively, name: 'Casting Defensively' },
-    [SpecialType.regardingCompanion]: { id: SpecialType.regardingCompanion, name: 'Regarding Your Companion' },
+    [SpecialType.regardingCompanion]: { id: SpecialType.regardingCompanion, name: 'interacting with your companion' },
 };
 
 export const SPECIAL_TYPE_LIST = Object.values(SPECIAL_TYPES);

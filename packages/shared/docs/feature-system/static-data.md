@@ -232,7 +232,7 @@ Defines the types of conditions that can be applied to feature entities.
 - **`creature_type` (6)**: Creature type conditions
 - **`source` (7)**: Source-based conditions (traps, fear, spells, poison)
 - **`lighting` (8)**: Lighting-based conditions (bright light, shadows, dim light, darkness) - consolidated from CompanionBenefitConditionType
-- **`special` (9)**: Special conditions (e.g., "Casting Defensively", "Regarding Your Companion")
+- **`special` (9)**: Special conditions (e.g., "Casting Defensively", "interacting with your companion")
 
 **Usage**: Enables complex conditional logic for entity application based on various game conditions. The `lighting` condition type was consolidated from the old CompanionBenefitConditionType system when companion benefits were migrated to the unified Feature system.
 
@@ -387,7 +387,7 @@ Defines special condition values for special-based feature entity conditions.
 - **`casting_defensively` (0)**: Casting defensively condition
 - **`regardingCompanion` (1)**: Bonus applies only regarding the character’s own companion (Link’s +4 Handle Animal / Wild Empathy)
 
-**Usage**: Used with `FeatureEntityConditionType.special` (9) to create special conditional effects such as "Casting Defensively" or "Regarding Your Companion". The Skills tab formats these as `when ${name}`.
+**Usage**: Used with `FeatureEntityConditionType.special` (9) to create special conditional effects such as "Casting Defensively" or "interacting with your companion". The Skills tab formats these as `when ${name}`.
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (SpecialType definition)
 
