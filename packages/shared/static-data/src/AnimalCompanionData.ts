@@ -204,13 +204,13 @@ export interface CreatureAdvancementSeed {
     hitPoints: number;
     classId?: number | null;
     notes?: string | null;
-    skills: Array<{
+    skills?: Array<{
         id: number;
         skillId: number;
         skillSubId?: number | null;
         ranks: number;
     }>;
-    feats: Array<{
+    feats?: Array<{
         id: number;
         featId: number;
         featSubId?: number | null;
