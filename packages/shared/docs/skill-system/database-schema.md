@@ -43,6 +43,8 @@ The core skill definition containing basic information about skills, their chara
 - **`ability`**: Links to the key ability for the skill
 - **`retryType`**: Links to the retry type for the skill
 - **`subtypes`**: Links to skill subtypes (for skills with predefined subtypes like Craft and Knowledge)
+- **`advSkills`**: Per-level spent skill points via `AdvancementSkill`
+- **`bonusSkillRanks`**: Character-scoped DM bonus ranks via `CharacterBonusSkillRank`
 
 **Usage**: Core skill definitions that are referenced by characters and other systems.
 
@@ -50,26 +52,41 @@ The core skill definition containing basic information about skills, their chara
 
 ## 🔧 **Integration Models**
 
-### **Character Skill Model**
+### **AdvancementSkill Model**
 
-Defines character skill relationships, linking characters to their skill ranks and bonuses.
+Spent skill points live on each character advancement, not on a character-wide skill table.
 
-**Purpose**: Links characters to their skill ranks and bonuses for skill management.
+**Purpose**: Records how many skill points a character spent on a skill at a given level.
 
 **Key Fields**:
-- **`characterId`**: Reference to the character
-- **`skillId`**: Reference to the skill
-- **`ranks`**: Number of skill ranks invested
-- **`bonus`**: Additional skill bonuses
-- **`isClassSkill`**: Boolean flag for class skill bonus
+- **`skillId`**: Parent skill
+- **`skillSubId`**: Predefined subtype (Craft / Knowledge)
+- **`customSubtype`**: Free-text subtype (Perform / Profession)
+- **`pointsSpent`**: Points spent that level (converted to ranks at display time)
+
+**Source File**: `prisma/schema.prisma` (AdvancementSkill model)
+
+### **CharacterBonusSkillRank Model**
+
+DM-granted bonus ranks tied to a character, not an advancement. Multiple grants per skill are allowed.
+
+**Purpose**: Store free ranks from in-game rewards so they count as real ranks on the sheet without spending skill points.
+
+**Key Fields**:
+- **`characterId`**: Owning character (cascade delete)
+- **`skillId`**: Parent skill
+- **`skillSubId`**: Predefined subtype (Craft / Knowledge)
+- **`customSubtype`**: Free-text subtype (Perform / Profession)
+- **`ranks`**: Whole ranks granted
+- **`description`**: One-line justification shown on Features & Feats
 
 **Relationships**:
-- **`character`**: Links to the character
-- **`skill`**: Links to the skill
+- **`character`**: Links to `Character`
+- **`skill`**: Links to `Skill`
 
-**Usage**: Provides character skill advancement and management.
+**Usage**: Aggregated into the sheet ranks column after points-to-ranks conversion. Profession / Perform text matches existing subtypes case-insensitively.
 
-**Source File**: `prisma/schema.prisma` (CharacterSkill model)
+**Source File**: `prisma/schema.prisma` (CharacterBonusSkillRank model)
 
 ### **Skill Source Map Model**
 

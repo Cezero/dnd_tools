@@ -47,6 +47,7 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
 
         // Skills Tab UI State
         skillRanks: [],
+        bonusSkillRanks: [],
         skillPointsAvailable: 0,
         maxClassSkillRanks: 4,
         maxCrossClassSkillRanks: 2,
@@ -172,6 +173,8 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
                     return { ...prev, companions: update.payload.companions };
                 case CharacterEditStateUpdateType.SET_SELECTED_FORMS:
                     return { ...prev, selectedForms: update.payload.selectedForms };
+                case CharacterEditStateUpdateType.SET_BONUS_SKILL_RANKS:
+                    return { ...prev, bonusSkillRanks: update.payload.bonusSkillRanks };
                 default:
                     return prev;
             }

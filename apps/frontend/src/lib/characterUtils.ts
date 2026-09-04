@@ -45,8 +45,11 @@ export function meetsPrerequisites(
             case FeaturePrerequisiteType.SkillRanks: {
                 if (!prereq.appliesToId || !prereq.minValue) return true;
                 const skillEntry = character.advancements[0]?.skills?.find(skill => skill.skillId === prereq.appliesToId);
-                const skillRanks = skillEntry?.pointsSpent ?? 0;
-                return skillRanks >= prereq.minValue;
+                const spentRanks = skillEntry?.pointsSpent ?? 0;
+                const bonusRanks = (character.bonusSkillRanks ?? [])
+                    .filter((grant) => grant.skillId === prereq.appliesToId)
+                    .reduce((sum, grant) => sum + grant.ranks, 0);
+                return (spentRanks + bonusRanks) >= prereq.minValue;
             }
 
             case FeaturePrerequisiteType.Feat: {

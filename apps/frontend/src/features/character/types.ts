@@ -1,7 +1,7 @@
 import React from 'react';
 
 import type { FormattedCharacterResult } from '@/lib/formatters';
-import type { FeatureWithRelations, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterCompanionDraft, CharacterFeatureChoice, CharacterDisallowedSource, CharacterSelectedFormDraft, FeatWithFeatureInfo, FeatInQueryResponse, PendingChoice, ResolvedCharacterCompanionDraft, ResolvedSelectedFormDraft, SkillBonus, ClassSpellSelection, ItemWithDetails } from '@shared/schema';
+import type { FeatureWithRelations, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterBonusSkillRankDraft, CharacterCompanionDraft, CharacterFeatureChoice, CharacterDisallowedSource, CharacterSelectedFormDraft, FeatWithFeatureInfo, FeatInQueryResponse, PendingChoice, ResolvedCharacterCompanionDraft, ResolvedSelectedFormDraft, SkillBonus, ClassSpellSelection, ItemWithDetails } from '@shared/schema';
 import { PROFICIENCY_TYPE_ENUM, ResolutionStepType, CoreComponent, SpellSlotType } from '@shared/static-data';
 
 import { useCharacterResolution } from './useCharacterResolution';
@@ -760,6 +760,7 @@ export interface CharacterEditState {
 
     // Skills Tab UI State
     skillRanks: SkillRank[];
+    bonusSkillRanks: CharacterBonusSkillRankDraft[];
     skillPointsAvailable: number;
     maxClassSkillRanks: number;
     maxCrossClassSkillRanks: number;
@@ -838,7 +839,8 @@ export enum CharacterEditStateUpdateType {
     SET_SPELLS_KNOWN = 37,
     SET_MAX_HP_AT_FIRST_LEVEL = 38,
     SET_COMPANIONS = 39,
-    SET_SELECTED_FORMS = 40
+    SET_SELECTED_FORMS = 40,
+    SET_BONUS_SKILL_RANKS = 41
 }
 
 export type CharacterEditStateUpdate =
@@ -890,7 +892,8 @@ export type CharacterEditStateUpdate =
     | { type: CharacterEditStateUpdateType.SET_SELECTED_BONUS_LANGUAGES; payload: { selectedBonusLanguages: number[] } }
     | { type: CharacterEditStateUpdateType.SET_SPELLS_KNOWN; payload: { spellsKnown: Array<{ spellId: number; isFreeGrant: boolean }> } }
     | { type: CharacterEditStateUpdateType.SET_COMPANIONS; payload: { companions: CharacterCompanionDraft[] } }
-    | { type: CharacterEditStateUpdateType.SET_SELECTED_FORMS; payload: { selectedForms: CharacterSelectedFormDraft[] } };
+    | { type: CharacterEditStateUpdateType.SET_SELECTED_FORMS; payload: { selectedForms: CharacterSelectedFormDraft[] } }
+    | { type: CharacterEditStateUpdateType.SET_BONUS_SKILL_RANKS; payload: { bonusSkillRanks: CharacterBonusSkillRankDraft[] } };
 
 /**
  * Props interface for tab components using the centralized state system.

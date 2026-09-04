@@ -83,3 +83,73 @@ export function getSkillSubtypeName(skillId: number, subtypeId: number): string 
     const subtypes = getSkillSubtypes(skillId);
     return subtypes.find(st => st.id === subtypeId)?.name || '';
 }
+
+/**
+ * Normalize a custom subtype for identity matching (trim + case-insensitive).
+ */
+export function normalizeCustomSubtypeKey(customSubtype: string | null | undefined): string {
+    if (customSubtype == null || customSubtype.trim() === '') {
+        return 'null';
+    }
+    return customSubtype.trim().toLowerCase();
+}
+
+/**
+ * Identity key for a skill entry: skill + subtype ID + case-insensitive custom subtype.
+ */
+export function skillRankIdentityKey(
+    skillId: number,
+    skillSubId: number | null | undefined,
+    customSubtype: string | null | undefined
+): string {
+    return `${skillId}|${skillSubId ?? 'null'}|${normalizeCustomSubtypeKey(customSubtype)}`;
+}
+
+/**
+ * Prefer an existing custom-subtype casing when the typed value matches case-insensitively.
+ */
+export function resolveCustomSubtypeCasing(
+    input: string,
+    existing: Array<string | null | undefined>
+): string {
+    const trimmed = input.trim();
+    const match = existing.find((value) => (
+        value != null && value.trim().toLowerCase() === trimmed.toLowerCase()
+    ));
+    return match && match.trim() !== '' ? match : trimmed;
+}
+
+/**
+ * Display name for a skill including Craft/Knowledge or Profession/Perform subtype.
+ */
+export function formatSkillDisplayName(
+    skillId: number,
+    skillSubId: number | null | undefined,
+    customSubtype: string | null | undefined
+): string {
+    const skills = getSkillSelectFull();
+    const skill = skills.find((entry) => entry.id === skillId);
+    const baseName = skill?.name ?? `Skill ${skillId}`;
+    if (hasSubtypes(skillId) && skillSubId) {
+        const subtypeName = getSkillSubtypeName(skillId, skillSubId);
+        if (subtypeName) {
+            return `${baseName} (${subtypeName})`;
+        }
+    }
+    if (usesCustomSubtype(skillId) && customSubtype && customSubtype !== '__placeholder__') {
+        return `${baseName} (${customSubtype})`;
+    }
+    return baseName;
+}
+
+/**
+ * Features & Feats title for a bonus-rank grant, e.g. `Profession (Sailor) Bonus Ranks: 2`.
+ */
+export function formatBonusSkillRankTitle(
+    skillId: number,
+    skillSubId: number | null | undefined,
+    customSubtype: string | null | undefined,
+    ranks: number
+): string {
+    return `${formatSkillDisplayName(skillId, skillSubId, customSubtype)} Bonus Ranks: ${ranks}`;
+}

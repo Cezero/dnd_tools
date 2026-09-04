@@ -17,7 +17,7 @@ import { collectFeatureChoices, displayStrategyFactory, formatFeatureNameWithCho
 import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { formatSignedModifier } from '@/lib/formatters/modifier-utils';
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
-import { hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes, getSkillSubtypeName } from '@/lib/skill-utils';
+import { formatBonusSkillRankTitle, hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes, getSkillSubtypeName } from '@/lib/skill-utils';
 import { getRaceNameFromCache, getClassNameFromCache, getSkillSummaryById, formatSourceFromObject } from '@/services/cache';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { CharacterItem, CharacterWithAllDetailsResponse, DnDClass, FeatureWithRelations, GetAllFeatsWithFeatureInfoResponse, ItemWithDetails, Race, Spell } from '@shared/schema';
@@ -3034,6 +3034,46 @@ export async function generateCharacterPdf(
 
                     abilitiesY += 6;
                 }
+            }
+        }
+
+        if (character.bonusSkillRanks && character.bonusSkillRanks.length > 0) {
+            doc.setFontSize(7);
+            doc.setFont('ArchivoNarrow', 'bold');
+            doc.text('-- BONUS SKILL RANKS --', page2RightColX + 2, abilitiesY);
+            abilitiesY += 8;
+
+            for (const grant of character.bonusSkillRanks) {
+                const title = formatBonusSkillRankTitle(
+                    grant.skillId,
+                    grant.skillSubId,
+                    grant.customSubtype,
+                    grant.ranks
+                );
+                doc.setFontSize(6);
+                doc.setFont('ArchivoNarrow', 'bold');
+                const colonText = grant.description ? ': ' : '';
+                const titleText = title + colonText;
+                const nameWidth = doc.getTextWidth(titleText);
+                doc.text(titleText, page2RightColX + 2, abilitiesY);
+
+                if (grant.description) {
+                    doc.setFont('ArchivoNarrow', 'normal');
+                    const remainingWidth = page2RightColWidth - 4 - nameWidth;
+                    const firstLineSplit = doc.splitTextToSize(grant.description, remainingWidth);
+                    doc.text(firstLineSplit[0], page2RightColX + 2 + nameWidth, abilitiesY, { maxWidth: remainingWidth });
+                    if (firstLineSplit.length > 1) {
+                        const remainingText = firstLineSplit.slice(1).join(' ');
+                        const subsequentLines = doc.splitTextToSize(remainingText, page2RightColWidth - 4);
+                        let grantY = abilitiesY;
+                        for (const line of subsequentLines) {
+                            grantY += 6;
+                            doc.text(line, page2RightColX + 2, grantY, { maxWidth: page2RightColWidth - 4 });
+                        }
+                        abilitiesY = grantY;
+                    }
+                }
+                abilitiesY += 6;
             }
         }
     }

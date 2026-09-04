@@ -164,6 +164,7 @@ async function computeFromCharacterDraft(characterId: number, characterState: Ch
         characterLanguages:
             characterState.characterLanguages?.map((l) => ({ characterId, languageId: l.languageId })) ??
             effectiveCharacter.characterLanguages,
+        bonusSkillRanks: characterState.bonusSkillRanks ?? effectiveCharacter.bonusSkillRanks,
         companions: characterState.companions ?? effectiveCharacter.companions,
         selectedForms: characterState.selectedForms ?? effectiveCharacter.selectedForms,
     };
@@ -480,6 +481,7 @@ async function computeFromCreateDraft(
             characterId: characterDraftState.characterId,
             languageId: l.languageId,
         })) ?? [],
+        bonusSkillRanks: characterDraftState.bonusSkillRanks ?? [],
         companions: characterDraftState.companions ?? [],
         selectedForms: characterDraftState.selectedForms ?? [],
     } as unknown as CharacterWithAllDetailsResponse;

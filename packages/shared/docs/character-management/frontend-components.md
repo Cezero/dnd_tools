@@ -206,7 +206,9 @@ All character detail tabs follow a consistent pattern for synchronizing state ch
 - ❌ Not using refs to track previous values (causes initial sync on mount)
 - ❌ Frontend diffing arrays instead of sending full arrays to backend
 
-The Features & Feats viewer tab (`detail-tabs/FeaturesTab.tsx`) appends saved player choices to feature and feat titles via `choiceDisplayName.ts` (for example `Animal Companion: Dog`). It omits chassis features (BAB, class skills, proficiency wrappers) and shows a de-duplicated proficiency union.
+The Features & Feats viewer tab (`detail-tabs/FeaturesTab.tsx`) appends saved player choices to feature and feat titles via `choiceDisplayName.ts` (for example `Animal Companion: Dog`). It omits chassis features (BAB, class skills, proficiency wrappers) and shows a de-duplicated proficiency union. DM bonus skill ranks appear after Feats as `Skillname Bonus Ranks: X` with the grant justification.
+
+The editor Skills tab (`tabs/SkillsTab.tsx`) can add those grants via **Add bonus ranks**. They persist on the character draft (`bonusSkillRanks`) and count as real ranks on the sheet.
 
 **Source Files**:
 - CharacterDetail: `frontend/src/features/character/CharacterDetail.tsx`

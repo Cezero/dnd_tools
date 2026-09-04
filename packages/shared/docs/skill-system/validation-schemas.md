@@ -231,6 +231,19 @@ The skill system integrates with the character system through skill management:
 
 **Related Documentation**: [Character Management Validation Schemas](../character-management/validation-schemas.md)
 
+### **CharacterBonusSkillRankSchema**
+
+Validates DM-granted bonus ranks on a character. Defined in `packages/shared/schema/src/character.ts`, not `skill.ts`.
+
+**Key Validations**:
+- **`skillId`**: Required positive integer
+- **`skillSubId`**: Nullable positive integer for Craft / Knowledge
+- **`customSubtype`**: Nullable string, max 100 characters, for Perform / Profession
+- **`ranks`**: Required positive integer
+- **`description`**: Required string, 1–255 characters
+
+Draft (`CharacterBonusSkillRankDraftSchema`) and create (`CreateCharacterBonusSkillRankSchema`) variants follow the same nested-collection pattern as attack definitions. `bonusSkillRanks` is optional on `CharacterWithAllDetailsSchema`, `CharacterEditStateSchema`, and `SaveCharacterSchema`.
+
 ## 📊 **Type Generation**
 
 ### **Generated Types**

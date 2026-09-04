@@ -317,9 +317,8 @@ export class AvailableFeatService {
                         meetsPrereq = true;
                         break;
                     }
-                    // Check if character has enough skill ranks
+                    let totalRanks = 0;
                     if (character.advancements) {
-                        let totalRanks = 0;
                         for (const advancement of character.advancements) {
                             if (advancement.skills) {
                                 for (const skill of advancement.skills) {
@@ -329,10 +328,15 @@ export class AvailableFeatService {
                                 }
                             }
                         }
-                        meetsPrereq = totalRanks >= prereq.minValue;
-                    } else {
-                        meetsPrereq = false;
                     }
+                    if (character.bonusSkillRanks) {
+                        for (const grant of character.bonusSkillRanks) {
+                            if (grant.skillId === prereq.appliesToId) {
+                                totalRanks += grant.ranks;
+                            }
+                        }
+                    }
+                    meetsPrereq = totalRanks >= prereq.minValue;
                     break;
                 }
 

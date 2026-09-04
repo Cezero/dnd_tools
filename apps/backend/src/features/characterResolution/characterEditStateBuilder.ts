@@ -46,6 +46,7 @@ export function buildCharacterEditState(
         characterItems: character.characterItems ?? [],
         attackDefinitions: character.attackDefinitions ?? [],
         characterLanguages: character.characterLanguages ?? [],
+        bonusSkillRanks: character.bonusSkillRanks ?? [],
         companions: character.companions ?? [],
         selectedForms: character.selectedForms ?? [],
     };

@@ -347,10 +347,11 @@ model Skill {
   doubleArmorPenalty Boolean              @default(false) // true for Swim (double armor check penalty)
   sourceBookInfo     SkillSourceBookMap[]
 
-  advSkills               AdvancementSkill[]
-  monsters                MonsterSkillMap[]
-  subtypes                SkillSubtype[]
+  advSkills                AdvancementSkill[]
+  monsters                 MonsterSkillMap[]
+  subtypes                 SkillSubtype[]
   characterCompanionSkills CharacterCompanionSkill[]
+  bonusSkillRanks          CharacterBonusSkillRank[]
 }
 
 model SkillSourceBookMap {
@@ -736,6 +737,7 @@ model Character {
   disallowedSources  CharacterDisallowedSource[] // NEW: Disallowed sources relationship
   characterLanguages CharacterLanguageMap[]
   featureUses        CharacterFeatureUses[] // NEW: Feature uses tracking
+  bonusSkillRanks    CharacterBonusSkillRank[]
 
   race  Race   @relation(fields: [raceId], references: [id])
   deity Deity? @relation(fields: [deityId], references: [id])
@@ -786,6 +788,23 @@ model CharacterLanguageMap {
   character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 
   @@id([characterId, languageId])
+}
+
+/// DM-granted bonus skill ranks on a character. These count as real ranks on the sheet
+/// and do not spend skill points. Multiple grants per skill are allowed.
+model CharacterBonusSkillRank {
+  id            Int     @id @default(autoincrement())
+  characterId   Int
+  skillId       Int
+  skillSubId    Int?
+  customSubtype String?
+  ranks         Int
+  description   String  @db.VarChar(255)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  skill     Skill     @relation(fields: [skillId], references: [id])
+
+  @@index([characterId])
 }
 
 model CharacterAdvancement {

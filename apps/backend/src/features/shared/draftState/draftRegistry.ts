@@ -428,6 +428,7 @@ async function computeResolvedCharacterResult(
                   characterLanguages:
                       characterState.characterLanguages?.map((l) => ({ characterId, languageId: l.languageId })) ??
                       effectiveCharacter.characterLanguages,
+                  bonusSkillRanks: characterState.bonusSkillRanks ?? effectiveCharacter.bonusSkillRanks,
                   companions: characterState.companions ?? effectiveCharacter.companions,
                   selectedForms: characterState.selectedForms ?? effectiveCharacter.selectedForms,
               }
@@ -651,6 +652,7 @@ draftRegistry.set(DraftType.Character, {
             characterItems: [],
             attackDefinitions: [],
             characterLanguages: [],
+            bonusSkillRanks: [],
             companions: [],
             selectedForms: [],
         };

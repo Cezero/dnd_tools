@@ -225,6 +225,15 @@ Centralized utility functions for skill type checks and subtype lookups, replaci
 - **Returns**: Array of skill subtype cache entries
 - **Usage**: Replaces static map lookups like `CRAFT_SKILL_MAP` and `KNOWLEDGE_SKILL_MAP`
 
+**skillRankIdentityKey / resolveCustomSubtypeCasing**: Match Profession / Perform text case-insensitively (`sailor` → existing `Sailor`)
+**formatBonusSkillRankTitle**: Features & Feats label, e.g. `Profession (Sailor) Bonus Ranks: 2`
+
+### **Character Editor Bonus Ranks**
+
+The character Skills tab (`apps/frontend/src/features/character/tabs/SkillsTab.tsx`) has an **Add bonus ranks** dialog (`BonusSkillRanksDialog`) below the skill table. Craft / Knowledge pick a subtype dropdown; Profession / Perform use a text field. Grants persist on the character draft as `bonusSkillRanks` and appear on Features & Feats plus the PDF special-abilities column.
+
+The editor ranks **input** stays this-level spent ranks so incrementing does not write bonus ranks into `pointsSpent`. The sheet / detail **Ranks** column and **Total** include bonus ranks via `characterSheetDisplayStrategy.formatSkills`.
+
 **Key Features**:
 - **Database-Driven**: All data comes from the skills-cache API
 - **Type-Safe**: Full TypeScript type safety

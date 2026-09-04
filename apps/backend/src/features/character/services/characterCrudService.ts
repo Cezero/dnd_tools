@@ -103,6 +103,7 @@ interface DraftCharacterState {
     wealth?: unknown;
     disallowedSources?: unknown;
     characterLanguages?: unknown;
+    bonusSkillRanks?: unknown;
     characterItems?: unknown;
     attackDefinitions?: unknown;
     companions?: unknown;
@@ -270,6 +271,21 @@ function mapDraftCompanions(value: unknown, characterId: number): CharacterWithA
 /**
  * Maps persisted or draft selected-form rows onto the character-edit draft shape.
  */
+/**
+ * Maps persisted or draft bonus-rank rows onto the character-edit draft shape.
+ */
+function mapDraftBonusSkillRanks(value: unknown, characterId: number): NonNullable<CharacterWithAllDetailsResponse['bonusSkillRanks']> {
+    return asArray(value).filter(isRecord).map((row) => ({
+        id: asInt(row.id) ?? 0,
+        characterId: asInt(row.characterId) ?? characterId,
+        skillId: asInt(row.skillId) ?? 0,
+        skillSubId: asIntOrNull(row.skillSubId),
+        customSubtype: asStringOrNull(row.customSubtype),
+        ranks: asInt(row.ranks) ?? 0,
+        description: typeof row.description === 'string' ? row.description : '',
+    })).filter((row) => row.skillId > 0 && row.ranks > 0);
+}
+
 function mapDraftSelectedForms(value: unknown, characterId: number): CharacterWithAllDetailsResponse['selectedForms'] {
     return asArray(value).filter(isRecord).map((row) => ({
         id: asInt(row.id) ?? 0,
@@ -355,6 +371,9 @@ async function overlayLockedDraftsOnCharacter(
                         wieldTwoHanded: asBool(def.wieldTwoHanded) ?? false,
                     }))
                     : next.attackDefinitions,
+                bonusSkillRanks: hasOwn(draft, 'bonusSkillRanks')
+                    ? mapDraftBonusSkillRanks(draft.bonusSkillRanks, character.id)
+                    : next.bonusSkillRanks,
             };
         }
     }
@@ -597,6 +616,7 @@ async function getDraftCharacterWithAllDetails(args: {
         wealth,
         disallowedSources,
         characterLanguages,
+        bonusSkillRanks: mapDraftBonusSkillRanks(characterState.bonusSkillRanks, draftCharacterId),
         characterItems,
         attackDefinitions,
         companions: mapDraftCompanions(characterState.companions, draftCharacterId),
@@ -819,6 +839,7 @@ export const characterCrudService = {
                 characterItems: true,
                 attackDefinitions: true,
                 characterLanguages: true,
+                bonusSkillRanks: true,
                 companions: {
                     include: {
                         tricks: true,
@@ -891,7 +912,7 @@ export const characterCrudService = {
 
     async saveCharacter(characterId: number | null, data: SaveCharacterRequest): Promise<CreateResponse | UpdateResponse> {
         // Extract nested data
-        const { abilityScores, advancement, equipment, attackDefinitions, characterLanguages, ...characterData } = data;
+        const { abilityScores, advancement, equipment, attackDefinitions, characterLanguages, bonusSkillRanks, ...characterData } = data;
 
         let finalCharacterId = characterId;
 
@@ -1230,6 +1251,24 @@ export const characterCrudService = {
                         data: characterLanguages.map(lang => ({
                             characterId: persistedCharacterId,
                             languageId: lang.languageId,
+                        })),
+                    });
+                }
+            }
+
+            if (bonusSkillRanks !== undefined) {
+                await tx.characterBonusSkillRank.deleteMany({
+                    where: { characterId: persistedCharacterId },
+                });
+                if (bonusSkillRanks.length > 0) {
+                    await tx.characterBonusSkillRank.createMany({
+                        data: bonusSkillRanks.map((row) => ({
+                            characterId: persistedCharacterId,
+                            skillId: row.skillId,
+                            skillSubId: row.skillSubId ?? null,
+                            customSubtype: row.customSubtype ?? null,
+                            ranks: row.ranks,
+                            description: row.description,
                         })),
                     });
                 }

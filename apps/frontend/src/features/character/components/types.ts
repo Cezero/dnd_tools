@@ -1,4 +1,4 @@
-import type { CharacterWithAllDetailsResponse, ItemWithDetails, CharacterItem as CharacterItemSchema, FeatCacheEntry, FeatureWithRelations } from '@shared/schema';
+import type { CharacterBonusSkillRankDraft, CharacterWithAllDetailsResponse, ItemWithDetails, CharacterItem as CharacterItemSchema, FeatCacheEntry, FeatureWithRelations } from '@shared/schema';
 import { EntityAppliesToType } from '@shared/static-data';
 
 import type { AttackDefinition , Money } from '../types';
@@ -22,6 +22,18 @@ export interface FeatSubIdSelectionModalProps {
     onConfirm: (weaponId: number) => void;
     feat: FeatCacheEntry | null;
     resolvedProgressions: FeatureWithRelations[];
+}
+
+/**
+ * Props for BonusSkillRanksDialog.
+ * `existingCustomSubtypes` is used to match Profession/Perform text to an existing casing.
+ */
+export interface BonusSkillRanksDialogProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (grant: Omit<CharacterBonusSkillRankDraft, 'id' | 'characterId'>) => void;
+    existingGrant?: CharacterBonusSkillRankDraft | null;
+    existingCustomSubtypes: string[];
 }
 
 /**

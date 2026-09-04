@@ -35,6 +35,7 @@ import { AbilitiesRaceTab, AnimalsPetsTab, ChoicesTab, ClassTab, ConfigurationTa
 import { useAdvancementDraft } from './useAdvancementDraft';
 import { useCharacterResolution } from './useCharacterResolution';
 import { enqueueAdvancementDraftWrite, flushAdvancementCollectionsToDraft, syncFeatureChoicesToDraft } from './utils/advancementDraftSync';
+import { syncBonusSkillRanksToDraft } from './utils/bonusSkillRankDraftSync';
 import { syncAttackDefinitionsToDraft, syncCharacterItemsToDraft } from './utils/characterItemDraftSync';
 import { enqueueCharacterDraftWrite, syncCompanionsToDraft } from './utils/companionDraftSync';
 import { createStableDraftRowId } from './utils/draftKeyUtils';
@@ -318,6 +319,7 @@ export function CharacterEdit(): React.JSX.Element {
     const prevCompanionsRef = useRef<typeof state.companions | null>(null);
     const prevEquipmentRef = useRef<typeof state.equipment | null>(null);
     const prevAttackDefinitionsRef = useRef<typeof state.attackDefinitions | null>(null);
+    const prevBonusSkillRanksRef = useRef<typeof state.bonusSkillRanks | null>(null);
     const hydratedCharacterIdRef = useRef<number | null>(null);
     const prevSpellsKnownRef = useRef<typeof state.spellsKnown | null>(null);
     const prevSelectedFeatsRef = useRef<{ selectedFeats: number[]; featSubIds: Record<number, number | null> } | null>(null);
@@ -803,6 +805,32 @@ export function CharacterEdit(): React.JSX.Element {
             console.error('Failed to sync attack definitions to character draft:', error);
         });
     }, [state.characterId, state.attackDefinitions, characterDraft.updateValue]);
+
+    /**
+     * Sync DM-granted bonus skill ranks to the character draft.
+     */
+    useEffect(() => {
+        if (!state.characterId) {
+            return;
+        }
+        if (prevBonusSkillRanksRef.current === null) {
+            prevBonusSkillRanksRef.current = state.bonusSkillRanks;
+            return;
+        }
+        if (isEqual(prevBonusSkillRanksRef.current, state.bonusSkillRanks)) {
+            return;
+        }
+        const previous = prevBonusSkillRanksRef.current;
+        const next = state.bonusSkillRanks;
+        const characterId = state.characterId;
+        const writer = { updateValue: characterDraft.updateValue };
+        enqueueCharacterDraftWrite(characterId, async () => {
+            await syncBonusSkillRanksToDraft(writer, previous, next);
+            prevBonusSkillRanksRef.current = next;
+        }).catch((error) => {
+            console.error('Failed to sync bonus skill ranks to character draft:', error);
+        });
+    }, [state.characterId, state.bonusSkillRanks, characterDraft.updateValue]);
 
     useDraftSync({
         value: state.selectedForms,
@@ -1379,6 +1407,11 @@ export function CharacterEdit(): React.JSX.Element {
                 }
 
                 updateState({
+                    type: CharacterEditStateUpdateType.SET_BONUS_SKILL_RANKS,
+                    payload: { bonusSkillRanks: character.bonusSkillRanks ?? [] },
+                });
+
+                updateState({
                     type: CharacterEditStateUpdateType.SET_COMPANIONS,
                     payload: { companions: character.companions ?? [] },
                 });
@@ -1807,6 +1840,10 @@ export function CharacterEdit(): React.JSX.Element {
                             type: CharacterEditStateUpdateType.SET_SELECTED_FORMS,
                             payload: { selectedForms: updatedCharacter.selectedForms ?? [] },
                         });
+                        updateState({
+                            type: CharacterEditStateUpdateType.SET_BONUS_SKILL_RANKS,
+                            payload: { bonusSkillRanks: updatedCharacter.bonusSkillRanks ?? [] },
+                        });
 
                         // Resolution will be re-initialized when characterId changes
                         // No need to manually trigger resolution
@@ -2044,6 +2081,7 @@ export function CharacterEdit(): React.JSX.Element {
         );
         const editorCharacter = {
             ...characterData,
+            bonusSkillRanks: state.bonusSkillRanks,
             characterItems: editorCharacterItems,
             attackDefinitions: state.attackDefinitions.map((definition) => ({
                 id: definition.id,
@@ -2074,7 +2112,7 @@ export function CharacterEdit(): React.JSX.Element {
             console.error('Error formatting character:', error);
             return null;
         }
-    }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, queryClient, skillRanksKey, state.equipment, state.attackDefinitions, state.characterId]);
+    }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, queryClient, skillRanksKey, state.equipment, state.attackDefinitions, state.bonusSkillRanks, state.characterId]);
 
     // Separate bonus languages from characterLanguages when characterData is available
     useEffect(() => {
@@ -2167,6 +2205,10 @@ export function CharacterEdit(): React.JSX.Element {
                     },
                 });
             }
+            updateState({
+                type: CharacterEditStateUpdateType.SET_BONUS_SKILL_RANKS,
+                payload: { bonusSkillRanks: updatedCharacter.bonusSkillRanks ?? [] },
+            });
         } catch (error) {
             console.error('Error refetching character:', error);
         }

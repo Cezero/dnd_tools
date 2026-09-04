@@ -6,7 +6,7 @@ import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAcces
 import type { BreakdownMap, BreakdownComponent as CalculationBreakdownComponent } from '@/lib/character-calculation/types';
 import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
 import { canUseTwoHanded } from '@/lib/character-calculation/utils/weaponHelpers';
-import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
+import { getSkillSubtypes, hasSubtypes, skillRankIdentityKey, usesCustomSubtype } from '@/lib/skill-utils';
 import { getSkillSummaryById, getSkillSelectFull, getFeatNameFromCache, getItemNameFromCache, getFeatureNameFromCache, getSpellNameFromCache, getDomainNameFromCache } from '@/services/cache';
 import type { FeatureWithRelations, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
 import { ABILITY_MAP, AbilityId, CalculationMethodType, EntityAppliesToType, EntityType, FeatureEntityConditionType, FeatureSourceType, isCanonicalProficiencyGrant } from '@shared/static-data';
@@ -829,6 +829,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             skillSubId: number | null;
             customSubtype: string | null;
             totalRanks: number;
+            bonusRanks: number;
             miscBonus: number;
         }>();
 
@@ -847,7 +848,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 continue;
             }
 
-            const key = `${skillEntry.skillId}|${skillEntry.skillSubId ?? 'null'}|${skillEntry.customSubtype ?? 'null'}`;
+            const key = skillRankIdentityKey(skillEntry.skillId, skillEntry.skillSubId, skillEntry.customSubtype);
 
             let entry = skillEntryMap.get(key);
             if (!entry) {
@@ -856,6 +857,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     skillSubId: skillEntry.skillSubId,
                     customSubtype: skillEntry.customSubtype,
                     totalRanks: 0,
+                    bonusRanks: 0,
                     miscBonus: 0
                 };
                 skillEntryMap.set(key, entry);
@@ -893,7 +895,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 if (analogSkillIds.has(bonus.skillId)) {
                     continue;
                 }
-                const key = `${bonus.skillId}|${bonus.skillSubId ?? 'null'}|null`;
+                const key = skillRankIdentityKey(bonus.skillId, bonus.skillSubId, null);
                 let entry = skillEntryMap.get(key);
                 // If entry doesn't exist, create it (for skills with bonuses but no ranks)
                 if (!entry) {
@@ -902,6 +904,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                         skillSubId: bonus.skillSubId ?? null,
                         customSubtype: null,
                         totalRanks: 0,
+                        bonusRanks: 0,
                         miscBonus: 0
                     };
                     skillEntryMap.set(key, entry);
@@ -938,7 +941,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                             // Match the key format used for skill entries: skillId|skillSubId|customSubtype
                             // For bonuses, we use the appliesToId as skillId and appliesToSubId as skillSubId
                             // customSubtype is null for bonuses from features
-                            const key = `${entity.appliesToId}|${entity.appliesToSubId ?? 'null'}|null`;
+                            const key = skillRankIdentityKey(entity.appliesToId, entity.appliesToSubId, null);
                             let entry = skillEntryMap.get(key);
                             // If entry doesn't exist, create it (for skills with bonuses but no ranks)
                             if (!entry) {
@@ -947,6 +950,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                                     skillSubId: entity.appliesToSubId ?? null,
                                     customSubtype: null,
                                     totalRanks: 0,
+                                    bonusRanks: 0,
                                     miscBonus: 0
                                 };
                                 skillEntryMap.set(key, entry);
@@ -958,6 +962,28 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
         }
 
+        // DM bonus ranks count as real ranks after points-to-ranks conversion.
+        const bonusSkillRanks = character.bonusSkillRanks ?? [];
+        for (const grant of bonusSkillRanks) {
+            if (!allocatableSkills.some((skill) => skill.id === grant.skillId)) {
+                continue;
+            }
+            const key = skillRankIdentityKey(grant.skillId, grant.skillSubId, grant.customSubtype);
+            let entry = skillEntryMap.get(key);
+            if (!entry) {
+                entry = {
+                    skillId: grant.skillId,
+                    skillSubId: grant.skillSubId,
+                    customSubtype: grant.customSubtype,
+                    totalRanks: 0,
+                    bonusRanks: 0,
+                    miscBonus: 0
+                };
+                skillEntryMap.set(key, entry);
+            }
+            entry.bonusRanks += grant.ranks;
+        }
+
         // Convert to formatted skills
         for (const entry of skillEntryMap.values()) {
             const skillData = getSkillSummaryById(entry.skillId);
@@ -966,7 +992,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             const abilityScore = abilityScores.find(a => a.abilityId === skillData.abilityId);
             const abilityMod = abilityScore?.modifier ?? 0;
 
-            const ranks = Math.floor(entry.totalRanks);
+            const spentRanks = Math.floor(entry.totalRanks);
+            const ranks = spentRanks + entry.bonusRanks;
             const total = ranks + abilityMod + entry.miscBonus;
 
             // Check if class skill - use backend-provided classSkills if available, otherwise fall back to checking features
@@ -1017,7 +1044,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 isClassSkill: isClassSkillValue,
                 breakdown: {
                     components: [
-                        { source: 'Ranks', value: ranks, type: CalculationMethodType.base },
+                        { source: 'Ranks', value: spentRanks, type: CalculationMethodType.base },
+                        { source: 'Bonus Ranks', value: entry.bonusRanks, type: CalculationMethodType.base },
                         {
                             source: ABILITY_MAP[skillData.abilityId].name,
                             value: abilityMod,

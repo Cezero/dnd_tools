@@ -236,6 +236,33 @@ export const CharacterLanguageMapSchema = z.object({
 // Request/response schemas for character language map
 export const CreateCharacterLanguageMapSchema = CharacterLanguageMapSchema;
 
+/**
+ * DM-granted bonus skill ranks tied to a character (not an advancement).
+ * These count as real ranks on the sheet and do not spend skill points.
+ */
+export const CharacterBonusSkillRankSchema = z.object({
+    id: DraftIdSchema,
+    characterId: DraftIdSchema,
+    skillId: commonValidations.positiveInt('Skill ID'),
+    skillSubId: z.union([commonValidations.positiveInt('Skill subtype ID'), z.null()]),
+    customSubtype: z.union([z.string().max(100, 'Custom subtype must be less than 100 characters'), z.null()]),
+    ranks: commonValidations.positiveInt('Bonus ranks'),
+    description: z.string().min(1, 'Description is required').max(255, 'Description must be less than 255 characters'),
+});
+
+export const CharacterBonusSkillRankDraftSchema = CharacterBonusSkillRankSchema.omit({
+    id: true,
+    characterId: true,
+}).extend({
+    id: z.number().int(),
+    characterId: z.number().int(),
+});
+
+export const CreateCharacterBonusSkillRankSchema = CharacterBonusSkillRankSchema.omit({
+    id: true,
+    characterId: true,
+});
+
 // Character item schemas (defined before CharacterWithAllDetailsSchema to avoid forward reference)
 export const CharacterItemSchema = z.object({
     id: DraftIdSchema,
@@ -279,6 +306,7 @@ export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
     wealth: z.array(CharacterWealthSchema).optional(),
     disallowedSources: z.array(CharacterDisallowedSourceSchema),
     characterLanguages: z.array(CharacterLanguageMapSchema).optional(),
+    bonusSkillRanks: z.array(CharacterBonusSkillRankSchema).optional(),
     characterItems: z.array(CharacterItemSchema).optional(),
     attackDefinitions: z.array(CharacterAttackDefinitionSchema).optional(),
     companions: z.array(CharacterCompanionDraftSchema).optional(),
@@ -362,6 +390,7 @@ export const CharacterEditStateSchema = BaseCharacterSchema.omit({
     characterItems: z.array(CharacterItemDraftSchema).optional(),
     attackDefinitions: z.array(CharacterAttackDefinitionDraftSchema).optional(),
     characterLanguages: z.array(CharacterLanguageDraftSchema).optional(),
+    bonusSkillRanks: z.array(CharacterBonusSkillRankDraftSchema).optional(),
     companions: z.array(CharacterCompanionDraftSchema).optional(),
     selectedForms: z.array(CharacterSelectedFormDraftSchema).optional(),
 });
@@ -472,6 +501,8 @@ export const SaveCharacterSchema = BaseCharacterSchema.extend({
     attackDefinitions: z.array(CreateCharacterAttackDefinitionSchema.omit({ characterId: true })).optional(),
     // Optional character languages (nested)
     characterLanguages: z.array(CreateCharacterLanguageMapSchema.omit({ characterId: true })).optional(),
+    // Optional DM-granted bonus skill ranks (nested)
+    bonusSkillRanks: z.array(CreateCharacterBonusSkillRankSchema).optional(),
 }).partial().transform((data) => {
     // Transform null editionId to undefined so service can apply default
     if (data.editionId === null) {
@@ -634,6 +665,11 @@ export type UpdateCharacterDisallowedSourceRequest = z.infer<typeof UpdateCharac
 // Character language map types
 export type CharacterLanguageMap = z.infer<typeof CharacterLanguageMapSchema>;
 export type CreateCharacterLanguageMapRequest = z.infer<typeof CreateCharacterLanguageMapSchema>;
+
+// Character bonus skill rank types
+export type CharacterBonusSkillRank = z.infer<typeof CharacterBonusSkillRankSchema>;
+export type CharacterBonusSkillRankDraft = z.infer<typeof CharacterBonusSkillRankDraftSchema>;
+export type CreateCharacterBonusSkillRankRequest = z.infer<typeof CreateCharacterBonusSkillRankSchema>;
 
 // Character feature uses types
 export type CharacterFeatureUses = z.infer<typeof CharacterFeatureUsesSchema>;

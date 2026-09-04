@@ -124,6 +124,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 **Key Implementation Details**:
 - Skills are formatted using `CharacterSheetDisplayStrategy`
 - Analog skills (Wild Empathy, Bardic Knowledge) appear when a class feature grants them. The ranks column is granting class levels, not skill points. Trained-only analog skills stay visible.
+- DM bonus ranks from `character.bonusSkillRanks` are added to the Ranks column and Total after points-to-ranks conversion. They do not spend skill points. Profession / Perform text matches existing subtypes case-insensitively.
 - Each skill has a `CalculationBreakdown` for tooltip display
 - Conditional modifiers are shown when they apply
 - Dice buttons use skill check notation (e.g., "1d20+5")
@@ -189,6 +190,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 **Features**:
 - **Features**: Race and class features. Saved choices are appended to the title (`Animal Companion: Dog`).
 - **Feats**: Character feats. Feat subtypes are appended (`Weapon Focus (Longsword)`).
+- **Bonus Skill Ranks**: DM grants from `character.bonusSkillRanks`, titled `Skillname Bonus Ranks: X` with the justification as the summary
 - **Proficiencies**: De-duplicated union of granted proficiencies (gestalt overlap appears once)
 - **Languages**: Languages from `character.characterLanguages`
 

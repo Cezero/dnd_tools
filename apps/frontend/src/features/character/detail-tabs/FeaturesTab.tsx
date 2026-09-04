@@ -11,6 +11,7 @@ import {
 } from '@/lib/formatters/choiceDisplayName';
 import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { getQueryClient } from '@/lib/formatters/utils/queryClientAccessor';
+import { formatBonusSkillRankTitle } from '@/lib/skill-utils';
 import { getClassNameFromCache, getFeatSummaryById, getRaceSummaryById } from '@/services/cache';
 import type { Feat, FeatureWithRelations } from '@shared/schema';
 import { EntityAppliesToType, EntityType, FeatureSourceType, LANGUAGE_MAP } from '@shared/static-data';
@@ -18,7 +19,7 @@ import { EntityAppliesToType, EntityType, FeatureSourceType, LANGUAGE_MAP } from
 import type { FeaturesTabProps } from './types';
 
 /**
- * FeaturesTab displays race/class features, feats, proficiencies, and languages.
+ * FeaturesTab displays race/class features, feats, DM bonus skill ranks, proficiencies, and languages.
  *
  * Features and feats that have a saved player choice append that choice to the
  * title (for example `Animal Companion: Dog`, `Weapon Focus (Longsword)`).
@@ -426,6 +427,27 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                 </div>
             )}
 
+            {character.bonusSkillRanks && character.bonusSkillRanks.length > 0 && (
+                <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Bonus Skill Ranks</h3>
+                    <div className="space-y-2">
+                        {character.bonusSkillRanks.map((grant) => (
+                            <div
+                                key={grant.id}
+                                className="py-2 border-b border-gray-200 dark:border-gray-700"
+                            >
+                                <div className="font-semibold text-gray-900 dark:text-white">
+                                    {formatBonusSkillRankTitle(grant.skillId, grant.skillSubId, grant.customSubtype, grant.ranks)}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                    {grant.description}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Proficiencies Section */}
             {formattedCharacter.proficiencies && formattedCharacter.proficiencies.length > 0 && (
                 <div className="space-y-4">
@@ -457,6 +479,7 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
             {raceFeatures.length === 0 &&
                 classFeaturesByClass.size === 0 &&
                 processedFeats.categories.length === 0 &&
+                (!character.bonusSkillRanks || character.bonusSkillRanks.length === 0) &&
                 (!formattedCharacter.proficiencies || formattedCharacter.proficiencies.length === 0) &&
                 languages.length === 0 && (
                     <p className="text-gray-600 dark:text-gray-400">No features, feats, proficiencies, or languages found.</p>

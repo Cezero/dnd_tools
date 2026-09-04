@@ -4,15 +4,24 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { AnalogSkillService } from '@/features/character';
-import type { SkillRank, TabComponentProps } from '@/features/character/types';
-import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { BonusSkillRanksDialog } from '@/features/character/components';
+import { CharacterEditStateUpdateType, type SkillRank, type TabComponentProps } from '@/features/character/types';
+import { nextNegativeTempId } from '@/features/character/utils/draftKeyUtils';
 import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
 import { extractClassMechanics } from '@/lib/feature-extraction/classMechanicsExtractor';
 import { buildFormulaParams } from '@/lib/formatters/formula-utils';
 import type { FormattedSkill } from '@/lib/formatters/types';
-import { hasSubtypes, usesCustomSubtype, hasNoMaxRanks, getSkillSubtypes, getSkillSubtypeName as getSkillSubtypeNameUtil } from '@/lib/skill-utils';
+import {
+    formatBonusSkillRankTitle,
+    getSkillSubtypeName as getSkillSubtypeNameUtil,
+    getSkillSubtypes,
+    hasNoMaxRanks,
+    hasSubtypes,
+    skillRankIdentityKey,
+    usesCustomSubtype,
+} from '@/lib/skill-utils';
 import { useCacheFunctions } from '@/services/cache';
-import type { FeatureWithRelations } from '@shared/schema';
+import type { CharacterBonusSkillRankDraft, FeatureWithRelations } from '@shared/schema';
 import {
     ABILITY_MAP,
     GetAbilityModifier,
@@ -46,6 +55,8 @@ export function SkillsTab({
 }: TabComponentProps): React.JSX.Element {
     const queryClient = useQueryClient();
     const { getClassNameFromCache, getRaceNameFromCache, getSkillSummaryById, getSkillSelectFull } = useCacheFunctions();
+    const [isBonusDialogOpen, setIsBonusDialogOpen] = useState(false);
+    const [editingBonusGrant, setEditingBonusGrant] = useState<CharacterBonusSkillRankDraft | null>(null);
 
     // Use shared data instead of fetching
     const classDetails = useMemo(() => ({
@@ -108,20 +119,8 @@ export function SkillsTab({
         return skillEntry?.pointsSpent || 0;
     };
 
-    // Get skill ranks from formatted character (for display)
     const getSkillRanks = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number => {
-        // Use formatted character data which has correctly calculated ranks
-        const formattedSkill = getFormattedSkill(skillId, skillSubId || null, customSubtype || null);
-        if (formattedSkill) {
-            // Parse the ranks string (e.g., "4" -> 4, "2.5" -> 2.5)
-            const ranksStr = formattedSkill.ranks.trim();
-            if (ranksStr === '' || ranksStr === '-') return 0;
-            const parsed = parseFloat(ranksStr);
-            return isNaN(parsed) ? 0 : parsed;
-        }
-
-        // Fallback to manual calculation if not found in formatted character
-        // (shouldn't happen, but keep for safety)
+        // Editor input is this-level spent ranks only. Bonus ranks are added in the formatter total.
         const pointsSpent = getSkillPointsSpent(skillId, skillSubId, customSubtype);
 
         // For Craft/Knowledge skills without subtype, we can't determine class skill status yet
@@ -597,6 +596,28 @@ export function SkillsTab({
                         key: `skill-${skill.id}-entry-${entryId}`
                     });
                 });
+
+                state.bonusSkillRanks
+                    .filter((grant) => grant.skillId === skill.id)
+                    .forEach((grant) => {
+                        const grantKey = skillRankIdentityKey(grant.skillId, grant.skillSubId, grant.customSubtype);
+                        const alreadyListed = rows.some((row) => (
+                            skillRankIdentityKey(row.skillId, row.skillSubId, row.customSubtype) === grantKey
+                        ));
+                        if (alreadyListed) {
+                            return;
+                        }
+                        if (grant.skillSubId == null && (grant.customSubtype == null || grant.customSubtype === '__placeholder__')) {
+                            return;
+                        }
+                        rows.push({
+                            skillId: grant.skillId,
+                            skillSubId: grant.skillSubId,
+                            customSubtype: grant.customSubtype,
+                            entryId: `bonus-${grant.id}`,
+                            key: `skill-${skill.id}-bonus-${grant.id}`
+                        });
+                    });
 
                 // Only show a base row if there are no existing entries with null subtype
                 const hasBaseEntry = skillEntries.some(entry =>
@@ -1302,6 +1323,108 @@ export function SkillsTab({
                     )}
                 </div>
             </div>
+
+            <div className="mt-6 space-y-3">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setEditingBonusGrant(null);
+                        setIsBonusDialogOpen(true);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                    Add bonus ranks
+                </button>
+
+                {state.bonusSkillRanks.length > 0 && (
+                    <div className="space-y-2">
+                        {state.bonusSkillRanks.map((grant) => (
+                            <div
+                                key={grant.id}
+                                className="flex items-start justify-between gap-4 py-2 border-b border-gray-200 dark:border-gray-700"
+                            >
+                                <div>
+                                    <div className="font-semibold text-gray-900 dark:text-white">
+                                        {formatBonusSkillRankTitle(grant.skillId, grant.skillSubId, grant.customSubtype, grant.ranks)}
+                                    </div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        {grant.description}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingBonusGrant(grant);
+                                            setIsBonusDialogOpen(true);
+                                        }}
+                                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            updateState({
+                                                type: CharacterEditStateUpdateType.SET_BONUS_SKILL_RANKS,
+                                                payload: {
+                                                    bonusSkillRanks: state.bonusSkillRanks.filter((row) => row.id !== grant.id),
+                                                },
+                                            });
+                                        }}
+                                        className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <BonusSkillRanksDialog
+                isOpen={isBonusDialogOpen}
+                onClose={() => {
+                    setIsBonusDialogOpen(false);
+                    setEditingBonusGrant(null);
+                }}
+                existingGrant={editingBonusGrant}
+                existingCustomSubtypes={[
+                    ...skillRanks.map((row) => row.customSubtype),
+                    ...state.bonusSkillRanks.map((row) => row.customSubtype),
+                ].filter((value): value is string => value != null && value !== '')}
+                onConfirm={(grant) => {
+                    const characterId = state.characterId ?? 0;
+                    if (editingBonusGrant) {
+                        updateState({
+                            type: CharacterEditStateUpdateType.SET_BONUS_SKILL_RANKS,
+                            payload: {
+                                bonusSkillRanks: state.bonusSkillRanks.map((row) => (
+                                    row.id === editingBonusGrant.id
+                                        ? { ...row, ...grant }
+                                        : row
+                                )),
+                            },
+                        });
+                        return;
+                    }
+                    const nextId = nextNegativeTempId(state.bonusSkillRanks.map((row) => row.id));
+                    updateState({
+                        type: CharacterEditStateUpdateType.SET_BONUS_SKILL_RANKS,
+                        payload: {
+                            bonusSkillRanks: [
+                                ...state.bonusSkillRanks,
+                                {
+                                    id: nextId,
+                                    characterId,
+                                    ...grant,
+                                },
+                            ],
+                        },
+                    });
+                }}
+            />
         </div>
     );
 }

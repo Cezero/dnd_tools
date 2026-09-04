@@ -164,6 +164,19 @@ export class CharacterSaveService {
                     });
                 }
 
+                if (validatedState.bonusSkillRanks && validatedState.bonusSkillRanks.length > 0) {
+                    await tx.characterBonusSkillRank.createMany({
+                        data: validatedState.bonusSkillRanks.map((row) => ({
+                            characterId: createdCharacter.id,
+                            skillId: row.skillId,
+                            skillSubId: row.skillSubId ?? null,
+                            customSubtype: row.customSubtype ?? null,
+                            ranks: row.ranks,
+                            description: row.description,
+                        })),
+                    });
+                }
+
                 await persistCompanionDraftCollections(
                     tx,
                     createdCharacter.id,
@@ -383,6 +396,22 @@ export class CharacterSaveService {
                         data: validatedState.characterLanguages.map((lang) => ({
                             characterId,
                             languageId: lang.languageId,
+                        })),
+                    });
+                }
+            }
+
+            if (validatedState.bonusSkillRanks) {
+                await tx.characterBonusSkillRank.deleteMany({ where: { characterId } });
+                if (validatedState.bonusSkillRanks.length > 0) {
+                    await tx.characterBonusSkillRank.createMany({
+                        data: validatedState.bonusSkillRanks.map((row) => ({
+                            characterId,
+                            skillId: row.skillId,
+                            skillSubId: row.skillSubId ?? null,
+                            customSubtype: row.customSubtype ?? null,
+                            ranks: row.ranks,
+                            description: row.description,
                         })),
                     });
                 }
