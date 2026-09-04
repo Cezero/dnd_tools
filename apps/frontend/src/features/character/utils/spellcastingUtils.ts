@@ -144,3 +144,19 @@ export function getCastingAbilityId(
 
     return null;
 }
+
+/**
+ * Viewer and PDF save-column text: "Fort neg (DC 14)".
+ * Spells with no save ("None" / empty) stay unchanged.
+ */
+export function formatSpellSavingThrowWithDC(
+    savingThrow: string | null | undefined,
+    baseSpellSaveDC: number,
+    spellLevel: number
+): string {
+    const saveText = savingThrow ?? '';
+    if (!saveText || saveText.toLowerCase() === 'none') {
+        return saveText;
+    }
+    return `${saveText} (DC ${baseSpellSaveDC + spellLevel})`;
+}

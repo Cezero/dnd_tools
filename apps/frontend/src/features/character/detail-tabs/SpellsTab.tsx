@@ -6,7 +6,7 @@ import { SpellTooltip } from '@/components/entity-tooltip/SpellTooltip';
 import { ScrollableCategorizedList } from '@/components/scrollable-categorized-list';
 import { CharacterDetailStateUpdateType } from '@/features/character/types';
 import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
-import { getCastingAbilityId, getSpellcastingClasses, knowsFullClassSpellList, shouldIncludeSpellOnSheet } from '@/features/character/utils/spellcastingUtils';
+import { formatSpellSavingThrowWithDC, getCastingAbilityId, getSpellcastingClasses, knowsFullClassSpellList, shouldIncludeSpellOnSheet } from '@/features/character/utils/spellcastingUtils';
 import { getSpellsPerDayMap } from '@/lib/ClassProgression';
 import { formatSpellSchool, formatSpellComponents } from '@/lib/formatters';
 import { useCacheFunctions, formatSourceFromObject } from '@/services/cache';
@@ -492,15 +492,14 @@ export function SpellsTab({ character, classDetailsMap, resolvedProgressions, ch
             size: 120,
             cell: ({ getValue, row }) => {
                 const savingThrow = getValue() as string;
-                if (!savingThrow || savingThrow.toLowerCase() === 'none' || !casterInfo) {
+                if (!casterInfo) {
                     return savingThrow;
                 }
-
-                // Calculate spell save DC: baseSpellSaveDC + spell level
-                const spellLevel = row.original.level;
-                const spellSaveDC = casterInfo.baseSpellSaveDC + spellLevel;
-
-                return `${savingThrow} (DC ${spellSaveDC})`;
+                return formatSpellSavingThrowWithDC(
+                    savingThrow,
+                    casterInfo.baseSpellSaveDC,
+                    row.original.level
+                );
             }
         });
 

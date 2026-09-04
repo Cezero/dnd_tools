@@ -179,6 +179,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 - Casting ability comes from `getCastingAbilityId` (scans all class-mapped features). Druid stores it on the Spells feature, not the first level-1 feature
 - The edition logo is a Vite-bundled import (`src/assets/logos/3-3.5E Logo - bw.jpg`); a raw `/src/assets/...` fetch fails in production
 - The prep column prints `preparedSpells.quantity` for the matching `${classId}-${spellId}-${spellLevel}` row; unprepared spells keep a blank underline
+- Each spell save cell uses the same inline DC as this tab (`Fort neg (DC 14)` via `formatSpellSavingThrowWithDC`)
 
 ### **Features & Feats Tab**
 

@@ -263,6 +263,8 @@ The feature system integrates with the class system through link table managemen
 
 **Orphaned Features**: The `cleanupOrphanedFeatures` method exists but should NOT be called automatically by class/race services. An admin UI should be created to review and manually delete orphaned features.
 
+**Stale Feature-choice IDs**: After feature remaps, `FeatureEntity.appliesToId` can still point at deleted Feature rows (Ranger Combat Style, Rogue Special Abilities). Recreate missing choice targets and rewrite pointers with `apps/backend/scripts/remap-stale-feature-choice-ids.ts`.
+
 **Related Documentation**: [Class System Backend Implementation](../class-system/backend-implementation.md#feature-system-integration)
 
 ### **Race System Integration**

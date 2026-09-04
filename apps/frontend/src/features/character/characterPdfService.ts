@@ -5,7 +5,7 @@ import ordinal from 'ordinal';
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
 import editionLogoBw from '@/assets/logos/3-3.5E Logo - bw.jpg';
 import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
-import { getCastingAbilityId, knowsFullClassSpellList, shouldIncludeSpellOnSheet } from '@/features/character/utils/spellcastingUtils';
+import { formatSpellSavingThrowWithDC, getCastingAbilityId, knowsFullClassSpellList, shouldIncludeSpellOnSheet } from '@/features/character/utils/spellcastingUtils';
 import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
 import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
@@ -3669,9 +3669,9 @@ async function generateSpellSheet(
         castTime: 40,
         range: 50,
         duration: 50,
-        save: 40,
+        save: 72,
         sr: 30,
-        description: 280,
+        description: 248,
         ref: 25
     };
     const colGap = 4;
@@ -3859,8 +3859,13 @@ async function generateSpellSheet(
         doc.line(colX, yPos + 1, colX + colWidths.duration, yPos + 1);
         colX += colWidths.duration + colGap;
 
-        // Save
-        doc.text(spellEntry.spell.savingThrow ?? '', colX + 2, yPos);
+        // Save (same inline DC as the character viewer)
+        const saveText = formatSpellSavingThrowWithDC(
+            spellEntry.spell.savingThrow,
+            baseSpellSaveDC,
+            spellEntry.level
+        );
+        doc.text(saveText, colX + 2, yPos);
         doc.line(colX, yPos + 1, colX + colWidths.save, yPos + 1);
         colX += colWidths.save + colGap;
 
