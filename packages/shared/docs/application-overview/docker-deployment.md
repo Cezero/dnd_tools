@@ -26,7 +26,7 @@ Deploy when a block of work is complete and would not leave the docks in a known
 **Before deploying:**
 
 - If Zod types in `@shared/schema` changed, the operator must rebuild that package (`pnpm build` in `packages/shared/schema`). Agents must not run that build.
-- If Prisma schema changed, the operator must apply migrations. Use `pnpm exec prisma migrate deploy` from `apps/backend` until the [Prisma migrate baseline](#high-priority-todo-prisma-migrate-baseline) is done. Do not use `prisma migrate dev` yet. Agents must not migrate or `db push`.
+- If Prisma schema changed, generate SQL on cyberdev01 with [`prisma-migrate-dev.sh`](../../../../deploy/docker/scripts/prisma-migrate-dev.sh), then promote with [`prisma-migrate-deploy.sh`](../../../../deploy/docker/scripts/prisma-migrate-deploy.sh). Agents must not migrate or `db push`.
 - The LAN registry must answer `http://192.168.0.83:5000/v2/`. If it does not, start it with [`init-registry.sh`](../../../../deploy/docker/scripts/init-registry.sh). Do not re-run [`configure-insecure-registry.sh`](../../../../deploy/docker/scripts/configure-insecure-registry.sh) for a normal deploy.
 
 **Command:**
@@ -130,25 +130,37 @@ The dump also still stores variant/gestalt/LA flags and coin amounts as columns 
 
 ## Prisma migrations (current)
 
-`prisma migrate deploy` applies pending SQL to the live `cyberdnd` database. That is the supported path today.
+Live `cyberdnd` is Group Replication behind cybersql. `prisma migrate dev` against that URL rebuilds a shadow database with GR DDL (~14 minutes). Use a standalone MySQL on **cyberdev01** instead.
 
-`prisma migrate dev` is **not** usable yet. It creates an empty shadow database (`prisma_migrate_shadow_db_%`) and replays every file under `apps/backend/prisma/migrations/`. The oldest files (`20251217150155_add_advancement_skill_id`, `20251217163121_add_item_size_id`) are `ALTER`s against tables that only exist because the Jan 2026 dump was restored. Replay fails with P3006 / 1146 (`AdvancementSkill` does not exist). The app user already has `GRANT ALL` on `prisma_migrate_shadow_db_%`; the missing piece is a baseline `CREATE` history.
+### mysqldev (cyberdev01)
 
-Until the TODO below is done: after a schema change, write `migration.sql` by hand (same pattern as the recent HP and trick DC files) and apply with `migrate deploy`. Do not ask an agent to invent a workaround for `migrate dev`.
+Non-GR `mysql:8.0` on `127.0.0.1:3307`, compose and data under `/srv/mysqldev`, `restart: always` (Docker is enabled on boot). Source: [`deploy/docker/mysqldev/compose.yml`](../../../../deploy/docker/mysqldev/compose.yml). One-time: [`init-mysqldev.sh`](../../../../deploy/docker/scripts/init-mysqldev.sh) (creates secrets, starts the container, `GRANT ALL` for shadow `CREATE DATABASE`, writes `DATABASE_URL_DEV` in `apps/backend/.env`, `migrate deploy` onto the empty local DB). Does not touch cybersql.
 
-### HIGH PRIORITY TODO: Prisma migrate baseline
+`apps/backend/.env` keeps `DATABASE_URL` on `cybersql.local.cyberdeck.org:3306` for the app and for promote. `DATABASE_URL_DEV` is `127.0.0.1:3307` only.
 
-**Goal:** Operators and agents use Prisma’s own tools (`prisma migrate dev`) to create and apply migrations. Stop writing `migration.sql` by hand.
+```bash
+# After schema.prisma changes. Diffs mysqldev (seconds), writes SQL, applies locally.
+deploy/docker/scripts/prisma-migrate-dev.sh --name <name>
 
-**Work:**
+# Promote pending folders to live GR. Agents must not run this.
+deploy/docker/scripts/prisma-migrate-deploy.sh
+```
 
-1. Add an initial baseline migration that `CREATE`s the full schema as it existed **before** `20251217150155_add_advancement_skill_id` (the dump schema, not today’s schema).
-2. Keep the later incremental migrations as-is so replay matches production.
-3. Confirm `prisma migrate dev` can create a shadow DB, replay the full history, and emit a new migration from a `schema.prisma` change.
-4. Confirm `migrate deploy` on production is a no-op (baseline already represented in `_prisma_migrations` / the dump). Do not rewrite checksums of applied migrations without a plan.
-5. Update this section and [Database Schema Patterns](database-schema.md#data-migration) when `migrate dev` is the default.
+[`prisma-migrate-dev.sh`](../../../../deploy/docker/scripts/prisma-migrate-dev.sh) uses `prisma migrate diff --from-url` against mysqldev so it does not replay history. Keep mysqldev in sync (the script `migrate deploy`s the new folder there) or the next diff is wrong. Full shadow replay is [`prisma-migrate-dev-shadow.sh`](../../../../deploy/docker/scripts/prisma-migrate-dev-shadow.sh) only when you need Prisma to verify the whole folder.
 
-**Why it matters:** Schema changes currently burn agent time on handwritten SQL because `migrate dev` cannot replay history. That is infra debt, not an acceptable workflow.
+Do not point `DATABASE_URL` at mysqldev. Docks keep using Router `127.0.0.1:6446`.
+
+History starts with a dump-schema baseline instead of the Dec 2025 `ALTER`s:
+
+1. [`20251217000000_baseline_jan2026_dump`](../../../../apps/backend/prisma/migrations/20251217000000_baseline_jan2026_dump/migration.sql) — schema-only `CREATE` from [`cyberdnd_bkp_01192026.sql`](../../../../apps/backend/backup/cyberdnd_bkp_01192026.sql) (tables first, then foreign keys). Absorbs `20251217150155_add_advancement_skill_id` and `20251217163121_add_item_size_id`, which were already in that dump.
+2. [`20260120000000_merge_feature_progression`](../../../../apps/backend/prisma/migrations/20260120000000_merge_feature_progression/migration.sql) — Feature / FeatureProgression merge (same transform as [`merge-feature-progression.sql`](../../../../deploy/docker/scripts/merge-feature-progression.sql)).
+3. Sep 2026 incrementals, including [`20260904185000_character_language_map_composite_pk`](../../../../apps/backend/prisma/migrations/20260904185000_character_language_map_composite_pk/migration.sql) (drop surrogate `id`; `@@id([characterId, languageId])`; FK `ON DELETE CASCADE`).
+
+After a dump restore, [`restore-mysql.sh`](../../../../deploy/docker/scripts/restore-mysql.sh) marks the baseline applied, then `migrate deploy` runs the merge and incrementals on **cybersql**. Live `_prisma_migrations` already has the baseline and merge resolved and the two Dec 2025 rows removed.
+
+[`20260901195700_add_character_config_and_wealth`](../../../../apps/backend/prisma/migrations/20260901195700_add_character_config_and_wealth/migration.sql) still creates a decoy `UserCharacterShadow` and renames it when `UserCharacter` is missing. Do not edit that already-applied file (checksum).
+
+Idle `dndtools` sessions from the docks (`192.168.0.89/90/93`) on live `cyberdnd` are the app pool — do not `KILL` them.
 
 ## HAProxy
 

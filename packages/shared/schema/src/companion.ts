@@ -1,6 +1,11 @@
 import z from "zod";
 
 import { commonValidations, numericParam } from "./common";
+import {
+    CreatureAdvancementBudgetSchema,
+    CreatureAdvancementDraftSchema,
+    CreatureAdvancementInputSchema,
+} from "./creatureAdvancement";
 import { FeatureResponseSchema } from "./feature";
 import { GetMonsterResponseSchema } from "./monster";
 import { QueryResponseSchema } from "./query";
@@ -25,36 +30,11 @@ export const CharacterCompanionSchema = z.object({
     levelAcquired: z.number().int().min(1, 'Level acquired must be at least 1').max(20, 'Level acquired must be at most 20').nullable().optional(),
     hitPoints: commonValidations.positiveInt('Hit points').nullable().optional(),
     wounds: commonValidations.nonNegativeInt('Wounds').default(0),
-});
-
-export const CharacterCompanionSkillSchema = z.object({
-    id: commonValidations.positiveInt('Character companion skill ID'),
-    characterCompanionId: commonValidations.positiveInt('Character companion ID'),
-    skillId: commonValidations.positiveInt('Skill ID'),
-    skillSubId: commonValidations.positiveInt('Skill sub ID').nullable().optional(),
-    ranks: z.number().int().min(0, 'Ranks must be non-negative'),
-});
-
-export const CharacterCompanionSkillInputSchema = z.object({
-    skillId: commonValidations.positiveInt('Skill ID'),
-    skillSubId: commonValidations.positiveInt('Skill sub ID').nullable().optional(),
-    ranks: z.number().int().min(0, 'Ranks must be non-negative'),
-});
-
-export const CharacterCompanionFeatSchema = z.object({
-    id: commonValidations.positiveInt('Character companion feat ID'),
-    characterCompanionId: commonValidations.positiveInt('Character companion ID'),
-    featId: commonValidations.positiveInt('Feat ID'),
-    notes: z.string().max(128, 'Notes must be less than 128 characters').nullable().optional(),
-});
-
-export const CharacterCompanionFeatInputSchema = z.object({
-    featId: commonValidations.positiveInt('Feat ID'),
-    notes: z.string().max(128, 'Notes must be less than 128 characters').nullable().optional(),
+    maxHpAtFirstLevel: z.boolean().default(false),
 });
 
 /**
- * Draft-safe companion row, including nested tricks/skills/feats.
+ * Draft-safe companion row, including nested tricks and HD advancements.
  * IDs may be 0 or negative while the character edit session is unsaved.
  */
 export const CharacterCompanionTrickDraftSchema = z.object({
@@ -65,19 +45,6 @@ export const CharacterCompanionTrickDraftSchema = z.object({
     fromPurpose: z.boolean().default(false),
 });
 
-export const CharacterCompanionSkillDraftSchema = z.object({
-    id: z.number().int(),
-    skillId: commonValidations.positiveInt('Skill ID'),
-    skillSubId: commonValidations.positiveInt('Skill sub ID').nullable().optional(),
-    ranks: z.number().int().min(0, 'Ranks must be non-negative'),
-});
-
-export const CharacterCompanionFeatDraftSchema = z.object({
-    id: z.number().int(),
-    featId: commonValidations.positiveInt('Feat ID'),
-    notes: z.string().max(128, 'Notes must be less than 128 characters').nullable().optional(),
-});
-
 export const CharacterCompanionDraftSchema = CharacterCompanionSchema.omit({
     id: true,
     characterId: true,
@@ -85,8 +52,7 @@ export const CharacterCompanionDraftSchema = CharacterCompanionSchema.omit({
     id: z.number().int(),
     characterId: z.number().int(),
     tricks: z.array(CharacterCompanionTrickDraftSchema).optional(),
-    skills: z.array(CharacterCompanionSkillDraftSchema).optional(),
-    feats: z.array(CharacterCompanionFeatDraftSchema).optional(),
+    advancements: z.array(CreatureAdvancementDraftSchema).optional(),
 });
 
 export const CompanionWithRelationsSchema = CompanionSchema.extend({
@@ -101,8 +67,7 @@ export const CharacterCompanionWithRelationsSchema = CharacterCompanionSchema.ex
     companion: CompanionSchema.omit({ id: true }).optional(),
     trickPurpose: TrickPurposeSchema.optional(),
     tricks: z.array(CharacterCompanionTrickWithRelationsSchema).optional(),
-    skills: z.array(CharacterCompanionSkillSchema).optional(),
-    feats: z.array(CharacterCompanionFeatSchema).optional(),
+    advancements: z.array(CreatureAdvancementDraftSchema).optional(),
 });
 
 export const CreateCompanionSchema = CompanionSchema.omit({
@@ -115,8 +80,7 @@ export const CreateCharacterCompanionSchema = CharacterCompanionSchema.omit({
     id: true,
 }).extend({
     tricks: z.array(CharacterCompanionTrickInputSchema).optional(),
-    skills: z.array(CharacterCompanionSkillInputSchema).optional(),
-    feats: z.array(CharacterCompanionFeatInputSchema).optional(),
+    advancements: z.array(CreatureAdvancementInputSchema).optional(),
 });
 
 export const UpdateCharacterCompanionSchema = CreateCharacterCompanionSchema.partial();
@@ -180,6 +144,7 @@ export const CompanionBudgetsSchema = z.object({
     skillPointsMax: z.number().int().min(0),
     featSlotsUsed: z.number().int().min(0),
     featSlotsMax: z.number().int().min(0),
+    bySequence: z.array(CreatureAdvancementBudgetSchema).default([]),
 });
 
 export const ResolvedCharacterCompanionSchema = CharacterCompanionWithRelationsSchema.extend({
@@ -215,13 +180,7 @@ export type Companion = z.infer<typeof CompanionSchema>;
 export type CompanionWithRelations = z.infer<typeof CompanionWithRelationsSchema>;
 export type CharacterCompanion = z.infer<typeof CharacterCompanionSchema>;
 export type CharacterCompanionWithRelations = z.infer<typeof CharacterCompanionWithRelationsSchema>;
-export type CharacterCompanionSkill = z.infer<typeof CharacterCompanionSkillSchema>;
-export type CharacterCompanionSkillInput = z.infer<typeof CharacterCompanionSkillInputSchema>;
-export type CharacterCompanionFeat = z.infer<typeof CharacterCompanionFeatSchema>;
-export type CharacterCompanionFeatInput = z.infer<typeof CharacterCompanionFeatInputSchema>;
 export type CharacterCompanionTrickDraft = z.infer<typeof CharacterCompanionTrickDraftSchema>;
-export type CharacterCompanionSkillDraft = z.infer<typeof CharacterCompanionSkillDraftSchema>;
-export type CharacterCompanionFeatDraft = z.infer<typeof CharacterCompanionFeatDraftSchema>;
 export type CharacterCompanionDraft = z.infer<typeof CharacterCompanionDraftSchema>;
 export type CreateCompanionRequest = z.infer<typeof CreateCompanionSchema>;
 export type UpdateCompanionRequest = z.infer<typeof UpdateCompanionSchema>;

@@ -32,10 +32,11 @@ ALTER USER '\''root'\''@'\''%'\'' IDENTIFIED WITH mysql_native_password BY '\''\
 GRANT ALL ON *.* TO '\''root'\''@'\''%'\'' WITH GRANT OPTION;
 FLUSH PRIVILEGES;\""'
 
-echo "Running prisma migrate deploy from this machine against the primary"
+echo "Marking dump baseline applied, then prisma migrate deploy (merge + incrementals)"
 # shellcheck disable=SC1091
 eval "$(ssh -o BatchMode=yes cyberdock01 'sudo bash -c "set -a; source /srv/mysql/.env; set +a; printf \"export DATABASE_URL=mysql://%s:%s@192.168.0.89:3306/%s\\n\" \"\$MYSQL_APP_USER\" \"\$MYSQL_APP_PASSWORD\" \"\$MYSQL_DATABASE\""')"
 cd "${REPO_ROOT}/apps/backend"
+pnpm exec prisma migrate resolve --applied 20251217000000_baseline_jan2026_dump
 pnpm exec prisma migrate deploy
 
 echo "Restore complete. Verify group members still ONLINE."

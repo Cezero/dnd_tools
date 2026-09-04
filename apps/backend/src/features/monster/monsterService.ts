@@ -693,6 +693,12 @@ export const monsterService: MonsterService = {
                 name: true,
                 editionId: true,
                 isVisible: true,
+                hitDiceQty: true,
+                hitDiceType: true,
+                bonusHP: true,
+                averageHP: true,
+                constitution: true,
+                intelligence: true,
                 types: {
                     select: {
                         typeId: true,
@@ -707,6 +713,12 @@ export const monsterService: MonsterService = {
             name: monster.name,
             editionId: monster.editionId,
             isVisible: monster.isVisible,
+            hitDiceQty: monster.hitDiceQty,
+            hitDiceType: monster.hitDiceType,
+            bonusHP: monster.bonusHP,
+            averageHP: monster.averageHP,
+            constitution: monster.constitution,
+            intelligence: monster.intelligence,
             typeIds: monster.types.map(t => t.typeId),
         }));
 

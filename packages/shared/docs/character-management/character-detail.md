@@ -221,6 +221,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 - Companion specials come from `Type=Companion` entities (not slug allowlists) and display as `Name: summary`
 - Class companions have no group header; the block title already includes the role (for example `Cat Familiar`). Pets and Wild Shape Forms keep section headers
 - The extras line does not print companion effective level; chassis HD/NA already appear on the stat block
+- Editor HP comes from companion advancements: sequence 1 is printed HD (`Max HP at 1st Level` maxes that row); each bonus HD is its own row with rolled HP plus that HD’s skill ranks and feat slot
 - Familiar type benefits (master skill bonuses) are not painted onto the familiar extras
 - PDF export appends extra **portrait** Animals & Pets pages after the character sheet and any landscape spell pages
 - Multiple blocks share a page; a new page starts only when the next block will not fit

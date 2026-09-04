@@ -1,3 +1,4 @@
+import { persistCharacterCompanionAdvancements } from '@/features/companion/companionAdvancementPersist';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@shared/prisma-client';
 import {
@@ -14,6 +15,7 @@ import {
     UpdateCompanionRequest,
     UpdateResponse,
 } from '@shared/schema';
+import { sumAdvancementHitPoints } from '@shared/static-data';
 
 import { companionAdvancementService } from './companionAdvancementService';
 import type { CompanionService } from './types';
@@ -166,8 +168,10 @@ export const companionService: CompanionService = {
                             trick: true,
                         },
                     },
-                    skills: true,
-                    feats: true,
+                    advancements: {
+                        include: { skills: true, feats: true },
+                        orderBy: { sequence: 'asc' },
+                    },
                 },
                 orderBy: { levelAcquired: 'asc' },
             }),
@@ -210,7 +214,7 @@ export const companionService: CompanionService = {
      * @see Trick system for trick associations
      */
     async createCharacterCompanion(data: CreateCharacterCompanionRequest): Promise<CreateResponse> {
-        const { tricks, skills, feats, ...companionData } = data;
+        const { tricks, advancements, ...companionData } = data;
 
         await companionAdvancementService.validateCompanionWrite({
             monsterId: companionData.monsterId,
@@ -218,18 +222,8 @@ export const companionService: CompanionService = {
             characterId: companionData.characterId,
             trickPurposeId: companionData.trickPurposeId,
             tricks,
-            skills,
-            feats,
+            advancements,
         });
-
-        let hitPoints = companionData.hitPoints;
-        if (!hitPoints) {
-            const monster = await prisma.monster.findUnique({
-                where: { id: companionData.monsterId },
-                select: { averageHP: true },
-            });
-            hitPoints = monster?.averageHP || null;
-        }
 
         const result = await prisma.$transaction(async (tx) => {
             const characterCompanion = await tx.characterCompanion.create({
@@ -240,8 +234,11 @@ export const companionService: CompanionService = {
                     trickPurposeId: companionData.trickPurposeId || null,
                     name: companionData.name || null,
                     levelAcquired: companionData.levelAcquired || null,
-                    hitPoints: hitPoints,
+                    hitPoints: advancements && advancements.length > 0
+                        ? sumAdvancementHitPoints(advancements)
+                        : (companionData.hitPoints ?? null),
                     wounds: companionData.wounds || 0,
+                    maxHpAtFirstLevel: companionData.maxHpAtFirstLevel ?? false,
                 },
             });
 
@@ -262,26 +259,7 @@ export const companionService: CompanionService = {
                 });
             }
 
-            if (skills && skills.length > 0) {
-                await tx.characterCompanionSkill.createMany({
-                    data: skills.map((skill) => ({
-                        characterCompanionId: characterCompanion.id,
-                        skillId: skill.skillId,
-                        skillSubId: skill.skillSubId ?? null,
-                        ranks: skill.ranks,
-                    })),
-                });
-            }
-
-            if (feats && feats.length > 0) {
-                await tx.characterCompanionFeat.createMany({
-                    data: feats.map((feat) => ({
-                        characterCompanionId: characterCompanion.id,
-                        featId: feat.featId,
-                        notes: feat.notes ?? null,
-                    })),
-                });
-            }
+            await persistCharacterCompanionAdvancements(tx, characterCompanion.id, advancements);
 
             return characterCompanion;
         });
@@ -309,7 +287,7 @@ export const companionService: CompanionService = {
      * @see Trick system for trick association management
      */
     async updateCharacterCompanion(data: UpdateCharacterCompanionRequest, query: { id: number }): Promise<UpdateResponse> {
-        const { tricks, skills, feats, ...companionData } = data;
+        const { tricks, advancements, ...companionData } = data;
 
         const existing = await prisma.characterCompanion.findUnique({
             where: { id: query.id },
@@ -330,8 +308,7 @@ export const companionService: CompanionService = {
             characterId: existing.characterId,
             trickPurposeId,
             tricks,
-            skills,
-            feats,
+            advancements,
         });
 
         const updateData: Prisma.CharacterCompanionUpdateInput = {};
@@ -359,6 +336,12 @@ export const companionService: CompanionService = {
         }
         if (companionData.wounds !== undefined) {
             updateData.wounds = companionData.wounds;
+        }
+        if (companionData.maxHpAtFirstLevel !== undefined) {
+            updateData.maxHpAtFirstLevel = companionData.maxHpAtFirstLevel;
+        }
+        if (advancements !== undefined) {
+            updateData.hitPoints = sumAdvancementHitPoints(advancements);
         }
 
         await prisma.$transaction(async (tx) => {
@@ -392,35 +375,8 @@ export const companionService: CompanionService = {
                 }
             }
 
-            if (skills !== undefined) {
-                await tx.characterCompanionSkill.deleteMany({
-                    where: { characterCompanionId: query.id },
-                });
-                if (skills.length > 0) {
-                    await tx.characterCompanionSkill.createMany({
-                        data: skills.map((skill) => ({
-                            characterCompanionId: query.id,
-                            skillId: skill.skillId,
-                            skillSubId: skill.skillSubId ?? null,
-                            ranks: skill.ranks,
-                        })),
-                    });
-                }
-            }
-
-            if (feats !== undefined) {
-                await tx.characterCompanionFeat.deleteMany({
-                    where: { characterCompanionId: query.id },
-                });
-                if (feats.length > 0) {
-                    await tx.characterCompanionFeat.createMany({
-                        data: feats.map((feat) => ({
-                            characterCompanionId: query.id,
-                            featId: feat.featId,
-                            notes: feat.notes ?? null,
-                        })),
-                    });
-                }
+            if (advancements !== undefined) {
+                await persistCharacterCompanionAdvancements(tx, query.id, advancements);
             }
         });
 

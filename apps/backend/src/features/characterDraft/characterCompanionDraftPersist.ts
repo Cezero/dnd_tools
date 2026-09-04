@@ -1,5 +1,7 @@
+import { persistCharacterCompanionAdvancements } from '@/features/companion/companionAdvancementPersist';
 import { Prisma } from '@shared/prisma-client';
 import type { CharacterCompanionDraft, CharacterSelectedFormDraft } from '@shared/schema';
+import { sumAdvancementHitPoints } from '@shared/static-data';
 
 /**
  * Replaces persisted companions and selected forms with the character-draft collections.
@@ -13,6 +15,7 @@ export async function persistCompanionDraftCollections(
     if (companions !== undefined) {
         await tx.characterCompanion.deleteMany({ where: { characterId } });
         for (const companion of companions) {
+            const advancements = companion.advancements ?? [];
             const created = await tx.characterCompanion.create({
                 data: {
                     characterId,
@@ -21,8 +24,11 @@ export async function persistCompanionDraftCollections(
                     trickPurposeId: companion.trickPurposeId ?? null,
                     name: companion.name ?? null,
                     levelAcquired: companion.levelAcquired ?? null,
-                    hitPoints: companion.hitPoints ?? null,
+                    hitPoints: advancements.length > 0
+                        ? sumAdvancementHitPoints(advancements)
+                        : (companion.hitPoints ?? null),
                     wounds: companion.wounds ?? 0,
+                    maxHpAtFirstLevel: companion.maxHpAtFirstLevel ?? false,
                 },
             });
 
@@ -39,26 +45,7 @@ export async function persistCompanionDraftCollections(
                 });
             }
 
-            if (companion.skills && companion.skills.length > 0) {
-                await tx.characterCompanionSkill.createMany({
-                    data: companion.skills.map((skill) => ({
-                        characterCompanionId: created.id,
-                        skillId: skill.skillId,
-                        skillSubId: skill.skillSubId ?? null,
-                        ranks: skill.ranks,
-                    })),
-                });
-            }
-
-            if (companion.feats && companion.feats.length > 0) {
-                await tx.characterCompanionFeat.createMany({
-                    data: companion.feats.map((feat) => ({
-                        characterCompanionId: created.id,
-                        featId: feat.featId,
-                        notes: feat.notes ?? null,
-                    })),
-                });
-            }
+            await persistCharacterCompanionAdvancements(tx, created.id, advancements);
         }
     }
 

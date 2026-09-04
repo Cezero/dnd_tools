@@ -6,7 +6,7 @@ import { createStableDraftRowId } from '@/features/character/utils/draftKeyUtils
 import { TrickPurposeQueryHooks } from '@/features/trick-purpose/TrickPurposeQueryHooks';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import { TrickQueryHooks } from '@/services/query/TrickQueryHooks';
-import type { CharacterCompanionDraft, ResolvedCharacterCompanionDraft } from '@shared/schema';
+import type { CharacterCompanionDraft, MonsterCacheEntry, ResolvedCharacterCompanionDraft } from '@shared/schema';
 import { MonsterTypeId } from '@shared/static-data';
 
 import { CompanionEditorCard } from './CompanionEditorCard';
@@ -40,8 +40,10 @@ export function AnimalsPetsTab({
             companionTypeById.set(template.id, template.type);
         }
         const monsterNameById = new Map<number, string>();
+        const monsterById = new Map<number, MonsterCacheEntry>();
         for (const monster of monstersQuery.data?.results ?? []) {
             monsterNameById.set(monster.id, monster.name);
+            monsterById.set(monster.id, monster);
         }
         for (const template of companionsCacheQuery.data?.results ?? []) {
             if (template.name) {
@@ -55,6 +57,7 @@ export function AnimalsPetsTab({
             feats: featsQuery.data?.results ?? [],
             companionTypeById,
             monsterNameById,
+            monsterById,
         };
     }, [
         companionsCacheQuery.data?.results,
@@ -194,7 +197,7 @@ export function AnimalsPetsTab({
                 <div>
                     <h2 className="text-lg font-semibold">Class Companions</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Animal companions and familiars come from the Choices tab. Name companions here. Handle Animal and bonus HD assignments apply to animal companions, not familiars.
+                        Animal companions and familiars come from the Choices tab. Name companions here. Max HP at 1st Level and bonus HD (HP, skills, feats) apply per animal. Handle Animal applies to animal companions, not familiars.
                     </p>
                 </div>
                 {classCompanions.length === 0 ? (

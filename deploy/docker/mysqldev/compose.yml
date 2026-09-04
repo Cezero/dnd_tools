@@ -1,0 +1,23 @@
+# Standalone MySQL 8 on cyberdev01 for prisma migrate dev (not Group Replication).
+# Bind 127.0.0.1:3307 only. Live cyberdnd stays on cybersql / GR.
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysqldev
+    restart: always
+    env_file:
+      - /srv/mysqldev/.env
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - /srv/mysqldev/data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-name-resolve
+      - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30

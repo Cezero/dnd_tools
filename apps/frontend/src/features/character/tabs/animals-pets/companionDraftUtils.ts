@@ -132,9 +132,9 @@ export function mergeClassCompanionsFromChoices(args: {
             levelAcquired: null,
             hitPoints: null,
             wounds: 0,
+            maxHpAtFirstLevel: false,
             tricks: [],
-            skills: [],
-            feats: [],
+            advancements: [],
         });
     }
 
@@ -162,9 +162,9 @@ export function createPetDraft(
         levelAcquired: null,
         hitPoints: null,
         wounds: 0,
+        maxHpAtFirstLevel: false,
         tricks: [],
-        skills: [],
-        feats: [],
+        advancements: [],
     };
 }
 

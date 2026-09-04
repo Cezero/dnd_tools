@@ -104,7 +104,11 @@ export const companionSyncService = {
                 }
                 const monster = await prisma.monster.findUnique({
                     where: { id: template.monsterId },
-                    select: { averageHP: true },
+                    select: {
+                        averageHP: true,
+                        hitDiceQty: true,
+                        hitDiceType: true,
+                    },
                 });
                 await prisma.characterCompanion.create({
                     data: {
@@ -114,21 +118,31 @@ export const companionSyncService = {
                         levelAcquired: choice ? await this.getChoiceLevel(choice.advancementId) : null,
                         hitPoints: monster?.averageHP ?? null,
                         wounds: 0,
+                        maxHpAtFirstLevel: false,
+                        ...(monster
+                            ? {
+                                advancements: {
+                                    create: {
+                                        sequence: 1,
+                                        hitDiceQty: monster.hitDiceQty && monster.hitDiceQty > 0
+                                            ? monster.hitDiceQty
+                                            : 1,
+                                        hitDiceType: monster.hitDiceType ?? 2,
+                                        hitPoints: monster.averageHP ?? 1,
+                                    },
+                                },
+                            }
+                            : {}),
                     },
                 });
                 continue;
             }
 
             if (current.monsterId !== template.monsterId) {
-                const monster = await prisma.monster.findUnique({
-                    where: { id: template.monsterId },
-                    select: { averageHP: true },
-                });
                 await prisma.characterCompanion.update({
                     where: { id: current.id },
                     data: {
                         monsterId: template.monsterId,
-                        hitPoints: monster?.averageHP ?? current.hitPoints,
                     },
                 });
             }

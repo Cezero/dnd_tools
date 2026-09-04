@@ -355,7 +355,7 @@ Edition, advanced options, and source exclusions for the character being edited.
 
 **Character-Specific Features**:
 - **Edition**: Selects the ruleset. Advanced options come from `ADVANCED_OPTIONS_EDITION_MAP` in `shared/static-data/src/CommonData.ts`.
-- **Max HP at 1st Level**: Shown for D&D 3.0, 3.5, and 3.0/3.5 combined. Default off. Synced to the character draft; when checked, save applies max HD + CON to the level-1 advancement (gestalt uses the better hit die). Unchecked leaves 1st-level HP as entered.
+- **Max HP at 1st Level**: Shown for D&D 3.0, 3.5, and 3.0/3.5 combined. Default off. Synced to the character draft; when checked, save applies max HD + CON to the level-1 advancement (gestalt uses the better hit die). Unchecked leaves 1st-level HP as entered. Companions, familiars, and pets have a separate per-animal checkbox on the Animals & Pets editor (`CompanionEditorCard`) that maxes printed starting HD only.
 
 **Source File**: `frontend/src/features/character/tabs/ConfigurationTab.tsx`
 

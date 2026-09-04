@@ -3,9 +3,27 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { GenericSearchInput } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
+import { FeatSubIdSelectionModal } from '@/features/character/components/FeatSubIdSelectionModal';
 import { createStableDraftRowId } from '@/features/character/utils/draftKeyUtils';
-import type { CharacterCompanionDraft } from '@shared/schema';
-import { CHARACTER_COMPANION_ROLES, CharacterCompanionRole, isFamiliarCompanionType, usesHandleAnimal } from '@shared/static-data';
+import { formatHitDiceNotation } from '@/lib/formatHitDice';
+import { useCacheFunctions } from '@/services/cache/CacheFunctions';
+import type {
+    CharacterCompanionDraft,
+    CreatureAdvancementDraft,
+    FeatCacheEntry,
+} from '@shared/schema';
+import {
+    CHARACTER_COMPANION_ROLES,
+    CharacterCompanionRole,
+    computeStartingHitPoints,
+    ensureCreatureAdvancements,
+    getCompanionSkillPointsPerHd,
+    getFeatSlotsForAddedHitDie,
+    isFamiliarCompanionType,
+    startingHitDiceFromMonster,
+    sumAdvancementHitPoints,
+    usesHandleAnimal,
+} from '@shared/static-data';
 
 import { applyPurposeToCompanionDraft } from './companionDraftUtils';
 import type { CompanionEditorCardProps } from './types';
@@ -23,6 +41,9 @@ export function CompanionEditorCard({
     onDelete,
 }: CompanionEditorCardProps): React.JSX.Element {
     const [name, setName] = useState(companion.name ?? '');
+    const [featModal, setFeatModal] = useState<{ sequence: number; feat: FeatCacheEntry } | null>(null);
+    const { getItemNameMap } = useCacheFunctions();
+    const itemNameMap = getItemNameMap();
 
     useEffect(() => {
         setName(companion.name ?? '');
@@ -41,22 +62,51 @@ export function CompanionEditorCard({
     const monsterName = resolved?.computedStatBlock?.name
         ?? lookups.monsterNameById.get(companion.monsterId)
         ?? `Monster ${companion.monsterId}`;
+    const monster = lookups.monsterById.get(companion.monsterId);
+    const maxHpAtFirstLevel = companion.maxHpAtFirstLevel ?? false;
+    const bonusHd = isFamiliarCompanionType(role)
+        ? 0
+        : (resolved?.progression?.bonusHd ?? 0);
+    const starting = startingHitDiceFromMonster(monster ?? {});
+    const baseHd = monster?.hitDiceQty && monster.hitDiceQty > 0 ? monster.hitDiceQty : 1;
+    const skillPointsPerHd = getCompanionSkillPointsPerHd(monster?.intelligence);
+
+    useEffect(() => {
+        if (!monster) {
+            return;
+        }
+        const next = ensureCreatureAdvancements({
+            existing: companion.advancements ?? [],
+            starting,
+            bonusHd,
+            maxHpAtFirstLevel,
+            createId: (sequence) => createStableDraftRowId(`companion-adv:${companion.id}:${sequence}`),
+        });
+        if (!advancementsNeedUpdate(companion.advancements ?? [], next, maxHpAtFirstLevel)) {
+            return;
+        }
+        onChange({
+            ...companion,
+            advancements: next,
+            hitPoints: sumAdvancementHitPoints(next),
+        });
+    }, [
+        bonusHd,
+        companion,
+        maxHpAtFirstLevel,
+        monster,
+        onChange,
+    ]);
+
+    const advancements = companion.advancements ?? [];
 
     const tricksUsed = (companion.tricks ?? []).reduce((sum, row) => sum + row.timesTrained, 0);
-    const skillPointsUsed = (companion.skills ?? []).reduce((sum, row) => sum + row.ranks, 0);
-    const featSlotsUsed = (companion.feats ?? []).length;
-
     const trainedSlotsMax = resolved?.budgets.trainedSlotsMax
         ?? (usesHandleAnimal(role) ? 3 : 0);
     const bonusSlotsMax = resolved?.budgets.bonusSlotsMax ?? 0;
     const trickSlotsMax = trainedSlotsMax + bonusSlotsMax;
-    const skillPointsMax = resolved?.budgets.skillPointsMax ?? 0;
-    const featSlotsMax = resolved?.budgets.featSlotsMax ?? 0;
-
     const handleAnimalAvailable = usesHandleAnimal(role) && trickSlotsMax > 0;
     const remainingTricks = trickSlotsMax - tricksUsed;
-    const remainingSkillPoints = skillPointsMax - skillPointsUsed;
-    const remainingFeatSlots = featSlotsMax - featSlotsUsed;
 
     const purposeOptions = useMemo(() => {
         return [
@@ -138,19 +188,39 @@ export function CompanionEditorCard({
         ]);
     };
 
-    const addSkill = (skillId: number | null) => {
-        if (!skillId || remainingSkillPoints < 1) {
-            return;
-        }
-        if ((companion.skills ?? []).some((row) => row.skillId === skillId && !row.skillSubId)) {
-            return;
-        }
+    const replaceAdvancement = (nextRow: CreatureAdvancementDraft) => {
+        const nextAdvancements = advancements.map((row) => (
+            row.sequence === nextRow.sequence ? nextRow : row
+        ));
         onChange({
             ...companion,
+            advancements: nextAdvancements,
+            hitPoints: sumAdvancementHitPoints(nextAdvancements),
+        });
+    };
+
+    const setAdvancementHitPoints = (sequence: number, hitPoints: number) => {
+        const current = advancements.find((row) => row.sequence === sequence);
+        if (!current) {
+            return;
+        }
+        replaceAdvancement({ ...current, hitPoints: Math.max(0, hitPoints) });
+    };
+
+    const addSkill = (sequence: number, skillId: number | null, remaining: number) => {
+        if (!skillId || remaining < 1) {
+            return;
+        }
+        const current = advancements.find((row) => row.sequence === sequence);
+        if (!current || (current.skills ?? []).some((row) => row.skillId === skillId && !row.skillSubId)) {
+            return;
+        }
+        replaceAdvancement({
+            ...current,
             skills: [
-                ...(companion.skills ?? []),
+                ...(current.skills ?? []),
                 {
-                    id: createStableDraftRowId(`companion-skill:${companion.id}:${skillId}`),
+                    id: createStableDraftRowId(`companion-adv-skill:${companion.id}:${sequence}:${skillId}`),
                     skillId,
                     skillSubId: null,
                     ranks: 1,
@@ -159,10 +229,14 @@ export function CompanionEditorCard({
         });
     };
 
-    const setSkillRanks = (skillId: number, skillSubId: number | null, ranks: number) => {
-        onChange({
-            ...companion,
-            skills: (companion.skills ?? [])
+    const setSkillRanks = (sequence: number, skillId: number, skillSubId: number | null, ranks: number) => {
+        const current = advancements.find((row) => row.sequence === sequence);
+        if (!current) {
+            return;
+        }
+        replaceAdvancement({
+            ...current,
+            skills: (current.skills ?? [])
                 .map((row) => (
                     row.skillId === skillId && (row.skillSubId ?? null) === skillSubId
                         ? { ...row, ranks }
@@ -172,30 +246,48 @@ export function CompanionEditorCard({
         });
     };
 
-    const addFeat = (featId: number | null) => {
-        if (!featId || remainingFeatSlots < 1) {
+    const commitFeat = (sequence: number, featId: number, featSubId: number | null) => {
+        const current = advancements.find((row) => row.sequence === sequence);
+        if (!current) {
             return;
         }
-        if ((companion.feats ?? []).some((row) => row.featId === featId)) {
+        if ((current.feats ?? []).some((row) => row.featId === featId)) {
             return;
         }
-        onChange({
-            ...companion,
+        replaceAdvancement({
+            ...current,
             feats: [
-                ...(companion.feats ?? []),
+                ...(current.feats ?? []),
                 {
-                    id: createStableDraftRowId(`companion-feat:${companion.id}:${featId}`),
+                    id: createStableDraftRowId(`companion-adv-feat:${companion.id}:${sequence}:${featId}`),
                     featId,
+                    featSubId,
                     notes: null,
                 },
             ],
         });
     };
 
-    const removeFeat = (featId: number) => {
-        onChange({
-            ...companion,
-            feats: (companion.feats ?? []).filter((row) => row.featId !== featId),
+    const addFeat = (sequence: number, featId: number | null, remaining: number) => {
+        if (!featId || remaining < 1) {
+            return;
+        }
+        const feat = lookups.feats.find((row) => row.id === featId);
+        if (feat?.useSubId) {
+            setFeatModal({ sequence, feat });
+            return;
+        }
+        commitFeat(sequence, featId, null);
+    };
+
+    const removeFeat = (sequence: number, featId: number) => {
+        const current = advancements.find((row) => row.sequence === sequence);
+        if (!current) {
+            return;
+        }
+        replaceAdvancement({
+            ...current,
+            feats: (current.feats ?? []).filter((row) => row.featId !== featId),
         });
     };
 
@@ -220,6 +312,20 @@ export function CompanionEditorCard({
                         placeholder="Name"
                         className="w-full max-w-md px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     />
+                    <label className="flex items-center">
+                        <input
+                            type="checkbox"
+                            checked={maxHpAtFirstLevel}
+                            onChange={(e) => onChange({
+                                ...companion,
+                                maxHpAtFirstLevel: e.target.checked,
+                            })}
+                            className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Max HP at 1st Level
+                        </span>
+                    </label>
                 </div>
                 {canDelete && (
                     <button
@@ -241,6 +347,127 @@ export function CompanionEditorCard({
                         ? ` · ${resolved.progression.specials.map((special) => special.name).join(', ')}`
                         : ''}
                 </p>
+            )}
+
+            {advancements.length > 0 && (
+                <div className="space-y-3">
+                    <h4 className="text-sm font-medium">Hit Dice</h4>
+                    {advancements.map((row) => {
+                        const addedIndex = row.sequence - 1;
+                        const isBase = row.sequence === 1;
+                        const label = isBase
+                            ? `Starting ${formatHitDiceNotation(row.hitDiceQty, row.hitDiceType) || 'HD'}`
+                            : `Bonus HD ${addedIndex} (${formatHitDiceNotation(row.hitDiceQty, row.hitDiceType) || '1d8'})`;
+                        const skillMax = isBase ? 0 : skillPointsPerHd;
+                        const featMax = isBase ? 0 : getFeatSlotsForAddedHitDie(baseHd, addedIndex);
+                        const skillUsed = (row.skills ?? []).reduce((sum, skill) => sum + skill.ranks, 0);
+                        const remainingSkill = skillMax - skillUsed;
+                        const remainingFeat = featMax - (row.feats ?? []).length;
+                        const startingHp = computeStartingHitPoints(starting, maxHpAtFirstLevel);
+                        return (
+                            <div
+                                key={row.id}
+                                className="border border-gray-200 dark:border-gray-600 rounded-md p-3 space-y-2"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm font-medium flex-1">{label}</span>
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <span>HP</span>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            value={isBase && maxHpAtFirstLevel ? startingHp : row.hitPoints}
+                                            disabled={isBase && maxHpAtFirstLevel}
+                                            onChange={(e) => setAdvancementHitPoints(
+                                                row.sequence,
+                                                parseInt(e.target.value, 10) || 0
+                                            )}
+                                            className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 disabled:opacity-70"
+                                        />
+                                    </label>
+                                </div>
+                                {skillMax > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-gray-500">
+                                            Skill ranks {skillUsed}/{skillMax}
+                                        </p>
+                                        {(row.skills ?? []).map((skill) => {
+                                            const skillName = lookups.skills.find((entry) => entry.id === skill.skillId)?.name
+                                                ?? `Skill ${skill.skillId}`;
+                                            return (
+                                                <div key={skill.id} className="flex items-center gap-2 text-sm">
+                                                    <span className="flex-1">{skillName}</span>
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        max={remainingSkill + skill.ranks}
+                                                        value={skill.ranks}
+                                                        onChange={(e) => setSkillRanks(
+                                                            row.sequence,
+                                                            skill.skillId,
+                                                            skill.skillSubId ?? null,
+                                                            parseInt(e.target.value, 10) || 0
+                                                        )}
+                                                        className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                        {remainingSkill > 0 && (
+                                            <GenericSearchInput
+                                                value={null}
+                                                onValueChange={(skillId) => addSkill(row.sequence, skillId, remainingSkill)}
+                                                items={lookups.skills}
+                                                label="Add skill"
+                                                placeholder="Search skills..."
+                                                filter={(skill) => !(row.skills ?? []).some((assigned) => assigned.skillId === skill.id)}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+                                {featMax > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-gray-500">
+                                            Feats {(row.feats ?? []).length}/{featMax}
+                                        </p>
+                                        {(row.feats ?? []).map((feat) => {
+                                            const featName = lookups.feats.find((entry) => entry.id === feat.featId)?.name
+                                                ?? `Feat ${feat.featId}`;
+                                            const subName = feat.featSubId
+                                                ? itemNameMap.get(feat.featSubId)
+                                                : null;
+                                            return (
+                                                <div key={feat.id} className="flex items-center gap-2 text-sm">
+                                                    <span className="flex-1">
+                                                        {featName}
+                                                        {subName ? ` (${subName})` : ''}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeFeat(row.sequence, feat.featId)}
+                                                        className="text-red-600 hover:text-red-800"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                        {remainingFeat > 0 && (
+                                            <GenericSearchInput
+                                                value={null}
+                                                onValueChange={(featId) => addFeat(row.sequence, featId, remainingFeat)}
+                                                items={lookups.feats}
+                                                label="Add feat"
+                                                placeholder="Search feats..."
+                                                filter={(feat) => !(row.feats ?? []).some((assigned) => assigned.featId === feat.id)}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             )}
 
             {handleAnimalAvailable && (
@@ -314,72 +541,42 @@ export function CompanionEditorCard({
                 </div>
             )}
 
-            {skillPointsMax > 0 && (
-                <div className="space-y-2">
-                    <h4 className="text-sm font-medium">
-                        Bonus skill ranks ({skillPointsUsed}/{skillPointsMax})
-                    </h4>
-                    {(companion.skills ?? []).map((row) => {
-                        const skillName = lookups.skills.find((skill) => skill.id === row.skillId)?.name ?? `Skill ${row.skillId}`;
-                        return (
-                            <div key={`${row.skillId}-${row.skillSubId ?? 0}`} className="flex items-center gap-2 text-sm">
-                                <span className="flex-1">{skillName}</span>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    max={remainingSkillPoints + row.ranks}
-                                    value={row.ranks}
-                                    onChange={(e) => setSkillRanks(row.skillId, row.skillSubId ?? null, parseInt(e.target.value, 10) || 0)}
-                                    className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-                                />
-                            </div>
-                        );
-                    })}
-                    {remainingSkillPoints > 0 && (
-                        <GenericSearchInput
-                            value={null}
-                            onValueChange={addSkill}
-                            items={lookups.skills}
-                            label="Add skill"
-                            placeholder="Search skills..."
-                            filter={(skill) => !(companion.skills ?? []).some((row) => row.skillId === skill.id)}
-                        />
-                    )}
-                </div>
-            )}
-
-            {featSlotsMax > 0 && (
-                <div className="space-y-2">
-                    <h4 className="text-sm font-medium">
-                        Bonus feats ({featSlotsUsed}/{featSlotsMax})
-                    </h4>
-                    {(companion.feats ?? []).map((row) => {
-                        const featName = lookups.feats.find((feat) => feat.id === row.featId)?.name ?? `Feat ${row.featId}`;
-                        return (
-                            <div key={row.featId} className="flex items-center gap-2 text-sm">
-                                <span className="flex-1">{featName}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => removeFeat(row.featId)}
-                                    className="text-red-600 hover:text-red-800"
-                                >
-                                    Remove
-                                </button>
-                            </div>
-                        );
-                    })}
-                    {remainingFeatSlots > 0 && (
-                        <GenericSearchInput
-                            value={null}
-                            onValueChange={addFeat}
-                            items={lookups.feats}
-                            label="Add feat"
-                            placeholder="Search feats..."
-                            filter={(feat) => !(companion.feats ?? []).some((row) => row.featId === feat.id)}
-                        />
-                    )}
-                </div>
-            )}
+            <FeatSubIdSelectionModal
+                isOpen={featModal !== null}
+                onClose={() => setFeatModal(null)}
+                onConfirm={(weaponId) => {
+                    if (featModal) {
+                        commitFeat(featModal.sequence, featModal.feat.id, weaponId);
+                    }
+                    setFeatModal(null);
+                }}
+                feat={featModal?.feat ?? null}
+                resolvedProgressions={[]}
+            />
         </div>
     );
+}
+
+/**
+ * True when ensure produced a different row count, missing sequence, or max-HP overwrite.
+ */
+function advancementsNeedUpdate(
+    current: CreatureAdvancementDraft[],
+    next: CreatureAdvancementDraft[],
+    maxHpAtFirstLevel: boolean
+): boolean {
+    if (current.length !== next.length) {
+        return true;
+    }
+    const currentBySequence = new Map(current.map((row) => [row.sequence, row]));
+    for (const row of next) {
+        const existing = currentBySequence.get(row.sequence);
+        if (!existing) {
+            return true;
+        }
+        if (maxHpAtFirstLevel && row.sequence === 1 && existing.hitPoints !== row.hitPoints) {
+            return true;
+        }
+    }
+    return false;
 }

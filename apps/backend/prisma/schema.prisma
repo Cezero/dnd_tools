@@ -347,11 +347,11 @@ model Skill {
   doubleArmorPenalty Boolean              @default(false) // true for Swim (double armor check penalty)
   sourceBookInfo     SkillSourceBookMap[]
 
-  advSkills                AdvancementSkill[]
-  monsters                 MonsterSkillMap[]
-  subtypes                 SkillSubtype[]
-  characterCompanionSkills CharacterCompanionSkill[]
-  bonusSkillRanks          CharacterBonusSkillRank[]
+  advSkills                          AdvancementSkill[]
+  monsters                           MonsterSkillMap[]
+  subtypes                           SkillSubtype[]
+  characterCompanionAdvancementSkills CharacterCompanionAdvancementSkill[]
+  bonusSkillRanks                    CharacterBonusSkillRank[]
 }
 
 model SkillSourceBookMap {
@@ -395,10 +395,10 @@ model Feat {
 
   advFeat AdvancementFeat[]
 
-  monsters                   MonsterFeatMap[]
-  features                   Feature[]
-  characterSpellPreparations CharacterSpellPreparation[]
-  characterCompanionFeats    CharacterCompanionFeat[]
+  monsters                            MonsterFeatMap[]
+  features                            Feature[]
+  characterSpellPreparations          CharacterSpellPreparation[]
+  characterCompanionAdvancementFeats  CharacterCompanionAdvancementFeat[]
 }
 
 model FeatSourceBookMap {
@@ -1424,28 +1424,81 @@ model Companion {
 }
 
 model CharacterCompanion {
-  id             Int     @id @default(autoincrement())
-  characterId    Int
-  monsterId      Int // Direct reference to Monster (not through Companion)
-  companionId    Int? // Optional reference to Companion for familiars with benefits
-  trickPurposeId Int? // Handle Animal general purpose (at most one)
-  name           String? // Player-given name
-  levelAcquired  Int?
-  hitPoints      Int? // Current/max hit points (defaults to Monster.averageHP, can be rolled)
-  wounds         Int     @default(0) // Current damage taken (for combat tracking)
+  id                 Int     @id @default(autoincrement())
+  characterId        Int
+  monsterId          Int // Direct reference to Monster (not through Companion)
+  companionId        Int? // Optional reference to Companion for familiars with benefits
+  trickPurposeId     Int? // Handle Animal general purpose (at most one)
+  name               String? // Player-given name
+  levelAcquired      Int?
+  /// Denormalized total HP (sum of advancement rows). Not a manual override.
+  hitPoints          Int?
+  wounds             Int     @default(0) // Current damage taken (for combat tracking)
+  /// House rule: max all printed/starting HD. Default off (average HP).
+  maxHpAtFirstLevel  Boolean @default(false)
 
-  character    Character                 @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  monster      Monster                   @relation(fields: [monsterId], references: [id])
-  companion    Companion?                @relation(fields: [companionId], references: [id])
-  trickPurpose TrickPurpose?             @relation(fields: [trickPurposeId], references: [id])
+  character    Character                         @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  monster      Monster                           @relation(fields: [monsterId], references: [id])
+  companion    Companion?                        @relation(fields: [companionId], references: [id])
+  trickPurpose TrickPurpose?                     @relation(fields: [trickPurposeId], references: [id])
   tricks       CharacterCompanionTrick[]
-  skills       CharacterCompanionSkill[]
-  feats        CharacterCompanionFeat[]
+  advancements CharacterCompanionAdvancement[]
 
   @@index([characterId])
   @@index([monsterId])
   @@index([companionId])
   @@index([trickPurposeId])
+}
+
+/// One HD step for a companion instance. Sequence 1 is the printed/base HD
+/// bundle; sequence 2+ are added HD (animal-companion bonus HD). Same shape
+/// as future monster-instance advancements.
+model CharacterCompanionAdvancement {
+  id                   Int     @id @default(autoincrement())
+  characterCompanionId Int
+  sequence             Int // 1 = printed HD, 2+ = each added HD
+  hitDiceQty           Float
+  hitDiceType          Int // RpgDice id
+  hitPoints            Int
+  classId              Int? // unused now; class-level monster advancement later
+  notes                String? @db.Text
+
+  characterCompanion CharacterCompanion                   @relation(fields: [characterCompanionId], references: [id], onDelete: Cascade)
+  skills             CharacterCompanionAdvancementSkill[]
+  feats              CharacterCompanionAdvancementFeat[]
+
+  @@unique([characterCompanionId, sequence])
+  @@index([characterCompanionId])
+}
+
+model CharacterCompanionAdvancementSkill {
+  id            Int  @id @default(autoincrement())
+  advancementId Int
+  skillId       Int
+  skillSubId    Int?
+  ranks         Int
+
+  advancement CharacterCompanionAdvancement @relation(fields: [advancementId], references: [id], onDelete: Cascade)
+  skill       Skill                         @relation(fields: [skillId], references: [id])
+
+  @@unique([advancementId, skillId, skillSubId])
+  @@index([advancementId])
+  @@index([skillId])
+}
+
+model CharacterCompanionAdvancementFeat {
+  id          Int     @id @default(autoincrement())
+  advancementId Int
+  featId      Int
+  featSubId   Int? // For feats with useSubId (e.g. Weapon Focus)
+  notes       String? @db.VarChar(128)
+
+  advancement CharacterCompanionAdvancement @relation(fields: [advancementId], references: [id], onDelete: Cascade)
+  feat        Feat                          @relation(fields: [featId], references: [id])
+
+  @@unique([advancementId, featId, featSubId])
+  @@index([advancementId])
+  @@index([featId])
 }
 
 model Trick {
@@ -1532,35 +1585,6 @@ model TrickPurposeSourceMap {
   sourceBook   SourceBook   @relation(fields: [sourceBookId], references: [id])
 
   @@id([trickPurposeId, sourceBookId])
-}
-
-model CharacterCompanionSkill {
-  id                   Int  @id @default(autoincrement())
-  characterCompanionId Int
-  skillId              Int
-  skillSubId           Int?
-  ranks                Int
-
-  characterCompanion CharacterCompanion @relation(fields: [characterCompanionId], references: [id], onDelete: Cascade)
-  skill              Skill              @relation(fields: [skillId], references: [id])
-
-  @@unique([characterCompanionId, skillId, skillSubId])
-  @@index([characterCompanionId])
-  @@index([skillId])
-}
-
-model CharacterCompanionFeat {
-  id                   Int     @id @default(autoincrement())
-  characterCompanionId Int
-  featId               Int
-  notes                String? @db.VarChar(128)
-
-  characterCompanion CharacterCompanion @relation(fields: [characterCompanionId], references: [id], onDelete: Cascade)
-  feat               Feat               @relation(fields: [featId], references: [id])
-
-  @@unique([characterCompanionId, featId, notes])
-  @@index([characterCompanionId])
-  @@index([featId])
 }
 
 model CharacterSelectedForm {

@@ -4,6 +4,7 @@ export * from './auth.js';
 export * from './character.js';
 export * from './class.js';
 export * from './companion.js';
+export * from './creatureAdvancement.js';
 export * from './diceBox.js';
 export * from './feat.js';
 export * from './race.js';

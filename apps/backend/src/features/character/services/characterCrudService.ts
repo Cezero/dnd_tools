@@ -247,6 +247,7 @@ function mapDraftCompanions(value: unknown, characterId: number): CharacterWithA
         levelAcquired: asIntOrNull(row.levelAcquired),
         hitPoints: asIntOrNull(row.hitPoints),
         wounds: asInt(row.wounds) ?? 0,
+        maxHpAtFirstLevel: asBool(row.maxHpAtFirstLevel) ?? false,
         tricks: asArray(row.tricks).filter(isRecord).map((trick) => ({
             id: asInt(trick.id) ?? 0,
             trickId: asInt(trick.trickId) ?? 0,
@@ -254,16 +255,26 @@ function mapDraftCompanions(value: unknown, characterId: number): CharacterWithA
             isBonus: asBool(trick.isBonus) ?? false,
             fromPurpose: asBool(trick.fromPurpose) ?? false,
         })),
-        skills: asArray(row.skills).filter(isRecord).map((skill) => ({
-            id: asInt(skill.id) ?? 0,
-            skillId: asInt(skill.skillId) ?? 0,
-            skillSubId: asIntOrNull(skill.skillSubId),
-            ranks: asInt(skill.ranks) ?? 0,
-        })),
-        feats: asArray(row.feats).filter(isRecord).map((feat) => ({
-            id: asInt(feat.id) ?? 0,
-            featId: asInt(feat.featId) ?? 0,
-            notes: asStringOrNull(feat.notes),
+        advancements: asArray(row.advancements).filter(isRecord).map((adv) => ({
+            id: asInt(adv.id) ?? 0,
+            sequence: asInt(adv.sequence) ?? 1,
+            hitDiceQty: typeof adv.hitDiceQty === 'number' ? adv.hitDiceQty : 1,
+            hitDiceType: asInt(adv.hitDiceType) ?? 2,
+            hitPoints: asInt(adv.hitPoints) ?? 0,
+            classId: asIntOrNull(adv.classId),
+            notes: asStringOrNull(adv.notes),
+            skills: asArray(adv.skills).filter(isRecord).map((skill) => ({
+                id: asInt(skill.id) ?? 0,
+                skillId: asInt(skill.skillId) ?? 0,
+                skillSubId: asIntOrNull(skill.skillSubId),
+                ranks: asInt(skill.ranks) ?? 0,
+            })),
+            feats: asArray(adv.feats).filter(isRecord).map((feat) => ({
+                id: asInt(feat.id) ?? 0,
+                featId: asInt(feat.featId) ?? 0,
+                featSubId: asIntOrNull(feat.featSubId),
+                notes: asStringOrNull(feat.notes),
+            })),
         })),
     }));
 }
@@ -843,8 +854,10 @@ export const characterCrudService = {
                 companions: {
                     include: {
                         tricks: true,
-                        skills: true,
-                        feats: true,
+                        advancements: {
+                            include: { skills: true, feats: true },
+                            orderBy: { sequence: 'asc' },
+                        },
                     },
                 },
                 selectedForms: {

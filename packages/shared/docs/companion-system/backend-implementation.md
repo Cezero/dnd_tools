@@ -34,7 +34,7 @@ The companion system uses a service-oriented architecture following the shared [
 **Dual CRUD Operations**: Separate operations for companion definitions and character companions
 **Feature System Integration**: Integration with feature system for companion benefits
 **Transaction Safety**: Consistent transaction patterns for trick association management
-**Automatic HP Calculation**: Business logic for deriving hit points from monster data
+**Creature Advancements**: Per-HD HP, skill ranks, and feats; sequence 1 uses average or max printed HD
 
 ### **Key Design Principles**
 
@@ -57,7 +57,7 @@ The central service for all companion management operations, providing comprehen
 - **Character Companion Management**: Create, read, update, and delete character-specific companions
 - **Feature Integration**: Retrieve companion feature progressions through feature system
 - **Trick Association**: Manage trick associations for character companions
-- **HP Calculation**: Automatic hit point calculation from monster data
+- **Creature Advancements**: Persist and resolve per-HD HP, skills, and feats
 - **Transaction Safety**: Ensure data consistency through proper transaction handling
 
 **Core Methods**:
@@ -192,27 +192,22 @@ The central service for all companion management operations, providing comprehen
 
 #### **createCharacterCompanion**
 
-**Purpose**: Creates a new character companion with trick associations and automatic HP calculation.
+**Purpose**: Creates a new character companion with tricks and HD advancements.
 
-**Architecture Decision**: Uses transaction to ensure atomic creation of companion and trick associations. Automatically calculates hit points from monster averageHP if not provided.
+**Architecture Decision**: Uses transaction to ensure atomic creation of companion, tricks, and advancement rows. `hitPoints` on the companion is the denormalized sum of advancement rows.
 
-**Parameters**: CreateCharacterCompanionRequest with character companion data and optional tricks array
+**Parameters**: CreateCharacterCompanionRequest with companion data, optional tricks, and optional advancements
 
 **Returns**: CreateResponse with created character companion ID
 
 **Business Logic**:
-1. Extracts tricks array from request data
-2. Calculates hit points:
-   - If hitPoints provided, uses provided value
-   - If not provided, queries monster for averageHP
-   - Falls back to null if monster not found
-3. Creates character companion in transaction:
-   - Creates characterCompanion record
-   - Creates trick associations if tricks array provided
-4. Returns created companion ID
+1. Validates Handle Animal tricks and per-HD skill/feat budgets
+2. Creates the companion with `maxHpAtFirstLevel` (default false)
+3. Persists tricks and `CharacterCompanionAdvancement` children (HP, skills, feats)
+4. Stores `hitPoints` as the sum of advancement HP
 
 **Integration Points**:
-- **Monster System**: Queries monster.averageHP for automatic HP calculation
+- **Creature advancements**: Sequence 1 is printed HD; sequence 2+ are bonus HD
 - **Trick System**: Creates CharacterCompanionTrick associations
 
 **Transaction Pattern**: Uses Prisma transaction to ensure atomic creation of companion and trick associations.
@@ -465,7 +460,7 @@ Companions integrate with the monster system:
 **Integration Pattern**:
 - Companion definitions link to monsters via monsterId
 - Character companions link to monsters via monsterId
-- Monster averageHP is used for automatic hit point calculation
+- Printed monster HD and `averageHP` seed sequence-1 companion HP (max when `maxHpAtFirstLevel` is on)
 - Monster data is included in companion responses for display
 
 **Benefits**:
@@ -545,22 +540,18 @@ Character companions integrate with the character system:
 - **Benefits**: Atomic operations, data consistency, simpler state management
 - **Limitations**: Requires full trick list on update
 
-### **Why Automatic HP Calculation**
+### **Why Creature Advancements Instead of a Single HP Override**
 
-**Decision**: Automatically calculate hit points from monster averageHP if not provided.
+**Decision**: Store one HD step per `CharacterCompanionAdvancement` row (sequence 1 = printed HD, sequence 2+ = each added d8). Skills and feats for bonus HD live on that row. `CreatureAdvancementSchema` has no owner FK so monster-instance advancement can reuse the same shape later.
 
 **Rationale**:
-- **User Experience**: Reduces manual data entry
-- **Consistency**: Ensures companions match monster statblocks
-- **Default Behavior**: Provides sensible defaults
+- PHB bonus HD are real creature HD: rolled HP, skill points (`max(1, 2 + Int mod)`), and feats at `1 + floor(HD/3)`
+- `maxHpAtFirstLevel` maxes all printed HD on sequence 1 only (house rule, default off)
+- A single `CharacterCompanion.hitPoints` override was overwriting bonus HD HP after overlay
 
-**Alternatives Considered**:
-- Require explicit HP input
-- Use monster HP directly without override
+**Related**: [Increasing Monster Hit Dice](../dnd-rules/v3.x/monsters/advancement/hit-dice.md)
 
-**Trade-offs**:
-- **Benefits**: Better UX, consistency with monster data
-- **Limitations**: May not match all use cases (damaged companions, etc.)
+Helpers live in `packages/shared/static-data/src/AnimalCompanionData.ts` (`computeMaxStartingHitPoints`, `ensureCreatureAdvancements`, `getFeatSlotsForAddedHitDie`). Overlay sums advancement HP and flattens skills/feats onto the monster stat block. BAB/saves still use total HD.
 
 ## 📚 **Related Documentation**
 

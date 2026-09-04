@@ -3,12 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { transformFormulaParamsFromDatabase } from '@/utils/formulaParamTransformers';
 import type {
     CharacterCompanionDraft,
-    CharacterCompanionFeatInput,
-    CharacterCompanionSkillInput,
     CharacterCompanionTrickInput,
     CharacterWithAllDetailsResponse,
     CompanionBudgets,
     CompanionComputedStatBlock,
+    CreatureAdvancementFeatInput,
+    CreatureAdvancementSkillInput,
     FeatureEntity,
     FeatureEntityCondition,
     FeatureWithRelations,
@@ -26,10 +26,10 @@ import {
     EntityAppliesToType,
     EntityType,
     FeatureBonusType,
-    getBonusFeatSlots,
-    getBonusHdAverageHp,
-    getBonusSkillPoints,
+    ensureCreatureAdvancements,
+    getCompanionSkillPointsPerHd,
     getDruidBabForHitDice,
+    getFeatSlotsForAddedHitDie,
     getGoodSaveForHitDice,
     getHandleAnimalTrainedSlots,
     getPoorSaveForHitDice,
@@ -42,6 +42,8 @@ import {
     SavingThrowId,
     SCENT_ABILITY_NAME,
     SIZE_MAP,
+    startingHitDiceFromMonster,
+    sumAdvancementHitPoints,
     canUseHandleAnimal,
     isFamiliarCompanionType,
     usesHandleAnimal,
@@ -76,6 +78,28 @@ interface CharacterCompanionRow {
     levelAcquired: number | null;
     hitPoints: number | null;
     wounds: number;
+    maxHpAtFirstLevel: boolean;
+    advancements: Array<{
+        id: number;
+        sequence: number;
+        hitDiceQty: number;
+        hitDiceType: number;
+        hitPoints: number;
+        classId: number | null;
+        notes: string | null;
+        skills: Array<{
+            id: number;
+            skillId: number;
+            skillSubId: number | null;
+            ranks: number;
+        }>;
+        feats: Array<{
+            id: number;
+            featId: number;
+            featSubId: number | null;
+            notes: string | null;
+        }>;
+    }>;
     companion: {
         id: number;
         type: number;
@@ -110,19 +134,6 @@ interface CharacterCompanionRow {
             isVisible: boolean;
         };
     }>;
-    skills: Array<{
-        id: number;
-        characterCompanionId: number;
-        skillId: number;
-        skillSubId: number | null;
-        ranks: number;
-    }>;
-    feats: Array<{
-        id: number;
-        characterCompanionId: number;
-        featId: number;
-        notes: string | null;
-    }>;
 }
 
 /**
@@ -140,8 +151,10 @@ export const companionAdvancementService = {
                 companion: true,
                 trickPurpose: true,
                 tricks: { include: { trick: true } },
-                skills: true,
-                feats: true,
+                advancements: {
+                    include: { skills: true, feats: true },
+                    orderBy: { sequence: 'asc' },
+                },
             },
             orderBy: { levelAcquired: 'asc' },
         });
@@ -182,8 +195,11 @@ export const companionAdvancementService = {
         characterId: number;
         trickPurposeId: number | null | undefined;
         tricks: CharacterCompanionTrickInput[] | undefined;
-        skills: CharacterCompanionSkillInput[] | undefined;
-        feats: CharacterCompanionFeatInput[] | undefined;
+        advancements: Array<{
+            sequence: number;
+            skills?: CreatureAdvancementSkillInput[];
+            feats?: CreatureAdvancementFeatInput[];
+        }> | undefined;
     }): Promise<void> {
         const monster = await monsterService.getMonsterById({ id: args.monsterId });
         if (!monster) {
@@ -198,8 +214,7 @@ export const companionAdvancementService = {
         const budgets = this.computeBudgets({
             monster,
             progression,
-            skills: args.skills ?? [],
-            feats: args.feats ?? [],
+            advancements: args.advancements ?? [],
             tricks: args.tricks ?? [],
             companionType: companion?.type,
         });
@@ -264,15 +279,17 @@ export const companionAdvancementService = {
                 `Tricks exceed the animal's known-trick limit (${trickSlotsMax})`
             );
         }
-        if (budgets.skillPointsUsed > budgets.skillPointsMax) {
-            throw new BadRequestError(
-                `Assigned skill ranks exceed bonus HD skill points (${budgets.skillPointsMax})`
-            );
-        }
-        if (budgets.featSlotsUsed > budgets.featSlotsMax) {
-            throw new BadRequestError(
-                `Assigned feats exceed bonus HD feat slots (${budgets.featSlotsMax})`
-            );
+        for (const row of budgets.bySequence) {
+            if (row.skillPointsUsed > row.skillPointsMax) {
+                throw new BadRequestError(
+                    `Assigned skill ranks on HD ${row.sequence} exceed that die's skill points (${row.skillPointsMax})`
+                );
+            }
+            if (row.featSlotsUsed > row.featSlotsMax) {
+                throw new BadRequestError(
+                    `Assigned feats on HD ${row.sequence} exceed that die's feat slots (${row.featSlotsMax})`
+                );
+            }
         }
     },
 
@@ -509,16 +526,17 @@ export const companionAdvancementService = {
     computeBudgets(args: {
         monster: GetMonsterResponse;
         progression: ResolvedCompanionProgression | null;
-        skills: CharacterCompanionSkillInput[];
-        feats: CharacterCompanionFeatInput[];
+        advancements: Array<{
+            sequence: number;
+            skills?: Array<{ ranks: number }>;
+            feats?: unknown[];
+        }>;
         tricks: Array<Pick<CharacterCompanionTrickInput, 'timesTrained' | 'isBonus'>>;
         companionType?: number | null;
     }): CompanionBudgets {
         const bonusHd = args.progression?.bonusHd ?? 0;
         const baseHd = args.monster.hitDiceQty ?? 1;
-        const totalHd = baseHd + bonusHd;
-        const skillPointsMax = getBonusSkillPoints(bonusHd, args.monster.intelligence);
-        const featSlotsMax = getBonusFeatSlots(baseHd, totalHd);
+        const skillPointsPerHd = getCompanionSkillPointsPerHd(args.monster.intelligence);
         const trainedSlotsMax = usesHandleAnimal(args.companionType)
             ? getHandleAnimalTrainedSlots(args.monster.intelligence)
             : 0;
@@ -526,15 +544,33 @@ export const companionAdvancementService = {
             ? (args.progression?.bonusTricks ?? 0)
             : 0;
 
+        const bySequence = args.advancements.map((row) => {
+            const addedIndex = row.sequence - 1;
+            const skillPointsMax = addedIndex > 0 ? skillPointsPerHd : 0;
+            const featSlotsMax = addedIndex > 0
+                ? getFeatSlotsForAddedHitDie(baseHd, addedIndex)
+                : 0;
+            const skillPointsUsed = (row.skills ?? []).reduce((sum, skill) => sum + skill.ranks, 0);
+            const featSlotsUsed = (row.feats ?? []).length;
+            return {
+                sequence: row.sequence,
+                skillPointsUsed,
+                skillPointsMax,
+                featSlotsUsed,
+                featSlotsMax,
+            };
+        });
+
         return {
             trainedSlotsUsed: args.tricks.filter((t) => !t.isBonus).reduce((sum, t) => sum + t.timesTrained, 0),
             trainedSlotsMax,
             bonusSlotsUsed: args.tricks.filter((t) => t.isBonus).reduce((sum, t) => sum + t.timesTrained, 0),
             bonusSlotsMax,
-            skillPointsUsed: args.skills.reduce((sum, s) => sum + s.ranks, 0),
-            skillPointsMax,
-            featSlotsUsed: args.feats.length,
-            featSlotsMax,
+            skillPointsUsed: bySequence.reduce((sum, row) => sum + row.skillPointsUsed, 0),
+            skillPointsMax: bonusHd * skillPointsPerHd,
+            featSlotsUsed: bySequence.reduce((sum, row) => sum + row.featSlotsUsed, 0),
+            featSlotsMax: bySequence.reduce((sum, row) => sum + row.featSlotsMax, 0),
+            bySequence,
         };
     },
 
@@ -544,10 +580,10 @@ export const companionAdvancementService = {
     applyCompanionOverlay(args: {
         monsterId: number;
         monster: GetMonsterResponse;
-        hitPoints: number | null;
+        totalHitPoints: number | null;
         progression: ResolvedCompanionProgression | null;
-        assignedSkills: CharacterCompanionSkillInput[];
-        assignedFeats: CharacterCompanionFeatInput[];
+        assignedSkills: CreatureAdvancementSkillInput[];
+        assignedFeats: CreatureAdvancementFeatInput[];
         multiattackFeatId: number | null;
     }): CompanionComputedStatBlock {
         const block: CompanionComputedStatBlock = {
@@ -561,8 +597,8 @@ export const companionAdvancementService = {
 
         const progression = args.progression;
         if (!progression) {
-            if (args.hitPoints !== null) {
-                block.averageHP = args.hitPoints;
+            if (args.totalHitPoints !== null) {
+                block.averageHP = args.totalHitPoints;
             }
             this.mergeAssignedSkillsAndFeats(block, args.assignedSkills, args.assignedFeats);
             return block;
@@ -592,11 +628,6 @@ export const companionAdvancementService = {
         const baseHd = block.hitDiceQty ?? 1;
         const totalHd = baseHd + progression.bonusHd;
         block.hitDiceQty = totalHd;
-        if (progression.bonusHd > 0) {
-            const extraHp = getBonusHdAverageHp(progression.bonusHd, block.constitution);
-            block.averageHP = (block.averageHP ?? 0) + extraHp;
-            block.bonusHP = (block.bonusHP ?? 0) + extraHp;
-        }
 
         const conMod = GetAbilityModifier(block.constitution ?? 10);
         const dexMod = GetAbilityModifier(block.dexterity ?? 10);
@@ -641,8 +672,8 @@ export const companionAdvancementService = {
             }
         }
 
-        if (args.hitPoints !== null) {
-            block.averageHP = args.hitPoints;
+        if (args.totalHitPoints !== null) {
+            block.averageHP = args.totalHitPoints;
         }
 
         return block;
@@ -654,10 +685,10 @@ export const companionAdvancementService = {
     async applyFamiliarOverlay(args: {
         monsterId: number;
         monster: GetMonsterResponse;
-        hitPoints: number | null;
+        totalHitPoints: number | null;
         progression: ResolvedCompanionProgression | null;
-        assignedSkills: CharacterCompanionSkillInput[];
-        assignedFeats: CharacterCompanionFeatInput[];
+        assignedSkills: CreatureAdvancementSkillInput[];
+        assignedFeats: CreatureAdvancementFeatInput[];
     }): Promise<CompanionComputedStatBlock> {
         const block: CompanionComputedStatBlock = {
             ...args.monster,
@@ -693,8 +724,8 @@ export const companionAdvancementService = {
             }
         }
 
-        if (args.hitPoints !== null) {
-            block.averageHP = args.hitPoints;
+        if (args.totalHitPoints !== null) {
+            block.averageHP = args.totalHitPoints;
         }
         this.mergeAssignedSkillsAndFeats(block, args.assignedSkills, args.assignedFeats);
         return block;
@@ -767,21 +798,35 @@ export const companionAdvancementService = {
             select: { id: true },
         });
 
-        const assignedSkills = row.skills.map((s) => ({
-            skillId: s.skillId,
-            skillSubId: s.skillSubId,
-            ranks: s.ranks,
-        }));
-        const assignedFeats = row.feats.map((f) => ({
-            featId: f.featId,
-            notes: f.notes,
-        }));
+        const bonusHd = isFamiliarCompanionType(row.companion?.type)
+            ? 0
+            : (progression?.bonusHd ?? 0);
+        const advancements = ensureCreatureAdvancements({
+            existing: row.advancements.map((adv) => ({
+                id: adv.id,
+                sequence: adv.sequence,
+                hitDiceQty: adv.hitDiceQty,
+                hitDiceType: adv.hitDiceType,
+                hitPoints: adv.hitPoints,
+                classId: adv.classId,
+                notes: adv.notes,
+                skills: adv.skills,
+                feats: adv.feats,
+            })),
+            starting: startingHitDiceFromMonster(monster),
+            bonusHd,
+            maxHpAtFirstLevel: row.maxHpAtFirstLevel,
+            createId: (sequence) => -(row.id * 100 + sequence),
+        });
+        const assignedSkills = flattenAdvancementSkills(advancements);
+        const assignedFeats = flattenAdvancementFeats(advancements);
+        const totalHitPoints = sumAdvancementHitPoints(advancements);
 
         const computedStatBlock = isFamiliarCompanionType(row.companion?.type)
             ? await this.applyFamiliarOverlay({
                 monsterId: row.monsterId,
                 monster,
-                hitPoints: row.hitPoints,
+                totalHitPoints,
                 progression,
                 assignedSkills,
                 assignedFeats,
@@ -789,7 +834,7 @@ export const companionAdvancementService = {
             : this.applyCompanionOverlay({
                 monsterId: row.monsterId,
                 monster,
-                hitPoints: row.hitPoints,
+                totalHitPoints,
                 progression,
                 assignedSkills,
                 assignedFeats,
@@ -799,8 +844,7 @@ export const companionAdvancementService = {
         const budgets = this.computeBudgets({
             monster,
             progression,
-            skills: assignedSkills,
-            feats: assignedFeats,
+            advancements,
             tricks: row.tricks,
             companionType: row.companion?.type,
         });
@@ -817,8 +861,9 @@ export const companionAdvancementService = {
             trickPurposeId: row.trickPurposeId,
             name: row.name,
             levelAcquired: row.levelAcquired,
-            hitPoints: row.hitPoints,
+            hitPoints: totalHitPoints,
             wounds: row.wounds,
+            maxHpAtFirstLevel: row.maxHpAtFirstLevel,
             companion: row.companion ?? undefined,
             trickPurpose: row.trickPurpose ?? undefined,
             tricks: row.tricks.map((t) => ({
@@ -830,8 +875,27 @@ export const companionAdvancementService = {
                 fromPurpose: t.fromPurpose,
                 trick: t.trick,
             })),
-            skills: row.skills,
-            feats: row.feats,
+            advancements: advancements.map((adv) => ({
+                id: adv.id,
+                sequence: adv.sequence,
+                hitDiceQty: adv.hitDiceQty,
+                hitDiceType: adv.hitDiceType,
+                hitPoints: adv.hitPoints,
+                classId: adv.classId ?? null,
+                notes: adv.notes ?? null,
+                skills: (adv.skills ?? []).map((skill) => ({
+                    id: skill.id,
+                    skillId: skill.skillId,
+                    skillSubId: skill.skillSubId ?? null,
+                    ranks: skill.ranks,
+                })),
+                feats: (adv.feats ?? []).map((feat) => ({
+                    id: feat.id,
+                    featId: feat.featId,
+                    featSubId: feat.featSubId ?? null,
+                    notes: feat.notes ?? null,
+                })),
+            })),
             role,
             computedStatBlock,
             progression,
@@ -1107,16 +1171,27 @@ export const companionAdvancementService = {
                     fromPurpose: trick.fromPurpose,
                     trick: trick.trick,
                 })),
-                skills: (resolved.skills ?? []).map((skill) => ({
-                    id: skill.id,
-                    skillId: skill.skillId,
-                    skillSubId: skill.skillSubId,
-                    ranks: skill.ranks,
-                })),
-                feats: (resolved.feats ?? []).map((feat) => ({
-                    id: feat.id,
-                    featId: feat.featId,
-                    notes: feat.notes,
+                maxHpAtFirstLevel: resolved.maxHpAtFirstLevel,
+                advancements: (resolved.advancements ?? []).map((adv) => ({
+                    id: adv.id,
+                    sequence: adv.sequence,
+                    hitDiceQty: adv.hitDiceQty,
+                    hitDiceType: adv.hitDiceType,
+                    hitPoints: adv.hitPoints,
+                    classId: adv.classId ?? null,
+                    notes: adv.notes ?? null,
+                    skills: (adv.skills ?? []).map((skill) => ({
+                        id: skill.id,
+                        skillId: skill.skillId,
+                        skillSubId: skill.skillSubId ?? null,
+                        ranks: skill.ranks,
+                    })),
+                    feats: (adv.feats ?? []).map((feat) => ({
+                        id: feat.id,
+                        featId: feat.featId,
+                        featSubId: feat.featSubId ?? null,
+                        notes: feat.notes ?? null,
+                    })),
                 })),
                 role: resolved.role,
                 computedStatBlock: resolved.computedStatBlock,
@@ -1185,6 +1260,28 @@ export const companionAdvancementService = {
                 levelAcquired: row.levelAcquired ?? null,
                 hitPoints: row.hitPoints ?? null,
                 wounds: row.wounds ?? 0,
+                maxHpAtFirstLevel: row.maxHpAtFirstLevel ?? false,
+                advancements: (row.advancements ?? []).map((adv, advIndex) => ({
+                    id: adv.id !== 0 ? adv.id : -(advIndex + 1),
+                    sequence: adv.sequence,
+                    hitDiceQty: adv.hitDiceQty,
+                    hitDiceType: adv.hitDiceType,
+                    hitPoints: adv.hitPoints,
+                    classId: adv.classId ?? null,
+                    notes: adv.notes ?? null,
+                    skills: (adv.skills ?? []).map((skill, skillIndex) => ({
+                        id: skill.id !== 0 ? skill.id : -(skillIndex + 1),
+                        skillId: skill.skillId,
+                        skillSubId: skill.skillSubId ?? null,
+                        ranks: skill.ranks,
+                    })),
+                    feats: (adv.feats ?? []).map((feat, featIndex) => ({
+                        id: feat.id !== 0 ? feat.id : -(featIndex + 1),
+                        featId: feat.featId,
+                        featSubId: feat.featSubId ?? null,
+                        notes: feat.notes ?? null,
+                    })),
+                })),
                 companion: companionId !== null ? companionById.get(companionId) ?? null : null,
                 trickPurpose: trickPurposeId !== null ? purposeById.get(trickPurposeId) ?? null : null,
                 tricks: (row.tricks ?? []).map((trick, trickIndex) => {
@@ -1207,27 +1304,14 @@ export const companionAdvancementService = {
                         },
                     };
                 }),
-                skills: (row.skills ?? []).map((skill, skillIndex) => ({
-                    id: skill.id !== 0 ? skill.id : -(skillIndex + 1),
-                    characterCompanionId: id,
-                    skillId: skill.skillId,
-                    skillSubId: skill.skillSubId ?? null,
-                    ranks: skill.ranks,
-                })),
-                feats: (row.feats ?? []).map((feat, featIndex) => ({
-                    id: feat.id !== 0 ? feat.id : -(featIndex + 1),
-                    characterCompanionId: id,
-                    featId: feat.featId,
-                    notes: feat.notes ?? null,
-                })),
             };
         });
     },
 
     mergeAssignedSkillsAndFeats(
         block: CompanionComputedStatBlock,
-        assignedSkills: CharacterCompanionSkillInput[],
-        assignedFeats: CharacterCompanionFeatInput[]
+        assignedSkills: CreatureAdvancementSkillInput[],
+        assignedFeats: CreatureAdvancementFeatInput[]
     ): void {
         if (!block.skills) {
             block.skills = [];
@@ -1281,4 +1365,30 @@ export function classLevelsFromAdvancements(
         }
     }
     return classLevels;
+}
+
+/**
+ * Flattens per-HD skill ranks for overlay onto the monster stat block.
+ */
+function flattenAdvancementSkills(
+    advancements: Array<{ skills?: Array<{ skillId: number; skillSubId?: number | null; ranks: number }> }>
+): CreatureAdvancementSkillInput[] {
+    return advancements.flatMap((row) => (row.skills ?? []).map((skill) => ({
+        skillId: skill.skillId,
+        skillSubId: skill.skillSubId ?? null,
+        ranks: skill.ranks,
+    })));
+}
+
+/**
+ * Flattens per-HD feats for overlay onto the monster stat block.
+ */
+function flattenAdvancementFeats(
+    advancements: Array<{ feats?: Array<{ featId: number; featSubId?: number | null; notes?: string | null }> }>
+): CreatureAdvancementFeatInput[] {
+    return advancements.flatMap((row) => (row.feats ?? []).map((feat) => ({
+        featId: feat.featId,
+        featSubId: feat.featSubId ?? null,
+        notes: feat.notes ?? null,
+    })));
 }

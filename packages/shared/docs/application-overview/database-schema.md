@@ -371,8 +371,8 @@ Safe data migration practices:
 - **Performance Monitoring**: Monitor performance during migration
 
 **Migration Tools**:
-- **Prisma Migrate**: Intended path is `prisma migrate dev`. **Not usable yet** — see [HIGH PRIORITY TODO: Prisma migrate baseline](docker-deployment.md#high-priority-todo-prisma-migrate-baseline).
-- **Current workaround**: Handwritten `apps/backend/prisma/migrations/*/migration.sql` applied with `pnpm exec prisma migrate deploy`
+- **Prisma Migrate**: On cyberdev01, [`prisma-migrate-dev.sh`](../../../../deploy/docker/scripts/prisma-migrate-dev.sh) diffs mysqldev and writes SQL (no shadow replay). Promote with [`prisma-migrate-deploy.sh`](../../../../deploy/docker/scripts/prisma-migrate-deploy.sh). See [Prisma migrations](docker-deployment.md#prisma-migrations-current).
+- **Agents**: Must not migrate or `db push`.
 - **Custom Scripts**: Write custom migration scripts when needed
 - **Data Transformation**: Transform data as part of migration
 - **Backup Strategy**: Maintain backups before migration

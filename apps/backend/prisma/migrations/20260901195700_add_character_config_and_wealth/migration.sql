@@ -4,6 +4,47 @@
 -- Prisma already reads/writes CharacterConfig and CharacterWealth; without these
 -- tables, character create-save fails with P2021.
 
+-- Shadow replay: CREATE TABLE `UserCharacter` in earlier files does not leave a
+-- table this migration can FK. Build it under a decoy name, then rename if needed.
+CREATE TABLE `UserCharacterShadow` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `userId` INTEGER NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `raceId` INTEGER NOT NULL,
+    `alignmentId` INTEGER NULL,
+    `xp` INTEGER NOT NULL DEFAULT 0,
+    `age` INTEGER NULL,
+    `height` INTEGER NULL,
+    `weight` INTEGER NULL,
+    `eyes` VARCHAR(191) NULL,
+    `hair` VARCHAR(191) NULL,
+    `gender` VARCHAR(191) NULL,
+    `notes` TEXT NULL,
+    `deityId` INTEGER NULL,
+    `allowVariantClasses` BOOLEAN NOT NULL DEFAULT false,
+    `editionId` INTEGER NOT NULL,
+    `ignoreLevelAdjustment` BOOLEAN NOT NULL DEFAULT false,
+    `isGestalt` BOOLEAN NOT NULL DEFAULT false,
+    `copper` INTEGER NOT NULL DEFAULT 0,
+    `gold` INTEGER NOT NULL DEFAULT 0,
+    `platinum` INTEGER NOT NULL DEFAULT 0,
+    `silver` INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+SET @userCharacterExists := (
+    SELECT COUNT(*)
+    FROM information_schema.TABLES
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'UserCharacter'
+);
+SET @sql := IF(
+    @userCharacterExists = 0,
+    'RENAME TABLE `UserCharacterShadow` TO `UserCharacter`',
+    'DROP TABLE `UserCharacterShadow`'
+);
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
 -- CreateTable
 CREATE TABLE `CharacterConfig` (
     `characterId` INTEGER NOT NULL,

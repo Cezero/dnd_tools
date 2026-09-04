@@ -200,6 +200,12 @@ export const MonsterCacheSchema = MonsterSchema.pick({
     name: true,
     editionId: true,
     isVisible: true,
+    hitDiceQty: true,
+    hitDiceType: true,
+    bonusHP: true,
+    averageHP: true,
+    constitution: true,
+    intelligence: true,
 }).extend({
     typeIds: z.array(z.number().int().nonnegative()).default([]), // Array of monster type IDs
 });

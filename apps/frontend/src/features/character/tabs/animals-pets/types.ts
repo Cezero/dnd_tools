@@ -3,6 +3,7 @@ import type {
     CharacterSelectedFormDraft,
     FeatCacheEntry,
     FeatureWithRelations,
+    MonsterCacheEntry,
     ResolvedCharacterCompanionDraft,
     SkillCacheEntry,
     Trick,
@@ -19,6 +20,7 @@ export interface CompanionEditorLookups {
     feats: FeatCacheEntry[];
     companionTypeById: Map<number, number>;
     monsterNameById: Map<number, string>;
+    monsterById: Map<number, MonsterCacheEntry>;
 }
 
 /**
