@@ -4,6 +4,7 @@ export {
     formatFeatNameWithSubtype,
     formatFeatureNameWithChoices,
     formatGrantedFeatDisplayName,
+    pickFeatureClassIdForCharacter,
     resolveFeatureChoiceDisplayName,
 } from './choiceDisplayName';
 export { displayStrategyFactory } from './display-strategies';

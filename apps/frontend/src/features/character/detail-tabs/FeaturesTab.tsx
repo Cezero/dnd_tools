@@ -6,6 +6,7 @@ import {
     collectFeatureChoices,
     formatFeatureNameWithChoices,
     formatGrantedFeatDisplayName,
+    pickFeatureClassIdForCharacter,
 } from '@/lib/formatters/choiceDisplayName';
 import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { getQueryClient } from '@/lib/formatters/utils/queryClientAccessor';
@@ -162,8 +163,8 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                     const raceName = raceData?.name || 'Race';
                     featureName = `${raceName} ${featureName}`;
                 } else if (feature?.sourceType === FeatureSourceType.Class && feature.classes && feature.classes.length > 0) {
-                    const firstClassId = feature.classes[0].classId;
-                    const className = getClassNameFromCache(firstClassId) || 'Class';
+                    const classId = pickFeatureClassIdForCharacter(feature.classes, classLevelCounts);
+                    const className = (classId ? getClassNameFromCache(classId) : null) || 'Class';
                     featureName = `${className} Granted`;
                 }
 
@@ -180,8 +181,8 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                     const raceName = raceData?.name || 'Race';
                     featureName = `${raceName} ${featureName}`;
                 } else if (feature?.sourceType === FeatureSourceType.Class && feature.classes && feature.classes.length > 0) {
-                    const firstClassId = feature.classes[0].classId;
-                    const className = getClassNameFromCache(firstClassId) || 'Class';
+                    const classId = pickFeatureClassIdForCharacter(feature.classes, classLevelCounts);
+                    const className = (classId ? getClassNameFromCache(classId) : null) || 'Class';
                     featureName = `${className} ${featureName}`;
                 }
 
@@ -201,7 +202,7 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                 regularFeats
             ].filter(cat => cat.feats.length > 0)
         };
-    }, [formattedCharacter.feats, resolvedProgressions, allCharacterFeats, character.raceId]);
+    }, [formattedCharacter.feats, resolvedProgressions, allCharacterFeats, character.raceId, classLevelCounts]);
 
     // Get languages from character.characterLanguages
     const languages = React.useMemo(() => {

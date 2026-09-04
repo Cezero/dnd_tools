@@ -98,6 +98,27 @@ export function formatFeatNameWithSubtype(
 }
 
 /**
+ * Class on a shared feature that this character actually has.
+ * Shared maps (Wizard + Sorcerer familiar Alertness) otherwise use the first
+ * mapped class, which can label a Wizard's grant as Sorcerer Granted.
+ */
+export function pickFeatureClassIdForCharacter(
+    classMaps: Array<{ classId: number }> | null | undefined,
+    classLevelCounts: Map<number, number>
+): number | null {
+    const maps = classMaps ?? [];
+    if (maps.length === 0) {
+        return null;
+    }
+    const owned = maps
+        .filter((row) => (classLevelCounts.get(row.classId) ?? 0) > 0)
+        .sort((a, b) => (
+            (classLevelCounts.get(b.classId) ?? 0) - (classLevelCounts.get(a.classId) ?? 0)
+        ));
+    return (owned[0] ?? maps[0]).classId;
+}
+
+/**
  * Granted-feat label, including the familiar Alertness reach reminder.
  */
 export function formatGrantedFeatDisplayName(

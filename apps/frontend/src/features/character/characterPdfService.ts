@@ -10,7 +10,7 @@ import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
-import { collectFeatureChoices, displayStrategyFactory, formatFeatureNameWithChoices, formatGrantedFeatDisplayName, formatSpellComponents, formatSpellSchool } from '@/lib/formatters';
+import { collectFeatureChoices, displayStrategyFactory, formatFeatureNameWithChoices, formatGrantedFeatDisplayName, formatSpellComponents, formatSpellSchool, pickFeatureClassIdForCharacter } from '@/lib/formatters';
 import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { formatSignedModifier } from '@/lib/formatters/modifier-utils';
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
@@ -2876,9 +2876,8 @@ export async function generateCharacterPdf(
                     const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || 'Race' : 'Race';
                     featureName = `${raceName} ${featureName}`;
                 } else if (feature?.sourceType === FeatureSourceType.Class && feature.classes && feature.classes.length > 0) {
-                    // Prefix with class name (use first class)
-                    const firstClassId = feature.classes[0].classId;
-                    const className = getClassNameFromCache(firstClassId) || 'Class';
+                    const classId = pickFeatureClassIdForCharacter(feature.classes, classLevelCounts);
+                    const className = (classId ? getClassNameFromCache(classId) : null) || 'Class';
                     featureName = `${className} Granted`;
                 }
 
@@ -2898,9 +2897,8 @@ export async function generateCharacterPdf(
                     const raceName = character.raceId ? getRaceNameFromCache(character.raceId) || 'Race' : 'Race';
                     featureName = `${raceName} ${featureName}`;
                 } else if (feature?.sourceType === FeatureSourceType.Class && feature.classes && feature.classes.length > 0) {
-                    // Prefix with class name (use first class)
-                    const firstClassId = feature.classes[0].classId;
-                    const className = getClassNameFromCache(firstClassId) || 'Class';
+                    const classId = pickFeatureClassIdForCharacter(feature.classes, classLevelCounts);
+                    const className = (classId ? getClassNameFromCache(classId) : null) || 'Class';
                     featureName = `${className} ${featureName}`;
                 }
 
