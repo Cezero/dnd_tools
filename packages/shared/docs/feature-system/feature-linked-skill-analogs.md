@@ -105,21 +105,10 @@ const getAnalogSkillValue = (skillId: number): number => {
 ```
 
 ### Character Sheet Display
-```typescript
-{isAnalogSkill(skill.id) ? (
-    <div className="analog-skill">
-        <span>{skill.name}</span>
-        <span className="analog-value">
-            {getAnalogSkillValue(skill.id)} 
-            <span className="text-sm text-gray-500">
-                (Class level + {ABILITY_MAP[skill.abilityId]?.abbreviation})
-            </span>
-        </span>
-    </div>
-) : (
-    <SkillInput skill={skill} />
-)}
-```
+
+`CharacterSheetDisplayStrategy.formatSkills` adds analog skills the character is granted. Ranks are granting class levels (Druid 3/Ranger 2 → 5). Ability modifier is the skill's ability. Conditional bonuses (Link) stay off the total and appear as conditional text.
+
+The character viewer Skills tab does not hide trained-only analog skills. The PDF uses the same formatted ranks.
 
 ## Backend Implementation
 

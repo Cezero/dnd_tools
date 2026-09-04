@@ -36,7 +36,8 @@ Class skills in the D&D Tools system are implemented using the **Feature System*
    type: EntityType.Base (4) -- Base type for class mechanics
    appliesTo: EntityAppliesToType.Skill (1)
    appliesToId: The specific skill ID (e.g., Climb = 1, Jump = 2)
-   appliesToSubId: null or subtype ID (for skills with subtypes)
+   appliesToSubId: SkillSubtype.id for a specific subtype (not a 1-based ordinal).
+                   null = the whole skill; -1 = all subtypes (e.g. Wizard Knowledge)
    value: 0 (no bonus value - just marking as class skill)
    bonusType: null (Base entities don't use bonus types)
    ```
@@ -310,6 +311,7 @@ const classSkills = progression.entities
 - `EntityType.Base` is used for all class mechanics (BAB, saves, skills, proficiencies)
 - `value: 0` indicates no bonus value - just marking as class skill
 - `appliesToId` contains the specific skill ID
+- `appliesToSubId` is `SkillSubtype.id` (for example Knowledge (nature) is 92, not ordinal 7). Use `null` for a skill with no subtype and `-1` when every subtype is a class skill.
 
 ### **4. Bulk Operations Only**
 - Class skills are only modified as part of class creation/update

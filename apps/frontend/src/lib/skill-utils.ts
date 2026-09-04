@@ -2,6 +2,18 @@ import { getSkillSelectFull } from '@/services/cache';
 import type { SkillCacheEntry, SkillSubtypeCacheEntry } from '@shared/schema';
 
 /**
+ * Check if a skill is a feature-linked analog (class level + ability, no skill points).
+ * Examples: Wild Empathy, Bardic Knowledge.
+ * @param skillId - The skill ID to check
+ * @returns true if the skill is analog
+ */
+export function isAnalogSkill(skillId: number): boolean {
+    const skills = getSkillSelectFull();
+    const skill = skills.find(s => s.id === skillId);
+    return skill?.isAnalog ?? false;
+}
+
+/**
  * Check if a skill uses predefined subtypes (skillSubId)
  * Skills with subtypes include Craft and Knowledge
  * @param skillId - The skill ID to check

@@ -4,7 +4,7 @@ import { ValueTooltip } from '@/components/character-detail/ValueTooltip';
 import { DiceButton } from '@/components/dice-box';
 import { displayStrategyFactory } from '@/lib/formatters';
 import type { CharacterSheetDisplayResult, FormattedCharacterResult } from '@/lib/formatters/types';
-import { hasSubtypes, getSkillSubtypes } from '@/lib/skill-utils';
+import { hasSubtypes, getSkillSubtypes, isAnalogSkill } from '@/lib/skill-utils';
 import { isSkillTrainedOnly, useCacheFunctions } from '@/services/cache';
 import { EntityType, EntityAppliesToType, DisplayType } from '@shared/static-data';
 
@@ -144,7 +144,7 @@ export function SkillsTab({ formattedCharacter, resolvedProgressions, character 
         return formattedCharacter.skills
             .filter((skill) => {
                 // Hide trained-only skills if character has no ranks
-                if (isSkillTrainedOnly(skill.skillId)) {
+                if (isSkillTrainedOnly(skill.skillId) && !isAnalogSkill(skill.skillId)) {
                     const ranks = parseRanks(skill.ranks);
                     if (ranks === 0) {
                         return false; // Hide this skill

@@ -123,6 +123,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 
 **Key Implementation Details**:
 - Skills are formatted using `CharacterSheetDisplayStrategy`
+- Analog skills (Wild Empathy, Bardic Knowledge) appear when a class feature grants them. The ranks column is granting class levels, not skill points. Trained-only analog skills stay visible.
 - Each skill has a `CalculationBreakdown` for tooltip display
 - Conditional modifiers are shown when they apply
 - Dice buttons use skill check notation (e.g., "1d20+5")

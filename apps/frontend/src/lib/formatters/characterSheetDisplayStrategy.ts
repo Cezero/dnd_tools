@@ -832,6 +832,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             miscBonus: number;
         }>();
 
+        const analogSkillIds = new Set(
+            getSkillSelectFull().filter(skill => skill.isAnalog).map(skill => skill.id)
+        );
         const allocatableSkills = getSkillSelectFull().filter(skill =>
             skill.abilityId !== 0 && !skill.isAnalog
         );
@@ -886,6 +889,10 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         if (_context?.skillBonuses) {
             // Use backend-provided skill bonuses array
             for (const bonus of _context.skillBonuses) {
+                // Analog skills use class level as ranks, not formula value as misc
+                if (analogSkillIds.has(bonus.skillId)) {
+                    continue;
+                }
                 const key = `${bonus.skillId}|${bonus.skillSubId ?? 'null'}|null`;
                 let entry = skillEntryMap.get(key);
                 // If entry doesn't exist, create it (for skills with bonuses but no ranks)
@@ -908,6 +915,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
                 for (const entity of feature.entities) {
                     if (entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId) {
+                        if (analogSkillIds.has(entity.appliesToId)) {
+                            continue;
+                        }
                         // Skip entities with conditions - these are conditional modifiers and should not be included in misc bonus
                         if (entity.conditions && entity.conditions.length > 0) {
                             continue;
@@ -1094,8 +1104,117 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
         }
 
+        for (const analogSkillId of analogSkillIds) {
+            const analogClassLevels = this.getAnalogSkillClassLevels(
+                analogSkillId,
+                character,
+                resolvedProgressions,
+                classLevelCounts,
+                classDetailsMap
+            );
+            if (analogClassLevels <= 0) {
+                continue;
+            }
+
+            const skillData = getSkillSummaryById(analogSkillId);
+            if (!skillData) {
+                continue;
+            }
+
+            const abilityScore = abilityScores.find(a => a.abilityId === skillData.abilityId);
+            const abilityMod = abilityScore?.modifier ?? 0;
+            const total = analogClassLevels + abilityMod;
+            const abilityAbbreviation = ABILITY_MAP[skillData.abilityId]?.abbreviation || '';
+            const abilityModString = abilityAbbreviation
+                ? `${abilityAbbreviation} ${this.formatModifier(abilityMod)}`
+                : this.formatBreakdownComponent(abilityMod);
+
+            skills.push({
+                skillId: analogSkillId,
+                skillSubId: null,
+                customSubtype: null,
+                skillName: skillData.name,
+                total: this.formatModifier(total),
+                abilityMod: abilityModString,
+                ranks: analogClassLevels.toString(),
+                misc: this.formatBreakdownComponent(0),
+                isClassSkill: false,
+                breakdown: {
+                    components: [
+                        { source: 'Class Level', value: analogClassLevels, type: CalculationMethodType.base },
+                        {
+                            source: ABILITY_MAP[skillData.abilityId].name,
+                            value: abilityMod,
+                            type: CalculationMethodType.base,
+                            sourceType: EntityAppliesToType.Ability,
+                            sourceId: skillData.abilityId
+                        }
+                    ]
+                }
+            });
+        }
+
         skills.sort((a, b) => a.skillName.localeCompare(b.skillName));
         return skills;
+    }
+
+    /**
+     * Count character levels in classes that grant an analog skill (Wild Empathy, Bardic Knowledge).
+     * Unconditional skill entities on class features are the grant; conditional bonuses (Link) are ignored.
+     */
+    private getAnalogSkillClassLevels(
+        skillId: number,
+        character: CharacterWithAllDetailsResponse,
+        resolvedProgressions: FeatureWithRelations[],
+        classLevelCounts: Map<number, number>,
+        classDetailsMap: Map<number, DnDClassWithOptionalFeatures>
+    ): number {
+        const grantingClassIds = new Set<number>();
+        for (const feature of resolvedProgressions) {
+            const grantsAnalog = feature.entities?.some(entity =>
+                entity.appliesTo === EntityAppliesToType.Skill &&
+                entity.appliesToId === skillId &&
+                (entity.conditions == null || entity.conditions.length === 0)
+            );
+            if (!grantsAnalog) {
+                continue;
+            }
+            for (const classLink of feature.classes ?? []) {
+                grantingClassIds.add(classLink.classId);
+            }
+        }
+
+        if (grantingClassIds.size === 0) {
+            for (const [classId, classDetails] of classDetailsMap.entries()) {
+                const grantsAnalog = classDetails.features?.some(feature =>
+                    feature.entities?.some(entity =>
+                        entity.appliesTo === EntityAppliesToType.Skill &&
+                        entity.appliesToId === skillId &&
+                        (entity.conditions == null || entity.conditions.length === 0)
+                    )
+                );
+                if (grantsAnalog) {
+                    grantingClassIds.add(classId);
+                }
+            }
+        }
+
+        if (grantingClassIds.size === 0) {
+            return 0;
+        }
+
+        let levelsFromMap = 0;
+        for (const classId of grantingClassIds) {
+            levelsFromMap += classLevelCounts.get(classId) ?? 0;
+        }
+        if (levelsFromMap > 0) {
+            return levelsFromMap;
+        }
+
+        return character.advancements.filter(adv =>
+            grantingClassIds.has(adv.classId) ||
+            (adv.secondaryClassId != null && grantingClassIds.has(adv.secondaryClassId))
+        ).length;
     }
 
     /**
