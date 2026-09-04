@@ -1,17 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { FeatureWithRelations } from '@shared/schema';
 
 import { extractEntityIdsForPrecaching } from '../utils/entity-extractor';
 import {
+    precacheClass,
+    precacheDomain,
     precacheFeat,
     precacheFeature,
-    precacheSpell,
-    precacheDomain,
-    precacheClass,
-    precacheSkill,
     precacheRace,
+    precacheSkill,
+    precacheSpell,
 } from '../utils/precache-helpers';
 
 interface UsePrecacheFeatureEntitiesOptions {
@@ -26,19 +26,33 @@ interface UsePrecacheFeatureEntitiesResult {
 }
 
 /**
- * React hook that precaches all entity names (feats, features, spells, domains, classes, skills, races)
- * referenced in feature features. This ensures names are available in cache when formatters need them.
+ * Stable key of referenced entity IDs so a new features array identity does not
+ * restart precaching when the referenced IDs have not changed.
+ */
+function buildPrecacheKey(features: FeatureWithRelations[] | undefined | null): string {
+    if (!features || features.length === 0) {
+        return '';
+    }
+    const ids = extractEntityIdsForPrecaching(features);
+    return [
+        [...ids.featIds].sort().join(','),
+        [...ids.featureIds].sort().join(','),
+        [...ids.spellIds].sort().join(','),
+        [...ids.domainIds].sort().join(','),
+        [...ids.classIds].sort().join(','),
+        [...ids.skillIds].sort().join(','),
+        [...ids.raceIds].sort().join(','),
+    ].join('|');
+}
+
+/**
+ * React hook that precaches entity names referenced in features so formatters
+ * can resolve them. Callers must not block the page on `isPrecaching` — names
+ * already live in bulk caches, and a missing ID must not hostage the view.
  *
- * @param features - Feature features to extract entity IDs from
+ * @param features - Features to extract entity IDs from
  * @param options - Optional configuration
- * @returns Object with precaching state
- *
- * @example
- * ```tsx
- * const { isPrecaching, isComplete } = usePrecacheFeatureEntities(cls.features);
- * if (isPrecaching) return <div>Loading...</div>;
- * // Format features after precaching completes
- * ```
+ * @returns Precaching state
  */
 export function usePrecacheFeatureEntities(
     features: FeatureWithRelations[] | undefined | null,
@@ -50,13 +64,21 @@ export function usePrecacheFeatureEntities(
     const [error, setError] = useState<Error | null>(null);
 
     const enabled = options?.enabled !== false;
+    const onCompleteRef = useRef(options?.onComplete);
+    onCompleteRef.current = options?.onComplete;
+    const featuresRef = useRef(features);
+    featuresRef.current = features;
+
+    const precacheKey = useMemo(() => buildPrecacheKey(features), [features]);
 
     useEffect(() => {
-        if (!enabled || !features || features.length === 0) {
+        if (!enabled || precacheKey === '') {
             setIsPrecaching(false);
             setIsComplete(true);
             return;
         }
+
+        let cancelled = false;
 
         const precacheEntities = async () => {
             setIsPrecaching(true);
@@ -64,68 +86,58 @@ export function usePrecacheFeatureEntities(
             setIsComplete(false);
 
             try {
-                // Extract all entity IDs that need precaching
-                const entityIds = extractEntityIdsForPrecaching(features);
-
-                // Create promises for all precaching operations
+                const entityIds = extractEntityIdsForPrecaching(featuresRef.current ?? []);
                 const precachePromises: Promise<void>[] = [];
 
-                // Precache feats
                 for (const featId of entityIds.featIds) {
                     precachePromises.push(precacheFeat(queryClient, featId));
                 }
-
-                // Precache features
                 for (const featureId of entityIds.featureIds) {
                     precachePromises.push(precacheFeature(queryClient, featureId));
                 }
-
-                // Precache spells
                 for (const spellId of entityIds.spellIds) {
                     precachePromises.push(precacheSpell(queryClient, spellId));
                 }
-
-                // Precache domains
                 for (const domainId of entityIds.domainIds) {
                     precachePromises.push(precacheDomain(queryClient, domainId));
                 }
-
-                // Precache classes
                 for (const classId of entityIds.classIds) {
                     precachePromises.push(precacheClass(queryClient, classId));
                 }
-
-                // Precache skills
                 for (const skillId of entityIds.skillIds) {
                     precachePromises.push(precacheSkill(queryClient, skillId));
                 }
-
-                // Precache races
                 for (const raceId of entityIds.raceIds) {
                     precachePromises.push(precacheRace(queryClient, raceId));
                 }
 
-                // Wait for all precaching to complete
                 await Promise.all(precachePromises);
+
+                if (cancelled) {
+                    return;
+                }
 
                 setIsComplete(true);
                 setIsPrecaching(false);
-
-                // Call onComplete callback if provided
-                if (options?.onComplete) {
-                    options.onComplete();
-                }
+                onCompleteRef.current?.();
             } catch (err) {
-                const error = err instanceof Error ? err : new Error('Unknown error during precaching');
-                setError(error);
+                if (cancelled) {
+                    return;
+                }
+                const nextError = err instanceof Error ? err : new Error('Unknown error during precaching');
+                setError(nextError);
                 setIsPrecaching(false);
-                setIsComplete(true); // Mark as complete even on error to allow rendering
-                console.error('Error precaching feature entities:', error);
+                setIsComplete(true);
+                console.error('Error precaching feature entities:', nextError);
             }
         };
 
         precacheEntities();
-    }, [features, queryClient, enabled, options]);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [precacheKey, queryClient, enabled]);
 
     return {
         isPrecaching,

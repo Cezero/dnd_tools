@@ -143,6 +143,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
   - Regular spells grouped by level
   - Domain spells grouped by domain and level
   - Spell information: name, school, range, save DC, description, reference
+  - List membership depends on caster type (known / spellbook / divine full-list)
 - **Preparation Interface** (Prepared Casters Only):
   - "Prep" column with number input to set preparation quantity
   - Only shown for classes where `spellsKnown === false`
@@ -167,8 +168,17 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 - Spell save DC is calculated as `baseSpellSaveDC + spell level`
 
 **Caster Type Distinction**:
-- **Prepared Casters** (`spellsKnown === false`): Must prepare spells in advance, track both `quantity` (prepared) and `timesCast` (cast)
-- **Known Casters** (`spellsKnown === true`): Can cast any spell they know, only track `timesCast` per spell level per day
+- **Known Casters** (`spellsKnown === true`): Show only learned spells. Cast any known spell; track `timesCast` per spell level per day
+- **Spellbook Casters** (`spellsKnown === false`, not divine): Show spells in the spellbook (`isKnown`) plus 0-level feature grants. Prepare from that list
+- **Divine Full-List Casters** (`isDivine && !spellsKnown`): Show every class-list spell up to the current max castable level (from `getSpellsPerDayMap`). Prepare a subset each day. Shared helper: `knowsFullClassSpellList` in `apps/frontend/src/features/character/utils/spellcastingUtils.ts`
+- Prepared casters track both `quantity` (prepared) and `timesCast` (cast)
+
+**PDF Spell Sheets** (`apps/frontend/src/features/character/characterPdfService.ts`):
+- One landscape sheet per `canCastSpells` class, using the same three display modes as this tab
+- Slots-per-day header uses `getSpellsPerDayMap` plus ability bonus spells (not the unused `spellcastingProgression` field)
+- Casting ability comes from `getCastingAbilityId` (scans all class-mapped features). Druid stores it on the Spells feature, not the first level-1 feature
+- The edition logo is a Vite-bundled import (`src/assets/logos/3-3.5E Logo - bw.jpg`); a raw `/src/assets/...` fetch fails in production
+- The prep column prints `preparedSpells.quantity` for the matching `${classId}-${spellId}-${spellLevel}` row; unprepared spells keep a blank underline
 
 ### **Features & Feats Tab**
 

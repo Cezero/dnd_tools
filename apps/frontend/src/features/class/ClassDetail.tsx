@@ -25,7 +25,7 @@ export default function ClassDetail() {
     });
 
     // Fetch feature progressions for this class (resolves featureIds to FeatureWithRelations[])
-    const { data: features = [] } = useQuery({
+    const { data: features = [], isLoading: isLoadingFeatures } = useQuery({
         queryKey: ClassQueryHooks.getClassFeaturesQueryKey(classId!),
         queryFn: () => ClassQueryHooks.getClassFeatures(classId!),
         enabled: !!classId,
@@ -38,8 +38,9 @@ export default function ClassDetail() {
         enabled: !!classId && isAdmin,
     });
 
-    // Precache all entities referenced in feature features
-    const { isPrecaching: isPrecachingEntities } = usePrecacheFeatureEntities(features);
+    // Warm entity names in the background. Do not block the page on this —
+    // a missing or slow appliesToId must not hostage the class view.
+    usePrecacheFeatureEntities(features);
 
     const handleBack = () => {
         navigate(`/classes${fromListParams ? `?${fromListParams}` : ''}`);
@@ -49,7 +50,7 @@ export default function ClassDetail() {
         navigate(`/classes/${id}/edit`, { state: { fromListParams: fromListParams } });
     };
 
-    if (isLoading || isPrecachingEntities) return (
+    if (isLoading || isLoadingFeatures) return (
         <div className="pt-8">
             <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
                 <div className="p-3 bg-content border-content rounded-lg border w-full">

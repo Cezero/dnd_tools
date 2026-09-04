@@ -43,7 +43,11 @@ export class LanguageService {
         return features
             .flatMap(prog =>
                 prog.entities
-                    ?.filter(entity => entity.appliesTo === EntityAppliesToType.AutomaticLanguage && entity.appliesToId)
+                    ?.filter(entity =>
+                        entity.type === EntityType.Base &&
+                        entity.appliesTo === EntityAppliesToType.AutomaticLanguage &&
+                        entity.appliesToId
+                    )
                     .map(entity => entity.appliesToId!) || []
             )
             .filter(id => id > 0);
@@ -59,6 +63,7 @@ export class LanguageService {
             .flatMap(prog =>
                 prog.entities
                     ?.filter(entity =>
+                        entity.type === EntityType.Base &&
                         entity.appliesTo === EntityAppliesToType.BonusLanguage &&
                         entity.appliesToId
                     )
@@ -78,6 +83,7 @@ export class LanguageService {
             .flatMap(prog =>
                 prog.entities
                     ?.filter(entity =>
+                        entity.type === EntityType.Base &&
                         entity.appliesTo === EntityAppliesToType.BonusLanguage &&
                         entity.appliesToId
                     )
@@ -113,6 +119,7 @@ export class LanguageService {
             .flatMap(prog =>
                 prog.entities
                     ?.filter(entity =>
+                        entity.type === EntityType.Base &&
                         entity.appliesTo === EntityAppliesToType.AutomaticLanguage &&
                         entity.appliesToId
                     )

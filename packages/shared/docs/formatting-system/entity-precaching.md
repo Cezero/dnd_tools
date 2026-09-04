@@ -244,28 +244,23 @@ import { displayStrategyFactory } from '@/lib/formatters';
 
 function ClassDisplay({ cls }: { cls: DnDClass }) {
     const queryClient = useQueryClient();
-    
-    // Precache all entities referenced in class features
-    const { isComplete } = usePrecacheFeatureEntities(cls.features || []);
-    
-    // Show loading state while precaching
-    if (!isComplete) {
-        return <div>Loading class features...</div>;
-    }
-    
-    // Format features after precaching completes
+
+    // Warm names in the background. Do not block the page on isComplete —
+    // bulk caches already hold most names, and a missing ID must not hostage the view.
+    usePrecacheFeatureEntities(cls.features || []);
+
     const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
     const result = strategy.format(cls.features || [], { queryClient });
-    
+
     return <div>{/* Render formatted features */}</div>;
 }
 ```
 
 **Key Points**:
-- Call hook with feature progressions
-- Check `isComplete` before formatting
-- Show loading state during precaching
-- Pass `queryClient` to display strategy
+- Call the hook with the features that will be formatted
+- Do not gate the whole page on `isPrecaching` or `isComplete`
+- Formatters fall back when a name is not yet in cache
+- Pass `queryClient` to the display strategy when it needs cache access
 
 ### **Pattern 2: Imperative Precaching**
 
@@ -494,18 +489,21 @@ const result = strategy.format(progressions, { queryClient });
 // May show "name not found" errors
 ```
 
-### **2. Show Loading States**
+### **2. Do Not Block the Page on Precache**
 
 ```tsx
-// ✅ CORRECT: Show loading during precaching
-const { isPrecaching, isComplete } = usePrecacheFeatureEntities(progressions);
+// ✅ CORRECT: Wait only for the entity query, then render
+const { data: features = [], isLoading } = useQuery(/* class/race features */);
+usePrecacheFeatureEntities(features);
+if (isLoading) {
+    return <div>Loading...</div>;
+}
+
+// ❌ WRONG: Gate the whole page on precache
+const { isPrecaching, isComplete } = usePrecacheFeatureEntities(features);
 if (isPrecaching || !isComplete) {
     return <div>Loading features...</div>;
 }
-
-// ❌ WRONG: No loading state
-const { isComplete } = usePrecacheFeatureEntities(progressions);
-// User sees nothing while precaching
 ```
 
 ### **3. Handle Errors Gracefully**

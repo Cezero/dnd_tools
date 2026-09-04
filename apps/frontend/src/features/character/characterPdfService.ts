@@ -3,12 +3,15 @@ import jsPDF from 'jspdf';
 import ordinal from 'ordinal';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
+import editionLogoBw from '@/assets/logos/3-3.5E Logo - bw.jpg';
 import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
+import { getCastingAbilityId, knowsFullClassSpellList, shouldIncludeSpellOnSheet } from '@/features/character/utils/spellcastingUtils';
 import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
 import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
+import { getSpellsPerDayMap } from '@/lib/ClassProgression';
 import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
 import { collectFeatureChoices, displayStrategyFactory, formatFeatureNameWithChoices, formatFeatureSummaryWithCompanionGrant, formatGrantedFeatDisplayName, formatSpellComponents, formatSpellSchool, pickFeatureClassIdForCharacter } from '@/lib/formatters';
 import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
@@ -18,7 +21,7 @@ import { hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes
 import { getRaceNameFromCache, getClassNameFromCache, getSkillSummaryById, formatSourceFromObject } from '@/services/cache';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { CharacterItem, CharacterWithAllDetailsResponse, DnDClass, FeatureWithRelations, GetAllFeatsWithFeatureInfoResponse, ItemWithDetails, Race, Spell } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, CurrencyId, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, CurrencyId, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, GetBonusSpellsForAbility, ITEM_TYPES, FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 import { appendAnimalsPages } from './characterPdfAnimals';
@@ -597,10 +600,7 @@ export async function generateCharacterPdf(
     const logoMaxWidth = 135;
     // Load and add logo image
     try {
-        // Load image from assets folder
-        // Use a path that Vite will resolve at build time
-        const logoPath = '/src/assets/logos/3-3.5E Logo - bw.jpg';
-        const response = await fetch(logoPath);
+        const response = await fetch(editionLogoBw);
         if (!response.ok) {
             // Try alternative path (public folder or direct asset import)
             throw new Error('Image not found at primary path');
@@ -3401,28 +3401,22 @@ async function generateSpellSheet(
                         isKnown: s.isKnown ?? false
                     }));
 
-                // For spellbook classes (non-spellsKnown classes), only show spells in spellbook (isKnown: true)
-                // Unlike prepared casters (Cleric, Druid) which display all spells per level
-                // However, 0th level spells may be granted via feature system (EntityType.Other + SpellbookSpell)
-                // Check if 0th level spells are granted via feature
+                // Spellbook: isKnown (+ 0-level feature grants). Divine prepared: full class list.
                 const hasZeroLevelGrant = resolvedProgressions
                     ? hasZeroLevelSpellbookSpellsGrant(resolvedProgressions, classId)
                     : false;
 
-                const spells = spellClass.spellsKnown
-                    ? allSpells // For spellsKnown classes, show all spells
-                    : allSpells.filter(s => {
-                        // For spellbook classes, show known spells
-                        if (s.isKnown) return true;
-                        // Also show 0th level spells if granted via feature (even if not marked as known in API response)
-                        if (s.classSpellLevel === 0 && hasZeroLevelGrant) return true;
-                        return false;
-                    });
+                const spells = allSpells.filter(s => shouldIncludeSpellOnSheet(spellClass, {
+                    isKnown: s.isKnown,
+                    classSpellLevel: s.classSpellLevel,
+                    hasZeroLevelGrant,
+                }));
 
-                // Filter domain spells similarly for spellbook classes
-                const filteredDomainSpells = spellClass.spellsKnown
-                    ? domainSpells // For spellsKnown classes, show all domain spells
-                    : domainSpells.filter(ds => ds.isKnown); // For spellbook classes, only show known domain spells
+                const filteredDomainSpells = domainSpells.filter(ds => shouldIncludeSpellOnSheet(spellClass, {
+                    isKnown: ds.isKnown,
+                    classSpellLevel: ds.spellLevel,
+                    hasZeroLevelGrant,
+                }));
 
                 spellData = { spells, domainSpells: filteredDomainSpells };
             }
@@ -3439,28 +3433,10 @@ async function generateSpellSheet(
     // Calculate caster level (typically equals class level, but may have adjustments)
     const casterLevel = classLevel; // TODO: Add adjustments from features if needed
 
-    // Get casting ability modifier from feature features
-    // Casting ability is stored in level 1 feature feature for the class
-    let castingAbilityId: number | null = null;
-    if (resolvedProgressions) {
-        const classLevel1Progression = resolvedProgressions.find(
-            p => p.sourceType === FeatureSourceType.Class &&
-                p.classes?.some(c => c.classId === classId) &&
-                p.level === 1
-        );
-        if (classLevel1Progression?.entities) {
-            const castingAbilityEntity = classLevel1Progression.entities.find(
-                e => e.appliesTo === EntityAppliesToType.CastingAbility
-            );
-            if (castingAbilityEntity?.appliesToId) {
-                castingAbilityId = castingAbilityEntity.appliesToId;
-            }
-        }
-    }
-
+    let castingAbilityId = getCastingAbilityId(resolvedProgressions, classId);
     if (!castingAbilityId) {
         console.warn(`No casting ability found for class ${classId}, defaulting to Intelligence`);
-        castingAbilityId = AbilityId.Intelligence; // Default fallback
+        castingAbilityId = AbilityId.Intelligence;
     }
 
     const abilityScore = character.abilityScores.find(a => a.abilityId === castingAbilityId)?.value ?? 10;
@@ -3469,9 +3445,10 @@ async function generateSpellSheet(
     // Calculate base spell save DC
     const baseSpellSaveDC = 10 + abilityModifier;
 
-    // Get spells per day from spellcasting feature
-    const spellsPerDay = new Map<number, number>();
-    if (spellClass.spellcastingProgression) {
+    // Slots come from FeatureEntity formulas. getClassById leaves spellcastingProgression null.
+    let spellsPerDay = getSpellsPerDayMap(resolvedProgressions ?? [], classLevel, classId);
+    if (spellsPerDay.size === 0 && spellClass.spellcastingProgression) {
+        spellsPerDay = new Map<number, number>();
         for (const feature of spellClass.spellcastingProgression) {
             if (feature.classLevel <= classLevel) {
                 for (const slot of feature.slots || []) {
@@ -3481,6 +3458,38 @@ async function generateSpellSheet(
                 }
             }
         }
+    }
+
+    const bonusSpells = GetBonusSpellsForAbility(abilityScore);
+    for (let level = 1; level <= 9; level++) {
+        if (spellsPerDay.has(level)) {
+            const bonus = bonusSpells[level - 1];
+            if (bonus > 0) {
+                spellsPerDay.set(level, spellsPerDay.get(level)! + bonus);
+            }
+        }
+    }
+
+    if (knowsFullClassSpellList(spellClass) && spellData && spellsPerDay.size > 0) {
+        spellData = {
+            spells: spellData.spells.filter(s =>
+                s.classSpellLevel !== null && spellsPerDay.has(s.classSpellLevel)
+            ),
+            domainSpells: spellData.domainSpells.filter(ds => spellsPerDay.has(ds.spellLevel)),
+        };
+    }
+
+    if (!spellData || (spellData.spells.length === 0 && spellData.domainSpells.length === 0)) {
+        return;
+    }
+
+    const preparedQuantityByKey = new Map<string, number>();
+    for (const prep of character.preparedSpells ?? []) {
+        if (prep.classId !== classId) {
+            continue;
+        }
+        const key = `${prep.classId}-${prep.spellId}-${prep.spellLevel}`;
+        preparedQuantityByKey.set(key, prep.quantity);
     }
 
     const drawBlackLabelBox = (x: number, y: number, width: number, height: number, label: string, size: number = 7): void => {
@@ -3808,9 +3817,13 @@ async function generateSpellSheet(
 
         let colX = tableStartX;
 
-        // Prep (blank)
+        // Prep: quantity from character.preparedSpells, otherwise a blank underline
+        const prepQuantity = preparedQuantityByKey.get(`${classId}-${spellEntry.spell.id}-${spellEntry.level}`) ?? 0;
         doc.setLineWidth(0.5);
         doc.setDrawColor(0, 0, 0);
+        if (prepQuantity > 0) {
+            doc.text(String(prepQuantity), colX + colWidths.prep / 2, yPos, { align: 'center' });
+        }
         doc.line(colX, yPos + 1, colX + colWidths.prep, yPos + 1);
         colX += colWidths.prep + colGap;
 

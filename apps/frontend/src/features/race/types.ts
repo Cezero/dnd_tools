@@ -1,4 +1,4 @@
-import type { RaceEditState as SharedRaceEditState, SourceMap } from '@shared/schema';
+import type { FeatureWithRelations, RaceEditState as SharedRaceEditState, SourceMap } from '@shared/schema';
 
 /**
  * Centralized state for RaceEdit component that eliminates per-tab state management
@@ -51,3 +51,19 @@ export type RaceEditStateUpdate =
     | { type: RaceEditStateUpdateType.SET_IS_FEATURE_ASSOC_OPEN; payload: { isFeatureAssocOpen: boolean } }
     | { type: RaceEditStateUpdateType.SET_EDITING_FEATURE_ID; payload: { editingFeatureId: number | null } }
     | { type: RaceEditStateUpdateType.SET_PRE_SELECTED_FEATURE_ID; payload: { preSelectedFeatureId: number | undefined } };
+
+/**
+ * Context for creating or updating a race language/ability container feature.
+ */
+export interface RaceConvenienceFeatureContext {
+    editionId: number;
+    features: FeatureWithRelations[];
+    raceName: string;
+}
+
+/**
+ * Result of persisting a language or ability change on the canonical Base feature.
+ */
+export interface RaceConveniencePersistResult {
+    createdFeatureId?: number;
+}

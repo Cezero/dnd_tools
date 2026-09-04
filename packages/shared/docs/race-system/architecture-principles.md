@@ -108,10 +108,7 @@ The race system provides the foundation for language acquisition through the fea
 - **Examples**: Humans can choose from many bonus languages
 
 #### **Language Service Integration**
-The system uses **LanguageService** for language management:
-- **Language Extraction**: Extracts automatic and bonus languages from feature progressions
-- **Language Validation**: Validates language assignments and conflicts
-- **Language Display**: Provides formatted language information for UI components
+`LanguageService` extracts automatic and bonus languages from feature entities that are `EntityType.Base` plus `AutomaticLanguage` or `BonusLanguage`. Leftover Other-type language entities are ignored so character creation and the race Languages tab do not double-count them. The Languages tab writes those Base entities through `raceConvenienceFeatures.ts`; it identifies the container by entity content, not by slug.
 
 ### **6. Ability Adjustment System**
 
@@ -121,13 +118,10 @@ The race system provides the foundation for racial ability score adjustments thr
 **Implementation**: FeatureEntity with EntityType.Base and EntityAppliesToType.Ability
 - **Ability Identification**: Uses appliesToId to specify which ability is adjusted
 - **Adjustment Value**: Uses value field for the bonus/penalty amount
-- **Feature Pattern**: Uses normal features (e.g., "Elf Ability Adjustments") with EntityType.Base entities
+- **Container lookup**: The Abilities tab finds the race-linked feature that already has those Base ability entities. Leftover Bonus-type ability rows are ignored.
 
 #### **Ability Service Integration**
-The system provides specialized UI components for ability adjustments:
-- **AbilitiesTab**: Dedicated interface for managing racial ability adjustments
-- **Real-time Validation**: Immediate feedback on ability adjustment changes
-- **Visual Feedback**: Clear display of current ability adjustments
+The Abilities tab is the convenience editor for those Base entities. The first non-zero adjustment creates and links a container feature; zeroing an ability removes that entity. Features tab remains available for the same feature.
 
 ## Component Architecture
 

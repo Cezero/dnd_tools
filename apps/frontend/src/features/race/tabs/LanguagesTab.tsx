@@ -1,12 +1,12 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
-
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { LANGUAGE_LIST, LANGUAGE_MAP } from '@shared/static-data';
 
-import type { RaceTabProps } from './types';
 import { LanguageService } from '../../../lib/LanguageService';
+
+import type { RaceTabProps } from './types';
 
 export function LanguagesTab({
     features = [],
@@ -55,7 +55,7 @@ export function LanguagesTab({
                                     {index < automaticLanguages.length - 1 && ','}
                                     <button
                                         type="button"
-                                        onClick={() => onRemoveLanguage?.(lang.languageId)}
+                                        onClick={() => onRemoveLanguage?.(lang.languageId, true)}
                                         className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                                         title="Remove Language"
                                     >
@@ -92,7 +92,7 @@ export function LanguagesTab({
                                     {index < bonusLanguages.length - 1 && ','}
                                     <button
                                         type="button"
-                                        onClick={() => onRemoveLanguage?.(lang.languageId)}
+                                        onClick={() => onRemoveLanguage?.(lang.languageId, false)}
                                         className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                                         title="Remove Language"
                                     >

@@ -4,7 +4,11 @@
 
 ## Overview
 
-Languages in the D&D Tools system are implemented using the **Feature System** with a simplified pattern. Languages are identified by their `ModifierAppliesToType` and distinguished by whether they are `BonusLanguage` (require INT modifier) or `AutomaticLanguage` (granted automatically). The system uses **no special conditions or choice keys** - language selection is handled entirely by the character creation/leveling UI logic.
+Languages in the D&D Tools system are implemented using the **Feature System** with a simplified pattern. Canonical grants are `EntityType.Base` entities whose `appliesTo` is `BonusLanguage` (INT-based choices) or `AutomaticLanguage` (always known). Leftover Other-type language entities are ignored by `LanguageService` and the race Languages tab. The system uses **no special conditions or choice keys** — language selection is handled entirely by the character creation/leveling UI logic.
+
+The race editor Languages tab is a convenience UI over those Base entities: it adds and removes language IDs on the race-linked feature that already has them, or creates that feature when the race has none. It does not look up features by slug. See [Race System Frontend Components](../race-system/frontend-components.md#languagestab-component).
+
+Leftover Other-type race language features (and Bonus-type ability-adjustment features) are removed by `apps/backend/scripts/cleanup-legacy-race-language-ability-features.ts`. That script selects leftovers by entity type, not slug.
 
 ## Database Schema Structure
 

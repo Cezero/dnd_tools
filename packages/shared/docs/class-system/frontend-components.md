@@ -49,9 +49,10 @@ The class system frontend follows the shared [Component Architecture](../applica
 Container component for class detail views. Uses TanStack Query to fetch class data from the database, ensuring viewers always see persisted state, not editing state.
 
 **Key Features**:
-- **Database Fetching**: Uses `ClassQueryHooks.getClassById` with TanStack Query
+- **Database Fetching**: Uses `ClassQueryHooks.getClassById` and `getClassFeatures` with TanStack Query
 - **Lock Status**: Checks lock status to disable edit button when another user is editing
 - **Cache Management**: Automatically benefits from TanStack Query caching and refetching
+- **Loading gate**: Waits only for the class and features queries. Entity-name precache runs in the background and does not block the page.
 
 **Source File**: `frontend/src/features/class/ClassDetail.tsx`
 

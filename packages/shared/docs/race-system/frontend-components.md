@@ -228,37 +228,15 @@ Tab for managing racial features and feature progression.
 
 ### **AbilitiesTab Component**
 
-Tab for managing racial ability score adjustments and bonuses.
-
-**Purpose and Function**:
-- **Ability Adjustments**: Configure racial ability score modifications
-- **Ability Bonuses**: Set racial bonuses to specific abilities
-- **Ability Integration**: Integrate with the ability system
-- **Ability Validation**: Ensure proper ability configuration
-
-**Race-Specific Features**:
-- **Ability Score Adjustments**: Set racial ability score modifications
-- **Ability Bonuses**: Configure racial bonuses to specific abilities
-- **Ability Integration**: Integrate with ability system for validation
-- **Ability Display**: Show ability information and requirements
+Convenience editor for racial ability score adjustments. It does not store adjustments on the race row. It reads and writes `EntityType.Base` + `EntityAppliesToType.Ability` entities on the linked race feature that already holds those entities. Leftover Bonus-type ability rows are ignored. The first non-zero value creates that container feature and links it; setting a value back to zero removes that entity.
 
 **Source File**: `frontend/src/features/race/tabs/AbilitiesTab.tsx`
 
+Write helpers live in `frontend/src/features/race/raceConvenienceFeatures.ts`.
+
 ### **LanguagesTab Component**
 
-Tab for managing racial languages and language options.
-
-**Purpose and Function**:
-- **Racial Languages**: Configure automatic languages for the race
-- **Language Options**: Set additional language choices
-- **Language Integration**: Integrate with the language system
-- **Language Validation**: Ensure proper language configuration
-
-**Race-Specific Features**:
-- **Automatic Languages**: Choose languages automatically known by the race
-- **Language Choices**: Configure additional language options
-- **Language Integration**: Integrate with language system for validation
-- **Language Display**: Show language information and requirements
+Convenience editor for automatic and bonus languages. It extracts IDs through `LanguageService`, which only counts `EntityType.Base` language entities. Add/remove updates that same Base container (creating and linking it if the race has none). Leftover Other-type language features remain visible on the Features tab until cleanup, but this tab does not read or write them.
 
 **Source File**: `frontend/src/features/race/tabs/LanguagesTab.tsx`
 
@@ -488,23 +466,11 @@ The race system integrates with the feature system through the FeaturesTab:
 
 The race system integrates with the ability system through the AbilitiesTab:
 
-**Ability Adjustments**: Configure racial ability score modifications
-**Ability Bonuses**: Set racial bonuses to specific abilities
-**Ability Validation**: Ensure proper ability configuration
-**Ability Display**: Show ability information and requirements
-
-**Related Documentation**: [Ability System Frontend Components](../ability-system/frontend-components.md)
+**Ability Adjustments**: The Abilities tab edits `EntityType.Base` ability entities on the race-linked container feature. See [Ability Adjustment System](architecture-principles.md#6-ability-adjustment-system).
 
 ### **Language System Integration**
 
-The race system integrates with the language system through the LanguagesTab:
-
-**Racial Languages**: Configure automatic languages for races
-**Language Options**: Set additional language choices
-**Language Validation**: Ensure proper language configuration
-**Language Display**: Show language information and requirements
-
-**Related Documentation**: [Language System Frontend Components](../language-system/frontend-components.md)
+The Languages tab and `LanguageService` treat only `EntityType.Base` automatic/bonus language entities as canonical. Character language selection uses the same service. See [Language Implementation](../feature-system/languages.md).
 
 ## 🔗 **Related Documentation**
 
@@ -513,6 +479,5 @@ The race system integrates with the language system through the LanguagesTab:
 - **[Static Data](static-data.md)** - Race system enums and types
 - **[Backend Implementation](backend-implementation.md)** - Race system backend implementation
 - **[Feature System Frontend Components](../feature-system/frontend-components.md)** - Feature system integration
-- **[Ability System Frontend Components](../ability-system/frontend-components.md)** - Ability system integration
-- **[Language System Frontend Components](../language-system/frontend-components.md)** - Language system integration
+- **[Language Implementation](../feature-system/languages.md)** - Automatic and bonus languages as feature entities
 - **[Frontend Component Patterns](../application-overview/frontend-components.md)** - Shared frontend patterns and conventions

@@ -40,9 +40,9 @@ export interface RaceTabProps {
     onUnlinkFeatureId?: (featureId: number) => Promise<void> | void;
 
     // Special feature callbacks (already implemented)
-    onAddLanguage?: (languageId: number, isAutomatic: boolean) => void;
-    onRemoveLanguage?: (languageId: number) => void;
-    onAbilityChange?: (abilityId: number, parsedValue: number) => void;
+    onAddLanguage?: (languageId: number, isAutomatic: boolean) => void | Promise<void>;
+    onRemoveLanguage?: (languageId: number, isAutomatic: boolean) => void | Promise<void>;
+    onAbilityChange?: (abilityId: number, parsedValue: number) => void | Promise<void>;
 
     raceId?: number;
 }

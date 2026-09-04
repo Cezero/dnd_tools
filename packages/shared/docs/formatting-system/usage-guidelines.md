@@ -263,9 +263,9 @@ Don't ignore the `isComplete` state from the precaching hook. Always check compl
 
 ### **6. Entity Precaching Requirements**
 
-#### ✅ **CORRECT: Always precache before formatting**
+#### ✅ **CORRECT: Warm names in the background; do not block the page**
 
-Entity names (feats, features, spells, domains, classes, skills, races) must be available in the TanStack Query cache when formatters need them. Formatters use synchronous cache access and cannot trigger fetches, so entities must be precached before formatting.
+Formatters read names synchronously from TanStack Query caches. Start `usePrecacheFeatureEntities` so missing individual items can be fetched, but do not gate the whole page on `isPrecaching` or `isComplete`. Bulk caches (`features-cache`, `feats-cache`, and so on) already hold most names, and formatters fall back when a name is not yet cached.
 
 **React Component Pattern**:
 ```tsx
@@ -275,19 +275,12 @@ import { useQueryClient } from '@tanstack/react-query';
 
 function FeatureDisplay({ progressions }: { progressions: FeatureProgression[] }) {
     const queryClient = useQueryClient();
-    
-    // Precache all entities referenced in progressions
-    const { isComplete } = usePrecacheFeatureEntities(progressions);
-    
-    // Show loading state while precaching
-    if (!isComplete) {
-        return <div>Loading features...</div>;
-    }
-    
-    // Format after precaching completes
+
+    usePrecacheFeatureEntities(progressions);
+
     const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
     const result = strategy.format(progressions, { queryClient });
-    
+
     return <div>{/* Render formatted features */}</div>;
 }
 ```
@@ -315,26 +308,25 @@ const result = strategy.format(progressions, { queryClient });
 // May show "243 (feat name not found)" instead of actual feat name
 ```
 
-#### ✅ **CORRECT: Show loading states during precaching**
-
-Always provide user feedback during precaching:
+#### ✅ **CORRECT: Wait only for the entity query**
 
 ```tsx
-const { isPrecaching, isComplete } = usePrecacheFeatureEntities(progressions);
-
-if (isPrecaching || !isComplete) {
-    return <div>Loading features...</div>;
+const { data: features = [], isLoading } = useQuery(/* class/race features */);
+usePrecacheFeatureEntities(features);
+if (isLoading) {
+    return <div>Loading...</div>;
 }
 ```
 
-#### ❌ **WRONG: No loading state**
+#### ❌ **WRONG: Gate the page on precache**
 
-Don't leave users wondering what's happening:
+A missing or slow `appliesToId` must not hostage the view:
 
 ```tsx
-// ❌ WRONG: No loading state
-const { isComplete } = usePrecacheFeatureEntities(progressions);
-// User sees nothing while precaching
+const { isPrecaching, isComplete } = usePrecacheFeatureEntities(progressions);
+if (isPrecaching || !isComplete) {
+    return <div>Loading features...</div>;
+}
 ```
 
 #### ✅ **CORRECT: Handle errors gracefully**

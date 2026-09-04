@@ -15,9 +15,14 @@ import {
     ValidatedForm,
     useValidatedForm
 } from '@/components/forms';
-import { UpdateRaceSchema, BaseRaceSchema, Feature, FeatureWithRelations, CreateRaceRequest, type RaceEditState, SourceMap } from '@shared/schema';
-import { DraftAction, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
+import { UpdateRaceSchema, BaseRaceSchema, FeatureWithRelations, CreateRaceRequest, type RaceEditState, SourceMap } from '@shared/schema';
+import { DraftAction, FeatureSourceType } from '@shared/static-data';
 
+import {
+    persistRaceAbilityChange,
+    persistRaceLanguageAdd,
+    persistRaceLanguageRemove,
+} from './raceConvenienceFeatures';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
 import { RaceQueryHooks } from './RaceQueryHooks';
 import {
@@ -145,6 +150,33 @@ export function RaceEdit() {
 
         loadFeatures();
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [queryClient, state.featureIds]);
+
+    /**
+     * Reloads linked features after an in-place entity update (featureIds unchanged).
+     */
+    const reloadLoadedFeatures = useCallback(async () => {
+        if (state.featureIds.length === 0) {
+            setLoadedFeatures([]);
+            prevFeatureIdsRef.current = [];
+            return;
+        }
+
+        const features = await Promise.all(
+            state.featureIds.map(async (featureId) => {
+                await queryClient.invalidateQueries({
+                    queryKey: FeatureQueryHooks.getFeatureByIdQueryKey(featureId)
+                });
+                try {
+                    return await FeatureQueryHooks.getFeatureById(featureId, queryClient);
+                } catch (_error) {
+                    return null;
+                }
+            })
+        );
+        const validFeatures = features.filter((feature): feature is FeatureWithRelations => feature !== null);
+        setLoadedFeatures(validFeatures);
+        prevFeatureIdsRef.current = validFeatures.map(feature => feature.id);
     }, [queryClient, state.featureIds]);
 
     // Derive formData from state (single source of truth)
@@ -476,100 +508,33 @@ export function RaceEdit() {
     }, [raceId, resolution.raceState, resolution.updateValue, updateState]);
 
     /**
-     * Handles adding a language to the race via the feature system using FeatureEntity approach.
+     * Adds a language entity to the canonical Base automatic/bonus language feature.
      */
-    const handleAddLanguage = useCallback((languageId: number, isAutomatic: boolean) => {
-        // Features are now managed independently via feature state system
-        // Language features need to be created/edited via FeatureEditForm
-        // For now, this needs to be refactored to work with featureIds
-        // TODO: Refactor language handling to work with independent feature state system
-        console.warn('handleAddLanguage needs refactoring for independent feature state system');
-        // TODO: Refactor to work with featureIds and FeatureQueryHooks
-        return;
-        /* Old code - needs refactoring
-        const appliesToType = isAutomatic ? EntityAppliesToType.AutomaticLanguage : EntityAppliesToType.BonusLanguage;
-        const prev = loadedFeatures;
-
-        // Check if this language is already added
-        const existingLanguageEntity = prev.some(fp =>
-            fp.sourceType === FeatureSourceType.Race &&
-            fp.entities?.some(entity =>
-                entity.type === EntityType.Base &&
-                entity.appliesTo === appliesToType &&
-                entity.appliesToId === languageId
-            )
-        );
-
-        if (existingLanguageEntity) {
-            // Language already exists, don't add it again
-            return;
-        }
-
-        // Find existing language feature or create new one
-        let languageProgression = prev.find(fp =>
-            fp.sourceType === FeatureSourceType.Race &&
-            fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === appliesToType)
-        );
-
-        if (!languageProgression) {
-            // Create new language feature
-            const tempFeatureId = Math.floor(Date.now() + Math.random() * 1000);
-            languageProgression = {
-                id: tempFeatureId, // Temporary ID for frontend state
-                slug: isAutomatic ? 'automatic-languages' : 'bonus-languages',
-                name: isAutomatic ? 'Automatic Languages' : 'Bonus Languages',
-                description: isAutomatic ? 'Automatic language feature' : 'Bonus language feature',
-                displayInCharacterSheet: true,
-                sourceType: FeatureSourceType.Race,
-                level: 1,
-                domainId: null, // Set domainId to null for race-based features
-                entities: []
-            };
-        }
-
-        // Add language modifier
-        const languageEntity = {
-            id: null, // Backend will generate ID
-            featureId: languageProgression.id,
-            type: EntityType.Base, // Use Base type for languages
-            value: 0,
-            appliesTo: appliesToType,
-            appliesToId: languageId,
-            appliesToSubId: null,
-            bonusType: null,
-            filterType: null,
-            conditions: [],
-            groupingId: 1, // Group all race languages together as one feature
-            displayInDetail: true,
-            showFullProgression: false,
-        };
-
-        // Update the existing feature or add a new one
-        const updatedProgressions = prev.map(fp => {
-            if (fp.sourceType === FeatureSourceType.Race &&
-                fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === appliesToType)) {
-                return {
-                    ...fp,
-                    entities: [...(fp.entities || []), languageEntity]
-                };
+    const handleAddLanguage = useCallback(async (languageId: number, isAutomatic: boolean) => {
+        try {
+            const result = await persistRaceLanguageAdd(
+                {
+                    editionId: state.editionId,
+                    features: loadedFeatures,
+                    raceName: state.name,
+                },
+                languageId,
+                isAutomatic
+            );
+            if (result.createdFeatureId) {
+                updateState({ type: RaceEditStateUpdateType.LINK_FEATURE, payload: { featureId: result.createdFeatureId } });
+                if (raceId && resolution.raceState) {
+                    await resolution.updateValue('featureIds', result.createdFeatureId, DraftAction.Add);
+                }
             }
-            return fp;
-        });
-
-        // If no existing feature was found, add the new one with the language modifier
-        if (!prev.some(fp =>
-            fp.sourceType === FeatureSourceType.Race &&
-            fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === appliesToType)
-        )) {
-            languageProgression.entities = [languageEntity];
-            updatedProgressions.push(languageProgression);
+            await queryClient.invalidateQueries({ queryKey: ['features'], exact: false });
+            if (!result.createdFeatureId) {
+                await reloadLoadedFeatures();
+            }
+        } catch (persistError) {
+            setError(persistError instanceof Error ? persistError.message : 'Failed to add language');
         }
-
-        // Features are now managed independently - this needs refactoring
-        // TODO: Refactor language feature handling to work with independent feature state system
-        console.warn('Language feature handling needs refactoring for independent feature state system');
-        */
-    }, [state.featureIds, updateState]);
+    }, [loadedFeatures, queryClient, raceId, reloadLoadedFeatures, resolution.raceState, resolution.updateValue, state.editionId, state.name, updateState]);
 
     /**
      * Handles adding a feature to the race.
@@ -638,176 +603,55 @@ export function RaceEdit() {
     }, [updateState]);
 
     /**
-     * Handles the removal of a language from the race using FeatureEntity approach.
+     * Removes a language entity from the matching canonical Base language feature.
      */
-    const handleRemoveLanguage = useCallback((languageId: number) => {
-        // Features are now managed independently - need to refactor
-        // TODO: Refactor to work with featureIds and FeatureQueryHooks
-        console.warn('handleRemoveLanguage needs refactoring for independent feature state system');
-        return;
-        /* Old code - needs refactoring
-        const prev = loadedFeatures;
-        // Remove the language modifier from both automatic and bonus language features
-        const updatedProgressions = prev.map(fp => {
-            if (fp.sourceType === FeatureSourceType.Race &&
-                fp.entities?.some(e =>
-                    e.type === EntityType.Base &&
-                    (e.appliesTo === EntityAppliesToType.AutomaticLanguage || e.appliesTo === EntityAppliesToType.BonusLanguage)
-                )) {
-                return {
-                    ...fp,
-                    entities: fp.entities?.filter(entity =>
-                        !(entity.type === EntityType.Base &&
-                            (entity.appliesTo === EntityAppliesToType.AutomaticLanguage || entity.appliesTo === EntityAppliesToType.BonusLanguage) &&
-                            entity.appliesToId === languageId)
-                    ) || []
-                };
-            }
-            return fp;
-        });
-
-        // Remove empty language features
-        const filteredProgressions = updatedProgressions.filter(fp => {
-            if (fp.sourceType === FeatureSourceType.Race &&
-                fp.entities?.some(e =>
-                    e.type === EntityType.Base &&
-                    (e.appliesTo === EntityAppliesToType.AutomaticLanguage || e.appliesTo === EntityAppliesToType.BonusLanguage)
-                )) {
-                return fp.entities && fp.entities.length > 0;
-            }
-            return true;
-        });
-
-        // Update featureIds based on filtered features
-        const updatedFeatureIds = filteredProgressions.map(f => f.id).filter((id): id is number => id !== null);
-        updateState({ type: RaceEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
-        */
-    }, [loadedFeatures, updateState]);
+    const handleRemoveLanguage = useCallback(async (languageId: number, isAutomatic: boolean) => {
+        try {
+            await persistRaceLanguageRemove(
+                {
+                    editionId: state.editionId,
+                    features: loadedFeatures,
+                    raceName: state.name,
+                },
+                languageId,
+                isAutomatic
+            );
+            await queryClient.invalidateQueries({ queryKey: ['features'], exact: false });
+            await reloadLoadedFeatures();
+        } catch (persistError) {
+            setError(persistError instanceof Error ? persistError.message : 'Failed to remove language');
+        }
+    }, [loadedFeatures, queryClient, reloadLoadedFeatures, state.editionId, state.name]);
 
     /**
-     * Handles changes to an ability adjustment for the race via the feature system.
+     * Updates a Base ability-adjustment entity, creating the container when the first non-zero value is set.
      */
-    const handleAbilityChange = useCallback((abilityId: number, parsedValue: number) => {
-        // Features are now managed independently - need to refactor
-        // TODO: Refactor to work with featureIds and FeatureQueryHooks
-        console.warn('handleAbilityChange needs refactoring for independent feature state system');
-        return;
-        /* Old code - needs refactoring
-        const prev = loadedFeatures;
-        // Find existing ability adjustment feature (race feature with Base ability entities)
-        const existingAbilityFeature = prev.find(fp =>
-            fp.sourceType === FeatureSourceType.Race &&
-            fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability)
-        );
-
-        let updatedFeatures: FeatureWithRelations[];
-
-        if (existingAbilityFeature) {
-            // Check if this specific ability already has a modifier
-            const existingEntity = existingAbilityFeature.entities?.find(e =>
-                e.type === EntityType.Base &&
-                e.appliesTo === EntityAppliesToType.Ability &&
-                e.appliesToId === abilityId
+    const handleAbilityChange = useCallback(async (abilityId: number, parsedValue: number) => {
+        try {
+            const result = await persistRaceAbilityChange(
+                {
+                    editionId: state.editionId,
+                    features: loadedFeatures,
+                    raceName: state.name,
+                },
+                abilityId,
+                parsedValue
             );
-
-            if (existingEntity) {
-                // Update existing entity
-                updatedFeatures = prev.map(fp =>
-                    fp.sourceType === FeatureSourceType.Race &&
-                        fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability)
-                        ? {
-                            ...fp,
-                            entities: fp.entities?.map(e =>
-                                e.type === EntityType.Base &&
-                                    e.appliesTo === EntityAppliesToType.Ability &&
-                                    e.appliesToId === abilityId
-                                    ? { ...e, value: parsedValue }
-                                    : e
-                            ) || []
-                        }
-                        : fp
-                );
-            } else if (parsedValue !== 0) {
-                // Add new entity to existing ability adjustment feature
-                updatedFeatures = prev.map(fp =>
-                    fp.sourceType === FeatureSourceType.Race &&
-                        fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability)
-                        ? {
-                            ...fp,
-                            entities: [...(fp.entities || []), {
-                                id: null, // Backend will generate ID
-                                featureId: fp.id,
-                                type: EntityType.Base, // Use Base type for ability adjustments
-                                value: parsedValue,
-                                appliesTo: EntityAppliesToType.Ability,
-                                appliesToId: abilityId,
-                                appliesToSubId: null,
-                                bonusType: null,
-                                filterType: null,
-                                conditions: [],
-                                groupingId: 1, // Group all race ability adjustments together as one feature
-                                displayInDetail: true,
-                                showFullProgression: false,
-                            }]
-                        }
-                        : fp
-                );
-            } else {
-                // Remove modifier if value is 0
-                updatedFeatures = prev.map(fp =>
-                    fp.sourceType === FeatureSourceType.Race &&
-                        fp.entities?.some(e => e.type === EntityType.Base && e.appliesTo === EntityAppliesToType.Ability)
-                        ? {
-                            ...fp,
-                            entities: fp.entities?.filter(e =>
-                                !(e.type === EntityType.Base &&
-                                    e.appliesTo === EntityAppliesToType.Ability &&
-                                    e.appliesToId === abilityId)
-                            ) || []
-                        }
-                        : fp
-                );
+            if (result.createdFeatureId) {
+                updateState({ type: RaceEditStateUpdateType.LINK_FEATURE, payload: { featureId: result.createdFeatureId } });
+                if (raceId && resolution.raceState) {
+                    await resolution.updateValue('featureIds', result.createdFeatureId, DraftAction.Add);
+                }
             }
-        } else if (parsedValue !== 0) {
-            // Create new ability adjustment feature with this modifier
-            // Backend-Managed IDs Pattern: Set id to null for new feature
-            const tempFeatureId = Math.floor(Date.now() + Math.random() * 1000);
-            const newAbilityFeature: FeatureWithRelations = {
-                id: tempFeatureId, // Temporary ID for frontend state
-                slug: 'ability-adjustments',
-                name: 'Ability Adjustments',
-                description: 'Racial ability score adjustments',
-                displayInCharacterSheet: true,
-                sourceType: FeatureSourceType.Race,
-                level: 1,
-                domainId: null, // Set domainId to null for race-based features
-                entities: [{
-                    id: null, // Backend will generate ID
-                    featureId: null,
-                    type: EntityType.Base, // Use Base type for ability adjustments
-                    value: parsedValue,
-                    appliesTo: EntityAppliesToType.Ability,
-                    appliesToId: abilityId,
-                    appliesToSubId: null,
-                    bonusType: null,
-                    filterType: null,
-                    conditions: [],
-                    groupingId: 1, // Group all race ability adjustments together as one feature
-                    displayInDetail: true,
-                    showFullProgression: false,
-                }],
-            };
-            updatedFeatures = [...prev, newAbilityFeature];
-        } else {
-            // No change needed
-            return;
+            await queryClient.invalidateQueries({ queryKey: ['features'], exact: false });
+            if (!result.createdFeatureId) {
+                await reloadLoadedFeatures();
+            }
+        } catch (persistError) {
+            setError(persistError instanceof Error ? persistError.message : 'Failed to update ability adjustment');
         }
+    }, [loadedFeatures, queryClient, raceId, reloadLoadedFeatures, resolution.raceState, resolution.updateValue, state.editionId, state.name, updateState]);
 
-        // Features are now managed independently - need to extract featureIds
-        const updatedFeatureIds = updatedFeatures.map(f => f.id).filter((id): id is number => id !== null);
-        updateState({ type: RaceEditStateUpdateType.SET_FEATURE_IDS, payload: { featureIds: updatedFeatureIds } });
-        */
-    }, [loadedFeatures, updateState]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -974,7 +818,7 @@ export function RaceEdit() {
                                 updateState={updateState}
                                 validation={form.validation}
                                 isLoading={isLoading}
-                                features={[]} // Features are loaded by FeaturesManager using FeatureQueryHooks
+                                features={loadedFeatures}
                                 setFeatures={(features) => {
                                     // Update featureIds based on the features
                                     const updatedFeatureIds = features.map(f => f.id).filter((id): id is number => id !== null);

@@ -6,12 +6,12 @@ import { SpellTooltip } from '@/components/entity-tooltip/SpellTooltip';
 import { ScrollableCategorizedList } from '@/components/scrollable-categorized-list';
 import { CharacterDetailStateUpdateType } from '@/features/character/types';
 import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
-import { getSpellcastingClasses } from '@/features/character/utils/spellcastingUtils';
+import { getCastingAbilityId, getSpellcastingClasses, knowsFullClassSpellList, shouldIncludeSpellOnSheet } from '@/features/character/utils/spellcastingUtils';
 import { getSpellsPerDayMap } from '@/lib/ClassProgression';
 import { formatSpellSchool, formatSpellComponents } from '@/lib/formatters';
 import { useCacheFunctions, formatSourceFromObject } from '@/services/cache';
 import type { CharacterSpellPreparationResponse, Spell } from '@shared/schema';
-import { GetAbilityModifier, ABILITY_MAP, GetBonusSpellsForAbility, SpellSlotType, EntityAppliesToType, FeatureSourceType } from '@shared/static-data';
+import { ABILITY_MAP, GetAbilityModifier, GetBonusSpellsForAbility, SpellSlotType } from '@shared/static-data';
 
 import type { SpellsTabProps, SpellEntry } from './types';
 
@@ -143,19 +143,32 @@ export function SpellsTab({ character, classDetailsMap, resolvedProgressions, ch
                 isKnown: s.isKnown ?? false
             }));
 
-        // Filter based on spellbook/spellsKnown
         const hasZeroLevelGrant = hasZeroLevelSpellbookSpellsGrant(resolvedProgressions, selectedClass.classId);
-        const spells = selectedClass.class.spellsKnown
-            ? allSpells
-            : allSpells.filter(s => {
-                if (s.isKnown) return true;
-                if (s.classSpellLevel === 0 && hasZeroLevelGrant) return true;
-                return false;
-            });
+        let castableLevels: Map<number, number> | undefined;
+        if (knowsFullClassSpellList(selectedClass.class)) {
+            const slots = getSpellsPerDayMap(
+                resolvedProgressions ?? [],
+                selectedClass.level,
+                selectedClass.classId
+            );
+            if (slots.size > 0) {
+                castableLevels = slots;
+            }
+        }
 
-        const filteredDomainSpells = selectedClass.class.spellsKnown
-            ? domainSpells
-            : domainSpells.filter(ds => ds.isKnown);
+        const spells = allSpells.filter(s => shouldIncludeSpellOnSheet(selectedClass.class, {
+            isKnown: s.isKnown,
+            classSpellLevel: s.classSpellLevel,
+            hasZeroLevelGrant,
+            castableLevels,
+        }));
+
+        const filteredDomainSpells = domainSpells.filter(ds => shouldIncludeSpellOnSheet(selectedClass.class, {
+            isKnown: ds.isKnown,
+            classSpellLevel: ds.spellLevel,
+            hasZeroLevelGrant,
+            castableLevels,
+        }));
 
         return { spells, domainSpells: filteredDomainSpells };
     }, [spellSelectionData, selectedClass, resolvedProgressions]);
@@ -229,32 +242,7 @@ export function SpellsTab({ character, classDetailsMap, resolvedProgressions, ch
             a.classId === selectedClass.classId || a.secondaryClassId === selectedClass.classId
         ).length;
 
-        // Extract casting ability from resolved features
-        // Check all features (not just level 1) since features are cumulative
-        // The CastingAbility entity is typically in the level 1 feature, but we check all to be safe
-        let castingAbilityId: number | null = null;
-        if (selectedClass.classId && resolvedProgressions) {
-            // Find all class features for this class, sorted by level (lowest first)
-            const classProgressions = resolvedProgressions
-                .filter(
-                    p => p.sourceType === FeatureSourceType.Class &&
-                        p.classes?.some(c => c.classId === selectedClass.classId)
-                )
-                .sort((a, b) => a.level - b.level);
-
-            // Check each feature for CastingAbility entity (start with lowest level)
-            for (const feature of classProgressions) {
-                if (feature.entities) {
-                    const castingAbilityEntity = feature.entities.find(
-                        e => e.appliesTo === EntityAppliesToType.CastingAbility
-                    );
-                    if (castingAbilityEntity?.appliesToId) {
-                        castingAbilityId = castingAbilityEntity.appliesToId;
-                        break; // Found it, no need to check higher levels
-                    }
-                }
-            }
-        }
+        const castingAbilityId = getCastingAbilityId(resolvedProgressions, selectedClass.classId);
 
         // ERROR if casting ability not found - do NOT default
         if (castingAbilityId === null) {

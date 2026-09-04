@@ -42,10 +42,10 @@ The Class System integrates with the [Feature Formatting System](../feature-syst
 - **Class Feature Display**: Uses `DisplayType.Detail` for class feature progression displays
 - **Feature Progression Formatting**: Leverages the formatting system's registry pattern for consistent display
 - **Cross-System Consistency**: Ensures class features are formatted the same way as race features and standalone features
-- **Entity Precaching**: Uses `usePrecacheFeatureEntities` hook to ensure entity names are available before formatting
+- **Entity Precaching**: `ClassDisplay` warms referenced entity names in the background via `usePrecacheFeatureEntities`. `ClassDetail` does not block the page on that work; names already live in the bulk caches (`features-cache`, `feats-cache`, and so on).
 
 **Precaching Requirements**:
-Class display components must precache entities (feats, features, spells, domains, classes, skills, races) referenced in class features before formatting. This prevents "name not found" errors when displaying feature progressions.
+Class display warms referenced entity names (feats, features, spells, domains, classes, skills, races) in the background. Do not gate the class detail page on `isPrecaching` — a missing or slow `appliesToId` must not hostage the view. Formatters fall back when a name is not yet cached.
 
 **Related Documentation**:
 - [Feature Formatting System](../formatting-system/README.md) - Complete formatting system overview

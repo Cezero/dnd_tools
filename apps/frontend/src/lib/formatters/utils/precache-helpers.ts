@@ -5,16 +5,17 @@ import { ClassQueryHooks } from '@/features/class/ClassQueryHooks';
 import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
 import type {
+    ClassCacheResponse,
+    DnDClass,
+    DomainCacheResponse,
     Feat,
     FeatCacheResponse,
     FeatQueryResponse,
     Feature,
-    SpellCacheResponse,
-    SkillCacheResponse,
-    DomainCacheResponse,
-    ClassCacheResponse,
+    FeatureCacheResponse,
     RaceCacheResponse,
-    DnDClass,
+    SkillCacheResponse,
+    SpellCacheResponse,
 } from '@shared/schema';
 
 /**
@@ -70,6 +71,11 @@ export async function precacheFeature(
         return;
     }
 
+    const featuresCacheData = queryClient.getQueryData<FeatureCacheResponse>(['features-cache']);
+    if (featuresCacheData?.results?.some(f => f.id === featureId)) {
+        return;
+    }
+
     // Fetch if not cached
     try {
         await queryClient.fetchQuery({
@@ -80,6 +86,7 @@ export async function precacheFeature(
             },
             staleTime: 5 * 60 * 1000,
             gcTime: 10 * 60 * 1000,
+            retry: false,
         });
     } catch (error) {
         console.warn(`Failed to precache feature ${featureId}:`, error);
