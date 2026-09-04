@@ -75,6 +75,7 @@ This documentation follows a layered approach, with each layer building upon the
 
 ### **Specialized Systems**
 - **[Class Skills](class-skills.md)** - Class skill system and proficiency management
+- **[Class Proficiencies](class-proficiencies.md)** - Class vs feat weapon/armor proficiency model (`EntityType.Base` vs `EntityType.Other`)
 - **[Languages](languages.md)** - Language system and automatic language grants
 - **[Weapon Familiarity System](weapon-familiarity-system.md)** - Weapon proficiency and familiarity mechanics
 - **[Feature-Linked Skill Analogs](feature-linked-skill-analogs.md)** - Skill-like features and analogs

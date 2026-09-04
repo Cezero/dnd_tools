@@ -72,7 +72,7 @@ The unified model that handles all types of feature effects including modifiers,
 - **`appliesToSubId`**: Sub-target ID for complex applications
 - **`formulaParamsId`**: Reference to formula parameters (if formula-based)
 - **`groupingId`**: Groups related entities together (default: 0)
-- **`type`**: Type of entity (Bonus, Quantity, Replacement, Base, Other, Choice, Allocation) - references @EntityType enum. Note: Class and race mechanics use EntityType.Base. Proficiencies use EntityType.Other with appliesTo = EntityAppliesToType.Proficiency
+- **`type`**: Type of entity (Bonus, Quantity, Replacement, Base, Other, Choice, Allocation) - references @EntityType enum. Class and race mechanics use EntityType.Base, including class weapon/armor proficiencies (`appliesTo` = EntityAppliesToType.Proficiency). Feat-granted proficiencies use EntityType.Other with the same appliesTo. See [Class Proficiencies](class-proficiencies.md).
 - **`value`**: Numerical value of the entity (if applicable)
 - **`bonusType`**: Bonus type for stacking rules (if applicable)
 - **`displayInDetail`**: Whether to display this entity in class/race detail narrative lists (default: true). Chassis formula entities (BAB, saves, spells per day) are `false`. The character viewer Features list omits a feature when every entity is hidden this way.

@@ -162,7 +162,7 @@ The unified schema that handles all types of feature effects including modifiers
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
 - **`featureId`**: Required positive integer linking to the feature
-- **`type`**: Required enum value from @EntityType (Bonus, Quantity, Replacement, Other, Choice, Allocation). Note: Proficiencies use EntityType.Other (3) with appliesTo = EntityAppliesToType.Proficiency (36)
+- **`type`**: Required enum value from @EntityType (Bonus, Quantity, Replacement, Base, Other, Choice, Allocation). Class weapon/armor proficiencies use EntityType.Base (4) with appliesTo = EntityAppliesToType.Proficiency (36). Feat-granted proficiencies use EntityType.Other (3) with the same appliesTo. See [Class Proficiencies](class-proficiencies.md).
 - **`appliesTo`**: Required enum value from @EntityAppliesToType for target specification
 - **`appliesToId`**: Optional positive integer for specific target ID (references other system IDs)
 - **`appliesToSubId`**: Optional positive integer for sub-target ID
@@ -199,13 +199,12 @@ The unified schema that handles all types of feature effects including modifiers
 #### **@EntityType.Other (3) - Non-Numeric Features**
 **Purpose**: Special cases and complex effects that require custom handling
 **Real Examples**:
-- Weapon and armor proficiencies (appliesTo: Proficiency (36), appliesToId: PROFICIENCY_TYPE_ENUM value)
-- Class skills (appliesTo: Skill (1), appliesToId: skill ID)
+- Feat-granted weapon and armor proficiencies (appliesTo: Proficiency (36), appliesToId: PROFICIENCY_TYPE_ENUM value). Class grants use EntityType.Base instead; see [Class Proficiencies](class-proficiencies.md).
 - Direct feat grants (appliesTo: Feat (21), appliesToId: feat ID)
 - Druid Bonus Languages (Sylvan language access) (appliesTo: Language (14), appliesToId: language ID)
 - Druid Druidic language grants (appliesTo: AutomaticLanguage (15), appliesToId: language ID)
 **Usage**: `type: 3, appliesTo: target type, appliesToId: target ID`
-**Proficiency Usage**: `type: 3, appliesTo: 36 (Proficiency), appliesToId: proficiency type ID (1-8), appliesToSubId: item ID or -1 for "all"`
+**Feat Proficiency Usage**: `type: 3, appliesTo: 36 (Proficiency), appliesToId: proficiency type ID (1-8), appliesToSubId: item ID or -1 for "all"`
 
 #### **@EntityType.Choice (5) - Player Choices**
 **Purpose**: Player choice mechanics between different options
@@ -258,7 +257,7 @@ The unified schema that handles all types of feature effects including modifiers
 Demonstrates the unified entity approach with multiple entities:
 - **Quantity Entity**: Uses per day scaling with @FormulaId.LINEAR_SCALING (type: 1, appliesTo: 10, appliesToId: 1)
 - **Bonus Entity**: Skill bonus with @FormulaId.LEVEL_PLUS_ABILITY for Bardic Knowledge (type: 0, appliesTo: 1, appliesToId: 49)
-- **Other Entities**: Class skills and weapon proficiencies (type: 3, appliesTo: 1, appliesToId: skill IDs)
+- **Other Entities**: Direct grants that are not class chassis (type: 3). Class skills and class weapon/armor proficiencies use EntityType.Base; see [Class Skills](class-skills.md) and [Class Proficiencies](class-proficiencies.md).
 
 #### **Druid's "Wild Shape" Feature**
 Demonstrates complex threshold progression and uses/day patterns:

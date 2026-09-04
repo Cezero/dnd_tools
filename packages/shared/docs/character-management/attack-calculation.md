@@ -153,7 +153,7 @@ Determines if a character is proficient with a specific weapon by checking resol
 
 **`extractProficiencies(resolvedProgressions): ProficiencyResult`**
 
-Extracts all weapon and armor proficiencies from resolved feature progressions, returning weapon categories, armor categories, and specific item IDs.
+Extracts weapon and armor proficiencies from canonical grants only: class/race `EntityType.Base`, or feat `EntityType.Other` (`isCanonicalProficiencyGrant`). Leftover class `Class Proficiency` rows (Other) are ignored. See [Class Proficiencies](../feature-system/class-proficiencies.md).
 
 **Source**: `frontend/src/lib/attack-calculation/proficiencies.ts`
 

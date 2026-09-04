@@ -10,12 +10,13 @@ import type {
     FormulaCalculationParams
 } from '@shared/schema';
 import {
-    EntityType,
     EntityAppliesToType,
+    EntityType,
     FeaturePrerequisiteType,
     FeatureSourceType,
     FORMULA_MAP,
-    FormulaId
+    FormulaId,
+    isCanonicalProficiencyGrant
 } from '@shared/static-data';
 
 import { extractBABProgression } from '../../utils/classMechanicsExtractor';
@@ -79,10 +80,8 @@ export class AvailableFeatService {
         for (const feature of resolvedProgressions) {
             if (feature.entities) {
                 for (const entity of feature.entities) {
-                    // Check if this is a proficiency entity with "all" category proficiency
                     if (
-                        entity.type === EntityType.Other &&
-                        entity.appliesTo === EntityAppliesToType.Proficiency &&
+                        isCanonicalProficiencyGrant(feature.sourceType, entity.type, entity.appliesTo) &&
                         entity.appliesToId &&
                         (entity.appliesToSubId === -1 || entity.appliesToSubId === null)
                     ) {
@@ -177,8 +176,7 @@ export class AvailableFeatService {
                         for (const entity of feature.entities) {
                             // Check if this entity provides a proficiency
                             if (
-                                entity.type === EntityType.Other &&
-                                entity.appliesTo === EntityAppliesToType.Proficiency &&
+                                isCanonicalProficiencyGrant(feature.sourceType, entity.type, entity.appliesTo) &&
                                 entity.appliesToId
                             ) {
                                 // If character already has "all" proficiency for this type, filter out the feat

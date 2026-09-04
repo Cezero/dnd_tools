@@ -59,23 +59,23 @@ Defines the types of entities that features can provide, affecting how they are 
 - **Real Example**: Monk Unarmed Strike replaces unarmed damage with progressive dice (type: 2, appliesTo: 20=UnarmedDamage, formulaParams: threshold-based progression)
 
 **Base Entities (4)**: Base value entities for class and race mechanics
-- **Examples**: Base Attack Bonus, saving throw progressions, hit dice, skill points, size, movement speed, favored class, level adjustment, spellcasting progression (slots per day), spells-known progression, casting ability, casting type
+- **Examples**: Base Attack Bonus, saving throw progressions, hit dice, skill points, size, movement speed, favored class, level adjustment, spellcasting progression (slots per day), spells-known progression, casting ability, casting type, class weapon/armor proficiencies, class skills
 - **Stacking**: Custom logic per mechanic type (summing for multiclass, best value for gestalt)
-- **Compatibility**: BaseAttackBonus, SavingThrow, HitDice, SkillPoints, Size, MovementSpeed, FavoredClass, LevelAdjustment, SpellcastingProgression, SpellsKnownProgression, CastingAbility, CastingType
+- **Compatibility**: BaseAttackBonus, SavingThrow, HitDice, SkillPoints, Size, MovementSpeed, FavoredClass, LevelAdjustment, SpellcastingProgression, SpellsKnownProgression, CastingAbility, CastingType, Proficiency, Skill
 - **Real Example**: Fighter class mechanics progression provides Good BAB (type: 4, appliesTo: 41=BaseAttackBonus, formulaParams: linear-scaling)
-- **Note**: MovementSpeed is compatible with both EntityType.Quantity (for bonuses like Fast Movement) and EntityType.Base (for base race speed)
+- **Note**: MovementSpeed is compatible with both EntityType.Quantity (for bonuses like Fast Movement) and EntityType.Base (for base race speed). Class weapon/armor proficiencies use EntityType.Base with appliesTo: Proficiency. See [Class Proficiencies](class-proficiencies.md).
 
 **Other Entities (3)**: Special cases and complex effects that require custom handling
-- **Examples**: Direct feat grants, language grants, special abilities
+- **Examples**: Direct feat grants, language grants, special abilities, feat-granted weapon/armor proficiencies
 - **Stacking**: Custom logic per effect type
-- **Compatibility**: Other, BonusLanguage, AutomaticLanguage, WeaponFamiliarity, Feat, SizeCategory, CreatureType, DamageType, TwoWeaponFightingOffHandTreatAsLight
+- **Compatibility**: Other, BonusLanguage, AutomaticLanguage, WeaponFamiliarity, Feat, SizeCategory, CreatureType, DamageType, TwoWeaponFightingOffHandTreatAsLight, Proficiency
 
-**Proficiency Entities (EntityType.Other with EntityAppliesToType.Proficiency)**: Proficiency bonuses and abilities
-- **Examples**: Weapon proficiencies, armor proficiencies (Monk Class Proficiencies)
-- **Stacking**: Custom logic for proficiency handling
-- **Compatibility**: Proficiency (weapon/armor proficiencies use EntityType.Other with appliesTo: Proficiency)
-- **Real Example**: Monk Class Proficiencies grants proficiency with simple weapons and exotic monk weapons (type: 3=Other, appliesTo: 36=Proficiency, appliesToId: proficiency type ID, appliesToSubId: item ID or -1 for "all")
-- **Note**: Class skills use EntityType.Other with appliesTo: Skill (1), not Proficiency. Weapon/armor proficiencies use appliesTo: Proficiency (36).
+**Proficiency Entities (EntityType.Base for class grants, EntityType.Other for feat grants)**: Weapon and armor proficiency
+- **Examples**: Fighter all simple/martial weapons (Base, `appliesToSubId: -1`); Wizard quarterstaff (Base, specific item id); Simple Weapon Proficiency feat (Other)
+- **Stacking**: Union of categories and specific item ids; non-proficient attacks take −4
+- **Compatibility**: Proficiency (`appliesTo: 36`). Runtime readers use `isCanonicalProficiencyGrant` (class/race Base, feat Other only).
+- **Real Example**: Wizard Proficiencies grants club, dagger, quarterstaff, and light/heavy crossbow as Base entities with specific item ids
+- **Note**: Class skills use EntityType.Base with appliesTo: Skill (1), not Proficiency. See [Class Proficiencies](class-proficiencies.md).
 
 **Choice Entities (5)**: Player choice mechanics
 - **Examples**: Feat choices, feature choices, creature type choices, bonus feat selection (Monk Bonus Feat)

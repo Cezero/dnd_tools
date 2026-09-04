@@ -9,7 +9,7 @@ import { canUseTwoHanded } from '@/lib/character-calculation/utils/weaponHelpers
 import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
 import { getSkillSummaryById, getSkillSelectFull, getFeatNameFromCache, getItemNameFromCache, getFeatureNameFromCache, getSpellNameFromCache, getDomainNameFromCache } from '@/services/cache';
 import type { FeatureWithRelations, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
-import { EntityAppliesToType, EntityType, AbilityId, FeatureSourceType, CalculationMethodType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
+import { ABILITY_MAP, AbilityId, CalculationMethodType, EntityAppliesToType, EntityType, FeatureEntityConditionType, FeatureSourceType, isCanonicalProficiencyGrant } from '@shared/static-data';
 
 import { resolveFeatureChoiceDisplayName } from './choiceDisplayName';
 import { conditionLabelerRegistry } from './condition-labeler-registry';
@@ -1537,11 +1537,10 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     ): FormattedProficiency[] {
         const proficiencies: FormattedProficiency[] = [];
 
-        // Filter for proficiency features - include class proficiencies (Base type) and other proficiency entities
         const proficiencyProgressions = resolvedProgressions.filter(p =>
-            (p.sourceType === FeatureSourceType.Class &&
-                p.entities?.some(entity => entity.type === EntityType.Base && entity.appliesTo === EntityAppliesToType.Proficiency)) ||
-            (p.entities?.some(entity => entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.Proficiency) ?? false)
+            p.entities?.some(entity =>
+                isCanonicalProficiencyGrant(p.sourceType, entity.type, entity.appliesTo)
+            ) ?? false
         );
 
         if (proficiencyProgressions.length === 0) {

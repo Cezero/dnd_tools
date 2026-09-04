@@ -379,7 +379,9 @@ The Monk class demonstrates the complete feature system implementation:
 
 **Implementation**: Player chooses between Improved Disarm or Improved Trip at 6th level.
 
-### **Proficiency Entities (EntityType.Other with EntityAppliesToType.Proficiency)**
+### **Proficiency Entities (EntityType.Base for class grants, EntityType.Other for feat grants)**
+
+Class weapon/armor proficiencies use `EntityType.Base`. Feat grants (Simple Weapon Proficiency and similar) use `EntityType.Other`. See [Class Proficiencies](class-proficiencies.md).
 
 #### **Class Skills**
 **FeatureProgression ID**: 16655 (Level 1)
@@ -387,7 +389,7 @@ The Monk class demonstrates the complete feature system implementation:
 
 ```json
 {
-  "type": 3,                    // Other entity (proficiencies use Other type)
+  "type": 4,                    // Base entity (class skills use Base type)
   "appliesTo": 1,               // Skill
   "appliesToId": 2,             // Balance
   "appliesToSubId": null,       // No sub-target
@@ -404,10 +406,10 @@ The Monk class demonstrates the complete feature system implementation:
 
 ```json
 {
-  "type": 3,                    // Other entity (proficiencies use Other type)
+  "type": 4,                    // Base entity (class proficiency grants)
   "appliesTo": 36,              // Proficiency
   "appliesToId": 1,             // Simple Weapon Proficiency type ID (PROFICIENCY_TYPE_ENUM.SimpleWeapon)
-  "appliesToSubId": 24,         // Club
+  "appliesToSubId": 24,         // Club (use -1 for all simple weapons)
   "value": 0,                   // No additional value
   "groupingId": 1,              // Grouped with other proficiencies
   "item": {

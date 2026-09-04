@@ -295,7 +295,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.Feat, // Direct feat grants are Other type modifiers
         EntityAppliesToType.Spell, // Direct spell grants are Other type modifiers
         EntityAppliesToType.Domain, // Direct domain grants are Other type modifiers
-        EntityAppliesToType.Proficiency, // Proficiencies are Other type modifiers
+        EntityAppliesToType.Proficiency, // Feat-granted proficiencies (Other; class/race grants are Base)
         EntityAppliesToType.SpellbookSpell, // Spellbook spell grants (e.g., 0th level spells for wizards)
 
         // New complex ability types
@@ -333,6 +333,28 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.CreatureType, // Allocation to creature types (e.g., Ranger favored enemy)
     ],
 } as const;
+
+/**
+ * Canonical proficiency grant: class/race chassis are EntityType.Base;
+ * feat grants are EntityType.Other. Leftover class rows with EntityType.Other
+ * (features named "Class Proficiency") are not grants.
+ */
+export function isCanonicalProficiencyGrant(
+    sourceType: FeatureSourceType,
+    entityType: EntityType,
+    appliesTo: EntityAppliesToType
+): boolean {
+    if (appliesTo !== EntityAppliesToType.Proficiency) {
+        return false;
+    }
+    if (entityType === EntityType.Base) {
+        return sourceType === FeatureSourceType.Class || sourceType === FeatureSourceType.Race;
+    }
+    if (entityType === EntityType.Other) {
+        return sourceType === FeatureSourceType.Feat;
+    }
+    return false;
+}
 
 // Entity types that should use grouped labelers when entities are grouped
 export const USES_GROUPED_LABEL: EntityAppliesToType[] = [
