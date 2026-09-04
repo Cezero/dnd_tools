@@ -12,7 +12,13 @@ import type {
     CharacterWithAllDetailsResponse,
     FeatureWithRelations,
 } from '@shared/schema';
-import { ABILITY_MAP, CREATURE_TYPES, EntityAppliesToType } from '@shared/static-data';
+import {
+    ABILITY_MAP,
+    CREATURE_TYPES,
+    EntityAppliesToType,
+    FAMILIAR_ALERTNESS_FEATURE_SLUG,
+    FAMILIAR_ALERTNESS_REACH_REMINDER,
+} from '@shared/static-data';
 
 import type { FeatureChoiceEntityRef } from './types';
 
@@ -89,6 +95,22 @@ export function formatFeatNameWithSubtype(
     }
     const itemName = getItemNameFromCache(featSubId);
     return itemName ? `${featName} (${itemName})` : featName;
+}
+
+/**
+ * Granted-feat label, including the familiar Alertness reach reminder.
+ */
+export function formatGrantedFeatDisplayName(
+    featName: string,
+    featSubId: number | null | undefined,
+    sourceFeature?: { slug: string; summary?: string | null } | null
+): string {
+    const baseName = formatFeatNameWithSubtype(featName, featSubId);
+    if (sourceFeature?.slug !== FAMILIAR_ALERTNESS_FEATURE_SLUG) {
+        return baseName;
+    }
+    const reminder = sourceFeature.summary?.trim() || FAMILIAR_ALERTNESS_REACH_REMINDER;
+    return `${baseName} (${reminder})`;
 }
 
 /**

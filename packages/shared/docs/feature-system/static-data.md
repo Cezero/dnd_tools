@@ -68,7 +68,7 @@ Defines the types of entities that features can provide, affecting how they are 
 **Other Entities (3)**: Special cases and complex effects that require custom handling
 - **Examples**: Direct feat grants, language grants, special abilities
 - **Stacking**: Custom logic per effect type
-- **Compatibility**: Other, BonusLanguage, AutomaticLanguage, WeaponFamiliarity, Feat, SizeCategory, CreatureType, DamageType
+- **Compatibility**: Other, BonusLanguage, AutomaticLanguage, WeaponFamiliarity, Feat, SizeCategory, CreatureType, DamageType, TwoWeaponFightingOffHandTreatAsLight
 
 **Proficiency Entities (EntityType.Other with EntityAppliesToType.Proficiency)**: Proficiency bonuses and abilities
 - **Examples**: Weapon proficiencies, armor proficiencies (Monk Class Proficiencies)
@@ -87,6 +87,13 @@ Defines the types of entities that features can provide, affecting how they are 
 - **Examples**: Point allocation to feats, features, or creature types
 - **Stacking**: N/A (allocation-based)
 - **Compatibility**: Feat, Feature, CreatureType
+
+**Companion Entities (7)**: Effects whose beneficiary is the companion creature (animal companion, familiar, or a future special mount), not the character
+- **Examples**: Companion bonus HD / natural armor / Str / Dex, familiar Intelligence replacement, Devotion (+4 Will vs enchantment), Multiattack granted to the animal, familiar Improved Evasion
+- **Kind of effect**: Inferred from `AppliesTo` plus `bonusType` / formula (HD, AC, Ability, CompanionBonusTricks, SpellResistance, SavingThrow, Feat, Other)
+- **Not a choice picker**: `EntityAppliesToType.AnimalCompanion` and `Familiar` remain Choice applies-to values for selecting the creature
+- **Sheet filter**: Features whose every `displayInDetail` entity is `Type=Companion` are omitted from the character Features list and PDF specials
+- **Master-facing table text** (Link, Share Spells, Empathic Link, Scry) stays `Bonus` / `Other` so it appears on the character sheet
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (EntityType definition)
 
@@ -135,6 +142,14 @@ Defines what an entity applies to, determining the target of the modification th
 - **`DamageType` (24)**: Damage type effects
 - **`SpellbookSpell` (37)**: Spellbook spell grants for spellbook classes (e.g., Wizard)
 - **`Other` (13)**: Special cases and complex effects
+- **`TwoWeaponFightingOffHandTreatAsLight` (48)**: Treat a listed off-hand weapon type as light for two-weapon fighting penalties
+
+**TwoWeaponFightingOffHandTreatAsLight (48)**: Expands the light-off-hand TWF penalty row
+- **Purpose**: When dual-wielding, the existing +2/+2 light-off-hand reduction also applies if the off-hand weapon type matches `appliesToId`
+- **Entity Types**: Used with `EntityType.Other` (flag; `value` is unused)
+- **Parameters**: `appliesToId` is a `WEAPON_TYPE_ENUM` value (e.g. One-Handed Melee). `null` treats any off-hand as light
+- **Usage**: Oversized Two-Weapon Fighting uses `appliesToId: OneHandedMeleeWeapon` so a one-handed off-hand uses the same -4/-8 (or -2/-2 with TWF) row as a light off-hand
+- **Related Documentation**: [Attack Calculation](../character-management/attack-calculation.md), [Feat System Database Schema](../feat-system/database-schema.md)
 
 **SpellbookSpell (37)**: Spellbook spell grants for spellbook classes
 - **Purpose**: Used for spellbook classes (e.g., Wizard) to grant free spells during level-up
@@ -217,7 +232,7 @@ Defines the types of conditions that can be applied to feature entities.
 - **`creature_type` (6)**: Creature type conditions
 - **`source` (7)**: Source-based conditions (traps, fear, spells, poison)
 - **`lighting` (8)**: Lighting-based conditions (bright light, shadows, dim light, darkness) - consolidated from CompanionBenefitConditionType
-- **`special` (9)**: Special conditions (e.g., "Casting Defensively")
+- **`special` (9)**: Special conditions (e.g., "Casting Defensively", "Regarding Your Companion")
 
 **Usage**: Enables complex conditional logic for entity application based on various game conditions. The `lighting` condition type was consolidated from the old CompanionBenefitConditionType system when companion benefits were migrated to the unified Feature system.
 
@@ -370,8 +385,9 @@ Defines special condition values for special-based feature entity conditions.
 
 **Special Types**:
 - **`casting_defensively` (0)**: Casting defensively condition
+- **`regardingCompanion` (1)**: Bonus applies only regarding the character’s own companion (Link’s +4 Handle Animal / Wild Empathy)
 
-**Usage**: Used with `FeatureEntityConditionType.special` (9) to create special conditional effects such as "Casting Defensively".
+**Usage**: Used with `FeatureEntityConditionType.special` (9) to create special conditional effects such as "Casting Defensively" or "Regarding Your Companion". The Skills tab formats these as `when ${name}`.
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (SpecialType definition)
 

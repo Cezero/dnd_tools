@@ -1,4 +1,4 @@
-import { DraftAction, DraftType, DRAFT_ARRAY_SELECTOR_KEY_FIELD_MAP, EntityAppliesToType, EntityType } from '@shared/static-data';
+import { DraftAction, DraftType, DRAFT_ARRAY_SELECTOR_KEY_FIELD_MAP, EntityAppliesToType, EntityType, FeaturePrerequisiteType } from '@shared/static-data';
 
 import type { JsonObject } from './types';
 
@@ -464,6 +464,19 @@ export function applyDraftActionAtPath(
                             return { updated: result, id: tempId };
                         }
 
+                        // Feature drafts: create a fully shaped FeaturePrerequisite instead of a stub.
+                        // FeatureDraftStateSchema requires featureId, type, appliesToId, and minValue on save.
+                        if (options.draftType === DraftType.Feature && segment === 'prerequisites' && keyField === 'id') {
+                            (target as unknown[]).push({
+                                id: tempId,
+                                featureId: options.draftId,
+                                type: FeaturePrerequisiteType.SkillRanks,
+                                appliesToId: null,
+                                minValue: 1,
+                            });
+                            return { updated: result, id: tempId };
+                        }
+
                         // Character drafts: create fully shaped stubs for FeatureEntity-style nested collections.
                         if (options.draftType === DraftType.Character && segment === 'attackDefinitions' && keyField === 'id') {
                             (target as unknown[]).push({
@@ -472,6 +485,7 @@ export function applyDraftActionAtPath(
                                 attackSlot: null,
                                 mainHandCharacterItemId: null,
                                 offHandCharacterItemId: null,
+                                wieldTwoHanded: false,
                             });
                             return { updated: result, id: tempId };
                         }

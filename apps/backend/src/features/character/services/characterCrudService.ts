@@ -335,6 +335,26 @@ async function overlayLockedDraftsOnCharacter(
                 selectedForms: hasOwn(draft, 'selectedForms')
                     ? mapDraftSelectedForms(draft.selectedForms, character.id)
                     : next.selectedForms,
+                characterItems: hasOwn(draft, 'characterItems')
+                    ? asArray(draft.characterItems).filter(isRecord).map((item) => ({
+                        id: asInt(item.id) ?? 0,
+                        name: typeof item.name === 'string' ? item.name : '',
+                        quantity: asIntOrNull(item.quantity),
+                        location: asIntOrNull(item.location),
+                        characterId: character.id,
+                        baseItemId: asInt(item.baseItemId) ?? 0,
+                    }))
+                    : next.characterItems,
+                attackDefinitions: hasOwn(draft, 'attackDefinitions')
+                    ? asArray(draft.attackDefinitions).filter(isRecord).map((def) => ({
+                        id: asInt(def.id) ?? 0,
+                        characterId: character.id,
+                        attackSlot: asIntOrNull(def.attackSlot),
+                        mainHandCharacterItemId: asIntOrNull(def.mainHandCharacterItemId),
+                        offHandCharacterItemId: asIntOrNull(def.offHandCharacterItemId),
+                        wieldTwoHanded: asBool(def.wieldTwoHanded) ?? false,
+                    }))
+                    : next.attackDefinitions,
             };
         }
     }
@@ -519,6 +539,7 @@ async function getDraftCharacterWithAllDetails(args: {
         attackSlot: asIntOrNull(def.attackSlot),
         mainHandCharacterItemId: asIntOrNull(def.mainHandCharacterItemId),
         offHandCharacterItemId: asIntOrNull(def.offHandCharacterItemId),
+        wieldTwoHanded: asBool(def.wieldTwoHanded) ?? false,
     }));
 
     const createdAt = new Date();
@@ -1190,6 +1211,7 @@ export const characterCrudService = {
                                 attackSlot: def.attackSlot ?? null,
                                 mainHandCharacterItemId: mainHandItemId,
                                 offHandCharacterItemId: offHandItemId,
+                                wieldTwoHanded: def.wieldTwoHanded ?? false,
                             };
                         }),
                     });

@@ -1,6 +1,7 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 
+import { isOneHandedMeleeWeapon } from '@/lib/character-calculation/utils/weaponHelpers';
 import { ARMOR_CATEGORY_ENUM } from '@shared/static-data';
 
 import type { AttackDefinitionModalProps } from './types';
@@ -16,6 +17,7 @@ export function AttackDefinitionModal({
 }: AttackDefinitionModalProps): React.JSX.Element {
     const [mainHandCharacterItemId, setMainHandCharacterItemId] = useState<number | null>(null);
     const [offHandCharacterItemId, setOffHandCharacterItemId] = useState<number | null>(null);
+    const [wieldTwoHanded, setWieldTwoHanded] = useState(false);
     const [attackSlot, setAttackSlot] = useState<number | null>(null);
 
     // Track the last attack definition ID we initialized from to avoid unnecessary resets
@@ -96,6 +98,23 @@ export function AttackDefinitionModal({
         return offHandItem?.armor?.category === ARMOR_CATEGORY_ENUM.Shield;
     }, [offHandCharacterItemId, characterItems, items]);
 
+    const mainHandCatalogItem = useMemo(() => {
+        if (!mainHandCharacterItemId || items.length === 0) {
+            return undefined;
+        }
+        const mainHandCharItem = characterItems.find(ci => ci.id === mainHandCharacterItemId);
+        if (!mainHandCharItem?.baseItemId) {
+            return undefined;
+        }
+        return items.find(i => i.id === mainHandCharItem.baseItemId);
+    }, [mainHandCharacterItemId, characterItems, items]);
+
+    const canWieldTwoHanded = Boolean(
+        mainHandCatalogItem
+        && isOneHandedMeleeWeapon(mainHandCatalogItem)
+        && (offHandCharacterItemId === null || isOffHandShield)
+    );
+
     // Calculate the next available slot
     const nextAvailableSlot = useMemo(() => {
         // Check if we're creating a new attack (not editing)
@@ -110,14 +129,20 @@ export function AttackDefinitionModal({
         return calculateNextAvailableSlot(isDualWield);
     }, [attackDefinition, offHandCharacterItemId, isOffHandShield, calculateNextAvailableSlot]);
 
-    // Filter character items to only weapons (for main hand and off hand)
+    // Filter character items to weapons and shields
     const weaponItems = useMemo(() => {
-        return characterItems.filter(item => {
-            // Find the base item to check if it's a weapon
-            // For now, we'll include all items - the backend will validate
-            return true;
+        if (items.length === 0) {
+            return characterItems;
+        }
+        return characterItems.filter((charItem) => {
+            const catalogItem = items.find((item) => item.id === charItem.baseItemId);
+            if (!catalogItem) {
+                return true;
+            }
+            return catalogItem.weapon != null
+                || catalogItem.armor?.category === ARMOR_CATEGORY_ENUM.Shield;
         });
-    }, [characterItems]);
+    }, [characterItems, items]);
 
     // Initialize form when modal opens or when editing a different attack definition
     useEffect(() => {
@@ -129,11 +154,13 @@ export function AttackDefinitionModal({
             if (attackDefinition) {
                 setMainHandCharacterItemId(attackDefinition.mainHandCharacterItemId);
                 setOffHandCharacterItemId(attackDefinition.offHandCharacterItemId);
+                setWieldTwoHanded(attackDefinition.wieldTwoHanded ?? false);
                 setAttackSlot(attackDefinition.attackSlot);
                 lastInitializedIdRef.current = attackDefinition.id;
             } else {
                 setMainHandCharacterItemId(null);
                 setOffHandCharacterItemId(null);
+                setWieldTwoHanded(false);
                 // Default to next available slot when creating a new attack
                 const defaultSlot = calculateNextAvailableSlot(false);
                 setAttackSlot(defaultSlot);
@@ -209,6 +236,7 @@ export function AttackDefinitionModal({
             attackSlot,
             mainHandCharacterItemId,
             offHandCharacterItemId,
+            wieldTwoHanded: isDualWield ? false : wieldTwoHanded,
         });
         onClose();
     };
@@ -263,14 +291,14 @@ export function AttackDefinitionModal({
                             {mainHandCharacterItemId && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Off Hand Item (optional - weapon for dual wield, or shield)
+                                        Off Hand Item (optional — weapon for full-attack two-weapon fighting, or shield)
                                     </label>
                                     <select
                                         value={offHandCharacterItemId || ''}
                                         onChange={(e) => setOffHandCharacterItemId(e.target.value ? parseInt(e.target.value, 10) : null)}
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     >
-                                        <option value="">None (single weapon)</option>
+                                        <option value="">None (standard action — no two-weapon penalty)</option>
                                         {weaponItems
                                             .filter(item => item.id !== mainHandCharacterItemId)
                                             .map(item => (
@@ -280,6 +308,20 @@ export function AttackDefinitionModal({
                                             ))}
                                     </select>
                                 </div>
+                            )}
+
+                            {canWieldTwoHanded && (
+                                <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <input
+                                        type="checkbox"
+                                        checked={wieldTwoHanded}
+                                        onChange={(e) => setWieldTwoHanded(e.target.checked)}
+                                        className="mt-0.5"
+                                    />
+                                    <span>
+                                        Wield two-handed (1.5× Strength damage). Use this for a dedicated two-hand grip, not for a standard-action attack.
+                                    </span>
+                                </label>
                             )}
 
                             {/* Attack Slot */}

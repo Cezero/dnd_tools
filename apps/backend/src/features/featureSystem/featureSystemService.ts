@@ -12,6 +12,7 @@ import {
     FeatureWithRelations,
     GetFeatureListResponse,
     CreateFeatureEntityRequest,
+    UpdateFeatureEntityRequest,
     CreateFeatureEntityConditionRequest,
     CreateFeatureConditionRequest,
     FeatureCacheResponse,
@@ -104,7 +105,7 @@ async function createDisplayConditions(
 async function updateFeatureEntities(
     tx: Prisma.TransactionClient,
     featureId: number,
-    incomingEntities: CreateFeatureEntityRequest[],
+    incomingEntities: UpdateFeatureEntityRequest[],
     _existingFeature: { entities: Array<{ id: number; formulaParamsId: number | null }> }
 ): Promise<void> {
     // Load existing entities with choices for preservation
@@ -118,13 +119,13 @@ async function updateFeatureEntities(
     });
 
     const existingEntityMap = new Map(existingEntities.map(e => [e.id, e]));
-    const incomingEntityMap = new Map<number, CreateFeatureEntityRequest>();
-    const newEntities: CreateFeatureEntityRequest[] = [];
+    const incomingEntityMap = new Map<number, UpdateFeatureEntityRequest>();
+    const newEntities: UpdateFeatureEntityRequest[] = [];
 
     // Type guard for entities with id (update requests)
-    type EntityWithId = CreateFeatureEntityRequest & { id: number };
-    const hasId = (e: CreateFeatureEntityRequest): e is EntityWithId => {
-        return 'id' in e && typeof (e as { id?: number }).id === 'number';
+    type EntityWithId = UpdateFeatureEntityRequest & { id: number };
+    const hasId = (e: UpdateFeatureEntityRequest): e is EntityWithId => {
+        return 'id' in e && typeof (e as { id?: number }).id === 'number' && (e as { id?: number }).id! > 0;
     };
 
     // Separate incoming entities into updates (have id) and new (no id)
@@ -175,7 +176,7 @@ async function updateFeatureEntities(
             continue;
         }
 
-        const { conditions, formulaParams, ...entityData } = incoming;
+        const { id: _incomingId, conditions, formulaParams, ...entityData } = incoming;
 
         // Update formula params if changed
         let formulaParamsId = existing.formulaParamsId;
@@ -230,7 +231,7 @@ async function updateFeatureEntities(
 
     // Create new entities
     for (const entity of newEntities) {
-        const { conditions, formulaParams, ...entityData } = entity;
+        const { id: _newEntityId, conditions, formulaParams, ...entityData } = entity;
 
         // Create formula params first if they exist
         let formulaParamsId = null;
@@ -532,8 +533,8 @@ export const featureSystemService: FeatureSystemService = {
     },
 
     async updateFeature(query: FeatureIdParamRequest, data: UpdateFeature): Promise<UpdateResponse> {
-        // Extract prerequisites and entities from data
-        const { prerequisites, entities, ...featureData } = data;
+        // Extract relations and id so they never hit the Feature scalar write
+        const { prerequisites, entities, displayConditions: _displayConditions, id: _id, ...featureData } = data;
 
         await prisma.$transaction(async (tx) => {
             // Load existing feature for entity updates
@@ -553,14 +554,21 @@ export const featureSystemService: FeatureSystemService = {
                 throw new Error(`Feature with id ${query.id} not found`);
             }
 
-            // Update the feature
+            // Persist all Feature scalar columns; omit falls back to the existing row
             await tx.feature.update({
                 where: { id: query.id },
                 data: {
-                    name: featureData.name,
-                    slug: featureData.slug,
-                    description: featureData.description,
-                    summary: featureData.summary ?? null,
+                    name: featureData.name ?? existingFeature.name,
+                    slug: featureData.slug ?? existingFeature.slug,
+                    description: featureData.description ?? existingFeature.description,
+                    summary: featureData.summary !== undefined ? featureData.summary : existingFeature.summary,
+                    displayInCharacterSheet: featureData.displayInCharacterSheet ?? existingFeature.displayInCharacterSheet,
+                    sourceType: featureData.sourceType ?? existingFeature.sourceType,
+                    level: featureData.level ?? existingFeature.level,
+                    domainId: featureData.domainId !== undefined ? featureData.domainId : existingFeature.domainId,
+                    featId: featureData.featId !== undefined ? featureData.featId : existingFeature.featId,
+                    companionId: featureData.companionId !== undefined ? featureData.companionId : existingFeature.companionId,
+                    editionId: featureData.editionId !== undefined ? featureData.editionId : existingFeature.editionId,
                 },
             });
 
@@ -1242,6 +1250,7 @@ export const featureSystemService: FeatureSystemService = {
                 await tx.feature.update({
                     where: { id: featureId },
                     data: {
+                        displayInCharacterSheet: featureData.displayInCharacterSheet ?? existing.displayInCharacterSheet,
                         sourceType: featureData.sourceType ?? existing.sourceType,
                         level: featureData.level ?? existing.level,
                         domainId: featureData.domainId !== undefined ? featureData.domainId : existing.domainId,

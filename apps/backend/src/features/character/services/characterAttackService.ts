@@ -129,6 +129,7 @@ export const characterAttackService = {
                 attackSlot: data.attackSlot ?? null,
                 mainHandCharacterItemId: data.mainHandCharacterItemId ?? null,
                 offHandCharacterItemId: data.offHandCharacterItemId ?? null,
+                wieldTwoHanded: data.wieldTwoHanded ?? false,
             },
         });
 
@@ -256,6 +257,7 @@ export const characterAttackService = {
                 attackSlot: data.attackSlot,
                 mainHandCharacterItemId: data.mainHandCharacterItemId,
                 offHandCharacterItemId: data.offHandCharacterItemId,
+                wieldTwoHanded: data.wieldTwoHanded,
             },
         });
 

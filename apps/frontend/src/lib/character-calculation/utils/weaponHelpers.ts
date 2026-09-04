@@ -1,5 +1,5 @@
-import type { ItemWithDetails, CharacterItem } from '@shared/schema';
-import { WEAPON_TYPE_ENUM, ARMOR_CATEGORY_ENUM } from '@shared/static-data';
+import type { CharacterItem, FeatureWithRelations, ItemWithDetails } from '@shared/schema';
+import { ARMOR_CATEGORY_ENUM, EntityAppliesToType, WEAPON_TYPE_ENUM } from '@shared/static-data';
 
 /**
  * Type guard to check if item has weapon property
@@ -68,6 +68,42 @@ export function isTwoHandedWeapon(item: ItemWithDetails | CharacterItem | undefi
 }
 
 /**
+ * Whether an off-hand weapon uses the light two-weapon-fighting penalty row.
+ * Light melee and unarmed always qualify. Features with
+ * TwoWeaponFightingOffHandTreatAsLight also qualify when appliesToId matches
+ * the off-hand weapon type, or when appliesToId is null (any off-hand).
+ */
+export function isLightForTwfPenalties(
+    offHandItem: ItemWithDetails | CharacterItem | undefined | null,
+    resolvedProgressions: FeatureWithRelations[]
+): boolean {
+    if (!hasWeapon(offHandItem)) {
+        return false;
+    }
+
+    const weaponType = offHandItem.weapon.type;
+    if (
+        weaponType === WEAPON_TYPE_ENUM.LightMeleeWeapon ||
+        weaponType === WEAPON_TYPE_ENUM.UnarmedAttack
+    ) {
+        return true;
+    }
+
+    for (const feature of resolvedProgressions) {
+        for (const entity of feature.entities ?? []) {
+            if (entity.appliesTo !== EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight) {
+                continue;
+            }
+            if (entity.appliesToId === null || entity.appliesToId === weaponType) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
  * Check if item is a one-handed melee weapon (not light)
  */
 export function isOneHandedMeleeWeapon(item: ItemWithDetails | CharacterItem | undefined | null): boolean {
@@ -78,35 +114,26 @@ export function isOneHandedMeleeWeapon(item: ItemWithDetails | CharacterItem | u
 }
 
 /**
- * Check if weapon can be used two-handed
- * Returns true if offHandItem is null/undefined OR is a shield AND
- * (mainHandItem is two-handed OR mainHandItem is one-handed melee weapon that isn't light)
- * Shields in offhand do not prevent two-handed usage
+ * Whether this attack uses a two-handed grip (1.5x STR, "(both hands)" label).
+ *
+ * Empty off-hand is a standard-action single attack unless `wieldTwoHanded` is
+ * set. One-handed melee can opt into two hands that way. Inherent two-handed
+ * weapons always qualify. Dual-wield (off-hand is a weapon) never qualifies.
+ * Light weapons cannot be used two-handed.
  */
 export function canUseTwoHanded(
     mainHandItem: ItemWithDetails | CharacterItem | undefined | null,
-    offHandItem: ItemWithDetails | CharacterItem | undefined | null
+    offHandItem: ItemWithDetails | CharacterItem | undefined | null,
+    wieldTwoHanded = false
 ): boolean {
-    // If off-hand item exists and is not a shield, cannot use two-handed
     if (offHandItem !== null && offHandItem !== undefined && !isShield(offHandItem)) {
         return false;
     }
 
-    // If no main-hand item, cannot use two-handed
-    if (!hasWeapon(mainHandItem)) {
-        return false;
-    }
-
-    // Two-handed weapons can always be used two-handed
     if (isTwoHandedWeapon(mainHandItem)) {
         return true;
     }
 
-    // One-handed melee weapons (not light) can be used two-handed
-    if (isOneHandedMeleeWeapon(mainHandItem)) {
-        return true;
-    }
-
-    return false;
+    return wieldTwoHanded && isOneHandedMeleeWeapon(mainHandItem);
 }
 

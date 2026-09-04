@@ -125,23 +125,23 @@ FROM DUAL WHERE @hd_fp > 0;
 SET @trick_fp := IF(@hd_fp > 0 AND ROW_COUNT() > 0, LAST_INSERT_ID(), 0);
 
 INSERT INTO FeatureEntity (featureId, appliesTo, appliesToId, appliesToSubId, formulaParamsId, groupingId, type, value, bonusType, displayInDetail, showFullProgression)
-SELECT f.id, 9, NULL, NULL, @hd_fp, 0, 1, 0, NULL, 0, 0
+SELECT f.id, 9, NULL, NULL, @hd_fp, 0, 7, 0, NULL, 0, 0
 FROM Feature f WHERE f.slug = 'animal-companion-progression' AND @hd_fp > 0;
 
 INSERT INTO FeatureEntity (featureId, appliesTo, appliesToId, appliesToSubId, formulaParamsId, groupingId, type, value, bonusType, displayInDetail, showFullProgression)
-SELECT f.id, 3, NULL, NULL, @na_fp, 0, 0, 0, 10, 0, 0
+SELECT f.id, 3, NULL, NULL, @na_fp, 0, 7, 0, 10, 0, 0
 FROM Feature f WHERE f.slug = 'animal-companion-progression' AND @hd_fp > 0;
 
 INSERT INTO FeatureEntity (featureId, appliesTo, appliesToId, appliesToSubId, formulaParamsId, groupingId, type, value, bonusType, displayInDetail, showFullProgression)
-SELECT f.id, 0, 1, NULL, @str_fp, 0, 0, 0, NULL, 0, 0
+SELECT f.id, 0, 1, NULL, @str_fp, 0, 7, 0, NULL, 0, 0
 FROM Feature f WHERE f.slug = 'animal-companion-progression' AND @hd_fp > 0;
 
 INSERT INTO FeatureEntity (featureId, appliesTo, appliesToId, appliesToSubId, formulaParamsId, groupingId, type, value, bonusType, displayInDetail, showFullProgression)
-SELECT f.id, 0, 2, NULL, @dex_fp, 0, 0, 0, NULL, 0, 0
+SELECT f.id, 0, 2, NULL, @dex_fp, 0, 7, 0, NULL, 0, 0
 FROM Feature f WHERE f.slug = 'animal-companion-progression' AND @hd_fp > 0;
 
 INSERT INTO FeatureEntity (featureId, appliesTo, appliesToId, appliesToSubId, formulaParamsId, groupingId, type, value, bonusType, displayInDetail, showFullProgression)
-SELECT f.id, 47, NULL, NULL, @trick_fp, 0, 1, 0, NULL, 0, 0
+SELECT f.id, 47, NULL, NULL, @trick_fp, 0, 7, 0, NULL, 0, 0
 FROM Feature f WHERE f.slug = 'animal-companion-progression' AND @hd_fp > 0;
 
 -- Named companion specials (Feature.level = effective companion level)
@@ -154,7 +154,7 @@ FROM (
     UNION ALL SELECT 'share-spells', 'Share Spells', 1, NULL,
         'At the druid''s option, she may have any spell (but not any spell-like ability) she casts upon herself also affect her animal companion. The companion must be within 5 feet of her at the time of casting to receive the benefit. If the spell or effect has a duration other than instantaneous, it stops affecting the companion if the companion moves farther than 5 feet away and will not affect the companion again, even if it returns to the druid before the duration expires. Additionally, the druid may cast a spell with a target of "You" on her animal companion (as a touch range spell) instead of on herself. A druid and her animal companion can share spells even if the spells normally do not affect creatures of the companion''s type (animal).',
         'Share spells with companion within 5 feet.'
-    UNION ALL SELECT 'evasion', 'Evasion', 3, NULL,
+    UNION ALL SELECT 'animal-companion-evasion', 'Evasion', 3, NULL,
         'If an animal companion is subjected to an attack that normally allows a Reflex saving throw for half damage, it takes no damage if it makes a successful saving throw.',
         'No damage on a successful Reflex save for half.'
     UNION ALL SELECT 'devotion', 'Devotion', 6, NULL,
@@ -171,13 +171,15 @@ WHERE NOT EXISTS (SELECT 1 FROM Feature f WHERE f.slug = v.slug);
 
 INSERT IGNORE INTO FeatureClassMap (featureId, classId, levelDivisor)
 SELECT f.id, 20, 1 FROM Feature f
-WHERE f.slug IN ('animal-companion-link','share-spells','evasion','devotion','multiattack','improved-evasion')
+WHERE f.slug IN ('animal-companion-link','share-spells','animal-companion-evasion','devotion','multiattack','improved-evasion')
 UNION ALL
 SELECT f.id, 24, 2 FROM Feature f
-WHERE f.slug IN ('animal-companion-link','share-spells','evasion','devotion','multiattack','improved-evasion');
+WHERE f.slug IN ('animal-companion-link','share-spells','animal-companion-evasion','devotion','multiattack','improved-evasion');
 
 INSERT INTO FeatureEntity (featureId, appliesTo, appliesToId, appliesToSubId, formulaParamsId, groupingId, type, value, bonusType, displayInDetail, showFullProgression)
-SELECT f.id, 21, 348, NULL, NULL, 0, 3, NULL, NULL, 0, 0
+SELECT f.id, 21, 348, NULL, NULL, 0, 7, NULL, NULL, 1, 0
 FROM Feature f
 WHERE f.slug = 'multiattack'
   AND NOT EXISTS (SELECT 1 FROM FeatureEntity fe WHERE fe.featureId = f.id AND fe.appliesTo = 21 AND fe.appliesToId = 348);
+
+-- Companion Type/AppliesTo entities, Link skills, and sheet flags: prisma/seeds/companion-entity-type.sql

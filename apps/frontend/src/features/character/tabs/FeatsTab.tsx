@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { formatGrantedFeatDisplayName } from '@/lib/formatters/choiceDisplayName';
 import { useCacheFunctions } from '@/services/cache/CacheFunctions';
 import type { FeatInQueryResponse } from '@shared/schema';
 import { EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
@@ -120,11 +121,20 @@ export function FeatsTab({
                 const subIdName = entity.appliesToSubId && entity.appliesToSubId > 0
                     ? itemNameMap.get(entity.appliesToSubId)
                     : undefined;
+                const grantFeature = resolvedData.features.find((feature) => (
+                    feature.entities?.some((item) => item.id === entity.id)
+                ));
+                const displayName = formatGrantedFeatDisplayName(feat.name, entity.appliesToSubId, grantFeature);
 
-                return { ...feat, source: 'granted' as const, subIdName };
+                return {
+                    ...feat,
+                    name: displayName,
+                    source: 'granted' as const,
+                    subIdName,
+                };
             })
             .filter(Boolean);
-    }, [grantedFeats, sharedData.allFeats, itemNameMap]);
+    }, [grantedFeats, sharedData.allFeats, itemNameMap, resolvedData.features]);
 
     // Get choice-based feat details (from CharacterFeatureChoice, e.g., fighter bonus feats)
     const choiceFeatDetails = useMemo(() => {

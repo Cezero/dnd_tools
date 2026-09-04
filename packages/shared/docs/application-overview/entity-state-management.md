@@ -174,12 +174,24 @@ This `id` is a **draft-stable temporary id** (typically negative) used for neste
 - Backend appends a new object to the draft array and returns `{ success: true, id: <tempId> }`
 - Frontend uses that id in subsequent nested updates via `entities.byId.<tempId>.<field>`
 
-**Important**: for Feature drafts, `DraftAction.Add` for `entities` creates a **fully shaped** `FeatureEntity` (not just an `{ id }` stub), including:
+**Important**: for Feature drafts, `DraftAction.Add` for `entities` and `prerequisites` creates a **fully shaped** child (not just an `{ id }` stub).
+
+`entities` includes:
 
 - `id`: minted temporary negative id (returned in the response)
 - `featureId`: set to the draft id (the minted negative feature draft id)
 - required enum fields (`type`, `appliesTo`) set to safe defaults
 - required scalars (`value`, `displayInDetail`, etc.) set to safe defaults
+
+`prerequisites` includes:
+
+- `id`: minted temporary negative id (returned in the response)
+- `featureId`: set to the draft id
+- `type`: `FeaturePrerequisiteType.SkillRanks`
+- `appliesToId`: `null`
+- `minValue`: `1`
+
+`FeatureEditForm` then writes `type`, `appliesToId`, and `minValue` via `prerequisites.byId.<id>.*` as the user edits. Save flushes name, slug, description, and those prerequisite fields against the Redis snapshot so a missing blur cannot leave `FeatureDraftStateSchema` with empty name or incomplete prerequisite rows.
 
 ### **2. Pub/Sub Propagation**
 

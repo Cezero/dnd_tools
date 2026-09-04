@@ -295,6 +295,19 @@ Schema for creating new feature entities, omitting read-only fields and includin
 
 **Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureEntitySchema definition)
 
+### **UpdateFeatureEntitySchema**
+
+Entity payload for updating an existing feature. Extends `CreateFeatureEntitySchema` with an optional `id`.
+
+**Purpose**: Lets feature update requests name existing entities so they are updated in place instead of deleted and recreated.
+
+**Key Differences from Create Schema**:
+- **`id`**: Optional integer. When present and greater than 0, `updateFeatureEntities` matches that row and keeps `CharacterFeatureChoice` attachments.
+
+**Usage**: Nested under `UpdateFeatureSchema.entities` when saving a feature draft.
+
+**Source File**: `packages/shared/schema/src/feature.ts` (UpdateFeatureEntitySchema definition)
+
 ### **FeatureEntityConditionSchema**
 
 Schema for feature entity conditions, defining when entities apply.

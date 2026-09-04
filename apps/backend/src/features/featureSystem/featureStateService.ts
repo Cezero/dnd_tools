@@ -213,9 +213,10 @@ export class FeatureStateService {
                 const entityId = entity.id;
                 const isNewEntity = entityId === undefined || entityId === null || entityId <= 0;
                 
-                // Strip IDs and transform to CreateFeatureEntityRequest format
+                // Keep existing entity ids so updateFeatureEntities can update in place
                 const { id: _entityId, featureId: _entityFeatureId, formulaParamsId, formulaParams, conditions, ...entityData } = entity;
                 const transformedEntity = {
+                    ...(!isNewEntity ? { id: entityId } : {}),
                     ...entityData,
                     conditions: Array.isArray(conditions) ? conditions.map((cond: FeatureEntityCondition) => {
                         const { id: _condId, featureEntityId: _condFeatureEntityId, ...condData } = cond;

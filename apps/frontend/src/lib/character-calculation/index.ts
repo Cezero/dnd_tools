@@ -42,9 +42,10 @@ export {
 export { resolveStandardBonuses, buildCalculationResult } from './utils/calculationHelpers';
 export { applyFeatureFormula, getFormulaDisplayString } from './utils/formulaApplier';
 export {
-    isOffHandWeapon,
-    isUnarmedWeapon,
-    isRangedWeapon,
     canUseTwoHanded,
+    isLightForTwfPenalties,
+    isOffHandWeapon,
+    isRangedWeapon,
+    isUnarmedWeapon,
 } from './utils/weaponHelpers';
 

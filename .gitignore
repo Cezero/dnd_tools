@@ -160,4 +160,4 @@ wheels/
 backup/
 prisma-client/
 .vscode/
-
+.playwright-mcp/

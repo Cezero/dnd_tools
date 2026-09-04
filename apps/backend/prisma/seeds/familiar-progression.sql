@@ -39,12 +39,12 @@ SET @int_fp := IF(@na_fp > 0 AND ROW_COUNT() > 0, LAST_INSERT_ID(), 0);
 
 -- Natural armor (appliesTo AC=3, bonusType NaturalArmor=10)
 INSERT INTO FeatureEntity (featureId, appliesTo, appliesToId, appliesToSubId, formulaParamsId, groupingId, type, value, bonusType, displayInDetail, showFullProgression)
-SELECT f.id, 3, NULL, NULL, @na_fp, 0, 0, 0, 10, 0, 0
+SELECT f.id, 3, NULL, NULL, @na_fp, 0, 7, 0, 10, 0, 0
 FROM Feature f WHERE f.slug = 'familiar-progression' AND @na_fp > 0;
 
 -- Intelligence replacement (appliesTo Ability=0, appliesToId INT=4)
 INSERT INTO FeatureEntity (featureId, appliesTo, appliesToId, appliesToSubId, formulaParamsId, groupingId, type, value, bonusType, displayInDetail, showFullProgression)
-SELECT f.id, 0, 4, NULL, @int_fp, 0, 2, 0, NULL, 0, 0
+SELECT f.id, 0, 4, NULL, @int_fp, 0, 7, 0, NULL, 0, 0
 FROM Feature f WHERE f.slug = 'familiar-progression' AND @int_fp > 0;
 
 INSERT INTO Feature (slug, name, description, summary, displayInCharacterSheet, sourceType, level, domainId, featId, companionId, editionId)
@@ -52,7 +52,7 @@ SELECT v.slug, v.name, v.description, v.summary, 0, 1, v.level, NULL, NULL, NULL
 FROM (
     SELECT 'familiar-alertness' AS slug, 'Alertness' AS name, 1 AS level,
         'The master of a familiar gains the Alertness feat whenever the familiar is within arm''s reach.' AS description,
-        'Master gains Alertness while the familiar is within arm''s reach.' AS summary
+        'familiar within reach' AS summary
     UNION ALL SELECT 'familiar-improved-evasion', 'Improved Evasion', 1,
         'When subjected to an attack that normally allows a Reflex saving throw for half damage, a familiar takes no damage if it makes a successful saving throw and only half damage if the saving throw fails.',
         'No damage on a successful Reflex save; half on a failure.'
@@ -96,3 +96,5 @@ WHERE f.slug IN (
     'familiar-spell-resistance',
     'familiar-scry'
 );
+
+-- Companion Type/AppliesTo entities, Alertness feat grant, and sheet flags: prisma/seeds/companion-entity-type.sql

@@ -431,6 +431,19 @@ export class FeatFormatter implements BaseFormatter {
 }
 ```
 
+### **Character Sheet and PDF Feat Names**
+
+Selected feats are stored as IDs (`advancement.feats[].featId` or a choice `appliesToId`), not names. `CharacterSheetDisplayStrategy.formatFeats()` in [`characterSheetDisplayStrategy.ts`](../../../../apps/frontend/src/lib/formatters/characterSheetDisplayStrategy.ts) resolves those names before the PDF or Features tab consume the formatted list.
+
+Resolution order:
+1. **Granted feat map** — names from resolved feature entities where `appliesTo` is `Feat` (auto-granted feats)
+2. **`getFeatNameFromCache(featId)`** — selected and choice feats (level-up picks such as Two-Weapon Fighting)
+3. **Placeholder** — `Feat ${featId}` only if the cache miss persists
+
+The PDF in [`characterPdfService.ts`](../../../../apps/frontend/src/features/character/characterPdfService.ts) prints `feat.featName` from this formatted result. It does not look up feat names again. `CacheProvider` preloads `['feats-cache']` on app start so the cache is normally warm when a sheet is exported.
+
+The Features tab adds extra fallbacks (`getFeatById` / `getFeatSummaryById`) on top of `feat.featName`. The formatter cache lookup is what keeps the PDF from showing `Feat 306` for ordinary selected feats.
+
 ### **Precaching Requirements**
 
 **IMPORTANT**: Entities must be precached before formatting to ensure names are available.

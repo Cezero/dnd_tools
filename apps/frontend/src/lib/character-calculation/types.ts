@@ -12,6 +12,8 @@ import type {
 export interface CombatCalculationContext {
     mainHandItem?: ItemWithDetails | CharacterItem;
     offHandItem?: ItemWithDetails | CharacterItem;
+    /** One-handed melee used in two hands (1.5x STR). Ignored when dual-wielding. */
+    wieldTwoHanded?: boolean;
 }
 
 /**

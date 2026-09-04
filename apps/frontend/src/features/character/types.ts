@@ -344,6 +344,8 @@ export interface AttackDefinition {
     mainHandCharacterItemId: number | null;
     /** Character item ID for the off-hand weapon/shield */
     offHandCharacterItemId: number | null;
+    /** One-handed melee used in two hands (1.5x STR). Ignored when off-hand is a weapon. */
+    wieldTwoHanded: boolean;
 }
 
 /**

@@ -35,8 +35,10 @@ import { AbilitiesRaceTab, AnimalsPetsTab, ChoicesTab, ClassTab, ConfigurationTa
 import { useAdvancementDraft } from './useAdvancementDraft';
 import { useCharacterResolution } from './useCharacterResolution';
 import { enqueueAdvancementDraftWrite, flushAdvancementCollectionsToDraft, syncFeatureChoicesToDraft } from './utils/advancementDraftSync';
+import { syncAttackDefinitionsToDraft, syncCharacterItemsToDraft } from './utils/characterItemDraftSync';
 import { enqueueCharacterDraftWrite, syncCompanionsToDraft } from './utils/companionDraftSync';
 import { createStableDraftRowId } from './utils/draftKeyUtils';
+import { mapEquipmentToCharacterItems } from './utils/equipmentUtils';
 import { buildWealthFromMoney, isQuantityOnlyWealth, normalizeWealthRows, wealthToMoney } from './utils/moneyUtils';
 
 let pendingCreateRoutePromise: Promise<void> | null = null;
@@ -74,6 +76,8 @@ let pendingCreateRoutePromise: Promise<void> | null = null;
  * - Feature choices: Watches `state.featureChoices` array
  * - Spells known: Watches `state.spellsKnown` array
  * - Feats: Watches `state.selectedFeats` + `state.featSubIds`
+ * - Equipment: Watches `state.equipment` and writes `characterItems.byId`
+ * - Attack definitions: Watches `state.attackDefinitions` and writes `attackDefinitions.byId`
  * 
  * **Why refs are used**: Refs track previous values to avoid syncing on initial mount and
  * to detect actual changes vs. initial state loading.
@@ -312,6 +316,8 @@ export function CharacterEdit(): React.JSX.Element {
     const prevSkillRanksRef = useRef<typeof state.skillRanks | null>(null);
     const prevFeatureChoicesRef = useRef<typeof state.featureChoices | null>(null);
     const prevCompanionsRef = useRef<typeof state.companions | null>(null);
+    const prevEquipmentRef = useRef<typeof state.equipment | null>(null);
+    const prevAttackDefinitionsRef = useRef<typeof state.attackDefinitions | null>(null);
     const hydratedCharacterIdRef = useRef<number | null>(null);
     const prevSpellsKnownRef = useRef<typeof state.spellsKnown | null>(null);
     const prevSelectedFeatsRef = useRef<{ selectedFeats: number[]; featSubIds: Record<number, number | null> } | null>(null);
@@ -332,6 +338,8 @@ export function CharacterEdit(): React.JSX.Element {
     useEffect(() => {
         hasInitializedLanguagesSyncRef.current = false;
         prevDisallowedSourcesRef.current = null;
+        prevEquipmentRef.current = null;
+        prevAttackDefinitionsRef.current = null;
     }, [state.characterId]);
 
     /**
@@ -742,6 +750,59 @@ export function CharacterEdit(): React.JSX.Element {
             console.error('Failed to sync companions to character draft:', error);
         });
     }, [state.characterId, state.companions, characterDraft.updateValue]);
+
+    /**
+     * Sync equipment to draft characterItems.
+     * Save reads Redis, not React state — without this, possessions never persist.
+     */
+    useEffect(() => {
+        if (!state.characterId) {
+            return;
+        }
+        if (prevEquipmentRef.current === null) {
+            prevEquipmentRef.current = state.equipment;
+            return;
+        }
+        if (isEqual(prevEquipmentRef.current, state.equipment)) {
+            return;
+        }
+        const previous = prevEquipmentRef.current;
+        const next = state.equipment;
+        const characterId = state.characterId;
+        const writer = { updateValue: characterDraft.updateValue };
+        enqueueCharacterDraftWrite(characterId, async () => {
+            await syncCharacterItemsToDraft(writer, characterId, previous, next);
+            prevEquipmentRef.current = next;
+        }).catch((error) => {
+            console.error('Failed to sync equipment to character draft:', error);
+        });
+    }, [state.characterId, state.equipment, characterDraft.updateValue]);
+
+    /**
+     * Sync attack definitions to the character draft so Save can remap item IDs.
+     */
+    useEffect(() => {
+        if (!state.characterId) {
+            return;
+        }
+        if (prevAttackDefinitionsRef.current === null) {
+            prevAttackDefinitionsRef.current = state.attackDefinitions;
+            return;
+        }
+        if (isEqual(prevAttackDefinitionsRef.current, state.attackDefinitions)) {
+            return;
+        }
+        const previous = prevAttackDefinitionsRef.current;
+        const next = state.attackDefinitions;
+        const characterId = state.characterId;
+        const writer = { updateValue: characterDraft.updateValue };
+        enqueueCharacterDraftWrite(characterId, async () => {
+            await syncAttackDefinitionsToDraft(writer, characterId, previous, next);
+            prevAttackDefinitionsRef.current = next;
+        }).catch((error) => {
+            console.error('Failed to sync attack definitions to character draft:', error);
+        });
+    }, [state.characterId, state.attackDefinitions, characterDraft.updateValue]);
 
     useDraftSync({
         value: state.selectedForms,
@@ -1311,6 +1372,7 @@ export function CharacterEdit(): React.JSX.Element {
                                 attackSlot: def.attackSlot ?? null,
                                 mainHandCharacterItemId: def.mainHandCharacterItemId ?? null,
                                 offHandCharacterItemId: def.offHandCharacterItemId ?? null,
+                                wieldTwoHanded: def.wieldTwoHanded ?? false,
                             }))
                         },
                     });
@@ -1578,6 +1640,7 @@ export function CharacterEdit(): React.JSX.Element {
                     attackSlot: def.attackSlot ?? null,
                     mainHandCharacterItemId: def.mainHandCharacterItemId,
                     offHandCharacterItemId: def.offHandCharacterItemId,
+                    wieldTwoHanded: def.wieldTwoHanded,
                 })),
                 // Include character languages
                 characterLanguages: uniqueLanguages.length > 0 ? uniqueLanguages.map(languageId => ({
@@ -1604,12 +1667,27 @@ export function CharacterEdit(): React.JSX.Element {
 
             if (state.characterId) {
                 await enqueueCharacterDraftWrite(state.characterId, async () => {
+                    const writer = { updateValue: characterDraft.updateValue };
                     await syncCompanionsToDraft(
-                        { updateValue: characterDraft.updateValue },
+                        writer,
                         prevCompanionsRef.current ?? [],
                         state.companions
                     );
                     prevCompanionsRef.current = state.companions;
+                    await syncCharacterItemsToDraft(
+                        writer,
+                        state.characterId,
+                        prevEquipmentRef.current ?? [],
+                        state.equipment
+                    );
+                    prevEquipmentRef.current = state.equipment;
+                    await syncAttackDefinitionsToDraft(
+                        writer,
+                        state.characterId,
+                        prevAttackDefinitionsRef.current ?? [],
+                        state.attackDefinitions
+                    );
+                    prevAttackDefinitionsRef.current = state.attackDefinitions;
                 });
             }
 
@@ -1715,6 +1793,7 @@ export function CharacterEdit(): React.JSX.Element {
                                         attackSlot: def.attackSlot ?? null,
                                         mainHandCharacterItemId: def.mainHandCharacterItemId ?? null,
                                         offHandCharacterItemId: def.offHandCharacterItemId ?? null,
+                                        wieldTwoHanded: def.wieldTwoHanded ?? false,
                                     }))
                                 },
                             });
@@ -1959,12 +2038,29 @@ export function CharacterEdit(): React.JSX.Element {
             })()
         };
 
+        const editorCharacterItems = mapEquipmentToCharacterItems(
+            state.equipment,
+            state.characterId ?? characterData.id
+        );
+        const editorCharacter = {
+            ...characterData,
+            characterItems: editorCharacterItems,
+            attackDefinitions: state.attackDefinitions.map((definition) => ({
+                id: definition.id,
+                characterId: state.characterId ?? characterData.id,
+                attackSlot: definition.attackSlot,
+                mainHandCharacterItemId: definition.mainHandCharacterItemId,
+                offHandCharacterItemId: definition.offHandCharacterItemId,
+                wieldTwoHanded: definition.wieldTwoHanded,
+            })),
+        };
+
         try {
             return characterSheetStrategy.formatCharacter(
-                characterData,
+                editorCharacter,
                 resolvedData.features,
                 items,
-                characterData.characterItems || [],
+                editorCharacterItems,
                 classDetailsMap,
                 {
                     character: characterContext,
@@ -1978,7 +2074,7 @@ export function CharacterEdit(): React.JSX.Element {
             console.error('Error formatting character:', error);
             return null;
         }
-    }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, queryClient, skillRanksKey]);
+    }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, queryClient, skillRanksKey, state.equipment, state.attackDefinitions, state.characterId]);
 
     // Separate bonus languages from characterLanguages when characterData is available
     useEffect(() => {
@@ -2066,6 +2162,7 @@ export function CharacterEdit(): React.JSX.Element {
                             attackSlot: def.attackSlot ?? null,
                             mainHandCharacterItemId: def.mainHandCharacterItemId ?? null,
                             offHandCharacterItemId: def.offHandCharacterItemId ?? null,
+                            wieldTwoHanded: def.wieldTwoHanded ?? false,
                         }))
                     },
                 });

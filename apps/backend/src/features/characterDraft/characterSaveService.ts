@@ -8,6 +8,7 @@ import { parseDraftState } from '../shared/draftState/draftSaveUtils';
 import { DraftStateService } from '../shared/draftState/DraftStateService';
 
 import { persistCompanionDraftCollections } from './characterCompanionDraftPersist';
+import { persistCharacterItemDraftCollections } from './characterItemDraftPersist';
 
 /**
  * Persists `CharacterEditState` (draft edit state) into MySQL.
@@ -147,28 +148,12 @@ export class CharacterSaveService {
                     });
                 }
 
-                if (validatedState.characterItems && validatedState.characterItems.length > 0) {
-                    await tx.characterItem.createMany({
-                        data: validatedState.characterItems.map((item) => ({
-                            characterId: createdCharacter.id,
-                            baseItemId: item.baseItemId,
-                            name: item.name,
-                            quantity: item.quantity,
-                            location: item.location ?? null,
-                        })),
-                    });
-                }
-
-                if (validatedState.attackDefinitions && validatedState.attackDefinitions.length > 0) {
-                    await tx.characterAttackDefinition.createMany({
-                        data: validatedState.attackDefinitions.map((attack) => ({
-                            characterId: createdCharacter.id,
-                            attackSlot: attack.attackSlot ?? null,
-                            mainHandCharacterItemId: attack.mainHandCharacterItemId ?? null,
-                            offHandCharacterItemId: attack.offHandCharacterItemId ?? null,
-                        })),
-                    });
-                }
+                await persistCharacterItemDraftCollections(
+                    tx,
+                    createdCharacter.id,
+                    validatedState.characterItems,
+                    validatedState.attackDefinitions
+                );
 
                 if (validatedState.characterLanguages && validatedState.characterLanguages.length > 0) {
                     await tx.characterLanguageMap.createMany({
@@ -384,34 +369,12 @@ export class CharacterSaveService {
                 });
             }
 
-            if (validatedState.characterItems) {
-                await tx.characterItem.deleteMany({ where: { characterId } });
-                if (validatedState.characterItems.length > 0) {
-                    await tx.characterItem.createMany({
-                        data: validatedState.characterItems.map((item) => ({
-                            characterId,
-                            baseItemId: item.baseItemId,
-                            name: item.name,
-                            quantity: item.quantity,
-                            location: item.location ?? null,
-                        })),
-                    });
-                }
-            }
-
-            if (validatedState.attackDefinitions) {
-                await tx.characterAttackDefinition.deleteMany({ where: { characterId } });
-                if (validatedState.attackDefinitions.length > 0) {
-                    await tx.characterAttackDefinition.createMany({
-                        data: validatedState.attackDefinitions.map((attack) => ({
-                            characterId,
-                            attackSlot: attack.attackSlot ?? null,
-                            mainHandCharacterItemId: attack.mainHandCharacterItemId ?? null,
-                            offHandCharacterItemId: attack.offHandCharacterItemId ?? null,
-                        })),
-                    });
-                }
-            }
+            await persistCharacterItemDraftCollections(
+                tx,
+                characterId,
+                validatedState.characterItems,
+                validatedState.attackDefinitions
+            );
 
             if (validatedState.characterLanguages) {
                 await tx.characterLanguageMap.deleteMany({ where: { characterId } });

@@ -21,6 +21,7 @@ import {
     PROFICIENCY_TYPES,
     ATTACK_BONUS_APPLIES_TO_LIST,
     CASTING_TYPE_LIST,
+    WEAPON_TYPE_LIST,
     CoreComponent,
     FormulaId,
     ConditionalScalingValueType
@@ -209,6 +210,8 @@ export function getAppliesToSelectOptionsSync(appliesTo: EntityAppliesToType, _e
         case EntityAppliesToType.CastingType:
             // CastingType stores the casting type ID (Prepared/Spontaneous) in appliesToId
             return CASTING_TYPE_LIST;
+        case EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight:
+            return WEAPON_TYPE_LIST;
         case EntityAppliesToType.SpellcastingProgression:
             // SpellcastingProgression stores the spell level (0-9) in appliesToId; UI uses dedicated dropdown in AppliesToSelector
             return [];
@@ -404,6 +407,14 @@ const COMBINATIONS_WITH_FORMULA = new Set<string>([
     
     // Allocation type combinations with formulas
     `${EntityType.Allocation}_${EntityAppliesToType.CreatureType}`, // 100% formula
+
+    `${EntityType.Companion}_${EntityAppliesToType.HitDice}`,
+    `${EntityType.Companion}_${EntityAppliesToType.AC}`,
+    `${EntityType.Companion}_${EntityAppliesToType.Ability}`,
+    `${EntityType.Companion}_${EntityAppliesToType.CompanionBonusTricks}`,
+    `${EntityType.Companion}_${EntityAppliesToType.SpellResistance}`,
+    `${EntityType.Companion}_${EntityAppliesToType.HitPoints}`,
+    `${EntityType.Companion}_${EntityAppliesToType.SavingThrow}`,
 ]);
 
 /**

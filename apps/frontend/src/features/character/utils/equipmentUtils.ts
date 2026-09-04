@@ -1,7 +1,7 @@
-import type { ItemWithDetails } from '@shared/schema';
+import type { CharacterItem, ItemWithDetails } from '@shared/schema';
 import { LOCATION_ENUM } from '@shared/static-data';
 
-import type { AggregatedItem, EquipmentItemBase } from '../types';
+import type { AggregatedItem, EquipmentItem, EquipmentItemBase } from '../types';
 
 /**
  * Utility functions for equipment-related logic on the frontend.
@@ -140,4 +140,25 @@ export function calculateSplitQuantities(
     const validKeepQuantity = Math.max(1, Math.min(keepQuantity, totalQuantity - 1));
     const moveQuantity = totalQuantity - validKeepQuantity;
     return { keepQuantity: validKeepQuantity, moveQuantity };
+}
+
+/**
+ * Map editor equipment rows onto the CharacterItem shape used by Combat and formatters.
+ *
+ * Skips catalog-less rows. `notes` is the display name written on save.
+ */
+export function mapEquipmentToCharacterItems(
+    equipment: EquipmentItem[],
+    characterId: number
+): CharacterItem[] {
+    return equipment
+        .filter((item): item is EquipmentItem & { baseItemId: number } => item.baseItemId !== null)
+        .map((item) => ({
+            id: item.id,
+            name: item.notes || 'Unknown Item',
+            quantity: item.quantity,
+            location: item.location,
+            characterId,
+            baseItemId: item.baseItemId,
+        }));
 }

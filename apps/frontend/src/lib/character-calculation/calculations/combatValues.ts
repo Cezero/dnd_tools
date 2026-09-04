@@ -5,7 +5,7 @@ import type {
     CharacterItem,
     DnDClass,
 } from '@shared/schema';
-import { AbilityId, WEAPON_TYPE_ENUM, ABILITY_MAP, EntityAppliesToType } from '@shared/static-data';
+import { AbilityId, ABILITY_MAP, EntityAppliesToType } from '@shared/static-data';
 
 import { getAbilityModifierWithBonuses } from './abilityScore';
 import { getMonkUnarmedDamage } from '../../attack-calculation/monk-damage';
@@ -21,10 +21,11 @@ import { resolveItemBonuses, extractWeaponProperties } from '../core/itemBonusRe
 import type { CombatCalculationContext, CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
 import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 import {
-    isOffHandWeapon,
-    isUnarmedWeapon,
-    isRangedWeapon,
     canUseTwoHanded,
+    isLightForTwfPenalties,
+    isOffHandWeapon,
+    isRangedWeapon,
+    isUnarmedWeapon,
 } from '../utils/weaponHelpers';
 
 /**
@@ -77,7 +78,7 @@ export function getCombatValues(
     context: CombatCalculationContext,
     classDetailsMap: Map<number, DnDClass>
 ): CombatValuesResult[] {
-    const { mainHandItem, offHandItem } = context;
+    const { mainHandItem, offHandItem, wieldTwoHanded = false } = context;
 
     // Handle unarmed strike (no items or unarmed weapon in main hand)
     if (!mainHandItem || isUnarmedWeapon(mainHandItem)) {
@@ -102,7 +103,8 @@ export function getCombatValues(
             mainHandItem,
             offHandItem,
             false,
-            classDetailsMap
+            classDetailsMap,
+            false
         );
         const offHandResult = calculateSingleWeaponAttack(
             character,
@@ -110,7 +112,8 @@ export function getCombatValues(
             offHandItem,
             mainHandItem,
             true,
-            classDetailsMap
+            classDetailsMap,
+            false
         );
         return [mainHandResult, offHandResult];
     }
@@ -125,7 +128,8 @@ export function getCombatValues(
         mainHandItem,
         offHandItem,
         false,
-        classDetailsMap
+        classDetailsMap,
+        wieldTwoHanded
     )];
 }
 
@@ -139,7 +143,8 @@ function calculateSingleWeaponAttack(
     weaponItem: ItemWithDetails | CharacterItem | null,
     otherItem: ItemWithDetails | CharacterItem | null | undefined,
     isOffHand: boolean,
-    classDetailsMap: Map<number, DnDClass>
+    classDetailsMap: Map<number, DnDClass>,
+    wieldTwoHanded = false
 ): CombatValuesResult {
     const bab = getCharacterBAB(character, classDetailsMap, resolvedProgressions);
     const characterLevel = character.advancements.length;
@@ -157,7 +162,7 @@ function calculateSingleWeaponAttack(
     const isProficient = isProficientWithWeapon(resolvedProgressions, weaponItem.weapon, weaponItem.id);
     const isRanged = isRangedWeapon(weaponItem);
     const isDualWield = isOffHandWeapon(otherItem);
-    const isTwoHanded = canUseTwoHanded(weaponItem, otherItem);
+    const isTwoHanded = canUseTwoHanded(weaponItem, otherItem, wieldTwoHanded);
 
     // Extract weapon properties
     const weaponProps = extractWeaponProperties(weaponItem);
@@ -214,27 +219,18 @@ function calculateSingleWeaponAttack(
             weaponType: weaponProps.weaponType,
             isDualWield,
             isOffHand,
-            isLightWeapon: otherItem && hasWeapon(otherItem) && otherItem.weapon.type === WEAPON_TYPE_ENUM.LightMeleeWeapon,
+            isLightWeapon: isLightForTwfPenalties(isOffHand ? weaponItem : otherItem, resolvedProgressions),
         },
         resolvedProgressions
     );
     const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
 
-    // Light weapon bonus: +2 each (only if off-hand is light and dual-wielding)
-    // For main-hand: check if otherItem (off-hand) is light
-    // For off-hand: check if weaponItem (off-hand) is light
+    // Light off-hand TWF reduction: +2 each hand when the off-hand counts as light
     let lightWeaponBonus = 0;
     if (isDualWield) {
-        if (isOffHand) {
-            // Off-hand: bonus if this weapon (off-hand) is light
-            if (weaponItem.weapon.type === WEAPON_TYPE_ENUM.LightMeleeWeapon) {
-                lightWeaponBonus = 2;
-            }
-        } else {
-            // Main-hand: bonus if otherItem (off-hand) is light
-            if (otherItem && hasWeapon(otherItem) && otherItem.weapon.type === WEAPON_TYPE_ENUM.LightMeleeWeapon) {
-                lightWeaponBonus = 2;
-            }
+        const offHandWeapon = isOffHand ? weaponItem : otherItem;
+        if (isLightForTwfPenalties(offHandWeapon, resolvedProgressions)) {
+            lightWeaponBonus = 2;
         }
     }
 

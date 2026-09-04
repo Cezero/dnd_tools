@@ -77,7 +77,7 @@ The central service for all feature and feature progression management, providin
 
 **updateFeature**: Updates an existing feature
 - **Parameters**: Feature ID and updated data
-- **Business Logic**: Updates feature data, handles prerequisite updates
+- **Business Logic**: Persists all Feature scalar columns (name, slug, description, summary, `displayInCharacterSheet`, sourceType, level, and progression FKs), then handles prerequisite and entity updates. Entity updates match by entity `id` so existing `CharacterFeatureChoice` rows stay attached; entities without an `id` are created.
 - **Returns**: Success message
 
 **deleteFeature**: Deletes a feature

@@ -20,8 +20,10 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/components/toast/useToast';
 import { CharacterQueryHooks } from '@/features/character/CharacterQueryHooks';
 import { TabComponentProps, CharacterEditStateUpdateType, type AttackDefinition } from '@/features/character/types';
+import { nextNegativeTempId } from '@/features/character/utils/draftKeyUtils';
+import { mapEquipmentToCharacterItems } from '@/features/character/utils/equipmentUtils';
 import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
-import type { CharacterWithAllDetailsResponse, ItemWithDetails } from '@shared/schema';
+import type { ItemWithDetails } from '@shared/schema';
 
 import type { CalculatedAttackDisplay } from './types';
 import { AttackDefinitionModal } from '../components/AttackDefinitionModal';
@@ -104,7 +106,6 @@ export function CombatTab({
     resolvedData: _resolvedData,
     formattedCharacter,
     character: characterData,
-    refetchCharacter,
 }: TabComponentProps): React.JSX.Element {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingDefinition, setEditingDefinition] = useState<AttackDefinition | null>(null);
@@ -119,6 +120,30 @@ export function CombatTab({
     );
 
     const [items, setItems] = React.useState<ItemWithDetails[]>([]);
+
+    const editorCharacterItems = useMemo(
+        () => mapEquipmentToCharacterItems(state.equipment, state.characterId ?? characterData?.id ?? 0),
+        [state.equipment, state.characterId, characterData?.id]
+    );
+
+    const persistedItemIds = useMemo(
+        () => new Set((characterData?.characterItems ?? []).map((item) => item.id)),
+        [characterData?.characterItems]
+    );
+
+    /**
+     * True when an attack cannot be written to MySQL yet (draft character or unsaved items).
+     */
+    const mustKeepAttackLocal = useCallback((definitionData: Omit<AttackDefinition, 'id'>, definitionId?: number): boolean => {
+        if (!state.characterId || state.characterId < 1) {
+            return true;
+        }
+        if (definitionId !== undefined && definitionId <= 0) {
+            return true;
+        }
+        const referencedIds = [definitionData.mainHandCharacterItemId, definitionData.offHandCharacterItemId];
+        return referencedIds.some((id) => id !== null && !persistedItemIds.has(id));
+    }, [persistedItemIds, state.characterId]);
 
     // Fetch items for weapons - use TanStack Query cache
     const queryClient = useQueryClient();
@@ -147,7 +172,7 @@ export function CombatTab({
             return result;
         }
 
-        const characterItems = characterData?.characterItems || [];
+        const characterItems = editorCharacterItems;
         const matchedAttackIndices = new Set<number>();
 
         // Process definitions in the order they appear in state (which should match formattedCharacter order)
@@ -256,7 +281,7 @@ export function CombatTab({
         }
 
         return result;
-    }, [formattedCharacter, characterData, items, state.attackDefinitions]);
+    }, [formattedCharacter, editorCharacterItems, items, state.attackDefinitions]);
 
     // Calculate attack displays - separate assigned and unassigned
     const { assignedAttacks, unassignedAttacks } = useMemo(() => {
@@ -313,29 +338,25 @@ export function CombatTab({
         setIsModalOpen(true);
     };
 
+    const applyLocalAttackDefinitions = useCallback((attackDefinitions: AttackDefinition[]) => {
+        updateState({
+            type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
+            payload: { attackDefinitions },
+        });
+    }, [updateState]);
+
     const handleDeleteAttack = useCallback(async (definition: AttackDefinition) => {
         if (!state.characterId || !confirm('Are you sure you want to delete this attack definition?')) {
             return;
         }
 
-        if (!state.characterId) {
-            return;
-        }
-
         try {
-            await CharacterQueryHooks.deleteCharacterAttackDefinition(state.characterId, definition.id);
-
-            // Refetch character data to get updated attack definitions
-            if (refetchCharacter) {
-                await refetchCharacter();
-            } else {
-                // Fallback: Update local state if refetchCharacter is not available
-                const updated = state.attackDefinitions.filter(def => def.id !== definition.id);
-                updateState({
-                    type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
-                    payload: { attackDefinitions: updated },
-                });
+            const keepLocal = mustKeepAttackLocal(definition, definition.id);
+            if (!keepLocal) {
+                await CharacterQueryHooks.deleteCharacterAttackDefinition(state.characterId, definition.id);
             }
+
+            applyLocalAttackDefinitions(state.attackDefinitions.filter(def => def.id !== definition.id));
 
             toast?.add({
                 title: 'Success',
@@ -350,35 +371,27 @@ export function CombatTab({
                 type: 'error',
             });
         }
-    }, [state.characterId, state.attackDefinitions, updateState, toast, refetchCharacter]);
+    }, [applyLocalAttackDefinitions, mustKeepAttackLocal, state.attackDefinitions, state.characterId, toast]);
 
     const handleSaveAttack = useCallback(async (definitionData: Omit<AttackDefinition, 'id'>) => {
         if (!state.characterId) return;
 
-        if (!state.characterId) {
-            return;
-        }
-
         try {
             if (editingDefinition) {
-                // Update existing
-                await CharacterQueryHooks.updateCharacterAttackDefinition(state.characterId, editingDefinition.id, definitionData);
-
-                // Refetch character data to get updated attack definitions
-                if (refetchCharacter) {
-                    await refetchCharacter();
-                } else {
-                    // Fallback: Update local state if refetchCharacter is not available
-                    const updated = state.attackDefinitions.map(def =>
-                        def.id === editingDefinition.id
-                            ? { ...editingDefinition, ...definitionData }
-                            : def
+                const keepLocal = mustKeepAttackLocal(definitionData, editingDefinition.id);
+                if (!keepLocal) {
+                    await CharacterQueryHooks.updateCharacterAttackDefinition(
+                        state.characterId,
+                        editingDefinition.id,
+                        definitionData
                     );
-                    updateState({
-                        type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
-                        payload: { attackDefinitions: updated },
-                    });
                 }
+
+                applyLocalAttackDefinitions(state.attackDefinitions.map(def =>
+                    def.id === editingDefinition.id
+                        ? { ...editingDefinition, ...definitionData }
+                        : def
+                ));
 
                 toast?.add({
                     title: 'Success',
@@ -386,23 +399,26 @@ export function CombatTab({
                     type: 'success',
                 });
             } else {
-                // Create new
-                const result = await CharacterQueryHooks.createCharacterAttackDefinition(state.characterId, definitionData);
+                const keepLocal = mustKeepAttackLocal(definitionData);
+                let newDefinition: AttackDefinition;
 
-                // Refetch character data to get updated attack definitions
-                if (refetchCharacter) {
-                    await refetchCharacter();
+                if (keepLocal) {
+                    newDefinition = {
+                        id: nextNegativeTempId(state.attackDefinitions.map((def) => def.id)),
+                        ...definitionData,
+                    };
                 } else {
-                    // Fallback: Update local state if refetchCharacter is not available
-                    const newDefinition: AttackDefinition = {
+                    const result = await CharacterQueryHooks.createCharacterAttackDefinition(
+                        state.characterId,
+                        definitionData
+                    );
+                    newDefinition = {
                         id: Number.parseInt(result.id, 10),
                         ...definitionData,
                     };
-                    updateState({
-                        type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
-                        payload: { attackDefinitions: [...state.attackDefinitions, newDefinition] },
-                    });
                 }
+
+                applyLocalAttackDefinitions([...state.attackDefinitions, newDefinition]);
 
                 toast?.add({
                     title: 'Success',
@@ -428,7 +444,7 @@ export function CombatTab({
                 type: 'error',
             });
         }
-    }, [state.characterId, state.attackDefinitions, editingDefinition, updateState, toast, refetchCharacter]);
+    }, [applyLocalAttackDefinitions, editingDefinition, mustKeepAttackLocal, state.attackDefinitions, state.characterId, toast]);
 
     const handleDragEnd = useCallback(async (event: DragEndEvent) => {
         const { active, over } = event;
@@ -460,42 +476,36 @@ export function CombatTab({
             return;
         }
 
-        try {
-            await CharacterQueryHooks.reorderCharacterAttackDefinitions(state.characterId, { attackDefinitionIds });
+        const updated = state.attackDefinitions.map(def => {
+            const slotIndex = attackDefinitionIds.indexOf(def.id);
+            if (slotIndex === -1) return def;
 
-            // Refetch character data to get updated attack definitions
-            if (refetchCharacter) {
-                await refetchCharacter();
-            } else {
-                // Fallback: Update slots based on new order if refetchCharacter is not available
-                const updated = state.attackDefinitions.map(def => {
-                    const newIndex = attackDefinitionIds.indexOf(def.id);
-                    if (newIndex === -1) return def;
-
-                    // Calculate new slot (1-based, accounting for dual wield taking 2 slots)
-                    let slot = 1;
-                    for (let i = 0; i < newIndex; i++) {
-                        const prevDef = state.attackDefinitions.find(d => d.id === attackDefinitionIds[i]);
-                        if (prevDef?.offHandCharacterItemId !== null) {
-                            slot += 2; // Dual wield takes 2 slots
-                        } else {
-                            slot += 1;
-                        }
-                    }
-
-                    // For dual wield, ensure we don't exceed slot 6
-                    if (def.offHandCharacterItemId !== null && slot === 7) {
-                        slot = 6; // Move to slot 6 instead
-                    }
-
-                    return { ...def, attackSlot: slot };
-                });
-
-                updateState({
-                    type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
-                    payload: { attackDefinitions: updated },
-                });
+            // Calculate new slot (1-based, accounting for dual wield taking 2 slots)
+            let slot = 1;
+            for (let i = 0; i < slotIndex; i++) {
+                const prevDef = state.attackDefinitions.find(d => d.id === attackDefinitionIds[i]);
+                if (prevDef?.offHandCharacterItemId !== null) {
+                    slot += 2; // Dual wield takes 2 slots
+                } else {
+                    slot += 1;
+                }
             }
+
+            // For dual wield, ensure we don't exceed slot 6
+            if (def.offHandCharacterItemId !== null && slot === 7) {
+                slot = 6; // Move to slot 6 instead
+            }
+
+            return { ...def, attackSlot: slot };
+        });
+
+        try {
+            const keepLocal = updated.some((def) => mustKeepAttackLocal(def, def.id));
+            if (!keepLocal) {
+                await CharacterQueryHooks.reorderCharacterAttackDefinitions(state.characterId, { attackDefinitionIds });
+            }
+
+            applyLocalAttackDefinitions(updated);
 
             toast?.add({
                 title: 'Success',
@@ -510,7 +520,7 @@ export function CombatTab({
                 type: 'error',
             });
         }
-    }, [calculatedAttacks, state.characterId, state.attackDefinitions, updateState, toast, refetchCharacter]);
+    }, [applyLocalAttackDefinitions, calculatedAttacks, mustKeepAttackLocal, state.attackDefinitions, state.characterId, toast]);
 
     // Note: Character data is now provided via props from CharacterEdit, which uses TanStack Query cache
     // No need to fetch character data here - it's already available via the character prop
@@ -618,8 +628,19 @@ export function CombatTab({
                     }}
                     onSave={handleSaveAttack}
                     attackDefinition={editingDefinition}
-                    character={characterData}
-                    characterItems={characterData.characterItems || []}
+                    character={{
+                        ...characterData,
+                        characterItems: editorCharacterItems,
+                        attackDefinitions: state.attackDefinitions.map((definition) => ({
+                            id: definition.id,
+                            characterId: state.characterId ?? characterData.id,
+                            attackSlot: definition.attackSlot,
+                            mainHandCharacterItemId: definition.mainHandCharacterItemId,
+                            offHandCharacterItemId: definition.offHandCharacterItemId,
+                            wieldTwoHanded: definition.wieldTwoHanded,
+                        })),
+                    }}
+                    characterItems={editorCharacterItems}
                     items={items}
                 />
             )}

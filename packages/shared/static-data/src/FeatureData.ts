@@ -91,6 +91,7 @@ export const EntityType = {
     Base: 4,         // Base value entities (BAB, saves, hit dice, skill points, size, speed, etc.)
     Choice: 5,      // Choice-based features
     Allocation: 6,  // Allocation-based features
+    Companion: 7,   // Beneficiary is the companion creature, not the character
 } as const;
 
 export type EntityType = typeof EntityType[keyof typeof EntityType];
@@ -103,6 +104,7 @@ export const ENTITY_TYPES: BaseMap<CoreComponent> = {
     [EntityType.Base]: { id: EntityType.Base, name: 'Base' },
     [EntityType.Choice]: { id: EntityType.Choice, name: 'Choice' },
     [EntityType.Allocation]: { id: EntityType.Allocation, name: 'Allocation' },
+    [EntityType.Companion]: { id: EntityType.Companion, name: 'Companion' },
 }
 
 export const ENTITY_LIST = Object.values(ENTITY_TYPES);
@@ -165,6 +167,7 @@ export const EntityAppliesToType = {
     LevelAdjustment: 45,         // Level adjustment (for race)
     SpellsKnownProgression: 46,  // Spells-known progression reference (per class level, per spell level)
     CompanionBonusTricks: 47,    // Animal companion bonus tricks from class progression
+    TwoWeaponFightingOffHandTreatAsLight: 48, // Treat listed off-hand weapon type as light for TWF penalties
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -226,6 +229,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.FavoredClass]: { id: EntityAppliesToType.FavoredClass, name: 'Favored Class', displayName: 'Favored Class' },
     [EntityAppliesToType.LevelAdjustment]: { id: EntityAppliesToType.LevelAdjustment, name: 'Level Adjustment', displayName: 'LA' },
     [EntityAppliesToType.CompanionBonusTricks]: { id: EntityAppliesToType.CompanionBonusTricks, name: 'Companion Bonus Tricks', displayName: 'Bonus Tricks' },
+    [EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight]: { id: EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight, name: 'TWF Off-Hand Treat As Light', displayName: 'TWF Light Off-Hand' },
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
@@ -298,6 +302,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.SizeCategory,
         EntityAppliesToType.CreatureType,
         EntityAppliesToType.DamageType,
+        EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight,
     ],
     [EntityType.Choice]: [
         EntityAppliesToType.Feat, // Choice between feats
@@ -309,6 +314,18 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.Familiar, // Choice between familiars
         EntityAppliesToType.SpellbookSpell, // Choice for spellbook spells (wizard, etc.)
         EntityAppliesToType.Ability, // Choice for ability score increases (e.g., every 4th level)
+    ],
+    [EntityType.Companion]: [
+        EntityAppliesToType.Ability,
+        EntityAppliesToType.Skill,
+        EntityAppliesToType.SavingThrow,
+        EntityAppliesToType.AC,
+        EntityAppliesToType.HitDice,
+        EntityAppliesToType.HitPoints,
+        EntityAppliesToType.Feat,
+        EntityAppliesToType.SpellResistance,
+        EntityAppliesToType.CompanionBonusTricks,
+        EntityAppliesToType.Other,
     ],
     [EntityType.Allocation]: [
         EntityAppliesToType.Feat, // Allocation to feats
@@ -560,12 +577,14 @@ export const TARGET_TYPE_LIST = Object.values(TARGET_TYPES);
 // Special values for FeatureEntityConditionType.special
 export const SpecialType = {
     casting_defensively: 0,
+    regardingCompanion: 1,
 } as const;
 
 export type SpecialType = typeof SpecialType[keyof typeof SpecialType];
 
 export const SPECIAL_TYPES: BaseMap<CoreComponent> = {
     [SpecialType.casting_defensively]: { id: SpecialType.casting_defensively, name: 'Casting Defensively' },
+    [SpecialType.regardingCompanion]: { id: SpecialType.regardingCompanion, name: 'Regarding Your Companion' },
 };
 
 export const SPECIAL_TYPE_LIST = Object.values(SPECIAL_TYPES);

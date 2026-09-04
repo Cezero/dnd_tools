@@ -254,6 +254,7 @@ export const CharacterAttackDefinitionSchema = z.object({
     attackSlot: z.number().int().min(1).max(7).nullable(),
     mainHandCharacterItemId: DraftIdSchema.nullable(),
     offHandCharacterItemId: DraftIdSchema.nullable(),
+    wieldTwoHanded: z.boolean().default(false),
 });
 
 // Spell preparation schemas

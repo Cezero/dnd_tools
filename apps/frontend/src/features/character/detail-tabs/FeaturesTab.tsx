@@ -4,8 +4,8 @@ import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import {
     collectFeatureChoices,
-    formatFeatNameWithSubtype,
     formatFeatureNameWithChoices,
+    formatGrantedFeatDisplayName,
 } from '@/lib/formatters/choiceDisplayName';
 import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { getQueryClient } from '@/lib/formatters/utils/queryClientAccessor';
@@ -353,7 +353,18 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                                         const featSubId = characterFeat?.featSubId
                                             ?? allCharacterFeats.find((entry) => entry.featId === feat.featId)?.featSubId
                                             ?? null;
-                                        const featName = formatFeatNameWithSubtype(baseFeatName, featSubId);
+                                        const grantFeature = resolvedProgressions.find((feature) => (
+                                            feature.entities?.some((entity) => (
+                                                entity.type === EntityType.Other
+                                                && entity.appliesTo === EntityAppliesToType.Feat
+                                                && entity.appliesToId === feat.featId
+                                            ))
+                                        ));
+                                        const featName = formatGrantedFeatDisplayName(
+                                            baseFeatName,
+                                            featSubId,
+                                            grantFeature
+                                        );
 
                                         // Get feat summary from the associated Feature via features
                                         // The feat summary is stored in the Feature table, not the Feat table

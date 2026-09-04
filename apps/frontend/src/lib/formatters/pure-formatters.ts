@@ -199,16 +199,6 @@ export class LanguageFormatter implements BaseFormatter {
 export class FeatFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
-
-        // This is a proficiency - get item name from cache
-        if (modifier.appliesToId) {
-            const itemName = getItemNameFromCache(modifier.appliesToId);
-            if (itemName) {
-                return itemName.toLowerCase();
-            }
-        }
-
-        // Use cache helper to get feat name
         const featId = modifier.appliesToId;
         if (featId) {
             const cachedName = getFeatNameFromCache(featId);
@@ -217,7 +207,6 @@ export class FeatFormatter implements BaseFormatter {
             }
         }
 
-        // Fallback to ID
         return `${featId || value} (feat name not found)`;
     }
 }

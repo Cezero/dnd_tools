@@ -6,6 +6,7 @@ import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react'
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
 import { TabComponentProps, CharacterEditStateUpdateType } from '@/features/character/types';
+import { nextNegativeTempId } from '@/features/character/utils/draftKeyUtils';
 import { canSplitItem, getOccupiedLocations, getSplitTargetLocation, getSplitTargetLocationName, calculateSplitQuantities } from '@/features/character/utils/equipmentUtils';
 import { addGpToMoney, convertGpToMoney, CURRENCY_TO_MONEY_KEY, getItemCostInGp, getTotalGoldInGp } from '@/features/character/utils/moneyUtils';
 import { useStartingGold } from '@/features/character/utils/startingGold';
@@ -39,6 +40,13 @@ export function EquipmentTab({
     const [splitDialogOpen, setSplitDialogOpen] = useState(false);
     const [splitItem, setSplitItem] = useState<OwnedItemWithEquipmentId | null>(null);
     const [splitKeepQuantity, setSplitKeepQuantity] = useState<number>(1);
+
+    /**
+     * Session-only add mode. Level 1 defaults to purchase (creation shopping);
+     * level > 1 defaults to free (loot, import, or between-session updates).
+     * Remounts with the Equipment tab so the default follows the current level.
+     */
+    const [addItemsForFree, setAddItemsForFree] = useState(state.level > 1);
 
     // Extract proficiencies from resolved features
     const proficiencies = useMemo(() => {
@@ -524,61 +532,72 @@ export function EquipmentTab({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [equipmentVersion]); // Include version so function reference changes when equipment changes (needed to trigger useEffect in ScrollableCategorizedList)
 
+    /**
+     * Add a catalog item to equipment. In purchase mode, deducts gold and stores
+     * cost for refund. In free mode, leaves money unchanged and stores cost 0.
+     */
     const handlePurchase = useCallback((item: ItemWithDetails) => {
-        const costInGp = getItemCostInGp(item);
-        if (costInGp > availableGold) {
+        const costInGp = addItemsForFree ? 0 : getItemCostInGp(item);
+        if (!addItemsForFree && costInGp > availableGold) {
             return;
         }
 
-        // Deduct cost from money
-        const newMoney = convertGpToMoney(availableGold - costInGp);
-
-        // Add item to equipment
         const newItem: EquipmentItem = {
-            id: Date.now(),
+            id: nextNegativeTempId(equipmentRef.current.map((eq) => eq.id)),
             baseItemId: item.id,
-            costInGp: costInGp,
+            costInGp,
             quantity: 1,
             location: null,
             notes: item.name,
         };
-        const newItems = [...state.equipment, newItem];
+        const newItems = [...equipmentRef.current, newItem];
+        equipmentRef.current = newItems;
 
-        // Update both equipment and money
         updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment: newItems } });
-        updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
-    }, [state.equipment, availableGold, convertGpToMoney, updateState]);
+        if (!addItemsForFree) {
+            const newMoney = convertGpToMoney(availableGold - costInGp);
+            updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
+        }
+    }, [addItemsForFree, availableGold, convertGpToMoney, updateState]);
 
+    /**
+     * Remove one owned instance. Refunds gold only when this session stored a
+     * purchase cost greater than 0.
+     */
     const handleReturn = useCallback((item: ItemWithDetails & { _equipmentItemId?: number; _equipmentItemIds?: number[] }) => {
-        // For aggregated items, remove one instance (the first equipment item ID)
         const ownedItem = item as OwnedItemWithEquipmentId;
-        const equipmentItemId = ownedItem._equipmentItemId;
+        const currentEquipment = equipmentRef.current;
+        const equipmentItemId = ownedItem._equipmentItemIds?.[0] ?? ownedItem._equipmentItemId;
+        const equipmentItem = (equipmentItemId
+            ? currentEquipment.find(eq => eq.id === equipmentItemId)
+            : undefined)
+            ?? currentEquipment.find(eq =>
+                eq.baseItemId === ownedItem.id
+                && (eq.location ?? null) === (ownedItem._location ?? null)
+            );
 
-        if (!equipmentItemId) {
+        if (!equipmentItem) {
             return;
         }
 
-        const equipmentItem = state.equipment.find(eq => eq.id === equipmentItemId);
-        if (!equipmentItem || !equipmentItem.costInGp) {
-            return;
-        }
-
-        // Refund the cost for one item
-        const refundGp = equipmentItem.costInGp;
-        const newMoney = addGpToMoney(state.money, refundGp);
-
-        // Remove one instance from equipment
-        const newItems = state.equipment.filter(eq => eq.id !== equipmentItemId);
-
-        // Update both equipment and money
+        const newItems = currentEquipment.filter(eq => eq.id !== equipmentItem.id);
+        equipmentRef.current = newItems;
         updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment: newItems } });
-        updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
-    }, [state.equipment, state.money, updateState]);
+
+        const refundGp = equipmentItem.costInGp;
+        if (refundGp !== null && refundGp > 0) {
+            const newMoney = addGpToMoney(state.money, refundGp);
+            updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
+        }
+    }, [state.money, updateState]);
 
     const isPurchaseDisabled = useCallback((item: ItemWithDetails): boolean => {
+        if (addItemsForFree) {
+            return false;
+        }
         const costInGp = getItemCostInGp(item);
         return costInGp > availableGold;
-    }, [availableGold]);
+    }, [addItemsForFree, availableGold]);
 
     const handleSplit = useCallback(() => {
         if (!splitItem) return;
@@ -609,8 +628,10 @@ export function EquipmentTab({
         );
 
         // Create two new items: one for keep, one for move
+        const keepId = nextNegativeTempId(state.equipment.map((eq) => eq.id));
+        const moveId = nextNegativeTempId([...state.equipment.map((eq) => eq.id), keepId]);
         const keepItem: EquipmentItem = {
-            id: Date.now(),
+            id: keepId,
             baseItemId: firstItem.baseItemId,
             costInGp: firstItem.costInGp,
             quantity: keepQuantity,
@@ -619,7 +640,7 @@ export function EquipmentTab({
         };
 
         const moveItem: EquipmentItem = {
-            id: Date.now() + 1,
+            id: moveId,
             baseItemId: firstItem.baseItemId,
             costInGp: firstItem.costInGp,
             quantity: moveQuantity,
@@ -744,15 +765,28 @@ export function EquipmentTab({
 
             {/* Available Items to Purchase */}
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Available Items
-                </h3>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Available Items
+                    </h3>
+                    <label className="flex items-center">
+                        <input
+                            type="checkbox"
+                            checked={addItemsForFree}
+                            onChange={(e) => setAddItemsForFree(e.target.checked)}
+                            className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Add for free
+                        </span>
+                    </label>
+                </div>
                 <div className="h-[500px]">
                     <EquipmentList
                         dataFetcher={purchaseDataFetcher}
                         groupingFields={purchaseGroupingFields}
                         columns={purchaseItemColumns}
-                        actionButtonLabel="Buy"
+                        actionButtonLabel={addItemsForFree ? 'Add' : 'Buy'}
                         onAction={handlePurchase}
                         isActionDisabled={isPurchaseDisabled}
                         proficientWeaponCategories={proficiencies.weaponCategories}

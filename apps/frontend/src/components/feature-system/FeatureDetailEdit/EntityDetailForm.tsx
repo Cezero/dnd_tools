@@ -261,7 +261,7 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
 
 
             {/* Bonus Type - only show for Bonus entity type */}
-            {entity.type === EntityType.Bonus && (
+            {(entity.type === EntityType.Bonus || entity.type === EntityType.Companion) && (
                 <ValidatedCustomSelect
                     field={`entities.${index}.bonusType`}
                     label="Bonus Type"

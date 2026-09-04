@@ -1,6 +1,6 @@
 import { ChevronUpDownIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { ColumnDef } from '@tanstack/react-table';
-import React, { useCallback, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { EntityTooltip } from '@/components/entity-tooltip/EntityTooltip';
 import { CustomSelect } from '@/components/forms/FormComponents';
@@ -323,16 +323,16 @@ export function EquipmentTab({ character, items, state, updateState }: Equipment
         [handleRemoveItem, state.items, updateState]
     );
 
-    // Data fetcher for possessions - use ref to prevent unnecessary recreations
-    const groupedPossessionsRef = useRef<GroupedItem[]>([]);
-    groupedPossessionsRef.current = groupedPossessions;
-
+    /**
+     * Recreate when groupedPossessions changes so ScrollableCategorizedList
+     * refreshes location, weight, and grouping without a loading spinner.
+     */
     const possessionsDataFetcher = useCallback(async () => {
         return {
-            results: groupedPossessionsRef.current,
-            total: groupedPossessionsRef.current.length,
+            results: groupedPossessions,
+            total: groupedPossessions.length,
         };
-    }, []); // Empty deps - always use the latest ref value
+    }, [groupedPossessions]);
 
     return (
         <div className="space-y-6">

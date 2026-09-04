@@ -1,6 +1,6 @@
 import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
 import { getSkillNameFromCache } from '@/services/cache';
-import { ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, SPELL_SCHOOL_MAP, ATTACK_BONUS_APPLIES_TO_TYPES } from '@shared/static-data';
+import { ABILITY_MAP, ATTACK_BONUS_APPLIES_TO_TYPES, DAMAGE_TYPES, ENTITY_APPLIES_TO_TYPES, EntityAppliesToType, SAVING_THROW_MAP, SPELL_SCHOOL_MAP, WEAPON_TYPES } from '@shared/static-data';
 
 import { formatSpellLevelForTable } from './pure-formatters';
 import type { CalculatedEntity } from './types';
@@ -93,6 +93,19 @@ export function attackBonusLabeler(value: string, modifier: CalculatedEntity): s
 
     // Default: just show the base label and value
     return `${baseLabel}: ${value}`;
+}
+
+/**
+ * Labels treat-as-light TWF entities with the off-hand weapon type they apply to.
+ */
+export function twfTreatOffHandAsLightLabeler(_value: string, modifier: CalculatedEntity): string {
+    if (modifier.appliesToId !== null && modifier.appliesToId !== undefined) {
+        const weaponTypeName = WEAPON_TYPES[modifier.appliesToId]?.name;
+        if (weaponTypeName) {
+            return `TWF: treat ${weaponTypeName.toLowerCase()} off-hand as light`;
+        }
+    }
+    return 'TWF: treat off-hand as light';
 }
 
 // Labeler that returns the value without any label

@@ -164,6 +164,7 @@ Defines feat advancement for character levels.
 **Key Fields**:
 - **`advancementId`**: Reference to the character advancement
 - **`featId`**: Reference to the feat
+- **`featSubId`**: Chosen catalog entity for `useSubId` feats (weapon item id for Weapon Focus, skill id for Skill Focus)
 
 **Relationships**:
 - **`advancement`**: Links to the character advancement

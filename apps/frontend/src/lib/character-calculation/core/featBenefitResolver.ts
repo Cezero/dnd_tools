@@ -1,7 +1,6 @@
 import { getFeatByIdFromCache } from '@/services/cache/featCache';
 import type {
     CharacterWithAllDetailsResponse,
-    CharacterFeatureChoice,
     FeatureWithRelations,
 } from '@shared/schema';
 import { AttackBonusAppliesTo, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
@@ -12,26 +11,6 @@ import type {
     FormulaModification,
 } from '../types';
 import { getAllCharacterFeats } from './featAccessor';
-
-/**
- * Find feature choice for a specific feat
- */
-function findFeatureChoiceForFeat(
-    character: CharacterWithAllDetailsResponse,
-    featId: number
-): CharacterFeatureChoice | null {
-    for (const advancement of character.advancements) {
-        if (!advancement.featureChoices) continue;
-
-        for (const choice of advancement.featureChoices) {
-            // For feats, appliesToId is the featId
-            if (choice.appliesToId === featId) {
-                return choice;
-            }
-        }
-    }
-    return null;
-}
 
 /**
  * Find feat feature for a given featId
@@ -112,15 +91,13 @@ export function resolveFeatBenefits(
                     // If appliesToSubId is null, apply to all attacks (normal attack bonus)
                 }
 
-                // Handle useSubId feats (player choice feats)
+                // Handle useSubId feats (player choice feats such as Weapon Focus)
                 if (feat?.useSubId) {
-                    // For choice-based feats, use the featSubId from the choice
-                    // For advancement-based feats, check CharacterFeatureChoice for player's selection
-                    const subId = characterFeat.source === 'choice'
-                        ? characterFeat.featSubId
-                        : (findFeatureChoiceForFeat(character, characterFeat.featId)?.appliesToSubId ?? null);
+                    // getAllCharacterFeats already copies AdvancementFeat.featSubId and
+                    // CharacterFeatureChoice.appliesToSubId onto CharacterFeat.featSubId.
+                    const subId = characterFeat.featSubId ?? null;
 
-                    // For item-specific benefits, check if itemId matches
+                    // Catalog item id (e.g. Scimitar 114), not CharacterItem instance id
                     if (context?.itemId && subId !== context.itemId) {
                         continue;
                     }

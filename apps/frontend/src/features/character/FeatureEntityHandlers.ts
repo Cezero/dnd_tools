@@ -30,6 +30,8 @@ export class FeatureEntityHandlers {
                 return this.processChoiceEntity(entity, feature);
             case EntityType.Allocation:
                 return this.processAllocationEntity(entity, feature);
+            case EntityType.Companion:
+                return result;
             default:
                 result.warnings = [`Unknown entity type: ${entity.type}`];
                 return result;

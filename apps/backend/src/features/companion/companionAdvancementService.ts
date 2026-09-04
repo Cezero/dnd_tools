@@ -21,15 +21,10 @@ import type {
 } from '@shared/schema';
 import {
     AbilityId,
-    AnimalCompanionSpecialSlug,
-    ANIMAL_COMPANION_PROGRESSION_SLUG,
-    ANIMAL_COMPANION_SPECIAL_SLUGS,
     CharacterCompanionRole,
     CompanionType,
     EntityAppliesToType,
-    FAMILIAR_PROGRESSION_SLUG,
-    FAMILIAR_SPECIAL_SLUGS,
-    FamiliarSpecialSlug,
+    EntityType,
     FeatureBonusType,
     getBonusFeatSlots,
     getBonusHdAverageHp,
@@ -40,8 +35,11 @@ import {
     getPoorSaveForHitDice,
     GetAbilityModifier,
     HANDLE_ANIMAL_INT2_PURPOSE_TRICK_THRESHOLD,
+    isCompanionBeneficiaryEntity,
+    isCompanionChassisAppliesTo,
     MonsterArmorComponentTypeId,
     MULTIATTACK_FEAT_NAME,
+    SavingThrowId,
     SCENT_ABILITY_NAME,
     SIZE_MAP,
     canUseHandleAnimal,
@@ -53,6 +51,15 @@ import { evaluateEntityFormula } from './companionFormula';
 import { monsterService } from '../monster/monsterService';
 
 const SYNTHETIC_ID_BASE = 1_000_000;
+
+interface CompanionChassisOverlay {
+    intelligence: number | null;
+    spellResistance: number | null;
+    devotionWillBonus: number;
+    multiattackFeatId: number | null;
+}
+
+const chassisOverlayByProgression = new WeakMap<ResolvedCompanionProgression, CompanionChassisOverlay>();
 
 interface CompanionProgressionContext {
     classLevels: Map<number, number>;
@@ -327,94 +334,178 @@ export const companionAdvancementService = {
             return null;
         }
 
-        const effectiveLevel = context
-            ? this.computeEffectiveCompanionLevel(context.classLevels, context.choiceFeatures, companion.levelAdjustment)
-            : isFamiliar
-                ? await this.getEffectiveFamiliarLevel(characterId, companion.levelAdjustment)
-                : await this.getEffectiveCompanionLevel(characterId, companion.levelAdjustment);
-        const features = await this.loadProgressionFeaturesBySlugs(
-            isFamiliar
-                ? [FAMILIAR_PROGRESSION_SLUG, ...FAMILIAR_SPECIAL_SLUGS]
-                : [ANIMAL_COMPANION_PROGRESSION_SLUG, ...ANIMAL_COMPANION_SPECIAL_SLUGS]
+        const classLevels = context?.classLevels ?? await this.getClassLevels(characterId);
+        const choiceFeatures = context?.choiceFeatures
+            ?? (isFamiliar
+                ? await this.loadFamiliarChoiceFeatures(characterId)
+                : await this.loadAnimalCompanionChoiceFeatures(characterId));
+        const effectiveLevel = this.computeEffectiveCompanionLevel(
+            classLevels,
+            choiceFeatures,
+            companion.levelAdjustment
         );
+        const contributingClassIds = this.getContributingClassIds(classLevels, choiceFeatures);
+        const features = contributingClassIds.length > 0
+            ? await this.loadCompanionBeneficiaryFeatures(contributingClassIds)
+            : [];
+        const unlocked = features.filter((feature) => feature.level <= effectiveLevel);
         const typeSpecials = 'id' in companion && typeof companion.id === 'number'
             ? await this.loadCompanionTypeSpecials(companion.id)
             : [];
-        if (features.length === 0) {
-            return {
-                effectiveLevel,
-                bonusHd: 0,
-                naturalArmorAdj: 0,
-                strAdj: 0,
-                dexAdj: 0,
-                bonusTricks: 0,
-                specials: typeSpecials,
-            };
-        }
+        const bonuses = this.evaluateCompanionChassis(unlocked, effectiveLevel);
+        const specials = this.collectCompanionSpecials(unlocked);
+        const progression: ResolvedCompanionProgression = {
+            effectiveLevel,
+            bonusHd: bonuses.bonusHd,
+            naturalArmorAdj: bonuses.naturalArmorAdj,
+            strAdj: bonuses.strAdj,
+            dexAdj: bonuses.dexAdj,
+            bonusTricks: bonuses.bonusTricks,
+            specials: [...specials, ...typeSpecials],
+        };
+        chassisOverlayByProgression.set(progression, {
+            intelligence: bonuses.intelligence,
+            spellResistance: bonuses.spellResistance,
+            devotionWillBonus: bonuses.devotionWillBonus,
+            multiattackFeatId: bonuses.multiattackFeatId,
+        });
+        return progression;
+    },
 
-        const chassis = features.find((f) => (
-            f.slug === (isFamiliar ? FAMILIAR_PROGRESSION_SLUG : ANIMAL_COMPANION_PROGRESSION_SLUG)
-        ));
+    /**
+     * Class IDs that contribute to this companion’s effective level via choice features.
+     */
+    getContributingClassIds(
+        classLevels: Map<number, number>,
+        choiceFeatures: FeatureWithRelations[]
+    ): number[] {
+        const contributingClassIds = new Set<number>();
+        for (const feature of choiceFeatures) {
+            for (const classMap of feature.classes ?? []) {
+                const classLevel = classLevels.get(classMap.classId) ?? 0;
+                if (classLevel > 0) {
+                    contributingClassIds.add(classMap.classId);
+                }
+            }
+        }
+        return [...contributingClassIds];
+    },
+
+    /**
+     * Chassis numbers from Type=Companion entities (HD, NA, abilities, tricks, SR, Int).
+     */
+    evaluateCompanionChassis(
+        features: FeatureWithRelations[],
+        effectiveLevel: number
+    ): {
+        bonusHd: number;
+        naturalArmorAdj: number;
+        strAdj: number;
+        dexAdj: number;
+        bonusTricks: number;
+        intelligence: number | null;
+        spellResistance: number | null;
+        devotionWillBonus: number;
+        multiattackFeatId: number | null;
+    } {
         const bonuses = {
             bonusHd: 0,
             naturalArmorAdj: 0,
             strAdj: 0,
             dexAdj: 0,
             bonusTricks: 0,
+            intelligence: null as number | null,
+            spellResistance: null as number | null,
+            devotionWillBonus: 0,
+            multiattackFeatId: null as number | null,
         };
 
-        if (chassis?.entities) {
-            for (const entity of chassis.entities) {
-                const value = evaluateEntityFormula(entity, effectiveLevel, chassis.level) ?? 0;
-                if (value <= 0) {
+        for (const feature of features) {
+            for (const entity of feature.entities ?? []) {
+                if (!isCompanionBeneficiaryEntity(entity)) {
                     continue;
                 }
-                if (entity.appliesTo === EntityAppliesToType.HitDice) {
+                if (
+                    entity.appliesTo === EntityAppliesToType.Feat
+                    && entity.appliesToId
+                    && entity.appliesToId > 0
+                ) {
+                    bonuses.multiattackFeatId = entity.appliesToId;
+                }
+                const value = evaluateEntityFormula(entity, effectiveLevel, feature.level);
+                if (value === null) {
+                    continue;
+                }
+                if (entity.appliesTo === EntityAppliesToType.HitDice && value > 0) {
                     bonuses.bonusHd = value;
                 } else if (
                     entity.appliesTo === EntityAppliesToType.AC
                     && entity.bonusType === FeatureBonusType.NaturalArmor
+                    && value > 0
                 ) {
                     bonuses.naturalArmorAdj = value;
                 } else if (
                     entity.appliesTo === EntityAppliesToType.Ability
                     && entity.appliesToId === AbilityId.Strength
+                    && value > 0
                 ) {
                     bonuses.strAdj = value;
                 } else if (
                     entity.appliesTo === EntityAppliesToType.Ability
                     && entity.appliesToId === AbilityId.Dexterity
+                    && value > 0
                 ) {
                     bonuses.dexAdj = value;
-                } else if (entity.appliesTo === EntityAppliesToType.CompanionBonusTricks) {
+                } else if (
+                    entity.appliesTo === EntityAppliesToType.Ability
+                    && entity.appliesToId === AbilityId.Intelligence
+                    && value > 0
+                ) {
+                    bonuses.intelligence = value;
+                } else if (entity.appliesTo === EntityAppliesToType.CompanionBonusTricks && value > 0) {
                     bonuses.bonusTricks = value;
+                } else if (entity.appliesTo === EntityAppliesToType.SpellResistance && value > 0) {
+                    bonuses.spellResistance = value;
+                } else if (
+                    entity.appliesTo === EntityAppliesToType.SavingThrow
+                    && entity.appliesToId === SavingThrowId.Will
+                    && value > 0
+                ) {
+                    bonuses.devotionWillBonus = value;
                 }
             }
         }
 
+        return bonuses;
+    },
+
+    /**
+     * Named creature specials: Type=Companion, displayInDetail, not chassis-only math.
+     */
+    collectCompanionSpecials(features: FeatureWithRelations[]): ResolvedCompanionSpecial[] {
         const specials: ResolvedCompanionSpecial[] = [];
+        const seen = new Set<string>();
         for (const feature of features) {
-            const isSpecial = isFamiliar
-                ? FAMILIAR_SPECIAL_SLUGS.includes(feature.slug as FamiliarSpecialSlug)
-                : ANIMAL_COMPANION_SPECIAL_SLUGS.includes(feature.slug as AnimalCompanionSpecialSlug);
-            if (!isSpecial) {
+            const visible = (feature.entities ?? []).filter((entity) => (
+                isCompanionBeneficiaryEntity(entity)
+                && entity.displayInDetail !== false
+                && !isCompanionChassisAppliesTo(entity.appliesTo)
+            ));
+            if (visible.length === 0) {
                 continue;
             }
-            if (feature.level > effectiveLevel) {
+            if (seen.has(feature.slug)) {
                 continue;
             }
+            seen.add(feature.slug);
+            const summary = feature.summary?.trim();
             specials.push({
                 slug: feature.slug,
-                name: feature.name,
+                name: summary ? `${summary} (${feature.name})` : feature.name,
                 description: feature.description,
             });
         }
-
-        return {
-            effectiveLevel,
-            ...bonuses,
-            specials: [...specials, ...typeSpecials],
-        };
+        return specials;
     },
 
     computeBudgets(args: {
@@ -514,9 +605,16 @@ export const companionAdvancementService = {
         const wisMod = GetAbilityModifier(block.wisdom ?? 10);
         const strMod = GetAbilityModifier(block.strength ?? 10);
         block.baseAttack = getDruidBabForHitDice(totalHd);
+        const chassisOverlay = chassisOverlayByProgression.get(progression);
         block.fortSave = getGoodSaveForHitDice(totalHd) + conMod;
         block.refSave = getGoodSaveForHitDice(totalHd) + dexMod;
-        block.willSave = getPoorSaveForHitDice(totalHd) + wisMod;
+        block.willSave = getPoorSaveForHitDice(totalHd) + wisMod + (chassisOverlay?.devotionWillBonus ?? 0);
+        if (chassisOverlay?.spellResistance && chassisOverlay.spellResistance > 0) {
+            const srLabel = `SR ${chassisOverlay.spellResistance}`;
+            block.specialQualities = block.specialQualities
+                ? `${block.specialQualities}; ${srLabel}`
+                : srLabel;
+        }
 
         const sizeId = block.sizeId ?? 5;
         const sizeGrapple = SIZE_MAP[sizeId]?.grappleModifier ?? 0;
@@ -524,17 +622,21 @@ export const companionAdvancementService = {
 
         this.mergeAssignedSkillsAndFeats(block, args.assignedSkills, args.assignedFeats);
 
-        const hasMultiattackSpecial = progression.specials.some(
-            (s) => s.slug === AnimalCompanionSpecialSlug.Multiattack
-        );
-        if (hasMultiattackSpecial && args.multiattackFeatId) {
-            const alreadyHas = (block.feats ?? []).some((f) => f.featId === args.multiattackFeatId);
+        const grantedFeatId = chassisOverlay?.multiattackFeatId
+            ?? (progression.specials.some((special) => (
+                special.slug === 'multiattack'
+                || special.name.includes(MULTIATTACK_FEAT_NAME)
+            ))
+                ? args.multiattackFeatId
+                : null);
+        if (grantedFeatId) {
+            const alreadyHas = (block.feats ?? []).some((f) => f.featId === grantedFeatId);
             if (!alreadyHas) {
                 block.feats = [
                     ...(block.feats ?? []),
                     {
                         id: SYNTHETIC_ID_BASE + (block.feats ?? []).length,
-                        featId: args.multiattackFeatId,
+                        featId: grantedFeatId,
                         notes: 'Animal companion bonus feat',
                     },
                 ];
@@ -579,9 +681,17 @@ export const companionAdvancementService = {
                 naComponent.value = (naComponent.value ?? 0) + progression.naturalArmorAdj;
             }
 
-            const familiarIntelligence = await this.evaluateFamiliarIntelligence(progression.effectiveLevel);
+            const chassisOverlay = chassisOverlayByProgression.get(progression);
+            const familiarIntelligence = chassisOverlay?.intelligence
+                ?? await this.evaluateFamiliarIntelligence(progression.effectiveLevel);
             if (familiarIntelligence !== null && familiarIntelligence > (block.intelligence ?? 0)) {
                 block.intelligence = familiarIntelligence;
+            }
+            if (chassisOverlay?.spellResistance && chassisOverlay.spellResistance > 0) {
+                const srLabel = `SR ${chassisOverlay.spellResistance}`;
+                block.specialQualities = block.specialQualities
+                    ? `${block.specialQualities}; ${srLabel}`
+                    : srLabel;
             }
         }
 
@@ -593,20 +703,25 @@ export const companionAdvancementService = {
     },
 
     /**
-     * PHB familiar Intelligence from the familiar-progression chassis, or null if unseeded.
+     * Familiar Intelligence from Type=Companion Ability/INT entities, or null if unseeded.
      */
     async evaluateFamiliarIntelligence(effectiveLevel: number): Promise<number | null> {
-        const features = await this.loadProgressionFeaturesBySlugs([FAMILIAR_PROGRESSION_SLUG]);
-        const chassis = features.find((feature) => feature.slug === FAMILIAR_PROGRESSION_SLUG);
-        if (!chassis?.entities) {
-            return null;
-        }
-        for (const entity of chassis.entities) {
-            if (entity.appliesTo === EntityAppliesToType.Ability && entity.appliesToId === AbilityId.Intelligence) {
-                return evaluateEntityFormula(entity, effectiveLevel, chassis.level);
-            }
-        }
-        return null;
+        const features = await prisma.feature.findMany({
+            where: {
+                entities: {
+                    some: {
+                        type: EntityType.Companion,
+                        appliesTo: EntityAppliesToType.Ability,
+                        appliesToId: AbilityId.Intelligence,
+                    },
+                },
+            },
+            include: {
+                entities: { include: { formulaParams: true, conditions: true } },
+            },
+        });
+        const mapped = this.mapFeatureRows(features);
+        return this.evaluateCompanionChassis(mapped, effectiveLevel).intelligence;
     },
 
     async getClassLevels(characterId: number): Promise<Map<number, number>> {
@@ -726,22 +841,41 @@ export const companionAdvancementService = {
         };
     },
 
-    async loadProgressionFeatures(): Promise<FeatureWithRelations[]> {
-        return this.loadProgressionFeaturesBySlugs([
-            ANIMAL_COMPANION_PROGRESSION_SLUG,
-            ...ANIMAL_COMPANION_SPECIAL_SLUGS,
-        ]);
-    },
-
-    async loadProgressionFeaturesBySlugs(slugs: readonly string[]): Promise<FeatureWithRelations[]> {
+    /**
+     * Class features that have at least one Type=Companion entity for the given classes.
+     */
+    async loadCompanionBeneficiaryFeatures(classIds: number[]): Promise<FeatureWithRelations[]> {
+        if (classIds.length === 0) {
+            return [];
+        }
         const features = await prisma.feature.findMany({
-            where: { slug: { in: [...slugs] } },
+            where: {
+                classes: { some: { classId: { in: classIds } } },
+                entities: { some: { type: EntityType.Companion } },
+            },
             include: {
                 classes: true,
                 entities: { include: { formulaParams: true, conditions: true } },
             },
         });
+        return this.mapFeatureRows(features);
+    },
 
+    /**
+     * Maps Prisma feature rows (with entities) onto FeatureWithRelations.
+     */
+    mapFeatureRows(
+        features: Array<{
+            sourceType: number;
+            entities: Array<{
+                type: number;
+                appliesTo: number;
+                bonusType: number | null;
+                formulaParams: Parameters<typeof transformFormulaParamsFromDatabase>[0] | null;
+                conditions: Array<{ conditionType: number }>;
+            }>;
+        }>
+    ): FeatureWithRelations[] {
         return features.map((feature) => ({
             ...feature,
             sourceType: feature.sourceType as FeatureWithRelations['sourceType'],
@@ -758,7 +892,7 @@ export const companionAdvancementService = {
                     conditionType: condition.conditionType as FeatureEntityCondition['conditionType'],
                 })),
             })),
-        }));
+        })) as FeatureWithRelations[];
     },
 
     async loadAnimalCompanionChoiceFeatures(characterId: number): Promise<FeatureWithRelations[]> {

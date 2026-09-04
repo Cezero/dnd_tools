@@ -1,6 +1,6 @@
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
-import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, savingThrowProgressionLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler, groupedBonusLanguageLabeler, groupedAutomaticLanguageLabeler, groupedSkillPointsLabeler, animalCompanionLabeler, attackBonusLabeler, castingAbilityLabeler, spellcastingProgressionLabeler } from './label-formatters';
+import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, savingThrowProgressionLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler, groupedBonusLanguageLabeler, groupedAutomaticLanguageLabeler, groupedSkillPointsLabeler, animalCompanionLabeler, attackBonusLabeler, castingAbilityLabeler, spellcastingProgressionLabeler, twfTreatOffHandAsLightLabeler } from './label-formatters';
 import { generateKey } from './registry-utils';
 import type { CalculatedEntity } from './types';
 
@@ -146,6 +146,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerOtherLabeler(EntityAppliesToType.Domain, domainLabeler); // Domain grants
         this.registerOtherLabeler(EntityAppliesToType.AnimalCompanion, animalCompanionLabeler); // Animal companion grants
         this.registerOtherLabeler(EntityAppliesToType.Familiar, animalCompanionLabeler); // Familiar grants (use same labeler as animal companions)
+        this.registerOtherLabeler(EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight, twfTreatOffHandAsLightLabeler);
 
         // Class/Race mechanics labelers (EntityType.Base)
         this.registerBaseLabeler(EntityAppliesToType.Ability, abilityModifierLabeler);
@@ -179,6 +180,17 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerLabeler(EntityType.Allocation, emptyStringLabeler, EntityAppliesToType.Feat);
         this.registerLabeler(EntityType.Allocation, emptyStringLabeler, EntityAppliesToType.Feature);
         this.registerLabeler(EntityType.Allocation, emptyStringLabeler, EntityAppliesToType.CreatureType);
+
+        this.registerLabeler(EntityType.Companion, abilityModifierLabeler, EntityAppliesToType.Ability);
+        this.registerLabeler(EntityType.Companion, skillModifierLabeler, EntityAppliesToType.Skill);
+        this.registerLabeler(EntityType.Companion, savingThrowModifierLabeler, EntityAppliesToType.SavingThrow);
+        this.registerLabeler(EntityType.Companion, displayNameLabeler, EntityAppliesToType.AC);
+        this.registerLabeler(EntityType.Companion, displayNameLabeler, EntityAppliesToType.HitDice);
+        this.registerLabeler(EntityType.Companion, displayNameLabeler, EntityAppliesToType.HitPoints);
+        this.registerLabeler(EntityType.Companion, displayNameLabeler, EntityAppliesToType.SpellResistance);
+        this.registerLabeler(EntityType.Companion, displayNameLabeler, EntityAppliesToType.CompanionBonusTricks);
+        this.registerLabeler(EntityType.Companion, grantedFeatLabeler, EntityAppliesToType.Feat);
+        this.registerLabeler(EntityType.Companion, emptyStringLabeler, EntityAppliesToType.Other);
     }
 
     // Grouped labeler methods

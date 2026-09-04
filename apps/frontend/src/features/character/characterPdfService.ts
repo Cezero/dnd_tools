@@ -4,24 +4,41 @@ import ordinal from 'ordinal';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
 import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
+import { FeatQueryHooks } from '@/features/feat/FeatQueryHooks';
 import { ItemQueryHooks } from '@/features/item/ItemQueryHooks';
 import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
-import { collectFeatureChoices, displayStrategyFactory, formatFeatureNameWithChoices, formatSpellComponents, formatSpellSchool } from '@/lib/formatters';
+import { collectFeatureChoices, displayStrategyFactory, formatFeatureNameWithChoices, formatGrantedFeatDisplayName, formatSpellComponents, formatSpellSchool } from '@/lib/formatters';
 import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { formatSignedModifier } from '@/lib/formatters/modifier-utils';
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
 import { hasDoubleArmorPenalty, hasSubtypes, usesCustomSubtype, getSkillSubtypes, getSkillSubtypeName } from '@/lib/skill-utils';
 import { getRaceNameFromCache, getClassNameFromCache, getSkillSummaryById, formatSourceFromObject } from '@/services/cache';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
-import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureWithRelations, CharacterItem, Spell } from '@shared/schema';
+import type { CharacterItem, CharacterWithAllDetailsResponse, DnDClass, FeatureWithRelations, GetAllFeatsWithFeatureInfoResponse, ItemWithDetails, Race, Spell } from '@shared/schema';
 import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, CurrencyId, DisplayType, SIZE_MAP, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, EntityAppliesToType } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 import { appendAnimalsPages } from './characterPdfAnimals';
 import { CharacterQueryHooks } from './CharacterQueryHooks';
+
+/**
+ * Feat summaries live on the Feature linked via featId, not on the granting
+ * choice wrapper (Bonus Feat, Human Bonus Feat, etc.).
+ */
+function getFeatSummaryForPdf(
+    featId: number,
+    featSummaryById: Map<number, string | null>,
+    resolvedProgressions: FeatureWithRelations[]
+): string {
+    const fromList = featSummaryById.get(featId);
+    if (fromList) {
+        return fromList;
+    }
+    return resolvedProgressions.find((feature) => feature.featId === featId)?.summary || '';
+}
 
 /**
  * Generate a PDF character sheet matching the D&D 3.5 sheet format.
@@ -93,6 +110,25 @@ export async function generateCharacterPdf(
             }
         } catch (error) {
             console.warn('Failed to fetch items for formatting from cache:', error);
+        }
+    }
+
+    const featSummaryById = new Map<number, string | null>();
+    if (queryClient) {
+        try {
+            const featsResponse = await queryClient.fetchQuery<GetAllFeatsWithFeatureInfoResponse>({
+                queryKey: FeatQueryHooks.getFeatsQueryKey(),
+                queryFn: () => FeatQueryHooks.getFeats() as Promise<GetAllFeatsWithFeatureInfoResponse>,
+                staleTime: 5 * 60 * 1000,
+                gcTime: 10 * 60 * 1000,
+            });
+            if (featsResponse?.results) {
+                for (const feat of featsResponse.results) {
+                    featSummaryById.set(feat.id, feat.summary);
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to fetch feat summaries for PDF:', error);
         }
     }
 
@@ -2565,7 +2601,8 @@ export async function generateCharacterPdf(
             const prog = resolvedProgressions.find(p =>
                 p.id === formattedFeature.featureId &&
                 p.sourceType === FeatureSourceType.Race &&
-                p.level <= character.advancements.length
+                p.level <= character.advancements.length &&
+                FeatureDisplayFilter.shouldListFeatureInCharacterView(p)
             );
             if (prog) {
                 raceFeatureMap.set(formattedFeature.featureId, prog);
@@ -2926,8 +2963,19 @@ export async function generateCharacterPdf(
 
                     // Get featSubId and resolve to item name
                     const featSubId = featSubIdMap.get(feat.featId);
-                    let featNameWithSubId = actualFeatName;
-                    if (featSubId && featSubId > 0) {
+                    const grantFeature = resolvedProgressions.find((feature) => (
+                        feature.entities?.some((entity) => (
+                            entity.type === EntityType.Other
+                            && entity.appliesTo === EntityAppliesToType.Feat
+                            && entity.appliesToId === feat.featId
+                        ))
+                    ));
+                    let featNameWithSubId = formatGrantedFeatDisplayName(
+                        actualFeatName,
+                        featSubId,
+                        grantFeature
+                    );
+                    if (featNameWithSubId === actualFeatName && featSubId && featSubId > 0) {
                         const item = items.find(i => i.id === featSubId);
                         if (item) {
                             featNameWithSubId = `${actualFeatName} (${item.name})`;
@@ -2942,12 +2990,7 @@ export async function generateCharacterPdf(
                         featDisplayName = `${levelOrdinal}: ${featNameWithSubId}`;
                     }
 
-                    // Get feature summary from feature if available
-                    let benefitText = '';
-                    if (characterFeat?.sourceFeature?.featureId) {
-                        const feature = resolvedProgressions.find(p => p.id === characterFeat.sourceFeature.featureId);
-                        benefitText = feature?.summary || '';
-                    }
+                    const benefitText = getFeatSummaryForPdf(feat.featId, featSummaryById, resolvedProgressions);
 
                     // Draw feat name in bold
                     doc.setFont('ArchivoNarrow', 'bold');

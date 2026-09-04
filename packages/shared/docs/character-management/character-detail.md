@@ -184,9 +184,13 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 
 **Key Implementation Details**:
 - Display names come from `formatFeatureNameWithChoices` / `formatFeatNameWithSubtype` in `apps/frontend/src/lib/formatters/choiceDisplayName.ts`
+- Feat names on the sheet and PDF come from `formatFeats()`: granted entities first, then `getFeatNameFromCache`, then `Feat ${id}`. See [Entity Precaching](../formatting-system/entity-precaching.md#character-sheet-and-pdf-feat-names).
+- Feat summaries on the viewer and PDF come from the Feature linked to the feat (`featId`), via `/feats/with-feature-info`, not from the granting Bonus Feat wrapper.
 - Choice names resolve from `CharacterFeatureChoice.appliesToId` (companion, feat, domain, and other choice types)
-- Narrative list uses `FeatureDisplayFilter.shouldListFeatureInCharacterView`: `displayInCharacterSheet` hides BAB/saves/HD; `displayInDetail` hides chassis entities; class-skill and proficiency wrappers are omitted because they already appear on Skills and in the Proficiencies section
-- The PDF special-abilities column uses the same helpers
+- Narrative list uses `FeatureDisplayFilter.shouldListFeatureInCharacterView`: `displayInCharacterSheet` hides BAB/saves/HD; `displayInDetail` hides chassis entities; class-skill and proficiency wrappers are omitted because they already appear on Skills and in the Proficiencies section; features whose every visible entity is `EntityType.Companion` stay on the animal sheet only
+- Familiar Alertness is a live feat grant (`Other` + `Feat` + feat 3). The feature itself is off the Features list; the Feats list and PDF show `Alertness (familiar within reach)` and always apply +2 Listen/Spot (reach is assumed)
+- Link appears on the Druid/Ranger sheet. Its +4 circumstance Handle Animal / Wild Empathy bonuses use `SpecialType.regardingCompanion` and show as conditional on the Skills tab
+- The PDF special-abilities column uses the same helpers. The formatted-feature fallback for race entries also applies `shouldListFeatureInCharacterView`, so `displayInCharacterSheet = false` stays hidden (for example Human Automatic/Bonus Languages).
 
 ### **Animals & Pets Tab**
 
@@ -199,6 +203,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 
 **Key Implementation Details**:
 - Creature name links to the monster entry; trick names link to `/tricks/:id` and show the description on hover
+- Companion specials come from `Type=Companion` entities (not slug allowlists) and display summary, then name
 - PDF export appends extra **portrait** Animals & Pets pages after the character sheet and any landscape spell pages
 - Multiple blocks share a page; a new page starts only when the next block will not fit
 - Blocks are grouped Class Companions, then Pets, then Wild Shape Forms
@@ -224,6 +229,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 - Items can be added via `CharacterDetailQueryHooks.addItem`
 - Items can be removed via `CharacterDetailQueryHooks.removeItem`
 - Equipment slots are displayed with equipped items
+- The Other Possessions `dataFetcher` must be recreated when `state.items` change so `ScrollableCategorizedList` refreshes location, weight, and grouping (Owned items hide weight; Carried/equipped items show it)
 
 ### **Notes Tab**
 

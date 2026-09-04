@@ -77,6 +77,14 @@ The Two-Weapon Fighting feat provides different attack bonuses to main hand and 
 
 The calculation system uses context flags (`isDualWield`, `isOffHand`) to determine which bonus applies.
 
+**Example: Oversized Two-Weapon Fighting**
+This feat treats a one-handed off-hand as light for TWF penalties. It is a flag entity, not an extra attack bonus:
+- `type: EntityType.Other`
+- `appliesTo: EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight`
+- `appliesToId: WEAPON_TYPE_ENUM.OneHandedMeleeWeapon`
+
+`isLightForTwfPenalties` in `frontend/src/lib/character-calculation/utils/weaponHelpers.ts` then applies the same +2/+2 light-off-hand reduction used for actual light weapons, so it cannot stack with a light off-hand.
+
 **Related Documentation**: [Feature System Database Schema](../feature-system/database-schema.md)
 
 
@@ -136,26 +144,27 @@ INSERT INTO Feat (name, useSubId, ...) VALUES ('Alertness', false, ...);
 -- Entity 2: appliesTo: Skill, appliesToId: 16 (Spot), value: 2
 ```
 
-**Player Choice Feat (Skill Focus)**:
+**Player Choice Feat (Skill Focus / Weapon Focus)**:
 ```sql
--- Player must choose skill, appliesToId is null in FeatureEntity
-INSERT INTO Feat (name, useSubId, ...) VALUES ('Skill Focus', true, ...);
--- Benefit defined via FeatureProgression with FeatureEntity:
--- Entity: appliesTo: Skill, appliesToId: NULL, value: 3
--- Player's choice stored in CharacterFeatureChoice.appliesToSubId
+-- Player must choose skill or weapon; FeatureEntity.appliesToId stays null
+INSERT INTO Feat (name, useSubId, ...) VALUES ('Weapon Focus', true, ...);
+-- Entity: appliesTo: Attack, appliesToId: NULL, value: 1
+-- Feat-tab selection: AdvancementFeat.featSubId (catalog item id, e.g. Scimitar 114)
+-- Fighter-bonus / feature-choice selection: CharacterFeatureChoice.appliesToSubId
 ```
 
 ### **Character Implementation**
 When a character selects a feat with `useSubId: true`:
 1. **Player Choice Required**: Character must specify which skill/weapon/etc.
-2. **Choice Storage**: Selection stored in CharacterFeatureChoice with `appliesToSubId` set to the chosen entity ID
-3. **Benefit Application**: Benefits applied to the chosen entity via FeatureEntity resolution
+2. **Choice Storage**: Feat-tab picks go on `AdvancementFeat.featSubId`. Feature-granted feat picks (fighter bonus feats) go on `CharacterFeatureChoice.appliesToSubId`.
+3. **Benefit Application**: `resolveFeatBenefits` reads the unified `CharacterFeat.featSubId` and matches it to the catalog item id on the attack.
 4. **Validation**: System validates that the choice is valid for the benefit type
 
 ### **Database Patterns**
 - **Predefined Feats**: FeatureEntity `appliesToId` contains specific entity ID
-- **Player Choice Feats**: FeatureEntity `appliesToId` is `NULL`, choice stored in CharacterFeatureChoice
-- **Character Feats**: Character's choices stored in CharacterFeatureChoice entries
+- **Player Choice Feats**: FeatureEntity `appliesToId` is `NULL`
+- **Feat-tab choices**: Stored on `AdvancementFeat.featSubId`
+- **Feature-choice feats**: Stored on `CharacterFeatureChoice.appliesToSubId`
 
 ## 🔗 **Related Documentation**
 

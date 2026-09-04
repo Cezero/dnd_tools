@@ -201,6 +201,9 @@ export function AppliesToSelector({
                                     if (appliesTo === EntityAppliesToType.BaseAttackBonus) {
                                         return 'Feature Type';
                                     }
+                                    if (appliesTo === EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight) {
+                                        return 'Off-Hand Weapon Type';
+                                    }
                                     return appliesTo !== null && appliesTo !== undefined ? ENTITY_APPLIES_TO_TYPES[appliesTo]?.name || 'Target' : 'Target';
                                 })()}
                                 options={finalOptions}

@@ -59,14 +59,14 @@ Unarmed strikes represent natural weapon attacks without equipment. The calculat
 
 ### **Main Hand Melee (Type 2)**
 
-Main hand melee attacks use a weapon held in the primary hand. The calculation considers:
+Main hand melee attacks use a weapon held in the primary hand. An attack definition with an empty off-hand is a **standard-action single attack** (move then attack, attack of opportunity): one-handed weapons stay one-handed (1x Strength, no Two-Weapon Fighting penalties) even if the character also owns an off-hand weapon. Two-Weapon Fighting penalties apply only when the definition includes an off-hand **weapon** (full attack). The calculation considers:
 - Base Attack Bonus (BAB) from character classes
 - Strength modifier for attack bonus and damage
 - Weapon proficiency (non-proficient weapons have -4 penalty)
-- Two-handed weapon bonus (1.5x Strength modifier for damage)
+- Two-handed weapon bonus (1.5x Strength) for inherent two-handed melee, or for one-handed melee when the definition has `wieldTwoHanded` (empty or shield off-hand only)
 - Weapon properties (damage dice, critical range, damage type)
 
-**Source**: `frontend/src/lib/attack-calculation/calculations.ts` - `calculateMainHandAttack()`
+**Source**: `frontend/src/lib/character-calculation/calculations/combatValues.ts` - `getCombatValues()` / `canUseTwoHanded()`
 
 ### **Ranged Attack (Type 4)**
 
@@ -200,6 +200,20 @@ Retrieves character size ID from race data. Currently defaults to Medium size if
 Determines if a weapon is a light weapon by checking weapon type against `WEAPON_TYPE_ENUM.LightMeleeWeapon`.
 
 **Source**: `frontend/src/lib/attack-calculation/utils.ts`
+
+**`useSubId` attack bonuses (Weapon Focus)**: `resolveFeatBenefits` applies Attack bonuses from feats with `useSubId` only when `CharacterFeat.featSubId` matches the weapon catalog item id (`Item.id` / `CharacterItem.baseItemId`). The subtype is taken from `AdvancementFeat.featSubId` or `CharacterFeatureChoice.appliesToSubId` via `getAllCharacterFeats`. Source: `frontend/src/lib/character-calculation/core/featBenefitResolver.ts`.
+
+**`canUseTwoHanded(mainHandItem, offHandItem): boolean`**
+
+True for inherent two-handed melee when the off-hand is empty or a shield. One-handed melee qualifies only when `wieldTwoHanded` is set (PHB 1.5x Strength). Empty off-hand without that flag is a standard-action single attack (1x Strength, no TWF). Dual-wield full attacks (off-hand is a weapon) never qualify. Light weapons cannot be used two-handed.
+
+**Source**: `frontend/src/lib/character-calculation/utils/weaponHelpers.ts`
+
+**`isLightForTwfPenalties(offHandItem, resolvedProgressions): boolean`**
+
+Determines whether the off-hand uses the light two-weapon-fighting penalty row. Light melee weapons and unarmed strikes always qualify. Feature entities with `EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight` also qualify when `appliesToId` matches the off-hand weapon type (or is null).
+
+**Source**: `frontend/src/lib/character-calculation/utils/weaponHelpers.ts`
 
 **`isTwoHandedWeapon(weapon): boolean`**
 
@@ -337,8 +351,9 @@ Attack bonus is calculated using the following formula:
 
 **Dual Wield**: Base calculation plus two-weapon fighting penalties:
 - Base penalties: -6 (main hand) / -10 (off-hand)
-- Light off-hand weapon: +2 to both penalties
+- Light off-hand (or treated as light): +2 to both penalties
 - Two-Weapon Fighting feat: +2 (main hand) / +6 (off-hand)
+- Oversized Two-Weapon Fighting: one-handed off-hand uses the light row (does not stack with an actual light off-hand)
 
 ### **Damage Calculation**
 
@@ -368,7 +383,7 @@ Non-proficient weapons apply a -4 penalty to attack bonus. Proficiency is determ
 
 **Improved Unarmed Strike**: Removes -4 penalty for dealing lethal damage with unarmed strikes. Without this feat, unarmed strikes deal nonlethal damage with a -4 penalty for lethal damage.
 
-**Two-Weapon Fighting**: Reduces two-weapon fighting penalties. Base penalties are -6/-10, reduced by 2 for light off-hand weapons and further reduced by the Two-Weapon Fighting feat.
+**Two-Weapon Fighting**: Reduces two-weapon fighting penalties. Base penalties are -6/-10, reduced by 2 when the off-hand counts as light (`isLightForTwfPenalties`) and further reduced by the Two-Weapon Fighting feat. Oversized Two-Weapon Fighting expands the light check to one-handed off-hand weapons.
 
 **Monk Unarmed Strike**: Monks gain improved unarmed strike damage that scales with level and size. The damage is determined by Replacement entities in resolved feature progressions using the formula system.
 

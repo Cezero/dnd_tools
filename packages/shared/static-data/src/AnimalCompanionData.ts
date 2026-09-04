@@ -1,74 +1,53 @@
 import { GetAbilityModifier } from './AbilityData';
 import { SizeId } from './CommonData';
+import { EntityAppliesToType, EntityType } from './FeatureData';
 
 /**
- * Shared animal-companion progression is stored as Feature rows (not a TS table).
- * Runtime loads these slugs; if they are missing, companions use base monster stats only.
+ * Existing class-specific Animal Companion *choice* features (`AppliesTo=AnimalCompanion`).
  */
-export const ANIMAL_COMPANION_PROGRESSION_SLUG = 'animal-companion-progression';
-
-export const AnimalCompanionSpecialSlug = {
-    Link: 'animal-companion-link',
-    ShareSpells: 'share-spells',
-    Evasion: 'evasion',
-    Devotion: 'devotion',
-    Multiattack: 'multiattack',
-    ImprovedEvasion: 'improved-evasion',
-} as const;
-
-export type AnimalCompanionSpecialSlug = typeof AnimalCompanionSpecialSlug[keyof typeof AnimalCompanionSpecialSlug];
-
-export const ANIMAL_COMPANION_SPECIAL_SLUGS: readonly AnimalCompanionSpecialSlug[] = [
-    AnimalCompanionSpecialSlug.Link,
-    AnimalCompanionSpecialSlug.ShareSpells,
-    AnimalCompanionSpecialSlug.Evasion,
-    AnimalCompanionSpecialSlug.Devotion,
-    AnimalCompanionSpecialSlug.Multiattack,
-    AnimalCompanionSpecialSlug.ImprovedEvasion,
-];
-
-/** Existing class-specific Animal Companion *choice* features. */
 export const ANIMAL_COMPANION_CHOICE_SLUGS = {
     Druid: 'druidanimalcompanion',
     Ranger: 'rangeranimalcompanion',
 } as const;
 
 /**
- * Shared familiar progression is stored as Feature rows (not a TS table).
- * Runtime loads these slugs; if they are missing, familiars use base monster stats
- * plus any Companion-source type benefits (e.g. Cat +3 Move Silently).
+ * Existing Familiar *choice* features (`AppliesTo=Familiar`).
  */
-export const FAMILIAR_PROGRESSION_SLUG = 'familiar-progression';
-
-export const FamiliarSpecialSlug = {
-    Alertness: 'familiar-alertness',
-    ImprovedEvasion: 'familiar-improved-evasion',
-    ShareSpells: 'familiar-share-spells',
-    EmpathicLink: 'familiar-empathic-link',
-    DeliverTouchSpells: 'familiar-deliver-touch-spells',
-    SpeakWithMaster: 'familiar-speak-with-master',
-    SpeakWithAnimals: 'familiar-speak-with-animals',
-    SpellResistance: 'familiar-spell-resistance',
-    Scry: 'familiar-scry',
-} as const;
-
-export type FamiliarSpecialSlug = typeof FamiliarSpecialSlug[keyof typeof FamiliarSpecialSlug];
-
-export const FAMILIAR_SPECIAL_SLUGS: readonly FamiliarSpecialSlug[] = [
-    FamiliarSpecialSlug.Alertness,
-    FamiliarSpecialSlug.ImprovedEvasion,
-    FamiliarSpecialSlug.ShareSpells,
-    FamiliarSpecialSlug.EmpathicLink,
-    FamiliarSpecialSlug.DeliverTouchSpells,
-    FamiliarSpecialSlug.SpeakWithMaster,
-    FamiliarSpecialSlug.SpeakWithAnimals,
-    FamiliarSpecialSlug.SpellResistance,
-    FamiliarSpecialSlug.Scry,
-];
-
 export const FAMILIAR_CHOICE_SLUGS = {
     Wizard: 'summonfamiliar',
 } as const;
+
+/**
+ * Parenthetical shown on the granted Alertness feat. The sheet assumes the familiar is in reach.
+ */
+export const FAMILIAR_ALERTNESS_FEATURE_SLUG = 'familiar-alertness';
+export const FAMILIAR_ALERTNESS_REACH_REMINDER = 'familiar within reach';
+
+/**
+ * AppliesTo values that overlay companion/familiar numeric chassis rather than named specials.
+ */
+export const COMPANION_CHASSIS_APPLIES_TO: readonly number[] = [
+    EntityAppliesToType.HitDice,
+    EntityAppliesToType.AC,
+    EntityAppliesToType.Ability,
+    EntityAppliesToType.CompanionBonusTricks,
+    EntityAppliesToType.SpellResistance,
+    EntityAppliesToType.HitPoints,
+];
+
+/**
+ * True when the entity’s beneficiary is the companion creature, not the character.
+ */
+export function isCompanionBeneficiaryEntity(entity: { type: number }): boolean {
+    return entity.type === EntityType.Companion;
+}
+
+/**
+ * True when a companion-beneficiary entity is chassis math rather than a named special.
+ */
+export function isCompanionChassisAppliesTo(appliesTo: number): boolean {
+    return COMPANION_CHASSIS_APPLIES_TO.includes(appliesTo);
+}
 
 export const WILD_SHAPE_FEATURE_SLUG = 'druidwildshape';
 export const ELEMENTAL_WILD_SHAPE_FEATURE_SLUG = 'druidelementalwildshape';

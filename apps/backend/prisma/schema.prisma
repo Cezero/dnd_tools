@@ -594,11 +594,13 @@ model CharacterItemProperty {
 }
 
 model CharacterAttackDefinition {
-  id                      Int  @id @default(autoincrement())
+  id                      Int     @id @default(autoincrement())
   characterId             Int
   attackSlot              Int? // 1-7, nullable for attacks not displayed on sheet
   mainHandCharacterItemId Int? // CharacterItem ID for main hand weapon (nullable)
   offHandCharacterItemId  Int? // CharacterItem ID for off-hand weapon (nullable, only for dual wield)
+  /// One-handed melee used in two hands (1.5x STR). Ignored when off-hand is a weapon.
+  wieldTwoHanded          Boolean @default(false)
 
   character    Character      @relation(fields: [characterId], references: [id], onDelete: Cascade)
   mainHandItem CharacterItem? @relation("MainHandAttacks", fields: [mainHandCharacterItemId], references: [id], onDelete: SetNull)

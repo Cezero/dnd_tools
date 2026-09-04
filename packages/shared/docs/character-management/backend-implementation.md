@@ -96,8 +96,11 @@ The central service for all character management operations, providing comprehen
 
 Draft persist into MySQL. Character save writes `CharacterConfig`, including `maxHpAtFirstLevel` (default false). When that flag is on, level-1 `hitPoints` is set to max class HD + CON modifier (minimum 1). Gestalt uses the hit die with more sides. Create applies this while writing the level-1 advancement; update reapplies it on the persisted level-1 row. Advancement save applies the same rule for level 1 so a draft value of 0 does not overwrite the computed HP.
 
+Equipment and attack definitions persist through `persistCharacterItemDraftCollections`. Existing positive `CharacterItem` IDs are updated in place. Negative draft IDs are created and remapped onto `mainHandCharacterItemId` / `offHandCharacterItemId`. `wieldTwoHanded` is stored on each attack definition. A missing (undefined) collection is left untouched so an unsynced draft cannot wipe possessions. GET `/characters/:id` overlays locked Redis `characterItems` and `attackDefinitions` onto the MySQL snapshot.
+
 **Source Files**:
 - `src/features/characterDraft/characterSaveService.ts`
+- `src/features/characterDraft/characterItemDraftPersist.ts`
 - `src/features/advancementDraft/advancementSaveService.ts`
 - `src/utils/firstLevelHitPoints.ts`
 

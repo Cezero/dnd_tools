@@ -127,6 +127,8 @@ All character edit tabs follow a consistent pattern for synchronizing state chan
 - `state.skillRanks` → `SET_SKILL_RANK` updates (for each skill rank)
 - `state.featureChoices` → sequential `featureChoices.byId` writes (queued) into the Redis advancement draft. The backend applies each `updateValue` with Redis compare-and-set so parallel docks cannot last-write-wins an empty `featureChoices` array. Save persists Redis to MySQL only. Advancement save errors are no longer swallowed.
 - `state.spellsKnown` → sequential `spellsKnown.byId` writes to the same Redis draft, then save reads Redis
+- `state.equipment` → sequential `characterItems.byId` writes into the Redis character draft. Combat attack options and `formatCharacter` read this list, not the last GET. New rows use negative temp IDs. Save remaps those IDs to MySQL and preserves existing positive IDs.
+- `state.attackDefinitions` → sequential `attackDefinitions.byId` writes. Attacks that reference unsaved items stay local (and in the draft) until Save; attacks that only reference persisted items still call the REST endpoints.
 
 **Redis is the session source of truth**: Editor changes must land in Redis as they happen so a reload or dropped client can restore from `state:{draftType}:{id}`. Save does not accept React collections as an overlay. Opening an existing character for edit starts the character and advancement drafts, then GET `/characters/:id` overlays locked Redis drafts onto the MySQL snapshot.
 
@@ -296,6 +298,7 @@ Component for managing character equipment and items.
 **Character-Specific Features**:
 - **Equipment Display**: Show character equipment and items
 - **Equipment Management**: Add, remove, and modify character equipment
+- **Add for free**: Session-only checkbox on Available Items. Defaults on when `state.level > 1` (loot, import, or between-session updates) and off at level 1 (creation shopping). The tab remounts when selected, so the default follows the current level. The user can flip either way. Free adds skip gold and store `costInGp` 0; purchase mode deducts gold and stores the catalog cost. Return refunds only when this session stored `costInGp > 0`; otherwise it only removes the item (including items reloaded from the database, whose cost is null).
 - **Currency**: Coins (cp/sp/gp/pp) and **Generate Starting Gold** on the first row; Gem, Art Object, and Other on the second. Generate only rolls starting coin. Valuable counts live on `state.money` and persist as quantity-only `CharacterWealth` rows (value and description null).
 - **Pending — individual treasure**: Quantity buckets are a stopgap. Players are often awarded a mix of gems and art objects and must Appraise or sell them before learning a value, so the editor will need distinct rows such as “pearl 50 gp” vs “pearl 100 gp” using `CharacterWealth.description` and `CharacterWealth.value`. Do not treat two pearls of different values as the same stack.
 - **Equipment Properties**: Manage equipment properties and enhancements
@@ -303,11 +306,25 @@ Component for managing character equipment and items.
 
 **User Workflow**:
 1. **View Equipment**: See current character equipment
-2. **Add Equipment**: Add new equipment to character
+2. **Add Equipment**: Buy from the catalog (level 1 default) or add for free (level greater than 1 default)
 3. **Modify Equipment**: Change equipment properties and enhancements
 4. **View Effects**: See equipment effects on character
 
 **Source File**: `frontend/src/features/character/tabs/EquipmentTab.tsx`
+
+### **CombatTab Component**
+
+Attack setup for the character sheet. Weapon options come from `state.equipment` (mapped to `CharacterItem` via `mapEquipmentToCharacterItems`), not `characterData.characterItems`. Adding a weapon in Equipment makes it available under Combat without Save.
+
+Creating an attack that references an unsaved (negative-ID) item updates editor state and the character draft only. Attacks that reference persisted items still use the attack-definition REST endpoints. Character Save persists both collections and remaps temp item IDs so attack FKs stay valid.
+
+An empty off-hand is a standard-action single attack. For one-handed melee, the modal offers **Wield two-handed** (`wieldTwoHanded`) to take 1.5× Strength damage. That flag is cleared when the off-hand is a weapon (full-attack two-weapon fighting).
+
+**Source Files**:
+- `frontend/src/features/character/tabs/CombatTab.tsx`
+- `frontend/src/features/character/components/AttackDefinitionModal.tsx`
+- `frontend/src/features/character/utils/equipmentUtils.ts`
+- `frontend/src/features/character/utils/characterItemDraftSync.ts`
 
 ### **ClassTab Component**
 

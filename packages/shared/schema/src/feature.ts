@@ -231,6 +231,14 @@ export const CreateFeatureEntitySchema = FeatureEntitySchema.omit({
     formulaParams: CreateFeatureFormulaParamsSchema.optional().nullable(),
 }).strip(); // Explicitly strip unknown fields
 
+/**
+ * Entity payload for feature updates. Optional `id` lets the backend update in place
+ * so CharacterFeatureChoice rows stay attached.
+ */
+export const UpdateFeatureEntitySchema = CreateFeatureEntitySchema.extend({
+    id: z.number().int().optional(),
+});
+
 // Schema for creating features with relations (includes classes/races arrays)
 // This is the base schema that CreateFeatureRequestSchema is derived from
 export const CreateFeatureWithRelationsRequestSchema = FeatureWithRelationsSchema.omit({
@@ -255,7 +263,8 @@ export const CreateFeatureRequestSchema = CreateFeatureWithRelationsRequestSchem
 
 
 export const UpdateFeatureSchema = CreateFeatureRequestSchema.partial().extend({
-    id: z.number().int().optional()
+    id: z.number().int().optional(),
+    entities: z.array(UpdateFeatureEntitySchema).optional(),
 }).strip(); // Explicitly strip unknown fields from nested entities
 
 // Response schema for features (omits classes/races arrays)
@@ -387,6 +396,7 @@ export type CreateFeatureRequest = z.infer<typeof CreateFeatureRequestSchema>;
 export type CreateFeatureFormRequest = z.infer<typeof CreateFeatureFormSchema>;
 export type FeatureEntity = z.infer<typeof FeatureEntitySchema>;
 export type CreateFeatureEntityRequest = z.infer<typeof CreateFeatureEntitySchema>;
+export type UpdateFeatureEntityRequest = z.infer<typeof UpdateFeatureEntitySchema>;
 export type CreateFeatureEntityConditionRequest = z.infer<typeof CreateFeatureEntityConditionSchema>;
 export type CreateFeatureFormulaParamsRequest = z.infer<typeof CreateFeatureFormulaParamsSchema>;
 export type UpdateFeature = z.infer<typeof UpdateFeatureSchema>;

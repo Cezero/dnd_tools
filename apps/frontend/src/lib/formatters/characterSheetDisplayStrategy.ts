@@ -5,7 +5,7 @@ import { SaveType } from '@/lib/character-calculation/calculations/savingThrows'
 import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
 import type { BreakdownMap, BreakdownComponent as CalculationBreakdownComponent } from '@/lib/character-calculation/types';
 import { applyFeatureFormula } from '@/lib/character-calculation/utils/formulaApplier';
-import { canUseTwoHanded, isTwoHandedWeapon } from '@/lib/character-calculation/utils/weaponHelpers';
+import { canUseTwoHanded } from '@/lib/character-calculation/utils/weaponHelpers';
 import { hasSubtypes, usesCustomSubtype, getSkillSubtypes } from '@/lib/skill-utils';
 import { getSkillSummaryById, getSkillSelectFull, getFeatNameFromCache, getItemNameFromCache, getFeatureNameFromCache, getSpellNameFromCache, getDomainNameFromCache } from '@/services/cache';
 import type { FeatureWithRelations, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
@@ -746,6 +746,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 const combatContext = {
                     mainHandItem,
                     offHandItem,
+                    wieldTwoHanded: definition.wieldTwoHanded ?? false,
                 };
 
                 const results = CharacterCalculationService.getCombatValues(
@@ -764,7 +765,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     const isDualWield = offHandItem !== undefined && offHandItem !== null;
                     const isMainHand = index === 0;
                     const isTwoHanded = isMainHand && mainHandItem
-                        ? (isTwoHandedWeapon(mainHandItem) || canUseTwoHanded(mainHandItem, offHandItem))
+                        ? canUseTwoHanded(mainHandItem, offHandItem, definition.wieldTwoHanded ?? false)
                         : false;
 
                     const weaponNameContext: WeaponNameLabelerContext = {
@@ -1263,8 +1264,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
             processedFeatIds.add(characterFeat.featId);
 
-            // Get feat name from map or use placeholder
-            const featName = featNameMap.get(characterFeat.featId) || `Feat ${characterFeat.featId}`;
+            // Granted feats are in featNameMap; selected/choice feats resolve from cache
+            const featName =
+                featNameMap.get(characterFeat.featId)
+                || getFeatNameFromCache(characterFeat.featId)
+                || `Feat ${characterFeat.featId}`;
 
             // Determine source name for breakdown
             let sourceName = 'Selected';

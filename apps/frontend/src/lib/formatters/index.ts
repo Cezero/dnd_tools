@@ -3,6 +3,7 @@ export {
     collectFeatureChoices,
     formatFeatNameWithSubtype,
     formatFeatureNameWithChoices,
+    formatGrantedFeatDisplayName,
     resolveFeatureChoiceDisplayName,
 } from './choiceDisplayName';
 export { displayStrategyFactory } from './display-strategies';

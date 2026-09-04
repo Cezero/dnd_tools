@@ -49,7 +49,12 @@ Feat benefits and prerequisites now use the unified Feature system enums:
 - Main hand: `appliesTo: Attack`, `appliesToSubId: MainHand`, `value: 2`
 - Off hand: `appliesTo: Attack`, `appliesToSubId: OffHand`, `value: 6`
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (AttackBonusAppliesTo enum)
+**Oversized Two-Weapon Fighting** does not add another attack bonus. It uses `EntityAppliesToType.TwoWeaponFightingOffHandTreatAsLight` so a one-handed off-hand uses the existing light-off-hand +2/+2 TWF reduction:
+- `type: EntityType.Other`
+- `appliesTo: TwoWeaponFightingOffHandTreatAsLight`
+- `appliesToId: WEAPON_TYPE_ENUM.OneHandedMeleeWeapon`
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (AttackBonusAppliesTo and EntityAppliesToType enums)
 
 **Related Documentation**: [Feature System Static Data](../feature-system/static-data.md)
 

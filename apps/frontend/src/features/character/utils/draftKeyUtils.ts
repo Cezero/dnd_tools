@@ -19,3 +19,18 @@ export function createStableDraftRowId(key: string): number {
     return signed === 0 ? -1 : -Math.abs(signed);
 }
 
+/**
+ * Next unused negative integer ID for a draft-only row.
+ *
+ * Persisted MySQL IDs are positive. Negative IDs stay local until save remaps them.
+ */
+export function nextNegativeTempId(existingIds: number[]): number {
+    let minId = 0;
+    for (const id of existingIds) {
+        if (Number.isInteger(id) && id <= minId) {
+            minId = id;
+        }
+    }
+    return minId <= 0 ? minId - 1 : -1;
+}
+

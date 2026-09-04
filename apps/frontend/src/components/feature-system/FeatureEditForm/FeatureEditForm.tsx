@@ -28,6 +28,31 @@ import { useEntityManagement } from '../FeatureDetailEdit/useEntityManagement';
 import { useGroupingState } from '../FeatureDetailEdit/useGroupingState';
 import { FeatureQueryHooks } from '../FeatureQueryHooks';
 
+/**
+ * Builds draft path updates for a prerequisite row so Redis matches the form.
+ * New rows must already have a minted draft id from DraftAction.Add.
+ */
+function getPrerequisiteDraftUpdates(
+    nextPrereq: FeaturePrerequisite,
+    prevPrereq?: FeaturePrerequisite
+): Array<{ path: string; value: string | number | boolean | null }> {
+    if (typeof nextPrereq.id !== 'number' || nextPrereq.id === 0) {
+        return [];
+    }
+    const basePath = `prerequisites.byId.${nextPrereq.id}`;
+    const updates: Array<{ path: string; value: string | number | boolean | null }> = [];
+    if (!prevPrereq || !isEqual(prevPrereq.type, nextPrereq.type)) {
+        updates.push({ path: `${basePath}.type`, value: nextPrereq.type });
+    }
+    if (!prevPrereq || !isEqual(prevPrereq.appliesToId, nextPrereq.appliesToId)) {
+        updates.push({ path: `${basePath}.appliesToId`, value: nextPrereq.appliesToId ?? null });
+    }
+    if (!prevPrereq || !isEqual(prevPrereq.minValue, nextPrereq.minValue)) {
+        updates.push({ path: `${basePath}.minValue`, value: nextPrereq.minValue });
+    }
+    return updates;
+}
+
 export function FeatureEditForm({
     featureId = 0,
     isOpen = true,
@@ -253,11 +278,16 @@ export function FeatureEditForm({
      */
     const syncFormDataToDraft = useCallback(
         async (data: FeatureWithRelations, prevData: FeatureWithRelations | null): Promise<void> => {
-            if (!resolutionFeatureId || resolutionFeatureId === null) return;
+            if (resolutionFeatureId === null) return;
             const prev = prevData;
             if (!prev) return;
 
             const topLevelFields: Array<{ field: keyof FeatureWithRelations; value: unknown }> = [
+                { field: 'name', value: data.name },
+                { field: 'slug', value: data.slug },
+                { field: 'description', value: data.description },
+                { field: 'summary', value: data.summary },
+                { field: 'level', value: data.level },
                 { field: 'sourceType', value: data.sourceType },
                 { field: 'displayInCharacterSheet', value: data.displayInCharacterSheet },
                 { field: 'domainId', value: data.domainId },
@@ -350,11 +380,39 @@ export function FeatureEditForm({
 
             const prevPrereqs = (prev.prerequisites || []) as FeaturePrerequisite[];
             const nextPrereqs = (data.prerequisites || []) as FeaturePrerequisite[];
-            const prevPrereqIds = new Set(prevPrereqs.map(p => p.id).filter((id): id is number => typeof id === 'number' && id !== 0));
+            const prevPrereqById = new Map<number, FeaturePrerequisite>();
+            for (const p of prevPrereqs) {
+                if (typeof p.id === 'number' && p.id !== 0) prevPrereqById.set(p.id, p);
+            }
             const nextPrereqIds = new Set(nextPrereqs.map(p => p.id).filter((id): id is number => typeof id === 'number' && id !== 0));
-            for (const prevId of prevPrereqIds) {
+            for (const [prevId] of prevPrereqById) {
                 if (!nextPrereqIds.has(prevId)) {
                     await resolution.updateValue(`prerequisites.byId.${prevId}`, prevId, DraftAction.Remove);
+                }
+            }
+
+            for (let idx = 0; idx < nextPrereqs.length; idx += 1) {
+                const p = nextPrereqs[idx];
+                let prereqToSync = p;
+                if (p.id === 0 || p.id === null || p.id === undefined) {
+                    const addResp = await resolution.updateValue('prerequisites', 0, DraftAction.Add);
+                    const newId = addResp.id;
+                    if (typeof newId !== 'number') {
+                        throw new Error('FeatureEditForm: DraftAction.Add for prerequisites did not return an id');
+                    }
+                    prereqToSync = { ...p, id: newId };
+                    setFormData((prevState) => {
+                        const updatedPrereqs = (prevState.prerequisites || []).map((pr, i) =>
+                            i === idx ? { ...pr, id: newId } : pr
+                        );
+                        const nextState = { ...prevState, prerequisites: updatedPrereqs };
+                        previousFormDataRef.current = nextState;
+                        return nextState;
+                    });
+                }
+                const prevPrereq = typeof prereqToSync.id === 'number' ? prevPrereqById.get(prereqToSync.id) : undefined;
+                for (const u of getPrerequisiteDraftUpdates(prereqToSync, prevPrereq)) {
+                    await resolution.updateValue(u.path, u.value);
                 }
             }
         },
@@ -509,13 +567,16 @@ export function FeatureEditForm({
                 }
             }
 
-            // Prerequisites: add/remove only for now
+            // Prerequisites: add/remove and field updates
             const prevPrereqs = (prev.prerequisites || []) as FeaturePrerequisite[];
             const nextPrereqs = (formData.prerequisites || []) as FeaturePrerequisite[];
-            const prevPrereqIds = new Set(prevPrereqs.map(p => p.id).filter((id): id is number => typeof id === 'number' && id !== 0));
+            const prevPrereqById = new Map<number, FeaturePrerequisite>();
+            for (const p of prevPrereqs) {
+                if (typeof p.id === 'number' && p.id !== 0) prevPrereqById.set(p.id, p);
+            }
             const nextPrereqIds = new Set(nextPrereqs.map(p => p.id).filter((id): id is number => typeof id === 'number' && id !== 0));
 
-            for (const prevId of prevPrereqIds) {
+            for (const [prevId] of prevPrereqById) {
                 if (!nextPrereqIds.has(prevId)) {
                     await resolution.updateValue(`prerequisites.byId.${prevId}`, prevId, DraftAction.Remove);
                 }
@@ -523,6 +584,7 @@ export function FeatureEditForm({
 
             for (let idx = 0; idx < nextPrereqs.length; idx += 1) {
                 const p = nextPrereqs[idx];
+                let prereqToSync = p;
                 if (p.id === 0 || p.id === null || p.id === undefined) {
                     const addResp = await resolution.updateValue('prerequisites', 0, DraftAction.Add);
                     const newId = addResp.id;
@@ -530,6 +592,7 @@ export function FeatureEditForm({
                         throw new Error('FeatureEditForm: DraftAction.Add for prerequisites did not return an id');
                     }
 
+                    prereqToSync = { ...p, id: newId };
                     setFormData((prevState) => {
                         const updatedPrereqs = (prevState.prerequisites || []).map((pr, i) =>
                             i === idx ? { ...pr, id: newId } : pr
@@ -538,6 +601,11 @@ export function FeatureEditForm({
                         previousFormDataRef.current = nextState;
                         return nextState;
                     });
+                }
+
+                const prevPrereq = typeof prereqToSync.id === 'number' ? prevPrereqById.get(prereqToSync.id) : undefined;
+                for (const u of getPrerequisiteDraftUpdates(prereqToSync, prevPrereq)) {
+                    await resolution.updateValue(u.path, u.value);
                 }
             }
 
@@ -647,8 +715,10 @@ export function FeatureEditForm({
         try {
             setIsLoading(true);
 
-            // Flush current formData to draft so formulaParams (e.g. maxValue) and other edits are in Redis before persist
-            const prev = previousFormDataRef.current ?? resolution.state ?? null;
+            // Wait for in-flight path updates, then flush the form against the initial Redis snapshot
+            // so name/context/prerequisite fields that never committed still persist.
+            await draftUpdateQueueRef.current;
+            const prev = resolution.state ?? previousFormDataRef.current ?? null;
             if (prev) {
                 await syncFormDataToDraft(formData, prev);
             }

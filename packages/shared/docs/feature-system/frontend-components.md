@@ -57,7 +57,7 @@ The reusable core component for creating and editing features, supporting both m
 - **Dual Mode Support**: Operates in both modal and embedded modes via props
 - **Context Preservation**: Automatically sets sourceType and parent IDs based on provided context
 - **Feature CRUD**: Create, read, update, and delete features
-- **Prerequisite Management**: Add and edit feature prerequisites
+- **Prerequisite Management**: Add and edit feature prerequisites. Each add mints a draft id; `type`, `appliesToId`, and `minValue` are written to Redis on change and flushed again on save
 - **Entity Management**: Add/edit feature entities (including formulas and conditions) via the `FeatureDetailEdit/*` editor components
 - **Form Validation**: Comprehensive form validation using Zod schemas
 - **Callback-Based**: Uses callbacks instead of navigation for save/cancel operations

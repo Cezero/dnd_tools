@@ -1,5 +1,5 @@
 import type { FeatureWithRelations, Feature, FeatureCondition, CharacterWithAllDetailsResponse } from '@shared/schema';
-import { EntityAppliesToType, FeatureEntityConditionType } from '@shared/static-data';
+import { EntityAppliesToType, EntityType, FeatureEntityConditionType } from '@shared/static-data';
 
 /**
  * Filters features based on display flags and conditions
@@ -39,6 +39,8 @@ export class FeatureDisplayFilter {
      * `displayInDetail` hides chassis entities. If every entity is hidden, the
      * feature is omitted. Class-skill and proficiency wrappers stay off this
      * list because they already appear on the Skills tab and Proficiencies section.
+     * Features whose every visible entity is `EntityType.Companion` belong on
+     * the animal sheet, not the character Features list.
      */
     static shouldListFeatureInCharacterView(feature: FeatureWithRelations): boolean {
         if (feature.displayInCharacterSheet === false) {
@@ -60,6 +62,10 @@ export class FeatureDisplayFilter {
         }
 
         if (visibleEntities.every((entity) => entity.appliesTo === EntityAppliesToType.Proficiency)) {
+            return false;
+        }
+
+        if (visibleEntities.every((entity) => entity.type === EntityType.Companion)) {
             return false;
         }
 
