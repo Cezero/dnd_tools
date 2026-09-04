@@ -52,7 +52,6 @@ export function AnimalsPetsTab({
         <div className="space-y-8">
             {classCompanions.length > 0 && (
                 <section className="space-y-4">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Class Companions</h2>
                     {classCompanions.map((companion) => (
                         <CompanionBlock
                             key={companion.id}

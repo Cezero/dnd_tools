@@ -10,7 +10,7 @@ import { RaceQueryHooks } from '@/features/race/RaceQueryHooks';
 import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { extractRaceMechanicsFromResolved } from '@/lib/feature-extraction/raceMechanicsExtractor';
-import { collectFeatureChoices, displayStrategyFactory, formatFeatureNameWithChoices, formatGrantedFeatDisplayName, formatSpellComponents, formatSpellSchool, pickFeatureClassIdForCharacter } from '@/lib/formatters';
+import { collectFeatureChoices, displayStrategyFactory, formatFeatureNameWithChoices, formatFeatureSummaryWithCompanionGrant, formatGrantedFeatDisplayName, formatSpellComponents, formatSpellSchool, pickFeatureClassIdForCharacter } from '@/lib/formatters';
 import { FeatureDisplayFilter } from '@/lib/formatters/FeatureDisplayFilter';
 import { formatSignedModifier } from '@/lib/formatters/modifier-utils';
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
@@ -2617,7 +2617,11 @@ export async function generateCharacterPdf(
                 // Get feature name and summary from feature (FeatureWithRelations is now the unified Feature model)
                 // If not available, try to get from formattedCharacter.features as fallback
                 let featureName = formatFeatureNameWithChoices(feature, featureChoices);
-                let summary = feature.summary || '';
+                let summary = formatFeatureSummaryWithCompanionGrant(
+                    feature,
+                    featureChoices,
+                    resolvedProgressions
+                );
 
                 // Fallback: if feature object isn't loaded, try to get from formattedCharacter
                 if (!featureName && !summary) {
@@ -2725,7 +2729,11 @@ export async function generateCharacterPdf(
                 doc.setFontSize(6);
                 for (const feature of Array.from(classFeatures.values())) {
                     const featureName = formatFeatureNameWithChoices(feature, featureChoices);
-                    const summary = feature.summary || '';
+                    const summary = formatFeatureSummaryWithCompanionGrant(
+                        feature,
+                        featureChoices,
+                        resolvedProgressions
+                    );
                     if (featureName || summary) {
                         // Format as "feature.name: feature.summary"
                         const colonText = summary ? ': ' : '';

@@ -463,7 +463,7 @@ The resolution system resolves domain choices:
 The resolution system resolves familiar and animal companion choices:
 
 - **Companion Data**: Loads companion data via `companionService.getCompanionById()`
-- **Companion Benefits**: Converts companion benefits to feature progressions
+- **Companion Benefits**: Loads `sourceType=Companion` features by companion ID from persisted `CharacterCompanion.companionId` and from Familiar/Animal Companion choices (`appliesToId`)
 
 **Related Documentation**: [Monster System Documentation](../monster-system/) (companions are linked to monsters)
 

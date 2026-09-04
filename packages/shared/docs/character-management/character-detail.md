@@ -189,6 +189,7 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 - Choice names resolve from `CharacterFeatureChoice.appliesToId` (companion, feat, domain, and other choice types)
 - Narrative list uses `FeatureDisplayFilter.shouldListFeatureInCharacterView`: `displayInCharacterSheet` hides BAB/saves/HD; `displayInDetail` hides chassis entities; class-skill and proficiency wrappers are omitted because they already appear on Skills and in the Proficiencies section; features whose every visible entity is `EntityType.Companion` stay on the animal sheet only
 - Familiar Alertness is a live feat grant (`Other` + `Feat` + feat 3). The feature itself is off the Features list; the Feats list and PDF show `Alertness (familiar within reach)` and always apply +2 Listen/Spot (reach is assumed). Shared Wizard/Sorcerer maps group the feat under a class the character actually has (Wizard Granted on Bumco), not the first mapped class.
+- Familiar type benefits (Cat +3 Move Silently) resolve onto the master from the companion’s `companion-{id}-benefit` feature. Skill-only rows stay off the Features list and apply on the Skills tab. The Summon Familiar line adds `Grants +3 to Move Silently when within reach` (reach is assumed).
 - Link appears on the Druid/Ranger sheet. Its +4 circumstance Handle Animal / Wild Empathy bonuses use `SpecialType.regardingCompanion` and show as conditional on the Skills tab
 - The PDF special-abilities column uses the same helpers. The formatted-feature fallback for race entries also applies `shouldListFeatureInCharacterView`, so `displayInCharacterSheet = false` stays hidden (for example Human Automatic/Bonus Languages).
 
@@ -203,10 +204,12 @@ Each tab is a separate component in `apps/frontend/src/features/character/detail
 
 **Key Implementation Details**:
 - Creature name links to the monster entry; trick names link to `/tricks/:id` and show the description on hover
-- Companion specials come from `Type=Companion` entities (not slug allowlists) and display summary, then name
+- Companion specials come from `Type=Companion` entities (not slug allowlists) and display as `Name: summary`
+- Class companions have no group header; the block title already includes the role (for example `Cat Familiar`). Pets and Wild Shape Forms keep section headers
+- The extras line does not print companion effective level; chassis HD/NA already appear on the stat block
+- Familiar type benefits (master skill bonuses) are not painted onto the familiar extras
 - PDF export appends extra **portrait** Animals & Pets pages after the character sheet and any landscape spell pages
 - Multiple blocks share a page; a new page starts only when the next block will not fit
-- Blocks are grouped Class Companions, then Pets, then Wild Shape Forms
 - Characters with no animals get no extra PDF pages
 
 ### **Equipment Tab**

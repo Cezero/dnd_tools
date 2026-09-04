@@ -15,6 +15,7 @@ The backend implementation follows the shared [Backend Implementation Patterns](
 - Routes: `apps/backend/src/features/companion/companionRoutes.ts`
 - Types: `apps/backend/src/features/companion/types.ts`
 - Seed repair: `apps/backend/prisma/seeds/companion-entity-type.sql`
+- Seed cleanup: `apps/backend/prisma/seeds/companion-benefit-clone-cleanup.sql`
 
 ## 🏗️ **Architecture Overview**
 
@@ -450,10 +451,10 @@ The companion service integrates with the feature system for companion benefit m
 - Choice features (`AppliesTo=AnimalCompanion` or `Familiar`) still determine contributing classes and effective level (`levelDivisor`)
 - `companionAdvancementService` loads class features mapped to those classes that have at least one `Type=Companion` entity, then includes rows whose `Feature.level` is at or below effective level
 - Chassis overlay uses `Type=Companion` with `AppliesTo` in HitDice, AC, Ability, CompanionBonusTricks, SpellResistance, and HitPoints
-- Named creature specials are remaining `Type=Companion` entities with `displayInDetail`; the animal sheet shows summary, then name
+- Named creature specials are remaining `Type=Companion` entities with `displayInDetail`; the animal sheet shows `Name: summary`
 - Devotion overlays its Will bonus onto the computed companion Will save and remains a named special (enchantment condition)
 - Multiattack is a `Type=Companion` feat grant on the creature, not a character-sheet feat
-- Type benefits (Cat +3 Move Silently) stay `sourceType=Companion` + `Type=Bonus` on the master
+- Type benefits (Cat +3 Move Silently) stay `sourceType=Companion` + `Type=Bonus` on the master. Character resolution loads them from persisted `companionId` and from Familiar/Animal Companion choices. Duplicate `companion-benefit-*` merge clones are removed by `apps/backend/prisma/seeds/companion-benefit-clone-cleanup.sql`
 
 **Related Documentation**: [Feature System Backend Implementation](../feature-system/backend-implementation.md) and [Feature System Static Data](../feature-system/static-data.md#entitytype)
 

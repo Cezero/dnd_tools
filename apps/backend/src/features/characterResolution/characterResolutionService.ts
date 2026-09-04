@@ -7,6 +7,7 @@ import { ChoiceResolver } from './choiceResolver';
 import { FeatureEntityHandlers } from './featureEntityHandlers';
 import { GestaltClassService } from './gestaltClassService';
 import type { ResolutionContext, ResolutionResult, UserChoices } from './types';
+import { companionAdvancementService } from '../companion/companionAdvancementService';
 import { companionService } from '../companion/companionService';
 import { featService } from '../feat/featService';
 import { featureSystemService } from '../featureSystem/featureSystemService';
@@ -576,33 +577,33 @@ class FeatureResolution {
     }
 
     /**
-     * Resolves companion features from character's selected companions.
-     * 
-     * Fetches character companions from the companion service and for each CharacterCompanion
-     * with a companionId, retrieves the corresponding FeatureWithRelations with sourceType: Companion
-     * and adds it to resolved features.
+     * Resolves companion type-benefit features (Cat +3 Move Silently) onto the master.
+     *
+     * Collects companion IDs from persisted `CharacterCompanion.companionId` and from
+     * Familiar / Animal Companion choices (`appliesToId`). Choice-only rows (companionId
+     * null) still grant the type benefit.
      */
     private async resolveCompanionFeatures(): Promise<void> {
-        // Fetch character companions from the companion service
-        const companionsResponse = await companionService.getCharacterCompanions(this.character.id);
-
-        if (!companionsResponse.results || companionsResponse.results.length === 0) {
-            return;
-        }
-
-        // Collect all unique companion IDs from character companions
         const companionIds = new Set<number>();
-        for (const characterCompanion of companionsResponse.results) {
+        const companionsResponse = await companionService.getCharacterCompanions(this.character.id);
+        for (const characterCompanion of companionsResponse.results ?? []) {
             if (characterCompanion.companionId) {
                 companionIds.add(characterCompanion.companionId);
             }
+        }
+
+        const snapshotChoices = this.character.advancements?.flatMap((adv) => adv.featureChoices ?? []) ?? [];
+        const choiceCompanionIds = await companionAdvancementService.getSelectedCompanionIdsFromChoices(
+            snapshotChoices
+        );
+        for (const companionId of choiceCompanionIds) {
+            companionIds.add(companionId);
         }
 
         if (companionIds.size === 0) {
             return;
         }
 
-        // Get all companion features for the selected companions
         for (const companionId of companionIds) {
             const companionProgressions = await featureSystemService.getFeaturesByCompanionId(companionId);
             this.addApplicableProgressions(companionProgressions, { dedupeById: true });

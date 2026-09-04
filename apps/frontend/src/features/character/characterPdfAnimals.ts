@@ -109,7 +109,7 @@ async function loadAnimalsPdfData(
 }
 
 /**
- * Groups class companions, then pets, then wild-shape forms — same order as the viewer.
+ * Groups class companions (no section header), then pets, then wild-shape forms.
  */
 export function collectPdfAnimalBlocks(
     companions: ResolvedCharacterCompanionDraft[],
@@ -126,7 +126,7 @@ export function collectPdfAnimalBlocks(
             companion,
             lookups,
             monsterNameById.get(companion.monsterId),
-            'Class Companions'
+            ''
         );
         if (block) {
             blocks.push(block);
@@ -182,14 +182,14 @@ function drawAnimalsPages(doc: jsPDF, args: GenerateAnimalsPagesArgs): void {
     let currentGroup: string | null = null;
 
     for (const block of args.blocks) {
-        const needsGroupHeader = block.groupLabel !== currentGroup;
+        const needsGroupHeader = block.groupLabel.length > 0 && block.groupLabel !== currentGroup;
         const height = measureAnimalBlock(doc, block, needsGroupHeader);
         if (y + height > CONTENT_BOTTOM && y > CONTENT_TOP) {
             startAnimalsPage(doc, args.characterName);
             y = CONTENT_TOP;
             currentGroup = null;
         }
-        const drawGroupHeader = block.groupLabel !== currentGroup;
+        const drawGroupHeader = block.groupLabel.length > 0 && block.groupLabel !== currentGroup;
         y = drawAnimalBlock(doc, block, y, drawGroupHeader);
         currentGroup = block.groupLabel;
     }

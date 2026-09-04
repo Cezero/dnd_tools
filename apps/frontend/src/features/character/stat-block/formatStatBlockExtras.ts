@@ -31,19 +31,12 @@ export function formatCompanionExtras(
         })
         : [];
 
-    const progression = companion.progression
-        ? [
-            `effective level ${companion.progression.effectiveLevel}`,
-            companion.progression.bonusHd > 0 ? `+${companion.progression.bonusHd} HD` : null,
-        ].filter((part): part is string => part !== null).join(', ')
-        : null;
-
     return {
         role: CHARACTER_COMPANION_ROLES[companion.role]?.name ?? 'Companion',
         creatureName: companion.name?.trim() || null,
         purpose: usesHandleAnimal(companion.role) ? companion.trickPurpose?.name ?? null : null,
         tricks,
-        progression,
+        progression: null,
         specials: (companion.progression?.specials ?? []).map((special) => special.name),
         notes: [],
         monsterId: companion.monsterId,

@@ -16,6 +16,7 @@ import {
     ABILITY_MAP,
     CREATURE_TYPES,
     EntityAppliesToType,
+    EntityType,
     FAMILIAR_ALERTNESS_FEATURE_SLUG,
     FAMILIAR_ALERTNESS_REACH_REMINDER,
 } from '@shared/static-data';
@@ -161,4 +162,75 @@ export function formatFeatureNameWithChoices(
     }
 
     return `${featureName}: ${resolvedNames.join(', ')}`;
+}
+
+/**
+ * Master skill grant from a familiar or animal companion type-benefit feature.
+ *
+ * Example: `Grants +3 to Move Silently when within reach`.
+ */
+export function formatCompanionChoiceGrantNote(
+    feature: FeatureWithRelations,
+    choices: CharacterFeatureChoice[],
+    resolvedProgressions: FeatureWithRelations[]
+): string | null {
+    const selected = choices.filter((choice) => choice.featureId === feature.id);
+    const grantParts: string[] = [];
+    let includesFamiliar = false;
+
+    for (const choice of selected) {
+        const entity = feature.entities?.find((item) => item.id === choice.featureEntityId);
+        if (
+            !entity
+            || (
+                entity.appliesTo !== EntityAppliesToType.Familiar
+                && entity.appliesTo !== EntityAppliesToType.AnimalCompanion
+            )
+            || !choice.appliesToId
+        ) {
+            continue;
+        }
+        if (entity.appliesTo === EntityAppliesToType.Familiar) {
+            includesFamiliar = true;
+        }
+        for (const companionFeature of resolvedProgressions) {
+            if (companionFeature.companionId !== choice.appliesToId) {
+                continue;
+            }
+            for (const bonusEntity of companionFeature.entities ?? []) {
+                if (
+                    bonusEntity.type !== EntityType.Bonus
+                    || bonusEntity.appliesTo !== EntityAppliesToType.Skill
+                    || bonusEntity.appliesToId == null
+                    || bonusEntity.value == null
+                ) {
+                    continue;
+                }
+                const skillName = getSkillSummaryById(bonusEntity.appliesToId)?.name
+                    ?? `Skill ${bonusEntity.appliesToId}`;
+                const amount = bonusEntity.value;
+                const signed = `${amount >= 0 ? '+' : ''}${amount}`;
+                grantParts.push(`${signed} to ${skillName}`);
+            }
+        }
+    }
+
+    if (grantParts.length === 0) {
+        return null;
+    }
+    const grants = `Grants ${grantParts.join(' and ')}`;
+    return includesFamiliar ? `${grants} when within reach` : grants;
+}
+
+/**
+ * Feature summary plus familiar/animal-companion skill grant note, if any.
+ */
+export function formatFeatureSummaryWithCompanionGrant(
+    feature: FeatureWithRelations,
+    choices: CharacterFeatureChoice[],
+    resolvedProgressions: FeatureWithRelations[]
+): string {
+    const summary = feature.summary?.trim() ?? '';
+    const grantNote = formatCompanionChoiceGrantNote(feature, choices, resolvedProgressions);
+    return [summary, grantNote].filter((part): part is string => Boolean(part)).join(' ');
 }

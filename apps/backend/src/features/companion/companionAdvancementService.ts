@@ -349,9 +349,6 @@ export const companionAdvancementService = {
             ? await this.loadCompanionBeneficiaryFeatures(contributingClassIds)
             : [];
         const unlocked = features.filter((feature) => feature.level <= effectiveLevel);
-        const typeSpecials = 'id' in companion && typeof companion.id === 'number'
-            ? await this.loadCompanionTypeSpecials(companion.id)
-            : [];
         const bonuses = this.evaluateCompanionChassis(unlocked, effectiveLevel);
         const specials = this.collectCompanionSpecials(unlocked);
         const progression: ResolvedCompanionProgression = {
@@ -361,7 +358,7 @@ export const companionAdvancementService = {
             strAdj: bonuses.strAdj,
             dexAdj: bonuses.dexAdj,
             bonusTricks: bonuses.bonusTricks,
-            specials: [...specials, ...typeSpecials],
+            specials,
         };
         chassisOverlayByProgression.set(progression, {
             intelligence: bonuses.intelligence,
@@ -481,6 +478,7 @@ export const companionAdvancementService = {
 
     /**
      * Named creature specials: Type=Companion, displayInDetail, not chassis-only math.
+     * Display string is `Name: summary`.
      */
     collectCompanionSpecials(features: FeatureWithRelations[]): ResolvedCompanionSpecial[] {
         const specials: ResolvedCompanionSpecial[] = [];
@@ -501,7 +499,7 @@ export const companionAdvancementService = {
             const summary = feature.summary?.trim();
             specials.push({
                 slug: feature.slug,
-                name: summary ? `${summary} (${feature.name})` : feature.name,
+                name: summary ? `${feature.name}: ${summary}` : feature.name,
                 description: feature.description,
             });
         }
@@ -1000,52 +998,6 @@ export const companionAdvancementService = {
             ...feature,
             sourceType: feature.sourceType as FeatureWithRelations['sourceType'],
         }));
-    },
-
-    /**
-     * Companion-source type benefits (Cat +3 Move Silently) shown on the familiar card.
-     */
-    async loadCompanionTypeSpecials(companionId: number): Promise<ResolvedCompanionSpecial[]> {
-        const features = await prisma.feature.findMany({
-            where: { companionId },
-            include: { entities: true },
-        });
-        const skillIds = [...new Set(features.flatMap((feature) => (
-            (feature.entities ?? [])
-                .filter((entity) => entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId)
-                .map((entity) => entity.appliesToId as number)
-        )))];
-        const skills = skillIds.length > 0
-            ? await prisma.skill.findMany({
-                where: { id: { in: skillIds } },
-                select: { id: true, name: true },
-            })
-            : [];
-        const skillNameById = new Map(skills.map((skill) => [skill.id, skill.name]));
-        const seen = new Set<string>();
-        const specials: ResolvedCompanionSpecial[] = [];
-        for (const feature of features) {
-            for (const entity of feature.entities ?? []) {
-                if (entity.appliesTo !== EntityAppliesToType.Skill || entity.value === null) {
-                    continue;
-                }
-                const key = `${entity.appliesToId}:${entity.value}`;
-                if (seen.has(key)) {
-                    continue;
-                }
-                seen.add(key);
-                const skillName = entity.appliesToId
-                    ? skillNameById.get(entity.appliesToId) ?? `Skill ${entity.appliesToId}`
-                    : 'Skill';
-                const signed = entity.value >= 0 ? `+${entity.value}` : `${entity.value}`;
-                specials.push({
-                    slug: feature.slug,
-                    name: `Master: ${signed} ${skillName}`,
-                    description: feature.description,
-                });
-            }
-        }
-        return specials;
     },
 
     /**

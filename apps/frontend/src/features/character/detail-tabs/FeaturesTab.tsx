@@ -5,6 +5,7 @@ import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calcul
 import {
     collectFeatureChoices,
     formatFeatureNameWithChoices,
+    formatFeatureSummaryWithCompanionGrant,
     formatGrantedFeatDisplayName,
     pickFeatureClassIdForCharacter,
 } from '@/lib/formatters/choiceDisplayName';
@@ -21,6 +22,7 @@ import type { FeaturesTabProps } from './types';
  *
  * Features and feats that have a saved player choice append that choice to the
  * title (for example `Animal Companion: Dog`, `Weapon Focus (Longsword)`).
+ * Familiar type-benefit skill grants append a reach note under the choice line.
  * Chassis features (BAB, class skills, proficiency wrappers) are omitted via
  * `FeatureDisplayFilter.shouldListFeatureInCharacterView`. Proficiencies are a
  * de-duplicated union. Follows the same filtering as characterPdfService.ts
@@ -267,7 +269,11 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                     <div className="space-y-2">
                         {raceFeatures.map((feature) => {
                             const featureName = formatFeatureNameWithChoices(feature, featureChoices);
-                            const summary = feature.summary || '';
+                            const summary = formatFeatureSummaryWithCompanionGrant(
+                                feature,
+                                featureChoices,
+                                resolvedProgressions
+                            );
                             if (!featureName && !summary) return null;
 
                             return (
@@ -305,7 +311,11 @@ export function FeaturesTab({ character, formattedCharacter, resolvedProgression
                         <div className="space-y-2">
                             {features.map((feature) => {
                                 const featureName = formatFeatureNameWithChoices(feature, featureChoices);
-                                const summary = feature.summary || '';
+                                const summary = formatFeatureSummaryWithCompanionGrant(
+                                    feature,
+                                    featureChoices,
+                                    resolvedProgressions
+                                );
                                 if (!featureName && !summary) return null;
 
                                 return (

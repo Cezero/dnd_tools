@@ -1,8 +1,10 @@
 // Export the factory for direct strategy access
 export {
     collectFeatureChoices,
+    formatCompanionChoiceGrantNote,
     formatFeatNameWithSubtype,
     formatFeatureNameWithChoices,
+    formatFeatureSummaryWithCompanionGrant,
     formatGrantedFeatDisplayName,
     pickFeatureClassIdForCharacter,
     resolveFeatureChoiceDisplayName,
