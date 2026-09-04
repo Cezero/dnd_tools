@@ -531,6 +531,8 @@ For comprehensive contributing guidelines and anti-patterns to avoid, see **[usa
     - Always check if `value` is string, number, or null before processing
     - Use string values directly in formatters when available
     - Fall back to number formatting when string values are not available
+    - `ValueFormatter` returns an empty string when `value` is null (descriptive Other/Other features such as Share Spells and Empathic Link have no numeric value)
+    - `FormattingPhase.formatItems` must not throw on a single bad entity; one formatter failure must not blank the character view
 
 ## Related Documentation
 

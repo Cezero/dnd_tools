@@ -276,8 +276,16 @@ export class TargetsFormatter implements BaseFormatter {
 }
 
 export class ValueFormatter implements BaseFormatter {
+    /**
+     * Format a raw quantity or Other entity. Null is valid for descriptive
+     * Other/Other features (Share Spells, Empathic Link) that have no number.
+     */
     format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
+
+        if (value === null || value === undefined) {
+            return '';
+        }
 
         return value.toString();
     }
